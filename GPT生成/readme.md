@@ -1310,6 +1310,9 @@ photorealistic paint, digital clean lineart, glossy surface, 3D render, vector a
 - 坐在床上／沙發上的療癒感構圖
 - 可做成吊飾娃娃比例
 ```
+```
+女孩倚靠在高樓觀景台欄杆旁，雙手自然交疊扶著欄杆，身體微微前傾，側身姿勢，頭部微微抬起望向遠方，露出淡淡微笑，長髮被強風吹起，髮絲飄逸充滿動態感，服裝與外套隨風擺動，夕陽黃金時刻，暖橙色天空，大片戲劇性晚霞與雲層，高空城市夜景背景，城市燈光逐漸亮起，逆光效果，金色邊緣光勾勒人物輪廓，髮絲透光發亮，柔和鏡頭光暈，電影感光影氛圍，淺景深，背景散景，高樓天台氛圍，情緒感與治癒感兼具，唯美夢幻風格，超高細節，精緻五官，細膩皮膚質感，服裝紋理豐富，動漫插畫風，高品質作畫，構圖完整，畫面乾淨，空氣感，光影層次豐富，masterpiece, best quality, ultra detailed, cinematic lighting, anime style, dynamic hair, sunset glow
+```
 go
 <a id="readme"></a>
 ## 回到底部
