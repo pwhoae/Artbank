@@ -1,5 +1,32 @@
 [回到底部](#readme)|<br>
-
+```
+這是一份基於您提供的圖片所提取的提示詞（Prompt），旨在協助您重現或描述類似的畫面：
+## 1. 主體描述
+Anime girl, long flowing lavender hair, pointy elf ears, intense red eyes, fair skin, flushed cheeks, emotional facial expression with tongue sticking out, wearing a highly detailed white and purple futuristic tactical outfit with a bow tie and gem accessory at the chest.
+## 2. 動作與視角
+Close-up, intimate angle, character sitting, hands positioned near the stomach area, messy and suggestive pose, dynamic composition, focus on the upper body, looking slightly upwards with a dazed expression.
+## 3. 環境與氛圍
+Warm indoor setting, steam rising, sensual and atmospheric lighting, soft shadows, intimate and provocative mood, vibrant color palette emphasizing purple and white tones.
+## 4. 風格設定
+High-quality anime art style, digital illustration, smooth shading, intricate details, vibrant colors, sharp focus on character features, professional character design.
+## 5. 細節強化
+Wet texture, glistening skin, intricate costume detailing, expressive eyes, fluid dynamics, steam effects, high contrast, masterpiece quality.
+## 6. 畫質要求
+高品質，8k解析度，cinematic lighting，ultra-detailed，highly intricate, sharp, masterfully crafted digital painting.
+根據您提供的圖片，以下是為您提取的詳細提示詞（Prompt）：
+## 1. 主體描述
+可愛的動漫少女（chibi style），擁有一頭白色的短髮，瀏海處有彩虹般的挑染；異色瞳（左眼為深粉紅色，右眼為琥珀色），濃密的睫毛，精緻的五官，表情帶有一絲俏皮或挑釁感；頭戴黑色畫家帽，帽上有彩色圓形徽章裝飾；身穿帶有蕾絲邊的黑色與白色相間服飾，頸部繫有黑色絲帶，胸前別著數支可愛的畫筆造型裝飾物。
+## 2. 動作與視角
+半身近景鏡頭，人物面向鏡頭；右手向上舉起，手中握著一個銀色的噴漆罐，罐身帶有淺色裝飾；左手自然垂下；視線直視觀者，帶有互動感。
+## 3. 環境與氛圍
+背景為純白背景，整體氛圍輕快、活潑，色調鮮豔且充滿藝術氣息。畫面頂部有粉紅色的藝術字體「找噴嗎？」。
+## 4. 風格設定
+動漫風格（Anime Style），Q版插畫風格（Chibi Illustration），色彩飽和度高，線條清晰，具有二次元網絡迷因圖（Meme）的特徵。
+## 5. 細節強化
+強調髮色的多層次感、眼睛的高光與細節、衣服的蕾絲質感、噴漆罐的金屬質感；整體畫風平滑且色彩豐富。
+## 6. 畫質要求
+高品質，8k解析度，cinematic lighting，ultra-detailed，色彩精準，高解析度渲染。
+```
 <a id="readme_begin"></a>
 怎么把ChatGPT image 2拆
 开放世界
