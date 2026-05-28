@@ -98,40 +98,30 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
 <hr>
-美食<br>
+美食
+
 ```
-觀察照片中的元素，並為每個物件加上有意義的手繪風註解。【畫面內容】請填寫照片中的物品（例：冰奶茶、甜甜圈）【描寫規則】・使用像白色筆畫的細手繪線條・一筆畫風格，隨性、略帶不均勻感・沿著物件外圍加上描邊輪廓・用箭頭或虛線做出視線引導【文字規則】・手寫風格字體（偏日系可愛感）・句子簡短，像自言自語的小碎念・語氣偏日記感、帶一點情緒・彩色文字【註解生成規則】・飲料→味道、溫度、心情（例：清爽、微甜、剛剛好）・食物→口感、好吃程度（例：鬆軟、超好吃）・空間→氛圍（例：很放鬆、喜歡這種感覺）・整體→一句總結（例：今天有點幸福～）【裝飾】・適度加入熱氣、閃光、愛心、小表情等元素・不要過多，保留一些留白【完成風格】・像Instagram限時動態、雜誌隨手筆記風・自然、有質感、帶點慵懶感
+觀察照片中的元素，並為每個物件加上有意義的手繪風註解。【畫面內容】請填寫照片中的物品（例：冰奶茶、甜甜圈）【描寫規則】・使用像白色筆畫的細手繪線條・一筆畫風格，隨性、略帶不均勻感・沿著物件外圍加上描邊輪廓・用箭頭或虛線做出視線引導【文字規則】・手寫風格字體（偏日系可愛感）・句子簡短，像自言自語的小碎念・語氣偏日記感、帶一點情緒・彩色文字【註解生成規則】・飲料→味道、溫度、心情（例：清爽、微甜、剛剛好）・食物→口感、好吃程度（例：鬆軟、超好吃）・空間→氛圍（例：很放鬆、喜歡這種感覺）・整體:一句總結（例：今天有點幸福～）【裝飾】・適度加入熱氣、閃光、愛心、小表情等元素・不要過多，保留一些留白【完成風格】・像Instagram限時動態、雜誌隨手筆記風・自然、有質感、帶點慵懶感
+
 ```
 <hr>
-人物海報<br>
+人物海報
+
 ```
-根据【主题】自动生成一张收藏版史诗叙事海报：巨大优雅的人物侧脸剪影作为外轮廓，剪影内部自动生长出最契合该主题的完整世界观、标志性场景、角色关系、象征符号、关键建筑、生物、道具与氛围。整体不是普通拼贴，而是高级的剪影轮廓填充式叙事合成，带有双重曝光式联想，但更偏电影海报与梦幻水彩插画融合风格；柔和空气透视，轻雾化过渡，纸张颗粒，边缘飞白与刷痕，大面积留白，版式克制高级，安静、宏大、神圣、怀旧、诗意、传说感强。风格、色彩、场景、材质全部根据主题自动适配，所有元素必须强绑定主题，一眼识别，不要杂乱，不要硬拼贴，不要模板化背景，不要廉价奇幻素材。画面中需自然加入专属签名“voxcat”，作为海报设计的一部分，位置低调但清晰，可放在左下角、右下角或标题附近，风格需与整体版式统一，像收藏版海报的作者落款或设计签章；签名字体精致、克制、高级，不可过大，不可破坏主体构图，不可显得突兀廉价。
-在这段文字后面再加入你要生成的角色的具体信
-息，比如名字,人物的图片
+根据【主题】自动生成一张收藏版史诗叙事海报：巨大优雅的人物侧脸剪影作为外轮廓，剪影内部自动生长出最契合该主题的完整世界观、标志性场景、角色关系、象征符号、关键建筑、生物、道具与氛围。整体不是普通拼贴，而是高级的剪影轮廓填充式叙事合成，带有双重曝光式联想，但更偏电影海报与梦幻水彩插画融合风格；柔和空气透视，轻雾化过渡，纸张颗粒，边缘飞白与刷痕，大面积留白，版式克制高级，安静、宏大、神圣、怀旧、诗意、传说感强。风格、色彩、场景、材质全部根据主题自动适配，所有元素必须强绑定主题，一眼识别，不要杂乱，不要硬拼贴，不要模板化背景，不要廉价奇幻素材。画面中需自然加入专属签名“voxcat”，作为海报设计的一部分，位置低调但清晰，可放在左下角、右下角或标题附近，风格需与整体版式统一，像收藏版海报的作者落款或设计签章；签名字体精致、克制、高级，不可过大，不可破坏主体构图，不可显得突兀廉价。在这段文字后面再加入你要生成的角色的具体信息，比如名字,人物的图片
 ```
 <hr>
 人物海報 山水<br>
 
 ```
-一張「某某某」的人物宣傳海報，統一採用直式主視覺構圖。每張海報皆使用上大下小的層級結構：畫面上半部以人物最具辨識度的頭部、臉部輪廓、面具或半身外輪廓作為巨大的視覺主體，形成高辨識度的剪影式主形；中下部安排完整人物作為第二主體，呈現穩定站姿或輕微動作姿態，構成畫面的視覺核心。
-
-大輪廓內部以及角色周圍採用雙重曝光與拼貼式敘事構圖，將多個場景、意象、小型人物關係、輔助元素與環境層層融合於雲霧、水墨與留白之中。左右兩側配置呼應性的輔景，使畫面產生故事張力與空間變化。以一條貫穿畫面上下的流動線索，連結主角色、內部拼貼與上方大輪廓，強化整體性與視線引導。
-
-整體畫面保留大面積留白，邊緣以水墨暈染與虛化破碎處理，營造東方美學中的虛實關係與呼吸感。整體風格統一、高級且克制，強調層次感、敘事性、主視覺衝擊力與系列化海報語言。尺寸：9:16。
+一張「某某某」的人物宣傳海報，統一採用直式主視覺構圖。每張海報皆使用上大下小的層級結構：畫面上半部以人物最具辨識度的頭部、臉部輪廓、面具或半身外輪廓作為巨大的視覺主體，形成高辨識度的剪影式主形；中下部安排完整人物作為第二主體，呈現穩定站姿或輕微動作姿態，構成畫面的視覺核心。大輪廓內部以及角色周圍採用雙重曝光與拼貼式敘事構圖，將多個場景、意象、小型人物關係、輔助元素與環境層層融合於雲霧、水墨與留白之中。左右兩側配置呼應性的輔景，使畫面產生故事張力與空間變化。以一條貫穿畫面上下的流動線索，連結主角色、內部拼貼與上方大輪廓，強化整體性與視線引導。整體畫面保留大面積留白，邊緣以水墨暈染與虛化破碎處理，營造東方美學中的虛實關係與呼吸感。整體風格統一、高級且克制，強調層次感、敘事性、主視覺衝擊力與系列化海報語言。尺寸：9:16。
 ```
 <hr>
 猫咪海報 先丟一張貓咪照，然後給的指令是
 
 
 ```
-「觀察附圖貓咪的毛色、長相與特徵，生成一張貓咪介紹圖文海報。
-
-海報標題：OO的介紹
-【規則】
-・讓貓咪在最中間當作主體，周圍加上身體局部特寫的註解介紹，主體與局部特寫都要清楚可愛，並保留貓咪本身的毛色特徵與辨識度
-・文字須使用繁體中文，並使用帶有粉筆筆觸的白色可愛手寫字體，排版整齊且可讀性高。標題字級最大、局部特寫的標題字級第二大、局部特寫的描述字級最小
-・背景使用黑色晨紙virtue colours，可適當手繪插圖線條當作裝飾，例如：愛心、箭頭、星星、小圓點、音符等
-・整體排版不要太擁擠，保有留白」
+「觀察附圖貓咪的毛色、長相與特徵，生成一張貓咪介紹圖文海報。 海報標題：OO的介紹 【規則】 ・讓貓咪在最中間當作主體，周圍加上身體局部特寫的註解介紹，主體與局部特寫都要清楚可愛，並保留貓咪本身的毛色特徵與辨識度 ・文字須使用繁體中文，並使用帶有粉筆筆觸的白色可愛手寫字體，排版整齊且可讀性高。標題字級最大、局部特寫的標題字級第二大、局部特寫的描述字級最小 ・背景使用黑色晨紙virtue colours，可適當手繪插圖線條當作裝飾，例如：愛心、箭頭、星星、小圓點、音符等 ・整體排版不要太擁擠，保有留白」
 ```
 <hr>
 <a name="case-186"></a>
@@ -140,35 +130,9 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case186.jpg"></img>
 ```text
-[中文]
-创建一个包含100种不同奇幻RPG物品的10×10网格，以经典像素艺术风格渲染（16位或32位精灵图美学，让人联想到SNES/GBA时代的日式RPG）。每个物品应出现在其独立的方形瓷砖中，下方带有简短清晰的标签。在白色背景上保持网格整洁。使每个物品在视觉上都有所区分，并且每个标签拼写正确。使用清晰的像素边缘、每个精灵图有限的调色板，以及用于阴影的微妙抖动。
-使用这些行主题：
-第1行：剑与刀刃
-第2行：盾牌与盔甲
-第3行：弓、弩与远程武器
-第4行：法杖、魔杖与魔法焦点
-第5行：药水、灵药与烧瓶
-第6行：卷轴、典籍与法术书
-第7行：戒指、护身符与附魔小饰品
-第8行：头盔、王冠与头饰
-第9行：钥匙、遗物与任务物品
-第10行：宝石、符文与制作材料
-将每个瓷砖显示为干净背景方形上居中的物品精灵图，渲染为经典的库存图标——你在奇幻RPG菜单中会看到的那种。保持整体风格一致、连贯，并让人联想到备受喜爱的复古奇幻RPG——迷人、细节丰富，且在小尺寸下易于辨认。
+[中文]创建一个包含100种不同奇幻RPG物品的10×10网格，以经典像素艺术风格渲染（16位或32位精灵图美学，让人联想到SNES/GBA时代的日式RPG）。每个物品应出现在其独立的方形瓷砖中，下方带有简短清晰的标签。在白色背景上保持网格整洁。使每个物品在视觉上都有所区分，并且每个标签拼写正确。使用清晰的像素边缘、每个精灵图有限的调色板，以及用于阴影的微妙抖动。使用这些行主题：第1行：剑与刀刃第2行：盾牌与盔甲第3行：弓、弩与远程武器第4行：法杖、魔杖与魔法焦点第5行：药水、灵药与烧瓶第6行：卷轴、典籍与法术书第7行：戒指、护身符与附魔小饰品第8行：头盔、王冠与头饰第9行：钥匙、遗物与任务物品第10行：宝石、符文与制作材料将每个瓷砖显示为干净背景方形上居中的物品精灵图，渲染为经典的库存图标——你在奇幻RPG菜单中会看到的那种。保持整体风格一致、连贯，并让人联想到备受喜爱的复古奇幻RPG——迷人、细节丰富，且在小尺寸下易于辨认。
+[English]Create a 10 × 10 grid of 100 different fantasy RPG items rendered in classic pixel art style (16-bit or 32-bit sprite aesthetic, reminiscent of SNES/GBA-era JRPGs). Each item should appear in its own square tile with a short clear label underneath. Keep the grid neat on a white background. Make every item visually distinct and every label correctly spelled. Use crisp pixel edges, limited palette per sprite, and subtle dithering for shading. Use these row themes: Row 1: swords and blades Row 2: shields and armor Row 3: bows, crossbows, and ranged weapons Row 4: staves, wands, and magical foci Row 5: potions, elixirs, and flasks Row 6: scrolls, tomes, and spellbooks Row 7: rings, amulets, and enchanted trinkets Row 8: helmets, crowns, and headgear Row 9: keys, relics, and quest items Row 10: gems, runes, and crafting materials Show each tile as a centered item sprite on a clean background square, rendered as a classic inventory icon — the kind you'd see in a fantasy RPG menu. Keep the overall style consistent, cohesive, and reminiscent of beloved retro fantasy RPGs — charming, detailed, and instantly readable at small sizes.
 
-[English]
-Create a 10 × 10 grid of 100 different fantasy RPG items rendered in classic pixel art style (16-bit or 32-bit sprite aesthetic, reminiscent of SNES/GBA-era JRPGs). Each item should appear in its own square tile with a short clear label underneath. Keep the grid neat on a white background. Make every item visually distinct and every label correctly spelled. Use crisp pixel edges, limited palette per sprite, and subtle dithering for shading.
-Use these row themes:
-Row 1: swords and blades
-Row 2: shields and armor
-Row 3: bows, crossbows, and ranged weapons
-Row 4: staves, wands, and magical foci
-Row 5: potions, elixirs, and flasks
-Row 6: scrolls, tomes, and spellbooks
-Row 7: rings, amulets, and enchanted trinkets
-Row 8: helmets, crowns, and headgear
-Row 9: keys, relics, and quest items
-Row 10: gems, runes, and crafting materials
-Show each tile as a centered item sprite on a clean background square, rendered as a classic inventory icon — the kind you'd see in a fantasy RPG menu. Keep the overall style consistent, cohesive, and reminiscent of beloved retro fantasy RPGs — charming, detailed, and instantly readable at small sizes.
 ```
 <a name="case-196"></a>
 ### 例 196：试卷上的涂鸦巨龙
