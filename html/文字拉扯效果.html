@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字拉扯效果</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f4f1ea; font-family: 'Georgia', serif; }
+        canvas { display: block; }
+        .controls {
+            position: absolute; top: 20px; left: 20px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <input type="text" id="textInput" value="我是文字,1234567890!" placeholder="輸入文字">
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const input = document.getElementById('textInput');
+        let width, height;
+
+        let points = [];
+        const spacing = 25; // 增加間距讓閱讀更清晰
+        let mouse = { x: -1000, y: -1000, active: false };
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            
+            const newText = input.value;
+            const chars = newText.split('');
+            points = []; // 清空舊點
+            
+            chars.forEach((char, i) => {
+                points.push({
+                    x: width / 2,
+                    y: 100 + i * spacing,
+                    vx: 0,
+                    vy: 0,
+                    char: char
+                });
+            });
+        }
+
+        // 當輸入框內容改變時，重新初始化
+        input.addEventListener('input', init);
+        window.addEventListener('resize', init);
+        
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        window.addEventListener('mousedown', () => mouse.active = true);
+        window.addEventListener('mouseup', () => mouse.active = false);
+
+        function update() {
+            ctx.clearRect(0, 0, width, height);
+
+            points.forEach((p, i) => {
+                if (i === 0 && mouse.active) {
+                    p.x = mouse.x;
+                    p.y = mouse.y;
+                } else {
+                    const target = i === 0 ? mouse : points[i - 1];
+                    const dx = target.x - p.x;
+                    const dy = (i === 0 ? target.y : target.y + spacing) - p.y;
+                    
+                    p.vx += dx * 0.15;
+                    p.vy += dy * 0.15;
+                    p.vx *= 0.7; 
+                    p.vy *= 0.7;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                }
+
+                ctx.fillStyle = "#333";
+                ctx.font = "24px Georgia";
+                ctx.fillText(p.char, p.x, p.y);
+            });
+
+            requestAnimationFrame(update);
+        }
+
+        init();
+        update();
+    </script>
+</body>
+</html>

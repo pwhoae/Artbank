@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP4 轉 Sprite Sheet 工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .control-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 360px; font-weight: bold; }
+        input[type="number"], input[type="file"] { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 10px; font-weight: bold; color: #666; }
+        #resultContainer { margin-top: 20px; display: none; }
+        #preview { max-width: 100%; border: 1px solid #ddd; margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎬 MP4 影片轉 Sprite Sheet 工具</h2>
+    
+    <div class="control-group">
+        <label>選擇 MP4 影片：</label>
+        <input type="file" id="videoInput" accept="video/mp4">
+    </div>
+
+    <div class="control-group">
+        <label>擷取影格數： 5秒*60fps=300幀</label>
+        <input type="number" id="frameCountInput" value="300" min="2" max="1000">
+        <small>(預計擷取的總幀數)</small>
+    </div>
+
+    <div class="control-group">
+        <label>網格欄數 (N)：</label>
+        <input type="number" id="colsInput" value="16" min="1" max="200">
+        <small>(NxN 的橫向欄數，縱向會自動計算)</small>
+    </div>
+
+    <div class="control-group">
+        <label>單影格寬度：</label>
+        <input type="number" id="frameWidthInput" value="360" min="32" max="1024"> px
+    </div>
+
+    <button id="startBtn" disabled>開始生成 Sprite Sheet</button>
+    <div id="status">請先上傳影片...</div>
+
+    <div id="resultContainer">
+        <h3>✨ 生成結果 (右鍵可另存新檔)：</h3>
+        <button id="downloadBtn">直接下載 PNG</button>
+        <br>
+        <img id="preview" alt="Sprite Sheet Preview">
+    </div>
+</div>
+
+<video id="hiddenVideo" style="display:none;" muted playsinline></video>
+
+<script>
+    const videoInput = document.getElementById('videoInput');
+    const frameCountInput = document.getElementById('frameCountInput');
+    const colsInput = document.getElementById('colsInput');
+    const frameWidthInput = document.getElementById('frameWidthInput');
+    const startBtn = document.getElementById('startBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const status = document.getElementById('status');
+    const resultContainer = document.getElementById('resultContainer');
+    const preview = document.getElementById('preview');
+    const video = document.getElementById('hiddenVideo');
+
+    let videoFileUrl = null;
+
+    // 1. 當使用者選擇檔案
+    videoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (videoFileUrl) URL.revokeObjectURL(videoFileUrl); // 釋放舊記憶體
+        videoFileUrl = URL.createObjectURL(file);
+        video.src = videoFileUrl;
+
+        status.innerText = "影片載入中，請稍候...";
+        startBtn.disabled = true;
+    });
+
+    // 影片元數據載入完成後才可以開始執行
+    video.addEventListener('loadedmetadata', () => {
+        status.innerText = `影片載入成功！時長: ${video.duration.toFixed(2)} 秒, 解析度: ${video.videoWidth}x${video.videoHeight}`;
+        startBtn.disabled = false;
+    });
+
+    // 2. 核心處理邏輯
+    startBtn.addEventListener('click', async () => {
+        const totalFrames = parseInt(frameCountInput.value);
+        const cols = parseInt(colsInput.value);
+        const targetWidth = parseInt(frameWidthInput.value);
+        
+        // 計算單張影格的高（等比例縮放）
+        const scale = targetWidth / video.videoWidth;
+        const targetHeight = Math.round(video.videoHeight * scale);
+        
+        // 計算總行數 (Row)
+        const rows = Math.ceil(totalFrames / cols);
+
+        // 建立最終用來合併的大 Canvas
+        const spriteCanvas = document.createElement('canvas');
+        spriteCanvas.width = cols * targetWidth;
+        spriteCanvas.height = rows * targetHeight;
+        const ctx = spriteCanvas.getContext('2d');
+
+        // 建立一個用來暫存單影格的 Canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = targetWidth;
+        tempCanvas.height = targetHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        startBtn.disabled = true;
+        resultContainer.style.display = "none";
+
+        // 計算時間間隔 (平均分配在影片長度中)
+        const duration = video.duration;
+        const interval = duration / totalFrames;
+
+        for (let i = 0; i < totalFrames; i++) {
+            status.innerText = `正在處理第 ${i + 1} / ${totalFrames} 影格...`;
+            
+            // 跳轉影片時間點
+            const currentTime = i * interval;
+            video.currentTime = currentTime;
+
+            // 等待影片跳轉（seek）完成
+            await new Promise(resolve => {
+                const seekedHandler = () => {
+                    video.removeEventListener('seeked', seekedHandler);
+                    resolve();
+                };
+                video.addEventListener('seeked', seekedHandler);
+            });
+
+            // 將當前影片畫面畫到暫存畫布（進行縮放）
+            tempCtx.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+            // 計算這張影格在大圖集 (Sprite Sheet) 中的網格座標
+            const colIndex = i % cols;
+            const rowIndex = Math.floor(i / cols);
+            const posX = colIndex * targetWidth;
+            const posY = rowIndex * targetHeight;
+
+            // 將暫存畫布的內容貼到大畫布對應位置
+            ctx.drawImage(tempCanvas, posX, posY);
+        }
+
+        // 3. 輸出結果
+        status.innerText = "✨ Sprite Sheet 生成成功！";
+        startBtn.disabled = false;
+
+        const dataUrl = spriteCanvas.toDataURL('image/png');
+        preview.src = dataUrl;
+        resultContainer.style.display = "block";
+
+        // 設定下載按鈕
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `spritesheet_${Date.now()}.png`;
+            a.click();
+        };
+    });
+</script>
+
+</body>
+</html>
