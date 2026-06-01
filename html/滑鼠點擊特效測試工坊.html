@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>滑鼠點擊特效測試工坊</title>
+  <!-- 引入 Tailwind CSS 提供現代化 UI 介面 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 Font Awesome 顯示貓爪等圖示 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    /* 防止點擊產生的特效引發滾動條 */
+    body {
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    /* 確保特效元素不會干擾滑鼠點擊穿透 */
+    .click-effect-item {
+      position: fixed;
+      pointer-events: none;
+      user-select: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      will-change: transform, opacity;
+    }
+
+    /* === 1. 貓爪特效動畫 === */
+    @keyframes catPawAnim {
+      0% {
+        transform: translate(-50%, -50%) scale(0.3) rotate(-15deg);
+        opacity: 0;
+      }
+      15% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(5deg);
+        opacity: 1;
+      }
+      30% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+      70% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(0.8) translateY(-20px) rotate(10deg);
+        opacity: 0;
+      }
+    }
+
+    .animate-cat-paw {
+      animation: catPawAnim var(--duration, 0.8s) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* === 2. 愛心特效動畫 === */
+    @keyframes heartAnim {
+      0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.6) translateY(-40px) rotate(var(--rot, 0deg));
+        opacity: 0;
+      }
+    }
+
+    .animate-heart {
+      animation: heartAnim var(--duration, 0.8s) ease-out forwards;
+    }
+
+    /* === 3. 煙火/粒子特效動畫 === */
+    @keyframes particleAnim {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(
+          calc(-50% + var(--dx, 0px)), 
+          calc(-50% + var(--dy, 0px))
+        ) scale(0.1);
+        opacity: 0;
+      }
+    }
+
+    .animate-particle {
+      animation: particleAnim var(--duration, 0.6s) cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between transition-colors duration-300">
+
+  <!-- 頂部導覽與說明 -->
+  <header class="p-6 bg-slate-800/80 backdrop-blur border-b border-slate-700/50 shadow-lg z-10">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-black tracking-wider text-pink-500 flex items-center gap-2">
+          <i class="fa-solid fa-paw animate-bounce"></i> 滑鼠點擊特效測試工坊
+        </h1>
+        <p class="text-sm text-slate-400 mt-1">在頁面任意空白處點擊滑鼠，即可觸發超萌特效！</p>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-950/50 px-4 py-2 rounded-full border border-slate-800 text-xs text-slate-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        當前模式: <span id="current-mode-badge" class="font-bold text-pink-400">萌萌貓爪</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要測試點擊區域 -->
+  <main id="click-zone" class="flex-grow flex items-center justify-center p-6 relative cursor-pointer select-none">
+    <div class="text-center max-w-md pointer-events-none transition-opacity duration-300" id="hint-text">
+      <div class="w-24 h-24 mx-auto mb-6 bg-slate-800 border-2 border-dashed border-slate-600 rounded-full flex items-center justify-center text-slate-400">
+        <i class="fa-solid fa-mouse-pointer text-3xl animate-pulse"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-300">請在此區域任意點擊！</h2>
+      <p class="text-sm text-slate-500 mt-2">點擊左鍵，看特效在你的滑鼠指尖綻放。也可以在下方控制面板切換特效類型與微調設定。</p>
+    </div>
+  </main>
+
+  <!-- 底部懸浮控制面板 -->
+  <footer class="p-6 bg-slate-850 border-t border-slate-800/80 shadow-[0_-10px_30px_rgba(0,0,0,0.3)] z-10">
+    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- 特效類型選擇 -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">1. 選擇特效種類</span>
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="setEffect('cat-paw')" id="btn-cat-paw" class="effect-btn py-3 px-2 rounded-xl border-2 border-pink-500 bg-pink-500/10 text-pink-400 font-bold transition flex flex-col items-center justify-center gap-1">
+            <i class="fa-solid fa-paw text-xl"></i>
+            <span class="text-xs">萌萌貓爪</span>
+          </button>
+          <button onclick="setEffect('heart')" id="btn-heart" class="effect-btn py-3 px-2 rounded-xl border-2 border-slate-700 bg-slate-800 text-slate-400 font-bold transition flex flex-col items-center justify-center gap-1 hover:border-slate-600">
+            <i class="fa-solid fa-heart text-xl"></i>
+            <span class="text-xs">繽紛愛心</span>
+          </button>
+          <button onclick="setEffect('firework')" id="btn-firework" class="effect-btn py-3 px-2 rounded-xl border-2 border-slate-700 bg-slate-800 text-slate-400 font-bold transition flex flex-col items-center justify-center gap-1 hover:border-slate-600">
+            <i class="fa-solid fa-fire text-xl"></i>
+            <span class="text-xs">絢麗煙火</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 參數自訂微調 -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">2. 特效參數微調</span>
+        <div class="space-y-3 bg-slate-900/50 p-3 rounded-xl border border-slate-800 text-xs">
+          <!-- 尺寸調節 -->
+          <div class="flex items-center justify-between">
+            <label for="effect-size" class="text-slate-400">基本尺寸 (px)</label>
+            <div class="flex items-center gap-2">
+              <input type="range" id="effect-size" min="20" max="100" value="50" class="accent-pink-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+              <span id="size-val" class="font-mono text-pink-400 w-8 text-right">50</span>
+            </div>
+          </div>
+          <!-- 動畫時間調節 -->
+          <div class="flex items-center justify-between">
+            <label for="effect-duration" class="text-slate-400">持續時間 (秒)</label>
+            <div class="flex items-center gap-2">
+              <input type="range" id="effect-duration" min="3" max="20" value="8" class="accent-pink-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+              <span id="duration-val" class="font-mono text-pink-400 w-8 text-right">0.8</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 配色與說明 -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">3. 自訂主題色彩</span>
+        <div class="grid grid-cols-5 gap-2" id="color-palette">
+          <button onclick="setThemeColor('#ec4899')" class="w-full h-8 rounded-lg bg-pink-500 border-2 border-white shadow-md transition transform hover:scale-110" style="background-color: #ec4899;"></button>
+          <button onclick="setThemeColor('#3b82f6')" class="w-full h-8 rounded-lg bg-blue-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #3b82f6;"></button>
+          <button onclick="setThemeColor('#10b981')" class="w-full h-8 rounded-lg bg-emerald-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #10b981;"></button>
+          <button onclick="setThemeColor('#f59e0b')" class="w-full h-8 rounded-lg bg-amber-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #f59e0b;"></button>
+          <button onclick="setThemeColor('#8b5cf6')" class="w-full h-8 rounded-lg bg-violet-500 border-2 border-transparent transition transform hover:scale-110" style="background-color: #8b5cf6;"></button>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-1">小提示：連續快速點擊可以產生洗版式的震撼視覺喔！</p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- 核心 JavaScript 邏輯 -->
+  <script>
+    // === 全域變數定義 ===
+    let currentEffect = 'cat-paw'; // 當前特效：'cat-paw' | 'heart' | 'firework'
+    let themeColor = '#ec4899';    // 當前特效主題顏色 (預設粉紅)
+    let effectSize = 50;          // 特效基準大小 (px)
+    let effectDuration = 0.8;     // 動畫持續時間 (秒)
+
+    const clickZone = document.getElementById('click-zone');
+    const hintText = document.getElementById('hint-text');
+
+    // 愛心特效隨機庫（除了 Font Awesome，也可以用純文字 emoji）
+    const heartIcons = ['♥', '💖', '💝', '💕', '💗'];
+
+    // === 事件監聽與控制更新 ===
+    const sizeInput = document.getElementById('effect-size');
+    const sizeVal = document.getElementById('size-val');
+    sizeInput.addEventListener('input', (e) => {
+      effectSize = parseInt(e.target.value);
+      sizeVal.textContent = effectSize;
+    });
+
+    const durationInput = document.getElementById('effect-duration');
+    const durationVal = document.getElementById('duration-val');
+    durationInput.addEventListener('input', (e) => {
+      effectDuration = parseFloat(e.target.value) / 10;
+      durationVal.textContent = effectDuration.toFixed(1);
+    });
+
+    // === 切換特效類型 ===
+    function setEffect(type) {
+      currentEffect = type;
+      
+      // 更新按鈕樣式
+      document.querySelectorAll('.effect-btn').forEach(btn => {
+        btn.classList.remove('border-pink-500', 'bg-pink-500/10', 'text-pink-400');
+        // 先恢復預設
+        btn.classList.add('border-slate-700', 'bg-slate-800', 'text-slate-400');
+      });
+
+      const activeBtn = document.getElementById(`btn-${type}`);
+      activeBtn.classList.remove('border-slate-700', 'bg-slate-800', 'text-slate-400');
+      activeBtn.classList.add('border-pink-500', 'bg-pink-500/10', 'text-pink-400');
+
+      // 更新動態指示器與按鈕邊框色以配合當前主題色
+      applyThemeStyles();
+    }
+
+    // === 更換主題色彩 ===
+    function setThemeColor(color) {
+      themeColor = color;
+      
+      // 更新調色盤的邊框選中狀態
+      const buttons = document.querySelectorAll('#color-palette button');
+      buttons.forEach(btn => {
+        if (btn.style.backgroundColor === color || rgbToHex(btn.style.backgroundColor) === color) {
+          btn.classList.add('border-white');
+          btn.classList.remove('border-transparent');
+        } else {
+          btn.classList.remove('border-white');
+          btn.classList.add('border-transparent');
+        }
+      });
+
+      applyThemeStyles();
+    }
+
+    // 將主題色應用到當前啟用的特效按鈕與 UI 元素
+    function applyThemeStyles() {
+      const activeBtn = document.querySelector('.effect-btn.border-pink-500');
+      if (activeBtn) {
+        // 動態更換 Tailwind 色彩類別 (以行內樣式覆寫)
+        activeBtn.style.borderColor = themeColor;
+        activeBtn.style.color = themeColor;
+        activeBtn.style.backgroundColor = `${themeColor}1a`; // 10% 透明度
+      }
+
+      // 移除其他按鈕的行內樣式
+      document.querySelectorAll('.effect-btn').forEach(btn => {
+        if (!btn.classList.contains('border-pink-500')) {
+          btn.removeAttribute('style');
+        }
+      });
+
+      // 更新頂部模式提示
+      const badge = document.getElementById('current-mode-badge');
+      badge.style.color = themeColor;
+      const names = { 'cat-paw': '萌萌貓爪', 'heart': '繽紛愛心', 'firework': '絢麗煙火' };
+      badge.textContent = names[currentEffect];
+    }
+
+    // 輔助函式：將 rgb(r, g, b) 轉為 #hex 格式
+    function rgbToHex(rgb) {
+      if (/^#[0-9A-F]{6}$/i.test(rgb)) return rgb;
+      const rgbValues = rgb.match(/\d+/g);
+      if (!rgbValues) return rgb;
+      const r = parseInt(rgbValues[0]).toString(16).padStart(2, '0');
+      const g = parseInt(rgbValues[1]).toString(16).padStart(2, '0');
+      const b = parseInt(rgbValues[2]).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+
+    // === 滑鼠點擊主事件 ===
+    clickZone.addEventListener('mousedown', (e) => {
+      // 隱藏中央提示字
+      if (hintText.style.opacity !== '0') {
+        hintText.style.opacity = '0';
+        setTimeout(() => hintText.remove(), 300);
+      }
+
+      const posX = e.clientX;
+      const posY = e.clientY;
+
+      // 根據當前選擇渲染特效
+      if (currentEffect === 'cat-paw') {
+        createCatPaw(posX, posY);
+      } else if (currentEffect === 'heart') {
+        createHeart(posX, posY);
+      } else if (currentEffect === 'firework') {
+        createFirework(posX, posY);
+      }
+    });
+
+    // === 特效產生函式 ===
+
+    // 1. 生成貓爪特效
+    function createCatPaw(x, y) {
+      const paw = document.createElement('div');
+      paw.className = 'click-effect-item animate-cat-paw flex flex-col items-center justify-center';
+      
+      // 動態控制動畫屬性與樣式
+      paw.style.setProperty('--duration', `${effectDuration}s`);
+      paw.style.left = `${x}px`;
+      paw.style.top = `${y}px`;
+      paw.style.width = `${effectSize}px`;
+      paw.style.height = `${effectSize}px`;
+
+      // 使用 SVG 動態組裝貓爪，確保顏色可以自由替換且不失真
+      paw.innerHTML = `
+        <svg viewBox="0 0 100 100" class="w-full h-full" style="fill: ${themeColor}; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));">
+          <!-- 掌心大肉墊 -->
+          <path d="M 50 45 C 32 45, 25 65, 32 80 C 37 90, 45 92, 50 92 C 55 92, 63 90, 68 80 C 75 65, 68 45, 50 45 Z" />
+          <!-- 四個小趾肉墊 -->
+          <circle cx="22" cy="38" r="11" />
+          <circle cx="40" cy="22" r="12" />
+          <circle cx="60" cy="22" r="12" />
+          <circle cx="78" cy="38" r="11" />
+        </svg>
+      `;
+
+      document.body.appendChild(paw);
+
+      // 動態完成後自動移除元素，釋放記憶體
+      setTimeout(() => {
+        paw.remove();
+      }, effectDuration * 1000);
+    }
+
+    // 2. 生成愛心噴發特效
+    function createHeart(x, y) {
+      // 每次點擊噴出 3-5 個稍微分散的愛心
+      const amount = Math.floor(Math.random() * 3) + 3;
+      
+      for (let i = 0; i < amount; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'click-effect-item animate-heart';
+        
+        // 隨機角度與微調位置
+        const randomRot = (Math.random() * 60 - 30); // 旋轉 -30deg ~ 30deg
+        const offsetX = (Math.random() * 30 - 15);
+        const offsetY = (Math.random() * 30 - 15);
+        const individualDuration = effectDuration * (0.8 + Math.random() * 0.4); // 時間稍微隨機
+
+        heart.style.setProperty('--duration', `${individualDuration}s`);
+        heart.style.setProperty('--rot', `${randomRot}deg`);
+        heart.style.left = `${x + offsetX}px`;
+        heart.style.top = `${y + offsetY}px`;
+        
+        // 隨機選一個愛心圖案或文字
+        const iconIndex = Math.floor(Math.random() * heartIcons.length);
+        heart.style.color = themeColor;
+        heart.style.fontSize = `${effectSize * (0.6 + Math.random() * 0.5)}px`; // 尺寸隨機縮放
+        heart.style.textShadow = `0 0 8px ${themeColor}aa`;
+        heart.innerHTML = heartIcons[iconIndex];
+
+        document.body.appendChild(heart);
+
+        setTimeout(() => {
+          heart.remove();
+        }, individualDuration * 1000);
+      }
+    }
+
+    // 3. 生成絢麗煙火/粒子特效
+    function createFirework(x, y) {
+      const particleCount = 18; // 煙火粒子數量
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'click-effect-item animate-particle';
+        
+        // 360 度均勻分布並加上隨機擴散力道
+        const angle = (i / particleCount) * Math.PI * 2 + (Math.random() * 0.4 - 0.2);
+        const speed = (effectSize * 1.5) + (Math.random() * effectSize * 1.2); 
+        const dx = Math.cos(angle) * speed;
+        const dy = Math.sin(angle) * speed;
+
+        const pSize = (effectSize * 0.15) + (Math.random() * 6); // 粒子大小
+
+        particle.style.setProperty('--duration', `${effectDuration * 0.8}s`);
+        particle.style.setProperty('--dx', `${dx}px`);
+        particle.style.setProperty('--dy', `${dy}px`);
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        particle.style.width = `${pSize}px`;
+        particle.style.height = `${pSize}px`;
+        
+        // 隨機決定是圓形還是星形
+        if (Math.random() > 0.4) {
+          particle.style.borderRadius = '50%';
+          particle.style.backgroundColor = themeColor;
+          particle.style.boxShadow = `0 0 10px ${themeColor}`;
+        } else {
+          // 星形圖案
+          particle.innerHTML = `<i class="fa-solid fa-star text-[8px]" style="color: ${themeColor}; filter: drop-shadow(0 0 4px ${themeColor});"></i>`;
+        }
+
+        document.body.appendChild(particle);
+
+        setTimeout(() => {
+          particle.remove();
+        }, effectDuration * 800);
+      }
+    }
+
+    // 初始執行一次主題色彩套用
+    applyThemeStyles();
+  </script>
+</body>
+</html>
