@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>Flashlight Reveal</title>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: black;
+    height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+
+  .container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: none; /* 隱藏滑鼠 */
+  }
+
+  /* 下層 (github) */
+  .bg-text {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    color: black;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 200px;
+    font-weight: bold;
+  }
+
+  /* 上層 (2026) */
+  .mask-layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 200px;
+    font-weight: bold;
+
+    background: black;
+
+    /* 🔥 核心：mask */
+    -webkit-mask-image: radial-gradient(
+      circle 120px at var(--x) var(--y),
+      transparent 0%,
+      transparent 40%,
+      black 60%
+    );
+
+    mask-image: radial-gradient(
+      circle 400px at var(--x) var(--y),
+      transparent 0%,
+      transparent 40%,
+      black 60%
+    );
+  }
+
+  /* 手電筒光暈（可選） */
+  .light {
+    position: absolute;
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%);
+    transform: translate(-50%, -50%);
+  }
+
+</style>
+</head>
+
+<body>
+
+<div class="container" id="container">
+  <div class="bg-text">HI</div>
+  <div class="mask-layer" id="mask">Github</div>
+  <div class="light" id="light"></div>
+</div>
+
+<script>
+  const container = document.getElementById("container");
+  const mask = document.getElementById("mask");
+  const light = document.getElementById("light");
+
+  container.addEventListener("mousemove", (e) => {
+    const x = e.clientX;
+    const y = e.clientY;
+
+    // 更新 mask 位置
+    mask.style.setProperty("--x", x + "px");
+    mask.style.setProperty("--y", y + "px");
+
+    // 光暈位置
+    light.style.left = x + "px";
+    light.style.top = y + "px";
+  });
+</script>
+
+</body>
+</html>
