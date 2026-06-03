@@ -36,7 +36,7 @@ sponsorblock<br>
 頻道會員API<br>
 小电视空降助手<br>
 BiliBlock<br>
-https://threadsdownloader.com/zh<br>
+https://threadsdownloader.com/zh /F12<br>
 <hr>
 神魔之塔主動技搜尋器:https://tinghan33704.github.io/tos-tools/#/tos-skill-filter<br>
 
