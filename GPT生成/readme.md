@@ -3,7 +3,7 @@
 <a id="readme_begin"></a>
 怎么把ChatGPT image 2拆
 开放世界
-idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨
+idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/沿虛線剪
 ```
 # 圖像生成描述模板 (進階版) ## 1. 主體描述 [人物外觀、五官、髮型、表情] ## 2. 動作與視角 [姿勢、手部動作、視線、鏡頭距離與角度] ## 3. 環境與氛圍 [場景、時間、光影、色調] ## 4. 風格設定 [藝術風格，例如：cyberpunk / realism / anime] ## 5. 細節強化 [需要強調的畫面細節] ## 6. 畫質要求 高品質，8k解析度，cinematic lighting，ultra-detailed ## 7. 負面提示 [避免錯誤與瑕疵]
 ```
