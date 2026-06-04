@@ -9,7 +9,8 @@ AI放大+修复图片网站：https://bigjpg.com/<br>
 畫像素:https://www.piskelapp.com/<br>
 vercel.app<br>
 self-write去背:RemoveBG/index.html<br>
-https://http.cat/
+https://http.cat/<br>
+https://yanstory.github.io/5000choyen/<br>
 
 <h2>次要/從缺</h2><br>
 UML:https://plantuml.com/zh/<br>
@@ -28,6 +29,7 @@ n-bit-audio-converter:https://test-n-bit-audio-converter.vercel.app/<br>
 suno:https://suno.com/create<br>
 elevenlabs:https://elevenlabs.io/<br>
 Strudel工具<br>
+
 
 <hr>
 <h3>Youtube/BiliBili插件/thread</h3><br>
