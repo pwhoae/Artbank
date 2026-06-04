@@ -866,6 +866,11 @@ photorealistic paint, digital clean lineart, glossy surface, 3D render, vector a
 - transparent accessory layers feeling
 - professional anime production material
 ```
+
+背景<br>
+```
+请将此插图转换为{argument name="风格" default="以现代动漫/漫画影响为基础的波普艺术×街头艺术风格"}。以清晰干净的线条画和平涂阴影为主，色彩丰富。包含复杂几何图案等时尚氛围。使用本戴点画法添加渐变和纹理。{argument name="配色" default="以霓虹色为中心的鲜艳高对比配色"}，营造图形化且时尚的氛围。但不要添加文字。保持原插图的构图和角色。
+```
 易拉罐藝術<br>
 ```
 以「參考圖」作為構圖與主體結構基礎，在不改變角色姿勢、比例與畫面布局的前提下，將整體畫面轉化為易拉罐藝術風格（易拉罐再造金屬紋理）。
