@@ -13,6 +13,12 @@
 <hr>
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
 
+### 遊戲經驗
+```
+沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
+```
+<hr> 
+
 ### 高達模型板件
 
 ```
