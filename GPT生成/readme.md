@@ -5,6 +5,10 @@
 开放世界
 idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/沿虛線剪/改 .exe 圖示>.ico/demos畫圖/blindbox/高达模/御神籤
 <hr>
+```
+平面設計 1920x1080 image 0.文案 [] 信息集中在人物左右,底部不多 1.人物 [用陰影增加層次感] 2.背景 [打光,金屬紋路] 3.文字 [漸變] 4.人物元素+左中右下 [小表情] 5.焦點 [结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分]
+```
+<hr>
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
 
 ### 高達模型板件
