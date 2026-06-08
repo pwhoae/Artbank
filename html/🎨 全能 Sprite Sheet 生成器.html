@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>全能 Sprite Sheet 生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">🎨 全能 Sprite Sheet 生成器</h1>
+        
+        <div class="flex gap-4 mb-6">
+            <button onclick="setMode('images')" id="btnImages" class="flex-1 py-2 bg-blue-600 text-white rounded-lg">圖片序列模式</button>
+            <button onclick="setMode('video')" id="btnVideo" class="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg">影片轉檔模式</button>
+        </div>
+
+        <div id="inputArea" class="space-y-4">
+            </div>
+
+        <div class="mt-6 flex gap-4">
+            <button id="generateBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 w-full font-bold">開始生成</button>
+        </div>
+
+        <div id="resultArea" class="mt-6 hidden border-t pt-4">
+            <button id="downloadBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg w-full mb-4">下載 Sprite Sheet (PNG)</button>
+            <div id="previewArea" class="overflow-auto border p-2 bg-gray-50 max-h-96">
+                <img id="previewImg" class="mx-auto">
+            </div>
+        </div>
+    </div>
+
+    <video id="hiddenVideo" class="hidden"></video>
+
+    <script>
+        let mode = 'video';
+        const generateBtn = document.getElementById('generateBtn');
+        const inputArea = document.getElementById('inputArea');
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('btnImages').className = mode === 'images' ? 'flex-1 py-2 bg-blue-600 text-white rounded-lg' : 'flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg';
+            document.getElementById('btnVideo').className = mode === 'video' ? 'flex-1 py-2 bg-blue-600 text-white rounded-lg' : 'flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg';
+            
+            inputArea.innerHTML = mode === 'images' ? `
+                <label>選擇圖片 (可複選):</label>
+                <input type="file" id="fileInput" multiple accept="image/*" class="w-full border p-2 rounded">
+                <label>網格欄數 (N):</label>
+                <input type="number" id="colsInput" value="4" class="w-full border p-2 rounded">
+            ` : `
+                <label>選擇影片:</label>
+                <input type="file" id="fileInput" accept="video/*" class="w-full border p-2 rounded">
+                <label>擷取總幀數:60*5=300</label>
+                <input type="number" id="frameCount" value='60' class="w-full border p-2 rounded">
+                <label>網格欄數 (N):</label>
+                <input type="number" id="colsInput" value="10" class="w-full border p-2 rounded">
+            `;
+        }
+        setMode('video');
+
+        generateBtn.addEventListener('click', async () => {
+            const files = document.getElementById('fileInput').files;
+            const cols = parseInt(document.getElementById('colsInput').value);
+            if(files.length === 0) return alert('請先上傳檔案');
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (mode === 'images') {
+                const images = await Promise.all(Array.from(files).map(f => new Promise(res => {
+                    const img = new Image();
+                    img.onload = () => res(img);
+                    img.src = URL.createObjectURL(f);
+                })));
+                
+                const w = images[0].width, h = images[0].height;
+                const rows = Math.ceil(images.length / cols);
+                canvas.width = cols * w; canvas.height = rows * h;
+                images.forEach((img, i) => ctx.drawImage(img, (i % cols) * w, Math.floor(i / cols) * h));
+            } else {
+                const video = document.getElementById('hiddenVideo');
+                video.src = URL.createObjectURL(files[0]);
+                await new Promise(r => video.onloadedmetadata = r);
+                const total = parseInt(document.getElementById('frameCount').value);
+                const w = video.videoWidth, h = video.videoHeight;
+                const rows = Math.ceil(total / cols);
+                canvas.width = cols * w; canvas.height = rows * h;
+                
+                for(let i = 0; i < total; i++) {
+                    video.currentTime = (video.duration / total) * i;
+                    await new Promise(r => video.onseeked = r);
+                    ctx.drawImage(video, (i % cols) * w, Math.floor(i / cols) * h);
+                }
+            }
+
+            const url = canvas.toDataURL('image/png');
+            document.getElementById('previewImg').src = url;
+            document.getElementById('resultArea').classList.remove('hidden');
+            document.getElementById('downloadBtn').onclick = () => {
+                const a = document.createElement('a');
+                a.href = url; a.download = 'spritesheet.png'; a.click();
+            };
+        });
+    </script>
+</body>
+</html>
