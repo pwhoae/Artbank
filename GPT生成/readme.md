@@ -4,7 +4,8 @@
 怎么把ChatGPT image 2拆
 开放世界
 特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/沿虛線剪/改 .exe 圖示>.ico/demos畫圖/blindbox/高达模/御神籤<br>
-git/itch找美術學習
+<a href="https://github.com/Kavex/GameDev-Resources">git</a>/
+<a href="https://itch.io/game-assets/tag-art">itch</a>
 
 <hr>
 
