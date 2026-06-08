@@ -2,7 +2,7 @@
 <a id="readme_begin"></a>
 怎么把ChatGPT image 2拆
 开放世界
-特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/沿虛線剪/改 .exe 圖示>.ico/demos畫圖/blindbox/高达模/御神籤<br>
+特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/沿虛線剪/改 .exe 圖示>.ico/demos畫圖/blindbox/高达模/御神籤/iframe to preview<br>
 <a href="https://github.com/Kavex/GameDev-Resources">git</a>/
 <a href="https://itch.io/game-assets/tag-art">itch</a>/
 <a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
@@ -27,14 +27,31 @@
 [寫實風]將參考圖轉換為「高達模型板件（鋼普拉 runner）」風格，但大幅減少零件數量，整體僅由 4–6 個大型零件構成。 保留原始構圖與輪廓，將其簡化為大型一體成型的機甲模組零件（如頭部＋軀幹一體、四肢簡化為整塊結構等），每個零件具有清楚的功能分區，能夠快速拼裝成完整模型。 所有零件仍連接在塑膠框架上（runner），但排列簡潔、留白多，呈現入門級或快速組裝模型套件風格。 表面細節大幅簡化，僅保留少量刻線與結構分割，強調平整塊面與整體輪廓，避免細碎零件與複雜機構。 保留塑膠射出質感、卡榫連接點與基本零件編號，但數量極少且清晰易讀。 整體風格： 簡潔、模組化、低複雜度、高可讀性，類似「簡化版鋼普拉 / 初學者模型套件」。 俯視視角，乾淨背景，棚拍光線，高解析度。
 [可愛風]將參考圖轉換為「高達模型板件（鋼普拉 runner）」風格，但大幅減少零件數量，整體僅由 4–6 個大型零件構成。 保留原始構圖與輪廓，將其簡化為大型一體成型的機甲模組零件（如頭部＋軀幹一體、四肢簡化為整塊結構等），每個零件具有清楚的功能分區，能夠快速拼裝成完整模型。 所有零件仍連接在塑膠框架上（runner），但排列簡潔、{完整上色}，呈現入門級或快速組裝模型套件風格。 表面細節大幅簡化，僅保留少量刻線與結構分割，強調平整塊面與整體輪廓，避免細碎零件與複雜機構。 整體風格： 簡潔、模組化、低複雜度、高可讀性，類似「簡化版鋼普拉 / 初學者模型套件」。 俯視視角，乾淨背景，棚拍光線，高解析度。{添加可愛風的要素+顏色上色}
 ```
+<hr>
+
+### 背景
+```
+[doradora]请将此插图转换为{argument name="风格" default="以现代动漫/漫画影响为基础的波普艺术×街头艺术风格"}。以清晰干净的线条画和平涂阴影为主，色彩丰富。包含复杂几何图案等时尚氛围。使用本戴点画法添加渐变和纹理。{argument name="配色" default="以霓虹色为中心的鲜艳高对比配色"}，营造图形化且时尚的氛围。但不要添加文字。保持原插图的构图和角色。
+```
+
+### 圖像生成描述模板
 ```
 # 圖像生成描述模板 (進階版) ## 1. 主體描述 [人物外觀、五官、髮型、表情] ## 2. 動作與視角 [姿勢、手部動作、視線、鏡頭距離與角度] ## 3. 環境與氛圍 [場景、時間、光影、色調] ## 4. 風格設定 [藝術風格，例如：cyberpunk / realism / anime] ## 5. 細節強化 [需要強調的畫面細節] ## 6. 畫質要求 高品質，8k解析度，cinematic lighting，ultra-detailed ## 7. 負面提示 [避免錯誤與瑕疵]
 ```
+### 表情差分
 ```
-以下是針對該畫面的詳細拆解清單： ### 1. 總體氛圍 (Overall Impression) * **視覺基調：** 溫暖、治癒、希望感。 * **光影運用：** 採用逆光（Backlighting）手法，太陽位於畫面右側中景，產生了強烈的輪廓光（Rim Light），勾勒出人物的髮絲和肩部線條。 * **色調：** 以夕陽的橘金色為主，搭配人物服裝的冷色調（青藍色），形成冷暖對比，讓視覺重心更集中於人物面部。 * **構圖：** 採用側身半身構圖，將人物置於畫面黃金分割線上，平衡感良好，且背景的柵欄線條引導視覺向夕陽延伸。 ### 2. 人物與面部 (Character & Expression) * **面部特徵：** 柔和的鵝蛋臉，畫風精緻，睫毛細膩，眼神清澈。 * **表情：** 呈現出「恬靜」與「嚮往」的神情，嘴角微揚，表現出對美好事物的觀察或沉思。 * **眼神：** 瞳孔帶有金色光澤，與背景夕陽色彩呼應，增強了畫面的整體感。 * **髮型：** 長直髮，隨風飄動，髮梢的處理帶有動態感。頭戴簡約的黑色髮帶，增添了層次。 ### 3. 動作與姿態 (Pose & Action) * **身體姿勢：** 雙手交叉疊放在欄杆上，呈現出一種放鬆、依靠的姿態。 * **重心分配：** 身體微微側向左側，上半身自然前傾靠在欄杆上，與背景的豎直柵欄形成了穩固的幾何結構。 * **動態感：** 頭髮與衣服的邊緣因風吹而呈現向左側漂浮的趨勢，與右側的強烈光源形成了動靜之間的拉扯，增加了畫面的空氣感。 ### 4. 穿著與配飾 (Clothing & Accessories) * **外搭：** 一件寬鬆剪裁的淡藍色／青色系外套，面料看起來柔軟輕薄。 * **細節設計：** 袖口處有民族風或圖騰刺繡裝飾，增強了角色的時尚感與獨特設定。 * **內搭：** 簡約的白色基底，平衡了外套較為複雜的色彩設計。 * **腰部：** 黑色皮帶與金屬鏈條的點綴，為整體的溫柔感增添了一點現代的酷感與硬朗元素。 * **飾品：** 耳環設計極具辨識度（羽毛狀），呼應了整體的輕鬆自然風格；頸部佩戴多層次珠串項鍊，提升了服裝的細節豐富度。 ### 5. 背景與環境 (Background & Environment) * **空間感：** 位於高處（如天台或觀景台），透過柵欄的縫隙可以看到下方模糊的城市建築群，建立了高度感。 * **光影渲染：** 雲層被夕陽染成橘紅色，光斑（Lens Flare）效果自然，模擬了相機拍攝的質感，增添了真實感。 * **線條運用：** 背景的欄杆採用規律的垂直線條，不僅穩固了畫面構圖，還能有效引導觀者的視線從人物移動到背景的夕陽。
+[3×3照片]生成3×3照片网格。 在所有面板中完整保留上传图像中的面部、发型和服装。制作一个角色设计表情风格指南的图像，风格要求： *  每个网格都是角色头像正视图 *  还原参考图的风格 *  所有图片中的服装、脸型和发型都相同 *  整个网格中的姿势和表情都不相同
+[25種表情]使用提供的參考圖作為角色唯一設計來源，生成「25種表情／特效差分（Expression Sheet）」完整角色差分表。 【核心要求】 - 角色外觀、髮型、服裝、配色、畫風、年齡感、五官比例必須與參考圖完全一致 - 不可改變角色身份與服裝設計 - 所有差分需保持同一角色模型與同一視角 - 採用「Galgame / VTuber / Live2D / 視覺小說角色差分表」形式 - 背景保持簡潔純色或透明感灰白背景 - 角色置中排列 - 每個表情獨立清晰 - 高解析度 - anime style, clean lineart, professional expression sheet, character emotion variations, consistent character design 【輸出形式】 生成完整「25表情差分總覽」 可採： - 多列網格排列 - Live2D 差分展示板 - Character Expression Reference Sheet - 角色設定集風格 【表情差分內容】 1. 通常顔 普通表情、自然嘴角、標準眼神 2. 怒り顔 皺眉、生氣、嘴角下壓 3. 困り顔 委屈、困擾、微弱八字眉 4. ジト目顔 側目鄙視、半睜眼、冷淡視線 5. 照れ 臉紅紅暈、害羞表情 (blush overlay effect) 6. 目のハイライトOFF 失去眼睛高光、空洞感 7. どんより 灰暗沮喪、陰沉氛圍 (gloom shadow overlay) 8. 涙 含淚、流淚效果 (animated tear effect feel)9. 白目 翻白眼、失神感 10. 黒目 縮瞳、純黑眼、驚嚇感 11. より目 鬥雞眼、聚焦錯亂 12. あせ 額頭流汗、尷尬汗滴 (sweat drop effect) 13. ハート目 愛心眼、戀愛狀態14. しいたけ目 星星眼 / 香菇眼、超期待感 (glittery excited eyes) 15. ガンギマリ 精神崩壞感、狂氣眼神、瞳孔異常 16. ＞＜目 ＞＜ 閉眼表情、用力表情 17. ボカシ目 失焦、微醺模糊感 18. なごみ目 瞇瞇眼、溫柔放鬆 19. ぐるぐる目 蚊香眼、暈眩狀態 (spiral eyes effect) 20. 読み込み中眼睛像 loading 圈圈、腦袋卡住感 (loading icon eyes) 21. 怒りマーク 頭上青筋符號、生氣特效 22. ぷんぷん煙エフェクト 冒煙、生氣蒸氣特效 (cartoon anger smoke) 23. ハートエフェクト 角色周圍漂浮愛心特效 24. キラキラエフェクト 閃亮亮粒子特效 (sparkle aura effect) 25. メガネ 配戴眼鏡版本 【風格要求】 - 日系動畫角色差分 - 專業遊戲角色設定集 - 高完成度 - 可直接用於 Live2D / VN / RPG / Galgame - 表情變化明確但角色一致性極高 - 柔和動漫光影 - 精緻眼睛繪製 - 高細節頭髮陰影 - emotion showcase sheet - expression reference board - transparent accessory layers feeling - professional anime production material
+```
+### 天台,夕陽
+```
+### 1. 總體氛圍 視覺基調：溫暖、治癒、希望感。 光影運用： 採用逆光手法，太陽位於畫面右側中景，產生了強烈的輪廓光，勾勒出人物的髮絲和肩部線條。 色調： 以夕陽的橘金色為主，搭配人物服裝的冷色調（青藍色），形成冷暖對比，讓視覺重心更集中於人物面部。 構圖： 採用側身半身構圖，將人物置於畫面黃金分割線上，平衡感良好，且背景的柵欄線條引導視覺向夕陽延伸。 ### 2. 人物與面部 面部特徵： 柔和的鵝蛋臉，畫風精緻，睫毛細膩，眼神清澈。 表情： 呈現出「恬靜」與「嚮往」的神情，嘴角微揚，表現出對美好事物的觀察或沉思。 眼神： 瞳孔帶有金色光澤，與背景夕陽色彩呼應，增強了畫面的整體感。 髮型： 長直髮，隨風飄動，髮梢的處理帶有動態感。頭戴簡約的黑色髮帶，增添了層次。 ### 3. 動作與姿態 身體姿勢： 雙手交叉疊放在欄杆上，呈現出一種放鬆、依靠的姿態。 重心分配： 身體微微側向左側，上半身自然前傾靠在欄杆上，與背景的豎直柵欄形成了穩固的幾何結構。 動態感： 頭髮與衣服的邊緣因風吹而呈現向左側漂浮的趨勢，與右側的強烈光源形成了動靜之間的拉扯，增加了畫面的空氣感。 ### 4. 穿著與配飾 外搭： 一件寬鬆剪裁的淡藍色／青色系外套，面料看起來柔軟輕薄。 細節設計：增強了角色的時尚感與獨特設定。 內搭： 簡約的白色基底，平衡了外套較為複雜的色彩設計。 腰部： 黑色皮帶與金屬鏈條的點綴，為整體的溫柔感增添了一點現代的酷感與硬朗元素。 飾品： 頸部佩戴多層次珠串項鍊，提升了服裝的細節豐富度。 ### 5. 背景與環境 空間感： 位於天台，透過柵欄的縫隙可以看到下方模糊的城市建築群，建立了高度感。 光影渲染： 雲層被夕陽染成橘紅色，光斑效果自然，模擬了相機拍攝的質感，增添了真實感。 線條運用： 背景的欄杆採用規律的垂直線條，不僅穩固了畫面構圖，還能有效引導觀者的視線從人物移動到背景的夕陽。
+```
+### 角色海報介紹
+```
+帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
 
-參考圖提示词
 ### 例 25：综合应用场景图
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case25.jpg"></img>
 ```
@@ -47,13 +64,6 @@ create a minecraft skin inspired by {argument name="reference" default="my look"
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case41.jpg"></img>
 ```
 { "type": "VTuber profile sheet", "theme": "{argument name=\"color theme\" default=\"purple and white\"}, elegant, lace, ribbon motifs", "character": { "name": "{argument name=\"character name\" default=\"紫咲リリー\"}", "archetype": "{argument name=\"character archetype\" default=\"elegant ojousama\"}", "appearance": "anime girl, long black hair with purple highlights, purple eyes, wearing a white blazer, purple pleated skirt, thigh-highs, ribbons", "pose": "standing, finger to lips, looking slightly to the side" }, "chibi_character": { "appearance": "same character in chibi form", "pose": "sitting down, smiling" }, "layout": { "header": { "top_left": "Ribbon banner reading 'VTuber Profile'", "top_center": "Logo with text '{argument name=\"vtuber type\" default=\"清楚系お嬢様Vtuber\"}' and '{argument name=\"character name\" default=\"紫咲リリー\"}' and 'Shisaki Lily'", "top_right": "Quote '{argument name=\"catchphrase\" default=\"皆さまの心に、優雅なひとときをお届けしますわ\"}' followed by a 3-line introductory paragraph" }, "columns": [ { "position": "left", "content": "Full-body character portrait" }, { "position": "center", "sections": [ { "title": "Profile", "count": 9, "labels": ["名前", "誕生日", "年齢", "身長", "属性", "一人称", "出身", "職業", "活動開始日"] }, { "title": "Personality", "content": "2-line text block" }, { "title": "Hobby & Special Skill", "count": 2, "labels": ["趣味", "特技"] }, { "title": "Like & Dislike", "count": 2, "labels": ["好きなもの", "苦手なもの"] } ] }, { "position": "right", "sections": [ { "title": "Streaming Content", "content": "1-line text block" }, { "title": "Schedule", "count": 2, "labels": ["配信時間", "配信頻度"] }, { "title": "Goals", "content": "3-line text block" }, { "title": "Fan & Tag", "count": 3, "labels": ["ファンネーム", "ファンアートタグ", "総合タグ"], "extra": "4 hashtag rows with small icons" }, { "title": "Creator", "count": 3, "labels": ["イラストレーター (ママ)", "モデラー (パパ)", "使用モデル"] }, { "title": "Links", "count": 4, "labels": ["YouTube", "X (Twitter)", "BOOTH", "FANBOX"] }, { "content": "Chibi character illustration placed at the bottom right corner" } ] } ], "footer": { "sections": [ { "title": "Rules", "count": 3, "description": "3 bullet points with heart icons" }, { "content": "2-line closing message at the bottom center" } ] } } }
-```
-<a name="case-52"></a>
-
-### 例 52：写实摄影风格图 黑板
-
-```text
-A realistic photograph of a whiteboard with a highly detailed {argument name="marker color" default="green"} dry-erase marker drawing of {argument name="subject" default="a samurai with a messy topknot and facial hair, hands clasped in prayer"}. The character is drawn in a {argument name="art style" default="detailed manga sketch"} style, shown in profile with eyes closed, wearing a traditional kimono with a katana tucked into his belt. To the left of the character, handwritten text in all-caps reads "{argument name="text line 1" default="VAGABOND"}" with "{argument name="text line 2" default="MUSASHI"}" written directly below it. The whiteboard has a glossy surface with realistic light reflections and glare on the left side, and a thin metallic frame is visible at the bottom edge, giving the impression of an authentic classroom or office environment.
 ```
 ***
 <a name="case-91"></a>
@@ -111,17 +121,9 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 {"type":"video game screenshot mockup","perspective":"third-person over-the-shoulder","character":{"description":"male protagonist seen from behind","clothing":"grey tank top with graphic '{argument name=\"shirt graphic\" default=\"LEONIDA MARINE CENTER\"}', camouflage cargo shorts"},"environment":{"setting":"tropical coastal town, dirt road, sunny daytime with scattered clouds","left_side":"wooden welcome sign reading 'Welcome to {argument name=\"location name\" default=\"LEONIDA KEYS\"} YOUR PARADISE', pink plastic flamingo, tropical foliage, distant water tower","center":"green building with 'FISH' sign and marlin graphic, sign reading 'BAIT TACKLE ICE BEER WINE', pedestrians walking","right_side":"two-story wooden building 'Brian's Boat Works & Marina', 'Brian's Bar' neon sign, parked pickup truck, jet skis on a trailer"},"ui_elements":{"count":5,"components":[{"position":"top-left","type":"mission objective","text":"{argument name=\"mission title\" default=\"MEET RAUL\"}\n{argument name=\"mission description\" default=\"Raul has some work for you at his boatyard\"}"},{"position":"top-right","type":"status HUD","text":"13:47\n$1,142","icon":"pink palm tree"},{"position":"bottom-left","type":"minimap","description":"circular map with purple border, white map icons including 'N' for north"},{"position":"bottom-left, right of minimap","type":"location text","text":"{argument name=\"location name\" default=\"LEONIDA KEYS\"}\nPALM ISLAND"},{"position":"bottom-right","type":"watermark","text":"{argument name=\"game title\" default=\"GTA VI\"}\nPRE-ALPHA FOOTAGE"}]}}
 ```
 ***
-<hr>
-
 【 分享咒語｜PC人設粉絲專頁 】
 ```
 {"type":"video game screenshot mockup","perspective":"third-person over-the-shoulder","character":{"description":"male protagonist seen from behind","clothing":"grey tank top with graphic '{argument name=\"shirt graphic\" default=\"LEONIDA MARINE CENTER\"}', camouflage cargo shorts"},"environment":{"setting":"tropical coastal town, dirt road, sunny daytime with scattered clouds","left_side":"wooden welcome sign reading 'Welcome to {argument name=\"location name\" default=\"LEONIDA KEYS\"} YOUR PARADISE', pink plastic flamingo, tropical foliage, distant water tower","center":"green building with 'FISH' sign and marlin graphic, sign reading 'BAIT TACKLE ICE BEER WINE', pedestrians walking","right_side":"two-story wooden building 'Brian's Boat Works & Marina', 'Brian's Bar' neon sign, parked pickup truck, jet skis on a trailer"},"ui_elements":{"count":5,"components":[{"position":"top-left","type":"mission objective","text":"{argument name=\"mission title\" default=\"MEET RAUL\"}\n{argument name=\"mission description\" default=\"Raul has some work for you at his boatyard\"}"},{"position":"top-right","type":"status HUD","text":"13:47\n$1,142","icon":"pink palm tree"},{"position":"bottom-left","type":"minimap","description":"circular map with purple border, white map icons including 'N' for north"},{"position":"bottom-left, right of minimap","type":"location text","text":"{argument name=\"location name\" default=\"LEONIDA KEYS\"}\nPALM ISLAND"},{"position":"bottom-right","type":"watermark","text":"{argument name=\"game title\" default=\"GTA VI\"}\nPRE-ALPHA FOOTAGE"}]}}
-```
-<hr>
-
-角色海報介紹
-```
-帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
 <hr>
 美食
@@ -256,54 +258,7 @@ Create a 3D Insane detailed exploded assembly drawing of [subject or object]
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case363.jpg"></img>
 
 ```text
-Transform the uploaded logo into a hyper-realistic scene where the logo silhouette is formed by iron filings reacting to a magnetic field. The logo must keep its exact shape and proportions, appearing as if a magnet shaped like the logo (or hidden beneath the surface) is influencing the filings to align naturally into that recognizable formation. Material details:
-Fine iron filings with sharp, spiky, needle-like structures.
-Dense clustering along magnetic field lines forming the logo silhouette.
-Variation in density — thick near magnetic poles, thinner outward.
-Matte dark metallic texture with subtle reflections.
-
-Physics behavior:
-Iron filings must follow realistic magnetic field patterns — radial and curved lines forming spikes and ridges.
-Stronger attraction zones create thicker, raised clusters.
-Outer areas show softer, more dispersed alignment.
-Natural randomness and slight irregularity — no perfect edges.
-Some loose filings scattered beyond the main shape.
-
-Surface interaction:
-Flat surface such as a lab table, glass plate, or matte black tray.
-Filings resting on surface but visibly lifted in areas due to magnetic force (spiky texture).
-Subtle dust and micro particles around.
-
-Environment & human presence:
-Realistic classroom, science lab, or creative studio environment.
-A person partially visible — hands holding or moving a magnet beneath the surface or nearby.
-Possibly a child or adult observing or interacting (adds emotional curiosity).
-Other subtle elements: notebooks, tools, or lab items out of focus.
-
-Lighting:
-Directional overhead light creating shadows from raised filings.
-Subtle highlights on metallic edges.
-Balanced natural or indoor lighting.
-
-Atmosphere:
-Curiosity.
-Discovery.
-Educational yet visually satisfying.
-Quiet but engaging moment.
-
-Camera & composition:
-Top-down or slightly angled close-up view.
-Logo clearly visible through iron filing formation.
-Human hands or interaction slightly off-center for storytelling.
-
-Format:
-Aspect ratio: STRICT 4:5 vertical.
-No text overlays.
-
-Style:
-Hyper-real macro + environmental photography.
-Physically accurate magnetic behavior.
-Cinematic yet grounded realism.
+Transform the uploaded logo into a hyper-realistic scene where the logo silhouette is formed by iron filings reacting to a magnetic field. The logo must keep its exact shape and proportions, appearing as if a magnet shaped like the logo (or hidden beneath the surface) is influencing the filings to align naturally into that recognizable formation. Material details: Fine iron filings with sharp, spiky, needle-like structures. Dense clustering along magnetic field lines forming the logo silhouette. Variation in density — thick near magnetic poles, thinner outward. Matte dark metallic texture with subtle reflections. Physics behavior: Iron filings must follow realistic magnetic field patterns — radial and curved lines forming spikes and ridges. Stronger attraction zones create thicker, raised clusters. Outer areas show softer, more dispersed alignment. Natural randomness and slight irregularity — no perfect edges. Some loose filings scattered beyond the main shape. Surface interaction: Flat surface such as a lab table, glass plate, or matte black tray. Filings resting on surface but visibly lifted in areas due to magnetic force (spiky texture). Subtle dust and micro particles around. Environment & human presence: Realistic classroom, science lab, or creative studio environment. A person partially visible — hands holding or moving a magnet beneath the surface or nearby. Possibly a child or adult observing or interacting (adds emotional curiosity). Other subtle elements: notebooks, tools, or lab items out of focus. Lighting: Directional overhead light creating shadows from raised filings. Subtle highlights on metallic edges. Balanced natural or indoor lighting. Atmosphere: Curiosity. Discovery. Educational yet visually satisfying. Quiet but engaging moment. Camera & composition: Top-down or slightly angled close-up view. Logo clearly visible through iron filing formation. Human hands or interaction slightly off-center for storytelling. Format: Aspect ratio: STRICT 4:5 vertical. No text overlays. Style: Hyper-real macro + environmental photography. Physically accurate magnetic behavior. Cinematic yet grounded realism.
 ```
 ***
 
@@ -389,98 +344,9 @@ Create a cinematic dark fantasy action scene in a ruined cathedral hall: a {argu
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case400.png"></img>
 ```text
-你是一个高端签名设计系统 + 风格人格视觉系统。
-
-任务：
-仅基于用户输入的「姓名」，生成一张「多风格签名选择海报（卡片式结构）」。
-目标是把名字转译为具有笔势、气质与力量感的签名设计系统，让用户产生选择欲、认同感和分享欲。
-
-输入信息：
-姓名：[输入你的昵称]
-禁止要求额外信息，必须自动完成气质与风格推断。
-
-隐藏执行逻辑：
-1. 字形与笔势分析：
-- 结构：疏密、横竖比例、重心位置
-- 节奏：连贯、停顿、爆发、收束
-- 适配：连笔程度、草写程度、变形空间
-
-2. 气质推断：
-清冷、张扬、克制、商业、文艺、松弛、锋利、高级。
-
-3. 生成 6 个签名分支：
-- 全部适配该姓名
-- 每一个都有明确书写风格
-- 差异来自笔势、节奏、结构和收笔方式
-
-整体画面：
-9:16 竖版海报，极简、高级、干净、有设计感、适合传播。
-背景使用纯白或极浅灰渐变，留白不少于 40%。
-
-顶部标题区：
-主标题可用：
-「你的名字，适合哪种签名？」
-或：
-「[姓名] · 签名风格选择」
-副标题：
-「不同笔势，不同气场」
-排版为黑色与灰色，高级字距，留白充足。
-
-签名卡片区域：
-使用整齐网格卡片布局，推荐 2 列 × 3 行，共 6 个卡片。
-每个卡片统一尺寸、统一间距、整体对齐干净。
-
-卡片样式：
-- 轻微圆角 8-16px
-- 无明显边框，或极细描边
-- 极轻阴影
-- 背景为纯白微差、极浅灰，或轻微宣纸 / 磨砂质感
-视觉目标接近高级杂志排版，避免强 UI 感、厚卡片和 App 组件感。
-
-签名生成规则：
-签名必须基于书写动作生成，避免只做字体变形。
-每一个签名风格在生成前，先确定一套明确书写行为规则：
-1. 起笔方式：轻触起笔、重压起笔、直接横扫、从左下进入或从中段切入。
-2. 连笔结构：前两个字强连笔后面断开、全连笔一气呵成、只连接偏旁。
-3. 节奏变化：快到慢再收、慢到爆发再拉伸、或均匀节奏。
-4. 结构变形：横向拉长、垂直压缩、整体右倾或左倾、字间重叠或错位。
-5. 收笔设计：尾笔长甩、突然收断、回钩、渐隐收尾。
-
-6 种签名方向：
-1. 极简理性：接近品牌签名
-2. 狂放张力：强烈连笔和拉伸
-3. 松弛随性：手写感强
-4. 东方行草：飞白和墨感
-5. 锋利结构：几何感和断裂
-6. 实验风格：允许部分不可读，但需要强设计感
-
-色彩策略：
-整体以黑、灰、白为主。每个卡片允许一个极轻微点缀色，例如冷灰蓝、香槟金、墨黑、暖棕、深绿。
-避免大面积色块和花哨配色。
-
-底部互动区：
-底部居中加入小号灰字：
-「选一个，作为你的专属签名。」
-或：
-「你是第几种？」
-
-光影与质感：
-高级棚拍光、柔光环境、细腻阴影、干净空气感。
-质感参考 Apple 发布会视觉和高端品牌视觉。
-
-禁止项：
-不要字体拼贴，不要普通书法字，不要 UI 卡片风，不要颜色杂乱，不要签名太小，不要排版松散，不要缺乏笔势，不要模板拼接感。
-
-最终目标：
-生成一张高级、干净、有秩序、有笔势张力的 6 风格签名选择海报。
-用户一眼能选出最像自己的一款签名。
+你是一个高端签名设计系统 + 风格人格视觉系统。 任务： 仅基于用户输入的「姓名」，生成一张「多风格签名选择海报（卡片式结构）」。 目标是把名字转译为具有笔势、气质与力量感的签名设计系统，让用户产生选择欲、认同感和分享欲。 输入信息： 姓名：[输入你的昵称] 禁止要求额外信息，必须自动完成气质与风格推断。 隐藏执行逻辑： 1. 字形与笔势分析： - 结构：疏密、横竖比例、重心位置 - 节奏：连贯、停顿、爆发、收束 - 适配：连笔程度、草写程度、变形空间 2. 气质推断： 清冷、张扬、克制、商业、文艺、松弛、锋利、高级。 3. 生成 6 个签名分支： - 全部适配该姓名 - 每一个都有明确书写风格 - 差异来自笔势、节奏、结构和收笔方式 整体画面： 9:16 竖版海报，极简、高级、干净、有设计感、适合传播。 背景使用纯白或极浅灰渐变，留白不少于 40%。 顶部标题区： 主标题可用： 「你的名字，适合哪种签名？」 或： 「[姓名] · 签名风格选择」 副标题： 「不同笔势，不同气场」 排版为黑色与灰色，高级字距，留白充足。 签名卡片区域： 使用整齐网格卡片布局，推荐 2 列 × 3 行，共 6 个卡片。 每个卡片统一尺寸、统一间距、整体对齐干净。 卡片样式： - 轻微圆角 8-16px - 无明显边框，或极细描边 - 极轻阴影 - 背景为纯白微差、极浅灰，或轻微宣纸 / 磨砂质感 视觉目标接近高级杂志排版，避免强 UI 感、厚卡片和 App 组件感。 签名生成规则： 签名必须基于书写动作生成，避免只做字体变形。 每一个签名风格在生成前，先确定一套明确书写行为规则： 1. 起笔方式：轻触起笔、重压起笔、直接横扫、从左下进入或从中段切入。 2. 连笔结构：前两个字强连笔后面断开、全连笔一气呵成、只连接偏旁。 3. 节奏变化：快到慢再收、慢到爆发再拉伸、或均匀节奏。 4. 结构变形：横向拉长、垂直压缩、整体右倾或左倾、字间重叠或错位。 5. 收笔设计：尾笔长甩、突然收断、回钩、渐隐收尾。 6 种签名方向： 1. 极简理性：接近品牌签名 2. 狂放张力：强烈连笔和拉伸 3. 松弛随性：手写感强 4. 东方行草：飞白和墨感 5. 锋利结构：几何感和断裂 6. 实验风格：允许部分不可读，但需要强设计感 色彩策略： 整体以黑、灰、白为主。每个卡片允许一个极轻微点缀色，例如冷灰蓝、香槟金、墨黑、暖棕、深绿。 避免大面积色块和花哨配色。 底部互动区： 底部居中加入小号灰字： 「选一个，作为你的专属签名。」 或： 「你是第几种？」 光影与质感： 高级棚拍光、柔光环境、细腻阴影、干净空气感。 质感参考 Apple 发布会视觉和高端品牌视觉。 禁止项： 不要字体拼贴，不要普通书法字，不要 UI 卡片风，不要颜色杂乱，不要签名太小，不要排版松散，不要缺乏笔势，不要模板拼接感。 最终目标： 生成一张高级、干净、有秩序、有笔势张力的 6 风格签名选择海报。 用户一眼能选出最像自己的一款签名。
 ```
-<hr>
-生成3×3照片网格<br>
 
-```
-生成3×3照片网格。 在所有面板中完整保留上传图像中的面部、发型和服装。制作一个角色设计表情风格指南的图像，风格要求： *  每个网格都是角色头像正视图 *  还原参考图的风格 *  所有图片中的服装、脸型和发型都相同 *  整个网格中的姿势和表情都不相同 
-```
 ```
 將原圖重新繪製成「學校教室黑板上的粉筆畫」風格。
 整體畫面像是用彩色粉筆手工繪製在深綠色或深黑色黑板上，保留原圖的構圖、角色動作與主要元素，但全部轉換成粗糙自然的粉筆筆觸。
@@ -739,161 +605,27 @@ photorealistic paint, digital clean lineart, glossy surface, 3D render, vector a
 }
 ```
 ```
-生成3×3照片网格。 在所有面板中完整保留上传图像中的面部、发型和服装。制作一个角色设计表情风格指南的图像，风格要求： * 每个网格都是角色头像正视图 * 还原参考图的风格 * 所有图片中的服装、脸型和发型都相同 * 整个网格中的姿势和表情都不相同
 ```
 像素藝術
 ```
 一張超高寫實風格的俯視攝影照片，畫面中央是一幅由大量微小方格拼成的像素藝術作品，放置於乾淨的白色桌面上。 
-
-
 整張圖由數百個極小的編號方格構成，每個格子內都有細小數字、代碼與符號，類似：
 「鑽石畫」、「數字油畫」、「拼豆模板」、「像素刺繡圖紙」的設計。
-
 畫面四周帶有座標尺與編號標記，整體網格極度密集且整齊，能清楚看到印刷紙張質感、墨水細節、些微色差與真實陰影。
-
 攝影風格為：
 超寫實商品攝影、微距攝影、工作室棚拍。
-
 光線：
 柔和頂部打光，真實紙張反光與陰影層次。
-
 材質：
 高品質印刷紙、大型像素拼圖板、細緻印刷墨水質感。
-
 鏡頭：
 俯視視角（top-down view）、50mm、清晰對焦、超高細節。
-
 風格關鍵字：
 超寫實、微距攝影、像素藝術、拼圖模板、鑽石畫、數字填色板、印刷質感、8K、高解析度、真實材質、工藝品展示、專業產品攝影
 ```
-表情差分
-```
-使用提供的參考圖作為角色唯一設計來源，生成「25種表情／特效差分（Expression Sheet）」完整角色差分表。
 
-【核心要求】
-- 角色外觀、髮型、服裝、配色、畫風、年齡感、五官比例必須與參考圖完全一致
-- 不可改變角色身份與服裝設計
-- 所有差分需保持同一角色模型與同一視角
-- 採用「Galgame / VTuber / Live2D / 視覺小說角色差分表」形式
-- 背景保持簡潔純色或透明感灰白背景
-- 角色置中排列
-- 每個表情獨立清晰
-- 高解析度
-- anime style, clean lineart, professional expression sheet, character emotion variations, consistent character design
 
-【輸出形式】
-生成完整「25表情差分總覽」
-可採：
-- 多列網格排列
-- Live2D 差分展示板
-- Character Expression Reference Sheet
-- 角色設定集風格
 
-【表情差分內容】
-
-1. 通常顔
-普通表情、自然嘴角、標準眼神
-
-2. 怒り顔
-皺眉、生氣、嘴角下壓
-
-3. 困り顔
-委屈、困擾、微弱八字眉
-
-4. ジト目顔
-側目鄙視、半睜眼、冷淡視線
-
-5. 照れ
-臉紅紅暈、害羞表情
-(blush overlay effect)
-
-6. 目のハイライトOFF
-失去眼睛高光、空洞感
-
-7. どんより
-灰暗沮喪、陰沉氛圍
-(gloom shadow overlay)
-
-8. 涙
-含淚、流淚效果
-(animated tear effect feel)
-
-9. 白目
-翻白眼、失神感
-
-10. 黒目
-縮瞳、純黑眼、驚嚇感
-
-11. より目
-鬥雞眼、聚焦錯亂
-
-12. あせ
-額頭流汗、尷尬汗滴
-(sweat drop effect)
-
-13. ハート目
-愛心眼、戀愛狀態
-
-14. しいたけ目
-星星眼 / 香菇眼、超期待感
-(glittery excited eyes)
-
-15. ガンギマリ
-精神崩壞感、狂氣眼神、瞳孔異常
-
-16. ＞＜目
-＞＜ 閉眼表情、用力表情
-
-17. ボカシ目
-失焦、微醺模糊感
-
-18. なごみ目
-瞇瞇眼、溫柔放鬆
-
-19. ぐるぐる目
-蚊香眼、暈眩狀態
-(spiral eyes effect)
-
-20. 読み込み中
-眼睛像 loading 圈圈、腦袋卡住感
-(loading icon eyes)
-
-21. 怒りマーク
-頭上青筋符號、生氣特效
-
-22. ぷんぷん煙エフェクト
-冒煙、生氣蒸氣特效
-(cartoon anger smoke)
-
-23. ハートエフェクト
-角色周圍漂浮愛心特效
-
-24. キラキラエフェクト
-閃亮亮粒子特效
-(sparkle aura effect)
-
-25. メガネ
-配戴眼鏡版本
-
-【風格要求】
-- 日系動畫角色差分
-- 專業遊戲角色設定集
-- 高完成度
-- 可直接用於 Live2D / VN / RPG / Galgame
-- 表情變化明確但角色一致性極高
-- 柔和動漫光影
-- 精緻眼睛繪製
-- 高細節頭髮陰影
-- emotion showcase sheet
-- expression reference board
-- transparent accessory layers feeling
-- professional anime production material
-```
-
-背景<br>
-```
-请将此插图转换为{argument name="风格" default="以现代动漫/漫画影响为基础的波普艺术×街头艺术风格"}。以清晰干净的线条画和平涂阴影为主，色彩丰富。包含复杂几何图案等时尚氛围。使用本戴点画法添加渐变和纹理。{argument name="配色" default="以霓虹色为中心的鲜艳高对比配色"}，营造图形化且时尚的氛围。但不要添加文字。保持原插图的构图和角色。
-```
 易拉罐藝術<br>
 ```
 以「參考圖」作為構圖與主體結構基礎，在不改變角色姿勢、比例與畫面布局的前提下，將整體畫面轉化為易拉罐藝術風格（易拉罐再造金屬紋理）。
