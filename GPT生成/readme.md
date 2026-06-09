@@ -29,7 +29,7 @@
 ```
 <hr>
 
-### 背景
+### <a href="https://github.com/pwhoae/Artbank/tree/main/%E8%83%8C%E6%99%AF">背景</a>
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%889%E6%97%A5%20%E4%B8%8A%E5%8D%8812_53_26.png" width="100" height="100"></img>
 ```
 [doradora]请将此插图转换为{argument name="风格" default="以现代动漫/漫画影响为基础的波普艺术×街头艺术风格"}。以清晰干净的线条画和平涂阴影为主，色彩丰富。包含复杂几何图案等时尚氛围。使用本戴点画法添加渐变和纹理。{argument name="配色" default="以霓虹色为中心的鲜艳高对比配色"}，营造图形化且时尚的氛围。但不要添加文字。保持原插图的构图和角色。
