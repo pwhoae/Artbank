@@ -11,7 +11,8 @@
 
 ### 平面設計
 ```
-平面設計 1920x1080 image 0.文案 [] 信息集中在人物左右,底部不多 1.人物 [用陰影增加層次感] 2.背景 [打光,金屬紋路,提取角色颜色调整渐变叠加] 3.主色調[色塊] 4.文字 [人物名字加大放在人物背後,文字顏色漸變/立體卡通動漫文字] 5.人物元素+左中右下 [小表情] 6.焦點 [结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分]
+平面設計 1920x1080 image 0.文案 [{ "main_title": { "box_2d": [134, 18, 514, 287], "heading": "h1", "position": { "horizontal": "left", "vertical": "top" } }, "sub_title": { "box_2d": [553, 27, 638, 313], "heading": "h2", "position": { "horizontal": "center", "vertical": "middle" } }, "sub_left_1": { "box_2d": [662, 33, 768, 204], "heading": "h3", "position": { "horizontal": "left", "vertical": "bottom" } }, "sub_left_2": { "box_2d": [792, 33, 824, 120], "heading": "h4", "position": { "horizontal": "left", "vertical": "bottom" } }, "character": { "box_2d": [3, 290, 447, 735], "heading": null, "position": { "horizontal": "right", "vertical": "top" } }, "sub_right_1": { "box_2d": [551, 874, 712, 971], "heading": "h3", "position": { "horizontal": "right", "vertical": "bottom" } }, "sub_right_2": { "box_2d": [727, 753, 755, 971], "heading": "h4", "position": { "horizontal": "right", "vertical": "bottom" } } }] 信息集中在人物左右,底部不多 1.人物 [用陰影增加層次感] 2.背景 [打光,金屬紋路,提取角色颜色调整渐变叠加] 3.主色調[色塊] 4.文字 [人物名字加大放在人物背後,文字顏色漸變/立體卡通動漫文字] 5.人物元素+左中右下 [小表情] 6.焦點 [结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分]
+
 ```
 
 ### 遊戲經驗
