@@ -32,6 +32,9 @@
 [流线型设计]手法：将笔画线条调细，横画加粗，日字部的竖画设计成流畅的曲线，横画首尾增加对称的衬角（Serif-like details）装饰，赋予字体优雅的曲线美。
 [对比强烈风格]手法：极致压缩线条宽度，增大撇捺与横画的粗细对比，笔画末端使用衬角装饰，并将中间的竖画进行“省笔”处理，呈现出极具现代感和艺术气息的视觉效果。 
 ```
+```
+帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
+```
 ### 遊戲經驗
 ```
 沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
@@ -71,30 +74,10 @@
 ```
 ### 1. 總體氛圍 視覺基調：溫暖、治癒、希望感。 光影運用： 採用逆光手法，太陽位於畫面右側中景，產生了強烈的輪廓光，勾勒出人物的髮絲和肩部線條。 色調： 以夕陽的橘金色為主，搭配人物服裝的冷色調（青藍色），形成冷暖對比，讓視覺重心更集中於人物面部。 構圖： 採用側身半身構圖，將人物置於畫面黃金分割線上，平衡感良好，且背景的柵欄線條引導視覺向夕陽延伸。 ### 2. 人物與面部 面部特徵： 柔和的鵝蛋臉，畫風精緻，睫毛細膩，眼神清澈。 表情： 呈現出「恬靜」與「嚮往」的神情，嘴角微揚，表現出對美好事物的觀察或沉思。 眼神： 瞳孔帶有金色光澤，與背景夕陽色彩呼應，增強了畫面的整體感。 髮型： 長直髮，隨風飄動，髮梢的處理帶有動態感。頭戴簡約的黑色髮帶，增添了層次。 ### 3. 動作與姿態 身體姿勢： 雙手交叉疊放在欄杆上，呈現出一種放鬆、依靠的姿態。 重心分配： 身體微微側向左側，上半身自然前傾靠在欄杆上，與背景的豎直柵欄形成了穩固的幾何結構。 動態感： 頭髮與衣服的邊緣因風吹而呈現向左側漂浮的趨勢，與右側的強烈光源形成了動靜之間的拉扯，增加了畫面的空氣感。 ### 4. 穿著與配飾 外搭： 一件寬鬆剪裁的淡藍色／青色系外套，面料看起來柔軟輕薄。 細節設計：增強了角色的時尚感與獨特設定。 內搭： 簡約的白色基底，平衡了外套較為複雜的色彩設計。 腰部： 黑色皮帶與金屬鏈條的點綴，為整體的溫柔感增添了一點現代的酷感與硬朗元素。 飾品： 頸部佩戴多層次珠串項鍊，提升了服裝的細節豐富度。 ### 5. 背景與環境 空間感： 位於天台，透過柵欄的縫隙可以看到下方模糊的城市建築群，建立了高度感。 光影渲染： 雲層被夕陽染成橘紅色，光斑效果自然，模擬了相機拍攝的質感，增添了真實感。 線條運用： 背景的欄杆採用規律的垂直線條，不僅穩固了畫面構圖，還能有效引導觀者的視線從人物移動到背景的夕陽。
 ```
-### 角色海報介紹
-```
-帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
-```
 
-<h2>例 25：综合应用场景图</h2>
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case25.jpg"></img>
-```
-create a minecraft skin inspired by {argument name="reference" default="my look"}
-```
-<a name="case-41"></a>
-
-### 例 41：插画艺术风格创作
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case41.jpg"></img>
-```
-{ "type": "VTuber profile sheet", "theme": "{argument name=\"color theme\" default=\"purple and white\"}, elegant, lace, ribbon motifs", "character": { "name": "{argument name=\"character name\" default=\"紫咲リリー\"}", "archetype": "{argument name=\"character archetype\" default=\"elegant ojousama\"}", "appearance": "anime girl, long black hair with purple highlights, purple eyes, wearing a white blazer, purple pleated skirt, thigh-highs, ribbons", "pose": "standing, finger to lips, looking slightly to the side" }, "chibi_character": { "appearance": "same character in chibi form", "pose": "sitting down, smiling" }, "layout": { "header": { "top_left": "Ribbon banner reading 'VTuber Profile'", "top_center": "Logo with text '{argument name=\"vtuber type\" default=\"清楚系お嬢様Vtuber\"}' and '{argument name=\"character name\" default=\"紫咲リリー\"}' and 'Shisaki Lily'", "top_right": "Quote '{argument name=\"catchphrase\" default=\"皆さまの心に、優雅なひとときをお届けしますわ\"}' followed by a 3-line introductory paragraph" }, "columns": [ { "position": "left", "content": "Full-body character portrait" }, { "position": "center", "sections": [ { "title": "Profile", "count": 9, "labels": ["名前", "誕生日", "年齢", "身長", "属性", "一人称", "出身", "職業", "活動開始日"] }, { "title": "Personality", "content": "2-line text block" }, { "title": "Hobby & Special Skill", "count": 2, "labels": ["趣味", "特技"] }, { "title": "Like & Dislike", "count": 2, "labels": ["好きなもの", "苦手なもの"] } ] }, { "position": "right", "sections": [ { "title": "Streaming Content", "content": "1-line text block" }, { "title": "Schedule", "count": 2, "labels": ["配信時間", "配信頻度"] }, { "title": "Goals", "content": "3-line text block" }, { "title": "Fan & Tag", "count": 3, "labels": ["ファンネーム", "ファンアートタグ", "総合タグ"], "extra": "4 hashtag rows with small icons" }, { "title": "Creator", "count": 3, "labels": ["イラストレーター (ママ)", "モデラー (パパ)", "使用モデル"] }, { "title": "Links", "count": 4, "labels": ["YouTube", "X (Twitter)", "BOOTH", "FANBOX"] }, { "content": "Chibi character illustration placed at the bottom right corner" } ] } ], "footer": { "sections": [ { "title": "Rules", "count": 3, "description": "3 bullet points with heart icons" }, { "content": "2-line closing message at the bottom center" } ] } } }
-```
 ***
 <a name="case-91"></a>
-
-### 例 91：游戏界面截图
-
+<h2>例 91：游戏界面截图</h2>
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case91.jpg"></img>
 
 ```text
