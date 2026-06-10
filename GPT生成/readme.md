@@ -14,7 +14,7 @@
 畫面所有元素用矩形+矩形坐標框住並加中文描述
 ```
 ```
-優化成HTML Prompt
+優化成HTML (html no dark mode+need to preview image) 
 0.文案 input
 1.人物 optional[用陰影增加層次感]
 2.背景 optional [(修改)_打光,金屬紋路,提取角色颜色调整渐变叠加,	漸變,金屬紋路,人物透明度,太極,星座,懸疑感:{報紙揭開,警戒線tape}]
