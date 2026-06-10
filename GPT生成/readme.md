@@ -14,7 +14,7 @@
 畫面所有元素用矩形+矩形坐標框住並加中文描述
 ```
 ```
-優化成HTML (html no dark mode+need to preview image)
+優化成HTML+類似canvas move x,y to test template (html no dark mode+need to preview image)
 image+text button設計
 
 0.文案 input
