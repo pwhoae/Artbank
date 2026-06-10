@@ -2,7 +2,12 @@
 <a id="readme_begin"></a>
 怎么把ChatGPT image 2拆
 开放世界
-特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/沿虛線剪/改 .exe 圖示>.ico/demos畫圖/blindbox/高达模/御神籤/iframe to preview/IG風格的壓克力牌/3D立體紙雕便條紙/985211恤<br>
+特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///IG風格的壓克力牌//<br>
+<details>
+<summary><h2>廢棄idea</h2></summary>
+985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/
+</details>
+
 <a href="https://github.com/Kavex/GameDev-Resources">git</a>/
 <a href="https://itch.io/game-assets/tag-art">itch</a>/
 <a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
@@ -42,7 +47,7 @@
 <hr> 
 
 <details>
-  <summary><H1>高達模型板件</H1></summary>
+  <summary><H6>高達模型板件</H6></summary>
   <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
 
 ```
