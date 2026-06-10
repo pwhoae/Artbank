@@ -37,7 +37,8 @@
 ```
 <details>
 <summary><h6>廢棄idea</h6></summary>
-985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/
+985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/冲破次元壁的/俯拍城景自拍
+
 	
 ### 遊戲經驗
 ```
