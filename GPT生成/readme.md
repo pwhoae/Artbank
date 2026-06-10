@@ -6,10 +6,6 @@
 <a href="https://github.com/Kavex/GameDev-Resources">git</a>/
 <a href="https://itch.io/game-assets/tag-art">itch</a>/
 <a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
-<details>
-<summary><h6>廢棄idea</h6></summary>
-985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/
-</details>
 
 <hr>
 
@@ -39,14 +35,14 @@
 ```
 帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
+<details>
+<summary><h6>廢棄idea</h6></summary>
+985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/
 ### 遊戲經驗
 ```
 沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
 ```
-<hr> 
-
-<details>
-  <summary><H6>高達模型板件</H6></summary>
+### 高達模型板件
   <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
 
 ```
@@ -55,8 +51,10 @@
 ```
 [可愛風]將參考圖轉換為「高達模型板件（鋼普拉 runner）」風格，但大幅減少零件數量，整體僅由 4–6 個大型零件構成。 保留原始構圖與輪廓，將其簡化為大型一體成型的機甲模組零件（如頭部＋軀幹一體、四肢簡化為整塊結構等），每個零件具有清楚的功能分區，能夠快速拼裝成完整模型。 所有零件仍連接在塑膠框架上（runner），但排列簡潔、{完整上色}，呈現入門級或快速組裝模型套件風格。 表面細節大幅簡化，僅保留少量刻線與結構分割，強調平整塊面與整體輪廓，避免細碎零件與複雜機構。 整體風格： 簡潔、模組化、低複雜度、高可讀性，類似「簡化版鋼普拉 / 初學者模型套件」。 俯視視角，乾淨背景，棚拍光線，高解析度。{添加可愛風的要素+顏色上色}
 ```
-
 </details>
+
+<hr> 
+
 
 <hr>
 
