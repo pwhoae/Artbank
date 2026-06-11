@@ -41,7 +41,6 @@
 <details>
 <summary><h6>廢棄idea</h6></summary>
 985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/冲破次元壁的/俯拍城景自拍
-
 	
 ### 遊戲經驗
 ```
@@ -73,6 +72,7 @@ IG
 
 ```
 [收藏版史诗]根据【主题】自动生成一张收藏版史诗叙事海报：巨大优雅的人物侧脸剪影作为外轮廓，剪影内部自动生长出最契合该主题的完整世界观、标志性场景、角色关系、象征符号、关键建筑、生物、道具与氛围。整体不是普通拼贴，而是高级的剪影轮廓填充式叙事合成，带有双重曝光式联想，但更偏电影海报与梦幻水彩插画融合风格；柔和空气透视，轻雾化过渡，纸张颗粒，边缘飞白与刷痕，大面积留白，版式克制高级，安静、宏大、神圣、怀旧、诗意、传说感强。风格、色彩、场景、材质全部根据主题自动适配，所有元素必须强绑定主题，一眼识别，不要杂乱，不要硬拼贴，不要模板化背景，不要廉价奇幻素材。画面中需自然加入专属签名“voxcat”，作为海报设计的一部分，位置低调但清晰，可放在左下角、右下角或标题附近，风格需与整体版式统一，像收藏版海报的作者落款或设计签章；签名字体精致、克制、高级，不可过大，不可破坏主体构图，不可显得突兀廉价。在这段文字后面再加入你要生成的角色的具体信息，比如名字,人物的图片
+[巨大的畫框架]角色上半身被巨大的畫框架框柱，胸部、腰部與腹部正好從畫框架鏤空處挺出。
 ```
 ```
 [山水]一張「某某某」的人物宣傳海報，統一採用直式主視覺構圖。每張海報皆使用上大下小的層級結構：畫面上半部以人物最具辨識度的頭部、臉部輪廓、面具或半身外輪廓作為巨大的視覺主體，形成高辨識度的剪影式主形；中下部安排完整人物作為第二主體，呈現穩定站姿或輕微動作姿態，構成畫面的視覺核心。大輪廓內部以及角色周圍採用雙重曝光與拼貼式敘事構圖，將多個場景、意象、小型人物關係、輔助元素與環境層層融合於雲霧、水墨與留白之中。左右兩側配置呼應性的輔景，使畫面產生故事張力與空間變化。以一條貫穿畫面上下的流動線索，連結主角色、內部拼貼與上方大輪廓，強化整體性與視線引導。整體畫面保留大面積留白，邊緣以水墨暈染與虛化破碎處理，營造東方美學中的虛實關係與呼吸感。整體風格統一、高級且克制，強調層次感、敘事性、主視覺衝擊力與系列化海報語言。尺寸：9:16。
@@ -82,6 +82,10 @@ IG
 
 ```
 「觀察附圖貓咪的毛色、長相與特徵，生成一張貓咪介紹圖文海報。 海報標題：OO的介紹 【規則】 ・讓貓咪在最中間當作主體，周圍加上身體局部特寫的註解介紹，主體與局部特寫都要清楚可愛，並保留貓咪本身的毛色特徵與辨識度 ・文字須使用繁體中文，並使用帶有粉筆筆觸的白色可愛手寫字體，排版整齊且可讀性高。標題字級最大、局部特寫的標題字級第二大、局部特寫的描述字級最小 ・背景使用黑色晨紙virtue colours，可適當手繪插圖線條當作裝飾，例如：愛心、箭頭、星星、小圓點、音符等 ・整體排版不要太擁擠，保有留白」
+```
+### 天台,夕陽
+```
+### 1. 總體氛圍 視覺基調：溫暖、治癒、希望感。 光影運用： 採用逆光手法，太陽位於畫面右側中景，產生了強烈的輪廓光，勾勒出人物的髮絲和肩部線條。 色調： 以夕陽的橘金色為主，搭配人物服裝的冷色調（青藍色），形成冷暖對比，讓視覺重心更集中於人物面部。 構圖： 採用側身半身構圖，將人物置於畫面黃金分割線上，平衡感良好，且背景的柵欄線條引導視覺向夕陽延伸。 ### 2. 人物與面部 面部特徵： 柔和的鵝蛋臉，畫風精緻，睫毛細膩，眼神清澈。 表情： 呈現出「恬靜」與「嚮往」的神情，嘴角微揚，表現出對美好事物的觀察或沉思。 眼神： 瞳孔帶有金色光澤，與背景夕陽色彩呼應，增強了畫面的整體感。 髮型： 長直髮，隨風飄動，髮梢的處理帶有動態感。頭戴簡約的黑色髮帶，增添了層次。 ### 3. 動作與姿態 身體姿勢： 雙手交叉疊放在欄杆上，呈現出一種放鬆、依靠的姿態。 重心分配： 身體微微側向左側，上半身自然前傾靠在欄杆上，與背景的豎直柵欄形成了穩固的幾何結構。 動態感： 頭髮與衣服的邊緣因風吹而呈現向左側漂浮的趨勢，與右側的強烈光源形成了動靜之間的拉扯，增加了畫面的空氣感。 ### 4. 穿著與配飾 外搭： 一件寬鬆剪裁的淡藍色／青色系外套，面料看起來柔軟輕薄。 細節設計：增強了角色的時尚感與獨特設定。 內搭： 簡約的白色基底，平衡了外套較為複雜的色彩設計。 腰部： 黑色皮帶與金屬鏈條的點綴，為整體的溫柔感增添了一點現代的酷感與硬朗元素。 飾品： 頸部佩戴多層次珠串項鍊，提升了服裝的細節豐富度。 ### 5. 背景與環境 空間感： 位於天台，透過柵欄的縫隙可以看到下方模糊的城市建築群，建立了高度感。 光影渲染： 雲層被夕陽染成橘紅色，光斑效果自然，模擬了相機拍攝的質感，增添了真實感。 線條運用： 背景的欄杆採用規律的垂直線條，不僅穩固了畫面構圖，還能有效引導觀者的視線從人物移動到背景的夕陽。
 ```
 </details>
 <hr> 
@@ -104,41 +108,15 @@ IG
 [3×3照片]生成3×3照片网格。 在所有面板中完整保留上传图像中的面部、发型和服装。制作一个角色设计表情风格指南的图像，风格要求： *  每个网格都是角色头像正视图 *  还原参考图的风格 *  所有图片中的服装、脸型和发型都相同 *  整个网格中的姿势和表情都不相同
 [25種表情]使用提供的參考圖作為角色唯一設計來源，生成「25種表情／特效差分（Expression Sheet）」完整角色差分表。 【核心要求】 - 角色外觀、髮型、服裝、配色、畫風、年齡感、五官比例必須與參考圖完全一致 - 不可改變角色身份與服裝設計 - 所有差分需保持同一角色模型與同一視角 - 採用「Galgame / VTuber / Live2D / 視覺小說角色差分表」形式 - 背景保持簡潔純色或透明感灰白背景 - 角色置中排列 - 每個表情獨立清晰 - 高解析度 - anime style, clean lineart, professional expression sheet, character emotion variations, consistent character design 【輸出形式】 生成完整「25表情差分總覽」 可採： - 多列網格排列 - Live2D 差分展示板 - Character Expression Reference Sheet - 角色設定集風格 【表情差分內容】 1. 通常顔 普通表情、自然嘴角、標準眼神 2. 怒り顔 皺眉、生氣、嘴角下壓 3. 困り顔 委屈、困擾、微弱八字眉 4. ジト目顔 側目鄙視、半睜眼、冷淡視線 5. 照れ 臉紅紅暈、害羞表情 (blush overlay effect) 6. 目のハイライトOFF 失去眼睛高光、空洞感 7. どんより 灰暗沮喪、陰沉氛圍 (gloom shadow overlay) 8. 涙 含淚、流淚效果 (animated tear effect feel)9. 白目 翻白眼、失神感 10. 黒目 縮瞳、純黑眼、驚嚇感 11. より目 鬥雞眼、聚焦錯亂 12. あせ 額頭流汗、尷尬汗滴 (sweat drop effect) 13. ハート目 愛心眼、戀愛狀態14. しいたけ目 星星眼 / 香菇眼、超期待感 (glittery excited eyes) 15. ガンギマリ 精神崩壞感、狂氣眼神、瞳孔異常 16. ＞＜目 ＞＜ 閉眼表情、用力表情 17. ボカシ目 失焦、微醺模糊感 18. なごみ目 瞇瞇眼、溫柔放鬆 19. ぐるぐる目 蚊香眼、暈眩狀態 (spiral eyes effect) 20. 読み込み中眼睛像 loading 圈圈、腦袋卡住感 (loading icon eyes) 21. 怒りマーク 頭上青筋符號、生氣特效 22. ぷんぷん煙エフェクト 冒煙、生氣蒸氣特效 (cartoon anger smoke) 23. ハートエフェクト 角色周圍漂浮愛心特效 24. キラキラエフェクト 閃亮亮粒子特效 (sparkle aura effect) 25. メガネ 配戴眼鏡版本 【風格要求】 - 日系動畫角色差分 - 專業遊戲角色設定集 - 高完成度 - 可直接用於 Live2D / VN / RPG / Galgame - 表情變化明確但角色一致性極高 - 柔和動漫光影 - 精緻眼睛繪製 - 高細節頭髮陰影 - emotion showcase sheet - expression reference board - transparent accessory layers feeling - professional anime production material
 ```
-### 天台,夕陽
-```
-### 1. 總體氛圍 視覺基調：溫暖、治癒、希望感。 光影運用： 採用逆光手法，太陽位於畫面右側中景，產生了強烈的輪廓光，勾勒出人物的髮絲和肩部線條。 色調： 以夕陽的橘金色為主，搭配人物服裝的冷色調（青藍色），形成冷暖對比，讓視覺重心更集中於人物面部。 構圖： 採用側身半身構圖，將人物置於畫面黃金分割線上，平衡感良好，且背景的柵欄線條引導視覺向夕陽延伸。 ### 2. 人物與面部 面部特徵： 柔和的鵝蛋臉，畫風精緻，睫毛細膩，眼神清澈。 表情： 呈現出「恬靜」與「嚮往」的神情，嘴角微揚，表現出對美好事物的觀察或沉思。 眼神： 瞳孔帶有金色光澤，與背景夕陽色彩呼應，增強了畫面的整體感。 髮型： 長直髮，隨風飄動，髮梢的處理帶有動態感。頭戴簡約的黑色髮帶，增添了層次。 ### 3. 動作與姿態 身體姿勢： 雙手交叉疊放在欄杆上，呈現出一種放鬆、依靠的姿態。 重心分配： 身體微微側向左側，上半身自然前傾靠在欄杆上，與背景的豎直柵欄形成了穩固的幾何結構。 動態感： 頭髮與衣服的邊緣因風吹而呈現向左側漂浮的趨勢，與右側的強烈光源形成了動靜之間的拉扯，增加了畫面的空氣感。 ### 4. 穿著與配飾 外搭： 一件寬鬆剪裁的淡藍色／青色系外套，面料看起來柔軟輕薄。 細節設計：增強了角色的時尚感與獨特設定。 內搭： 簡約的白色基底，平衡了外套較為複雜的色彩設計。 腰部： 黑色皮帶與金屬鏈條的點綴，為整體的溫柔感增添了一點現代的酷感與硬朗元素。 飾品： 頸部佩戴多層次珠串項鍊，提升了服裝的細節豐富度。 ### 5. 背景與環境 空間感： 位於天台，透過柵欄的縫隙可以看到下方模糊的城市建築群，建立了高度感。 光影渲染： 雲層被夕陽染成橘紅色，光斑效果自然，模擬了相機拍攝的質感，增添了真實感。 線條運用： 背景的欄杆採用規律的垂直線條，不僅穩固了畫面構圖，還能有效引導觀者的視線從人物移動到背景的夕陽。
-```
+
 
 ***
 <a name="case-91"></a>
 <h2>例 91：游戏界面截图</h2>
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case91.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case91.jpg" width="100" height="100"></img>
 
 ```text
 A highly detailed, realistic first-person video game screenshot of a next-generation voxel-based world. At the top center, a large, bold 3D logo reads "{argument name="game title" default="MINECRAFT 2"}". The scene features a {argument name="environment" default="lush, blocky landscape with a river, a small wooden cabin, a windmill, a waterfall, and majestic mountains in the background"}. The world blends realistic lighting, volumetric clouds, and high-resolution textures with cubic, voxel geometry. In the foreground on the left, a {argument name="mob 1" default="blocky green creeper"} stands on the grass, while a {argument name="mob 2" default="blocky brown wolf"} stands on the dirt path to the right. On the far right, the player's hand holds a {argument name="held item" default="pixelated blue diamond sword"} in a first-person perspective. At the bottom of the screen is a game user interface featuring a health bar with 10 red hearts, a green experience bar with the number '16', a hunger bar with 10 brown meat icons, and a 9-slot inventory hotbar. The hotbar contains, from left to right: a selected blue tool with a green highlight box, a green tool, a knife, a wrench with the number '3', a piece of meat with '6', a lantern with '24', a dirt block with '10', a bucket, and a sponge block.
-```
-***
-
-<a name="case-120"></a>
-
-### 例 120：建筑空间场景图
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case120.jpg"></img>
-
-```text
-A dynamic anime illustration of a girl with spiky {argument name="hair color" default="blonde"} hair tied in a high ponytail with a black bow, striking teal eyes, and a {argument name="outfit style" default="dark purple and black magical uniform with gold trim and diamond gems"}. She is in an intense crouching superhero landing pose, one hand pressed to the ground and the other raised, casting {argument name="magic color" default="glowing purple"} magic circles. She is shattering through a glass barrier, with sharp, jagged glass shards flying outward toward the viewer. Through the broken frame behind her, a {argument name="background scene" default="stylized silhouette of a gothic city with tall spires against a vibrant purple and orange sunset sky"} is visible. The artwork features {argument name="art style" default="sharp angles, high contrast cel-shading, and vibrant colors"}.
-```
-
-***
-
-<a name="case-124"></a>
-
-### 例 124：主题海报版式设计
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case124.jpg"></img>
-
-```text
-An anime-style key visual poster for a fictional slice-of-life anime. In the foreground left, an energetic blonde anime girl with star hairpins and blue eyes wears an {argument name="main character outfit" default="American flag t-shirt and denim shorts"}, holding tongs with a slice of smoked meat towards the viewer. In the foreground right, a gentle girl with long dark hair and a white sweater sits at a wooden table writing in a notebook. In the background, two more girls are present: one with a brown ponytail carrying firewood, and another with short silver hair holding a blue mug. The scene is a sunny outdoor BBQ area with a large black smoker grill featuring a sign that reads {argument name="background grill sign" default="LONE STAR BBQ"}. In the immediate foreground is a {argument name="food platter" default="massive wooden platter loaded with sliced brisket, ribs, sausages, burnt ends, and pickles"}, along with side dishes like coleslaw and bread. In the top left corner, a large, cute, bubbly anime logo reads {argument name="anime title" default="もくもく すもーく ガールズ"} with smoke and grill motifs. In the bottom left corner, there is a {argument name="credits text block" default="staff credits block with names and roles"}. In the bottom right corner, a small text box lists four character names. The overall atmosphere is cheerful, highly detailed, and vibrant.
 ```
 ***
 
@@ -146,7 +124,7 @@ An anime-style key visual poster for a fictional slice-of-life anime. In the for
 
 ### 例 150：品牌徽标设计图
 
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case150.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case150.jpg" width="100" height="100"></img>
 
 ```text
 A bright, summery commercial product photography shot featuring a refreshing beverage on a weathered wooden table. In the sharp foreground, there is 1 tall glass filled with a golden, bubbly iced drink garnished with 1 lemon slice and a sprig of rosemary, sitting next to 1 silver aluminum can covered in cold condensation. The can prominently displays the English text {argument name="product name" default="TOKYO HIGHBALL"} below a small gold star logo, featuring a graphic of the drink itself and the Japanese text "アルコール分 7%" near the bottom. To the right of the can, 2 cut lemon wedges rest on the table. In the softly blurred background, a sunny beach scene unfolds with sparkling turquoise water and a clear blue sky. Standing to the left in the background is 1 young woman with long brown hair, wearing a white sleeveless top and a light blue skirt, looking out toward the ocean. Floating elegantly in the sky above the scene is the Japanese text {argument name="catchphrase" default="夏、これがいい。"}. The overall lighting is radiant and inviting, with sparkling bokeh and lens flares emphasizing the crisp, cold, and refreshing atmosphere of a perfect summer day.
