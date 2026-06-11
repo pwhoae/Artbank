@@ -281,17 +281,6 @@ Negative Prompt:
 cartoon, illustration, anime, CGI, 3D render, fantasy style, studio lighting, overly perfect composition, overly clean floor, fake liquid, unrealistic reflections, plastic-looking liquid, oversaturated green, blurry, low resolution, distorted cup, melted plastic, extra cups, duplicated objects, readable brand logo, messy text, watermark, poster design, dramatic artificial lighting, excessive sharpening, over-processed, unrealistic shadow, floating ice, deformed perspective
 ```
 
-
-***
-<a name="case-400"></a>
-
-### 例 400：多风格签名选择海报
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case400.png"></img>
-```text
-你是一个高端签名设计系统 + 风格人格视觉系统。 任务： 仅基于用户输入的「姓名」，生成一张「多风格签名选择海报（卡片式结构）」。 目标是把名字转译为具有笔势、气质与力量感的签名设计系统，让用户产生选择欲、认同感和分享欲。 输入信息： 姓名：[输入你的昵称] 禁止要求额外信息，必须自动完成气质与风格推断。 隐藏执行逻辑： 1. 字形与笔势分析： - 结构：疏密、横竖比例、重心位置 - 节奏：连贯、停顿、爆发、收束 - 适配：连笔程度、草写程度、变形空间 2. 气质推断： 清冷、张扬、克制、商业、文艺、松弛、锋利、高级。 3. 生成 6 个签名分支： - 全部适配该姓名 - 每一个都有明确书写风格 - 差异来自笔势、节奏、结构和收笔方式 整体画面： 9:16 竖版海报，极简、高级、干净、有设计感、适合传播。 背景使用纯白或极浅灰渐变，留白不少于 40%。 顶部标题区： 主标题可用： 「你的名字，适合哪种签名？」 或： 「[姓名] · 签名风格选择」 副标题： 「不同笔势，不同气场」 排版为黑色与灰色，高级字距，留白充足。 签名卡片区域： 使用整齐网格卡片布局，推荐 2 列 × 3 行，共 6 个卡片。 每个卡片统一尺寸、统一间距、整体对齐干净。 卡片样式： - 轻微圆角 8-16px - 无明显边框，或极细描边 - 极轻阴影 - 背景为纯白微差、极浅灰，或轻微宣纸 / 磨砂质感 视觉目标接近高级杂志排版，避免强 UI 感、厚卡片和 App 组件感。 签名生成规则： 签名必须基于书写动作生成，避免只做字体变形。 每一个签名风格在生成前，先确定一套明确书写行为规则： 1. 起笔方式：轻触起笔、重压起笔、直接横扫、从左下进入或从中段切入。 2. 连笔结构：前两个字强连笔后面断开、全连笔一气呵成、只连接偏旁。 3. 节奏变化：快到慢再收、慢到爆发再拉伸、或均匀节奏。 4. 结构变形：横向拉长、垂直压缩、整体右倾或左倾、字间重叠或错位。 5. 收笔设计：尾笔长甩、突然收断、回钩、渐隐收尾。 6 种签名方向： 1. 极简理性：接近品牌签名 2. 狂放张力：强烈连笔和拉伸 3. 松弛随性：手写感强 4. 东方行草：飞白和墨感 5. 锋利结构：几何感和断裂 6. 实验风格：允许部分不可读，但需要强设计感 色彩策略： 整体以黑、灰、白为主。每个卡片允许一个极轻微点缀色，例如冷灰蓝、香槟金、墨黑、暖棕、深绿。 避免大面积色块和花哨配色。 底部互动区： 底部居中加入小号灰字： 「选一个，作为你的专属签名。」 或： 「你是第几种？」 光影与质感： 高级棚拍光、柔光环境、细腻阴影、干净空气感。 质感参考 Apple 发布会视觉和高端品牌视觉。 禁止项： 不要字体拼贴，不要普通书法字，不要 UI 卡片风，不要颜色杂乱，不要签名太小，不要排版松散，不要缺乏笔势，不要模板拼接感。 最终目标： 生成一张高级、干净、有秩序、有笔势张力的 6 风格签名选择海报。 用户一眼能选出最像自己的一款签名。
-```
-
 ```
 將原圖重新繪製成「學校教室黑板上的粉筆畫」風格。 整體畫面像是用彩色粉筆手工繪製在深綠色或深黑色黑板上，保留原圖的構圖、角色動作與主要元素，但全部轉換成粗糙自然的粉筆筆觸。 風格特徵： * 明顯的粉筆塗抹感、粉塵顆粒、擦拭痕跡 * 白色粉筆線條作為主要輪廓 * 局部使用彩色粉筆（紅、藍、黃、粉、綠）進行上色 * 線條略帶不規則與手繪感 * 黑板表面有真實刮痕、灰塵與反光 * 畫面邊緣有未擦乾淨的殘留粉筆痕跡 * 像學生或美術社在課後精心繪製的大型黑板藝術 氣氛： * 校園感 * 懷舊青春感 * 手作藝術感 * 溫暖且富有創意 可追加細節： * 黑板角落寫有數學公式、塗鴉、小字留言 * 可加入日期、課表、星星、箭頭、可愛 doodle * 畫面局部有手擦開的粉筆暈染效果 * 教室光線從窗戶斜射進來 品質要求： high detail, chalk texture, realistic blackboard surface, soft chalk dust, hand-drawn style, classroom atmosphere, artistic chalk illustration, cinematic lighting, textured strokes, authentic pastel chalk art 負面詞： photorealistic paint, digital clean lineart, glossy surface, 3D render, vector art, smooth shading, oil painting, plastic texture, neon lighting
 ```
@@ -315,9 +304,7 @@ cartoon, illustration, anime, CGI, 3D render, fantasy style, studio lighting, ov
 風格關鍵字：
 超寫實、微距攝影、像素藝術、拼圖模板、鑽石畫、數字填色板、印刷質感、8K、高解析度、真實材質、工藝品展示、專業產品攝影
 ```
-```
 
-```
 
 ### 努努
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%8A%AA%E5%8A%AA_%E6%A9%98%E7%A6%8F%E7%A6%8FChatGPT%20Image%202026%E5%B9%B45%E6%9C%8824%E6%97%A5%20%E4%B8%8B%E5%8D%8810_10_43.png" width="100" height="100"></img>
