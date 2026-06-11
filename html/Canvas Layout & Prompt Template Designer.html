@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1920x1080 平面設計排版與 Prompt 生成工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for custom styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@400;500;700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 書法風格 */
+        .style-calligraphy {
+            font-family: 'Ma Shan Zheng', cursive, 'Noto Sans TC', serif;
+        }
+        /* 幾何圓形風格 */
+        .style-geometric {
+            font-family: 'Quicksand', 'Noto Sans TC', sans-serif;
+            font-weight: 700;
+        }
+        /* 網格背景 */
+        .canvas-grid {
+            background-size: 5.20833% 9.25926%; /* 100px in 1920x1080 roughly */
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+        }
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans selection:bg-indigo-100">
+
+    <!-- 頂部導航欄 -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md shadow-indigo-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-slate-900">Canvas Layout & Prompt Template Designer</h1>
+                <p class="text-xs text-slate-500">1920x1080 佈局精確控制與 Prompt 範本產生器</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full text-xs font-medium text-slate-600 border border-slate-200">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Light Mode Active (無暗色模式)
+            </div>
+        </div>
+    </header>
+
+    <!-- 主體內容 -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- 左側控制面板 -->
+        <section class="w-full lg:w-[480px] bg-white border-r border-slate-200 flex flex-col h-[calc(100vh-73px)] overflow-y-auto">
+            
+            <!-- 畫布輔助與全局設定 -->
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">畫布全局設定</h2>
+                <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                        <div>
+                            <span class="text-sm font-semibold text-slate-700 block">輔助網格 (100x100)</span>
+                            <span class="text-xs text-slate-400">目前為 19.2 x 10.8 格線</span>
+                        </div>
+                    </div>
+                    <button id="btn-toggle-grid" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5">
+                        <span id="grid-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span id="grid-status-text">顯示中</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 元件管理分頁 -->
+            <div class="flex-1 p-5 space-y-6">
+                
+                <!-- Element 1: 文案設定 -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-6 h-6 rounded bg-indigo-100 text-indigo-700 text-xs font-extrabold">1</span>
+                            文案設定 (Texts)
+                        </h3>
+                        <button id="btn-add-text" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增自訂文案
+                        </button>
+                    </div>
+                    
+                    <div id="text-elements-container" class="space-y-3">
+                        <!-- Dynamic Text elements injected here -->
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Element 2: 人物設定 -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-6 h-6 rounded bg-emerald-100 text-emerald-700 text-xs font-extrabold">2</span>
+                            人物設定 (Characters)
+                        </h3>
+                        <button id="btn-add-character" class="text-xs font-medium text-emerald-600 hover:text-emerald-800 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增人物角色
+                        </button>
+                    </div>
+
+                    <div id="character-elements-container" class="space-y-3">
+                        <!-- Dynamic Characters injected here -->
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Element 3: 人物裝飾元素 -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-6 h-6 rounded bg-amber-100 text-amber-700 text-xs font-extrabold">3</span>
+                            人物元素 (Decorations)
+                        </h3>
+                        <button id="btn-add-decoration" class="text-xs font-medium text-amber-600 hover:text-amber-800 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            新增裝飾元素
+                        </button>
+                    </div>
+
+                    <div id="decoration-elements-container" class="space-y-3">
+                        <!-- Dynamic Decorations injected here -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 底部操作列 (Prompt & Config 生成) -->
+            <div class="p-5 border-t border-slate-200 bg-slate-50 sticky bottom-0 z-10">
+                <div class="space-y-3">
+                    <button id="btn-generate-outputs" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        更新輸出配置 & Prompt 範本
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 右側畫布與輸出預覽區 -->
+        <section class="flex-1 bg-slate-100 p-6 overflow-y-auto flex flex-col gap-6">
+            
+            <!-- 頂部說明 -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm gap-2">
+                <div>
+                    <h2 class="font-bold text-slate-800 text-sm">互動可視化排版畫布 (1920 x 1080)</h2>
+                    <p class="text-xs text-slate-500">可用滑鼠直接拖曳元件、拉動邊緣改變大小，或在左側手動微調座標。</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 font-medium">縮放比例: <strong id="canvas-zoom-ratio">100%</strong></span>
+                    <div class="h-4 w-px bg-slate-200"></div>
+                    <span class="text-xs text-slate-500">當前元件數量: <strong id="canvas-element-count" class="text-indigo-600">0</strong></span>
+                </div>
+            </div>
+
+            <!-- 1920x1080 畫布容器 (支援比例縮放) -->
+            <div class="flex justify-center items-start overflow-auto bg-slate-200 rounded-xl border-2 border-dashed border-slate-300 p-4 min-h-[500px]">
+                <div id="design-canvas-wrapper" class="relative bg-white shadow-2xl rounded-lg overflow-hidden transition-all duration-300" style="width: 1920px; height: 1080px; transform-origin: top center;">
+                    
+                    <!-- 網格背景層 -->
+                    <div id="canvas-grid-layer" class="absolute inset-0 canvas-grid pointer-events-none z-10"></div>
+                    
+                    <!-- 浮水印底色 (用於輔助對齊中心) -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none z-0">
+                        <div class="text-center">
+                            <h3 class="text-9xl font-black">1920 × 1080</h3>
+                            <p class="text-3xl tracking-[1.5em] font-bold mt-4">VISUAL CANVAS WORKSPACE</p>
+                        </div>
+                    </div>
+
+                    <!-- 實際元件渲染層 -->
+                    <div id="canvas-elements-layer" class="absolute inset-0 z-20">
+                        <!-- Elements rendered dynamically via JS -->
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 輸出結果模組 (JSON + Prompt) -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                
+                <!-- Prompt 輸出 -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+                            <h3 class="font-bold text-slate-800 text-sm">生成繪圖 Prompt 範本</h3>
+                        </div>
+                        <button id="btn-copy-prompt" class="px-3 py-1.5 text-xs bg-white border border-slate-200 hover:border-indigo-500 text-slate-700 hover:text-indigo-600 rounded-lg font-medium shadow-sm transition-all flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                            複製 Prompt
+                        </button>
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col">
+                        <textarea id="output-prompt-textarea" readonly class="w-full flex-1 min-h-[220px] bg-slate-900 text-slate-100 font-mono text-xs p-4 rounded-lg focus:outline-none focus:ring-0 leading-relaxed resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- JSON 配置文件輸出 -->
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            <h3 class="font-bold text-slate-800 text-sm">JSON 佈局配置 (Config JSON)</h3>
+                        </div>
+                        <button id="btn-copy-json" class="px-3 py-1.5 text-xs bg-white border border-slate-200 hover:border-indigo-500 text-slate-700 hover:text-indigo-600 rounded-lg font-medium shadow-sm transition-all flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                            複製 Config JSON
+                        </button>
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col">
+                        <pre id="output-json-pre" class="w-full flex-1 min-h-[220px] bg-slate-900 text-emerald-400 font-mono text-xs p-4 rounded-lg overflow-auto leading-relaxed max-h-[350px]"></pre>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 消息提示 Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl text-sm font-medium transform translate-y-24 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span id="toast-message">操作成功！</span>
+    </div>
+
+    <!-- UI/Canvas 控制代碼 -->
+    <script>
+        // 初始化虛擬資料：預載入文案、人物、人物裝飾元素
+        const DEFAULT_TEXTS = [
+            { id: "main_title", type: "text", name: "main_title", string: "大作將至：傳奇再臨", ymin: 134, xmin: 18, ymax: 514, xmax: 287, heading: "h1", size: 64, style: "書法風格", color: "#1e1b4b" },
+            { id: "sub_title", type: "text", name: "sub_title", string: "探索未知的魔法世界與巨龍戰役", ymin: 553, xmin: 27, ymax: 638, xmax: 313, heading: "h2", size: 32, style: "幾何圓形風格", color: "#4f46e5" },
+            { id: "sub_left_1", type: "text", name: "sub_left_1", string: "傳奇武器系統已裝載", ymin: 662, xmin: 33, ymax: 768, xmax: 204, heading: "h3", size: 24, style: "幾何圓形風格", color: "#334155" },
+            { id: "sub_left_2", type: "text", name: "sub_left_2", string: "即刻預約領取史詩坐騎", ymin: 792, xmin: 33, ymax: 824, xmax: 120, heading: "h4", size: 18, style: "書法風格", color: "#059669" },
+            { id: "sub_right_1", type: "text", name: "sub_right_1", string: "2026年度旗艦鉅作", ymin: 551, xmin: 874, ymax: 712, xmax: 971, heading: "h3", size: 24, style: "書法風格", color: "#b91c1c" },
+            { id: "sub_right_2", type: "text", name: "sub_right_2", string: "全球玩家跨服熱烈爭霸中", ymin: 727, xmin: 753, ymax: 755, xmax: 971, heading: "h4", size: 18, style: "幾何圓形風格", color: "#0f172a" }
+        ];
+
+        const DEFAULT_CHARACTERS = [
+            { id: "character1", type: "character", name: "character1", string: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600", ymin: 3, xmin: 290, ymax: 447, xmax: 735, shadow: true }
+        ];
+
+        const DEFAULT_DECORATIONS = [
+            { id: "deco_1", type: "decoration", name: "可愛風:小表情", string: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=200", category: "可愛風", label: "小表情", ymin: 460, xmin: 310, ymax: 560, xmax: 410 },
+            { id: "deco_2", type: "decoration", name: "科技風:音軌", string: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=300", category: "科技風", label: "音軌", ymin: 200, xmin: 760, ymax: 300, xmax: 960 }
+        ];
+
+        // 系統狀態
+        let state = {
+            texts: [...DEFAULT_TEXTS],
+            characters: [...DEFAULT_CHARACTERS],
+            decorations: [...DEFAULT_DECORATIONS],
+            gridVisible: true,
+            selectedElementId: null,
+            zoom: 0.5 // 預設縮放 50% 完美呈現 1920x1080
+        };
+
+        // DOM 節點
+        const canvasWrapper = document.getElementById("design-canvas-wrapper");
+        const canvasGridLayer = document.getElementById("canvas-grid-layer");
+        const canvasElementsLayer = document.getElementById("canvas-elements-layer");
+        const textContainer = document.getElementById("text-elements-container");
+        const characterContainer = document.getElementById("character-elements-container");
+        const decorationContainer = document.getElementById("decoration-elements-container");
+        const canvasZoomRatioEl = document.getElementById("canvas-zoom-ratio");
+        const canvasElementCountEl = document.getElementById("canvas-element-count");
+        
+        // 輸出專用
+        const outputJsonPre = document.getElementById("output-json-pre");
+        const outputPromptTextarea = document.getElementById("output-prompt-textarea");
+
+        // 縮放設定自適應
+        function adjustCanvasZoom() {
+            const containerWidth = canvasWrapper.parentElement.clientWidth;
+            // 讓畫布寬度稍小於容器寬度，並保持 16:9
+            const computedZoom = Math.min((containerWidth - 32) / 1920, 0.65);
+            state.zoom = computedZoom;
+            canvasWrapper.style.transform = `scale(${state.zoom})`;
+            canvasWrapper.parentElement.style.height = `${1080 * state.zoom + 40}px`;
+            canvasZoomRatioEl.textContent = `${Math.round(state.zoom * 100)}%`;
+        }
+
+        // 初始化
+        window.addEventListener('load', () => {
+            adjustCanvasZoom();
+            renderUI();
+        });
+        window.addEventListener('resize', adjustCanvasZoom);
+
+        // 網格開關
+        document.getElementById("btn-toggle-grid").addEventListener("click", () => {
+            state.gridVisible = !state.gridVisible;
+            if (state.gridVisible) {
+                canvasGridLayer.classList.remove("hidden");
+                document.getElementById("grid-status-dot").className = "w-2 h-2 rounded-full bg-emerald-400";
+                document.getElementById("grid-status-text").textContent = "顯示中";
+            } else {
+                canvasGridLayer.classList.add("hidden");
+                document.getElementById("grid-status-dot").className = "w-2 h-2 rounded-full bg-slate-300";
+                document.getElementById("grid-status-text").textContent = "隱藏中";
+            }
+        });
+
+        // 建立/更新元件控制表單與畫布渲染
+        function renderUI() {
+            renderControls();
+            renderCanvas();
+            updateOutputs();
+            
+            // 更新計數器
+            const totalCount = state.texts.length + state.characters.length + state.decorations.length;
+            canvasElementCountEl.textContent = totalCount;
+        }
+
+        // 渲染左側控制台列表
+        function renderControls() {
+            // 1. 文案元件
+            textContainer.innerHTML = '';
+            state.texts.forEach((txt, idx) => {
+                const div = document.createElement("div");
+                div.className = `p-4 rounded-xl border transition-all ${state.selectedElementId === txt.id ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-200 bg-white hover:border-slate-300'}`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 rounded text-slate-600 truncate">${txt.name}</span>
+                        </div>
+                        <button onclick="removeElement('texts', '${txt.id}')" class="text-slate-400 hover:text-rose-500 p-1 rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <input type="text" value="${txt.string}" oninput="updateField('texts', '${txt.id}', 'string', this.value)" class="w-full text-sm px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 placeholder-slate-400" placeholder="輸入文案...">
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">Heading</label>
+                                <select onchange="updateField('texts', '${txt.id}', 'heading', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
+                                    <option value="h1" ${txt.heading === 'h1' ? 'selected' : ''}>h1 (大標題)</option>
+                                    <option value="h2" ${txt.heading === 'h2' ? 'selected' : ''}>h2 (中標題)</option>
+                                    <option value="h3" ${txt.heading === 'h3' ? 'selected' : ''}>h3 (小標題)</option>
+                                    <option value="h4" ${txt.heading === 'h4' ? 'selected' : ''}>h4 (次要標籤)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">風格</label>
+                                <select onchange="updateField('texts', '${txt.id}', 'style', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
+                                    <option value="書法風格" ${txt.style === '書法風格' ? 'selected' : ''}>書法風格</option>
+                                    <option value="幾何圓形風格" ${txt.style === '幾何圓形風格' ? 'selected' : ''}>幾何風格</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">字型大小 (px)</label>
+                                <input type="number" value="${txt.size}" oninput="updateField('texts', '${txt.id}', 'size', parseInt(this.value) || 12)" class="w-full text-xs px-2 py-1 border border-slate-200 rounded-lg focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">文字顏色</label>
+                                <div class="flex items-center gap-1">
+                                    <input type="color" value="${txt.color || '#000000'}" oninput="updateField('texts', '${txt.id}', 'color', this.value)" class="w-8 h-7 border border-slate-200 rounded cursor-pointer">
+                                    <input type="text" value="${txt.color || '#000000'}" oninput="updateField('texts', '${txt.id}', 'color', this.value)" class="w-full text-xs px-1 py-1 border border-slate-200 rounded-lg">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">精確範圍 [ymin, xmin, ymax, xmax]</span>
+                            <div class="grid grid-cols-4 gap-1">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">ymin</span>
+                                    <input type="number" value="${txt.ymin}" oninput="updateField('texts', '${txt.id}', 'ymin', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">xmin</span>
+                                    <input type="number" value="${txt.xmin}" oninput="updateField('texts', '${txt.id}', 'xmin', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">ymax</span>
+                                    <input type="number" value="${txt.ymax}" oninput="updateField('texts', '${txt.id}', 'ymax', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">xmax</span>
+                                    <input type="number" value="${txt.xmax}" oninput="updateField('texts', '${txt.id}', 'xmax', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                textContainer.appendChild(div);
+            });
+
+            // 2. 人物元件
+            characterContainer.innerHTML = '';
+            state.characters.forEach((char, idx) => {
+                const div = document.createElement("div");
+                div.className = `p-4 rounded-xl border transition-all ${state.selectedElementId === char.id ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-200 bg-white hover:border-slate-300'}`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 rounded text-slate-600 truncate">${char.name}</span>
+                        </div>
+                        <button onclick="removeElement('characters', '${char.id}')" class="text-slate-400 hover:text-rose-500 p-1 rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">人物圖片 (本地上傳 / URL)</label>
+                            <div class="flex gap-1">
+                                <input type="text" value="${char.string}" oninput="updateField('characters', '${char.id}', 'string', this.value)" class="flex-1 text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" placeholder="圖片網址...">
+                                <label class="bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center">
+                                    上傳
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'characters', '${char.id}')">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <span class="text-xs text-slate-600 font-medium">使用陰影增加立體層次感</span>
+                            <input type="checkbox" ${char.shadow ? 'checked' : ''} onchange="updateField('characters', '${char.id}', 'shadow', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300">
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">精確範圍 [ymin, xmin, ymax, xmax]</span>
+                            <div class="grid grid-cols-4 gap-1">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">ymin</span>
+                                    <input type="number" value="${char.ymin}" oninput="updateField('characters', '${char.id}', 'ymin', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">xmin</span>
+                                    <input type="number" value="${char.xmin}" oninput="updateField('characters', '${char.id}', 'xmin', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">ymax</span>
+                                    <input type="number" value="${char.ymax}" oninput="updateField('characters', '${char.id}', 'ymax', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">xmax</span>
+                                    <input type="number" value="${char.xmax}" oninput="updateField('characters', '${char.id}', 'xmax', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                characterContainer.appendChild(div);
+            });
+
+            // 3. 裝飾元素
+            decorationContainer.innerHTML = '';
+            state.decorations.forEach((deco, idx) => {
+                const div = document.createElement("div");
+                div.className = `p-4 rounded-xl border transition-all ${state.selectedElementId === deco.id ? 'border-amber-500 bg-amber-50/20' : 'border-slate-200 bg-white hover:border-slate-300'}`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-amber-100 rounded text-amber-800 truncate">${deco.category}:${deco.label}</span>
+                        </div>
+                        <button onclick="removeElement('decorations', '${deco.id}')" class="text-slate-400 hover:text-rose-500 p-1 rounded-md transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">分類風格</label>
+                                <input type="text" value="${deco.category}" oninput="updateField('decorations', '${deco.id}', 'category', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none" placeholder="例如: 可愛風">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">元素標籤</label>
+                                <input type="text" value="${deco.label}" oninput="updateField('decorations', '${deco.id}', 'label', this.value)" class="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none" placeholder="例如: 小表情">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">元素圖片</label>
+                            <div class="flex gap-1">
+                                <input type="text" value="${deco.string}" oninput="updateField('decorations', '${deco.id}', 'string', this.value)" class="flex-1 text-xs px-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500" placeholder="圖片網址...">
+                                <label class="bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center">
+                                    上傳
+                                    <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'decorations', '${deco.id}')">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">精確範圍 [ymin, xmin, ymax, xmax]</span>
+                            <div class="grid grid-cols-4 gap-1">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">ymin</span>
+                                    <input type="number" value="${deco.ymin}" oninput="updateField('decorations', '${deco.id}', 'ymin', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">xmin</span>
+                                    <input type="number" value="${deco.xmin}" oninput="updateField('decorations', '${deco.id}', 'xmin', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">ymax</span>
+                                    <input type="number" value="${deco.ymax}" oninput="updateField('decorations', '${deco.id}', 'ymax', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block text-center">xmax</span>
+                                    <input type="number" value="${deco.xmax}" oninput="updateField('decorations', '${deco.id}', 'xmax', parseInt(this.value) || 0)" class="w-full text-center text-xs p-1 border border-slate-200 rounded focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                decorationContainer.appendChild(div);
+            });
+        }
+
+        // 渲染畫布元件
+        function renderCanvas() {
+            canvasElementsLayer.innerHTML = '';
+
+            const allElements = [
+                ...state.texts.map(e => ({ ...e, group: 'texts' })),
+                ...state.characters.map(e => ({ ...e, group: 'characters' })),
+                ...state.decorations.map(e => ({ ...e, group: 'decorations' }))
+            ];
+
+            allElements.forEach(el => {
+                const item = document.createElement("div");
+                item.id = `canvas-item-${el.id}`;
+                item.className = `absolute group/item border-2 transition-shadow cursor-move ${state.selectedElementId === el.id ? 'border-indigo-500 shadow-lg' : 'border-transparent hover:border-slate-400/50'}`;
+                
+                // 計算 1920x1080 對應的寬高位置
+                // [ymin, xmin, ymax, xmax] -> Top, Left, Height, Width
+                const top = el.ymin;
+                const left = el.xmin;
+                const height = el.ymax - el.ymin;
+                const width = el.xmax - el.xmin;
+
+                item.style.top = `${top}px`;
+                item.style.left = `${left}px`;
+                item.style.width = `${width}px`;
+                item.style.height = `${height}px`;
+
+                // 根據元件類型渲染內部樣式
+                if (el.type === 'text') {
+                    const styleClass = el.style === '書法風格' ? 'style-calligraphy' : 'style-geometric';
+                    item.innerHTML = `
+                        <div class="w-full h-full flex items-center justify-center p-2 text-center" style="color: ${el.color || '#000'}; font-size: ${el.size || 24}px; line-height: 1.2;">
+                            <span class="${styleClass}">${el.string}</span>
+                        </div>
+                    `;
+                } else if (el.type === 'character') {
+                    const shadowClass = el.shadow ? 'shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 border-white' : '';
+                    item.innerHTML = `
+                        <div class="w-full h-full relative overflow-hidden rounded-lg ${shadowClass}">
+                            <img src="${el.string}" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=600'">
+                            <span class="absolute top-2 left-2 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">人物</span>
+                        </div>
+                    `;
+                } else if (el.type === 'decoration') {
+                    item.innerHTML = `
+                        <div class="w-full h-full relative overflow-hidden rounded-lg border-2 border-amber-400 bg-white/90">
+                            <img src="${el.string}" class="w-full h-full object-cover pointer-events-none" onerror="this.src='https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=200'">
+                            <span class="absolute bottom-1 right-1 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">${el.category}</span>
+                        </div>
+                    `;
+                }
+
+                // 添加調整大小的手把 (Resizers)
+                const resizer = document.createElement("div");
+                resizer.className = "absolute bottom-0 right-0 w-4 h-4 bg-indigo-500 rounded-tl-lg cursor-se-resize hidden group-hover/item:block z-30 shadow";
+                item.appendChild(resizer);
+
+                // 事件綁定 (點擊、拖動、縮放)
+                item.addEventListener('mousedown', (e) => {
+                    // 若是點擊 resizer，進行 resizing
+                    if (e.target === resizer) {
+                        e.stopPropagation();
+                        startResizing(e, el);
+                    } else {
+                        startDragging(e, el);
+                    }
+                    selectElement(el.id);
+                });
+
+                canvasElementsLayer.appendChild(item);
+            });
+        }
+
+        // 選取元件
+        function selectElement(id) {
+            state.selectedElementId = id;
+            // 局部刷新高亮
+            renderControls();
+            
+            // 刷新畫布的高亮邊框
+            const allItems = canvasElementsLayer.children;
+            for (let i = 0; i < allItems.length; i++) {
+                const item = allItems[i];
+                if (item.id === `canvas-item-${id}`) {
+                    item.className = item.className.replace(/border-[a-zA-Z0-9-/]+/g, '').trim() + ' border-indigo-500 shadow-lg';
+                } else {
+                    item.className = item.className.replace(/border-[a-zA-Z0-9-/]+/g, '').trim() + ' border-transparent';
+                }
+            }
+        }
+
+        // 拖動邏輯 (支援 1920x1080 縮放映射)
+        function startDragging(e, el) {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const origX = el.xmin;
+            const origY = el.ymin;
+            const width = el.xmax - el.xmin;
+            const height = el.ymax - el.ymin;
+
+            function onMouseMove(moveEvent) {
+                // 需要將移動距離除以當前 zoom 比例，才能精準還原成 1920x1080 解析度下的像素
+                const dx = (moveEvent.clientX - startX) / state.zoom;
+                const dy = (moveEvent.clientY - startY) / state.zoom;
+
+                let newXmin = Math.round(origX + dx);
+                let newYmin = Math.round(origY + dy);
+
+                // 邊界保護 (0 - 1920, 0 - 1080)
+                newXmin = Math.max(0, Math.min(1920 - width, newXmin));
+                newYmin = Math.max(0, Math.min(1080 - height, newYmin));
+
+                el.xmin = newXmin;
+                el.ymin = newYmin;
+                el.xmax = newXmin + width;
+                el.ymax = newYmin + height;
+
+                // 即時更新 DOM 以保持極速流暢
+                const dom = document.getElementById(`canvas-item-${el.id}`);
+                if (dom) {
+                    dom.style.left = `${el.xmin}px`;
+                    dom.style.top = `${el.ymin}px`;
+                }
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                // 拖動完畢更新全部資料
+                renderUI();
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // 縮放大小邏輯
+        function startResizing(e, el) {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const origWidth = el.xmax - el.xmin;
+            const origHeight = el.ymax - el.ymin;
+
+            function onMouseMove(moveEvent) {
+                const dx = (moveEvent.clientX - startX) / state.zoom;
+                const dy = (moveEvent.clientY - startY) / state.zoom;
+
+                let newWidth = Math.round(origWidth + dx);
+                let newHeight = Math.round(origHeight + dy);
+
+                // 最小尺寸限制
+                newWidth = Math.max(30, Math.min(1920 - el.xmin, newWidth));
+                newHeight = Math.max(20, Math.min(1080 - el.ymin, newHeight));
+
+                el.xmax = el.xmin + newWidth;
+                el.ymax = el.ymin + newHeight;
+
+                const dom = document.getElementById(`canvas-item-${el.id}`);
+                if (dom) {
+                    dom.style.width = `${newWidth}px`;
+                    dom.style.height = `${newHeight}px`;
+                }
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                renderUI();
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // 更新元件欄位
+        window.updateField = function(group, id, field, value) {
+            const list = state[group];
+            const item = list.find(e => e.id === id);
+            if (item) {
+                item[field] = value;
+                
+                // 若 X 或 Y 的限制改動，需要重新調整最大邊界
+                if (field === 'xmin' || field === 'ymin' || field === 'xmax' || field === 'ymax') {
+                    // 安全校正
+                    if (item.xmax < item.xmin) item.xmax = item.xmin + 50;
+                    if (item.ymax < item.ymin) item.ymax = item.ymin + 50;
+                }
+                
+                // 動態渲染，不重置聚焦
+                renderCanvas();
+                updateOutputs();
+            }
+        };
+
+        // 處理圖片上傳 (轉為本地 ObjectURL)
+        window.handleImageUpload = function(input, group, id) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const url = URL.createObjectURL(file);
+                updateField(group, id, 'string', url);
+                showToast("圖片上傳成功，已載入畫布預覽！");
+            }
+        };
+
+        // 新增元件
+        document.getElementById("btn-add-text").addEventListener("click", () => {
+            const newId = `custom_text_${Date.now()}`;
+            state.texts.push({
+                id: newId,
+                type: "text",
+                name: `custom_text_${state.texts.length + 1}`,
+                string: "請輸入自訂文案內容",
+                ymin: 450,
+                xmin: 100,
+                ymax: 550,
+                xmax: 600,
+                heading: "h2",
+                size: 28,
+                style: "幾何圓形風格",
+                color: "#1e293b"
+            });
+            renderUI();
+            selectElement(newId);
+            showToast("成功新增自訂文案元件！");
+        });
+
+        document.getElementById("btn-add-character").addEventListener("click", () => {
+            const newId = `custom_char_${Date.now()}`;
+            state.characters.push({
+                id: newId,
+                type: "character",
+                name: `character_${state.characters.length + 1}`,
+                string: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=600",
+                ymin: 200,
+                xmin: 1000,
+                ymax: 800,
+                xmax: 1500,
+                shadow: true
+            });
+            renderUI();
+            selectElement(newId);
+            showToast("成功新增人物元件，已開啟立體陰影！");
+        });
+
+        document.getElementById("btn-add-decoration").addEventListener("click", () => {
+            const newId = `custom_deco_${Date.now()}`;
+            state.decorations.push({
+                id: newId,
+                type: "decoration",
+                name: `deco_${state.decorations.length + 1}`,
+                string: "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&q=80&w=300",
+                category: "可愛風",
+                label: "彩帶裝飾",
+                ymin: 100,
+                xmin: 100,
+                ymax: 250,
+                xmax: 250
+            });
+            renderUI();
+            selectElement(newId);
+            showToast("成功新增人物裝飾元素！");
+        });
+
+        // 刪除元件
+        window.removeElement = function(group, id) {
+            state[group] = state[group].filter(e => e.id !== id);
+            if (state.selectedElementId === id) {
+                state.selectedElementId = null;
+            }
+            renderUI();
+            showToast("元件已成功刪除");
+        };
+
+        // 更新 JSON 與 Prompt 輸出
+        function updateOutputs() {
+            // 1. 生成 Config JSON
+            const configObj = {};
+            
+            // 文案配置
+            state.texts.forEach(txt => {
+                configObj[txt.name] = {
+                    "box_2d": [txt.ymin, txt.xmin, txt.ymax, txt.xmax],
+                    "heading": txt.heading,
+                    "font_size": `${txt.size}px`,
+                    "style": txt.style,
+                    "text_content": txt.string
+                };
+            });
+
+            // 人物配置
+            state.characters.forEach(char => {
+                configObj[char.name] = {
+                    "box_2d": [char.ymin, char.xmin, char.ymax, char.xmax],
+                    "heading": null,
+                    "shadow": char.shadow,
+                    "image_source": char.string
+                };
+            });
+
+            // 裝飾配置
+            state.decorations.forEach(deco => {
+                const compositeName = `${deco.category}:${deco.label}`;
+                configObj[compositeName] = {
+                    "box_2d": [deco.ymin, deco.xmin, deco.ymax, deco.xmax],
+                    "category": deco.category,
+                    "label": deco.label,
+                    "image_source": deco.string
+                };
+            });
+
+            const jsonString = JSON.stringify({ "config": configObj }, null, 4);
+            outputJsonPre.textContent = jsonString;
+
+            // 2. 生成 Prompt 範本
+            const promptTexts = state.texts.map(t => `[${t.name} (位置:${t.ymin},${t.xmin} 風格:${t.style})="${t.string}"]`).join("\n  ");
+            const promptChars = state.characters.map(c => `[${c.name} (位置:${c.ymin},${c.xmin} shadow:${c.shadow})="${c.string}"]`).join("\n  ");
+            const promptDecos = state.decorations.map(d => `[${d.category}:${d.label} (位置:${d.ymin},${d.xmin})="${d.string}"]`).join("\n  ");
+
+            const promptTemplate = `[
+平面設計 1920x1080 image
+1.文案=
+  ${promptTexts || "無"};
+2.人物=
+  ${promptChars || "無"};
+3.人物元素=
+  ${promptDecos || "無"};
+]`;
+            outputPromptTextarea.value = promptTemplate;
+        }
+
+        // 手動點擊「更新輸出配置 & Prompt 範本」按鈕
+        document.getElementById("btn-generate-outputs").addEventListener("click", () => {
+            updateOutputs();
+            showToast("配置與 Prompt 範本已成功更新！");
+        });
+
+        // 複製功能
+        document.getElementById("btn-copy-prompt").addEventListener("click", () => {
+            const textarea = document.getElementById("output-prompt-textarea");
+            textarea.select();
+            document.execCommand('copy');
+            showToast("Prompt 範本已成功複製至剪貼簿！");
+        });
+
+        document.getElementById("btn-copy-json").addEventListener("click", () => {
+            const jsonText = outputJsonPre.textContent;
+            
+            // 使用臨時 textarea 進行複製
+            const el = document.createElement('textarea');
+            el.value = jsonText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            showToast("JSON 配置已成功複製至剪貼簿！");
+        });
+
+        // Toast 訊息提示元件
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toast-message").textContent = msg;
+            toast.className = toast.className.replace("translate-y-24 opacity-0", "translate-y-0 opacity-100");
+            setTimeout(() => {
+                toast.className = toast.className.replace("translate-y-0 opacity-100", "translate-y-24 opacity-0");
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
