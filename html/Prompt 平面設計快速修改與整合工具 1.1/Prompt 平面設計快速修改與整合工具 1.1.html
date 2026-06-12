@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prompt 欄位修改工具 1.1</title>
-<link rel="stylesheet" href="style.css">
-    
+    <link rel="stylesheet" href="style.css">
+
 
 </head>
+
 <body>
-<div class="fixed-top" style="height: 50px; width: 100%; background-color: white; z-index: 1030;">
-    <button class="btn-copy" onclick="copyPrompt()">一鍵複製完整 Prompt</button>
-</div>
+    <div class="fixed-top" style="height: 50px; width: 100%; background-color: white; z-index: 1030;">
+
+
+
+        <button class="btn-copy" onclick="copyPrompt()">一鍵複製完整 Prompt</button>
+    </div>
 
     <h1>Prompt 平面設計快速修改與整合工具 1.1</h1>
-    
+
     <div class="workspace">
         <div class="left-panel">
-            
+
             <div class="grid-row">
                 <details open>
                     <summary>0.文案編輯 (點擊收合)</summary>
@@ -39,20 +44,25 @@
                         <div class="category-group" id="group_bg">
                             <div class="category-row">
                                 <span class="category-title">【視覺材質】</span>
-                                <button type="button" class="btn-multi" data-value="打光">打光</button>
+                                <button type="button" class="btn-multi active " data-value="打光">打光</button>
                                 <button type="button" class="btn-multi" data-value="金屬紋路">金屬紋路</button>
                                 <button type="button" class="btn-multi" data-value="提取角色颜色调整渐变叠加">角色色彩漸變疊加</button>
                                 <button type="button" class="btn-multi" data-value="漸變">漸變</button>
-                                <button type="button" class="btn-multi" data-value="人物透明度">人物透明度</button>
+                                <button type="button" class="btn-multi active " data-value="雙邊框斜線飾條">雙邊框斜線飾條</button>
+
                             </div>
                             <div class="category-row">
                                 <span class="category-title">【特定主題】</span>
                                 <button type="button" class="btn-multi" data-value="太極">太極</button>
                                 <button type="button" class="btn-multi" data-value="星座">星座</button>
+
+                                <button type="button" class="btn-multi" data-value="角色海報">角色海報</button>
+                                <button type="button" class="btn-multi" data-value="拍立得">拍立得</button>
                             </div>
                             <div class="category-row">
                                 <span class="category-title">【特殊氛圍】</span>
-                                <button type="button" class="btn-multi" data-value="懸疑感:{報紙揭開,警戒線tape}">懸疑感 (報紙/警戒線)</button>
+                                <button type="button" class="btn-multi" data-value="懸疑感:{報紙揭開,警戒線}">懸疑感
+                                    (報紙,警戒線)</button>
                             </div>
                         </div>
                     </div>
@@ -61,25 +71,22 @@
 
             <div class="grid-row">
                 <details open>
-                    <summary>4.文字 風格</summary>
+                    <summary>4.文字風格</summary>
                     <div class="details-content">
                         <div class="category-group" id="group_text">
                             <div class="category-row">
                                 <span class="category-title">【排版與顏色】</span>
                                 <button type="button" class="btn-multi" data-value="人物名字加大放在人物背後">名字加大放人物背後</button>
-                                <button type="button" class="btn-multi" data-value="文字顏色漸變">文字顏色漸變</button>
-                                <button type="button" class="btn-multi" data-value="對比強烈風格">對比強烈風格</button>
+                                <button type="button" class="btn-multi active" data-value="文字顏色漸變">文字顏色漸變</button>
+                                <button type="button" class="btn-multi active" data-value="對比強烈風格">對比強烈風格</button>
                             </div>
                             <div class="category-row">
                                 <span class="category-title">【字體與風格】</span>
-                                <button type="button" class="btn-multi" data-value="立體卡通動漫文字">立體卡通動漫</button>
-                                <button type="button" class="btn-multi" data-value="英文字體加工首字母特別處理,其餘正楷">英文字型(首字特別處理/其餘正楷)</button>
-                                <button type="button" class="btn-multi" data-value="書法風格">書法風格</button>
-                            </div>
-                            <div class="category-row">
-                                <span class="category-title">【設計感】</span>
-                                <button type="button" class="btn-multi" data-value="幾何圓形風格">幾何圓形風格</button>
-                                <button type="button" class="btn-multi" data-value="流線型設計">流線型設計</button>
+                                <button type="button" class="btn-multi" data-value="立體動漫文字">立體動漫</button>
+                                <button type="button" class="btn-multi active"
+                                    data-value="英文字體加工首字母特別處理,其餘正楷">英文加工</button>
+                                <button type="button" class="btn-multi" data-value="書法風格">書法</button>
+                                <button type="button" class="btn-multi" data-value="幾何圓形風格">幾何圓形</button>
                             </div>
                         </div>
                     </div>
@@ -90,20 +97,22 @@
                     <div class="details-content">
                         <div class="category-group" id="group_elements">
                             <div class="category-row">
-                                <span class="category-title">【基礎裝飾】</span>
-                                <button type="button" class="btn-multi" data-value="彈幕">彈幕</button>
-                                <button type="button" class="btn-multi" data-value="鼠標點">鼠標點</button>
-                                <button type="button" class="btn-multi" data-value="4角星">4角星</button>
-                                <button type="button" class="btn-multi" data-value="對話框">對話框</button>
-                                <button type="button" class="btn-multi" data-value="圈">圈</button>
+                                <span class="category-title">【基礎】</span>
+                                <button type="button" class="btn-multi active" data-value="彈幕">彈幕</button>
+                                <button type="button" class="btn-multi active" data-value="鼠標點">鼠標點</button>
+                                <button type="button" class="btn-multi active" data-value="4角星">4角星</button>
+                                <button type="button" class="btn-multi active" data-value="對話框">對話框</button>
+                                <button type="button" class="btn-multi active" data-value="圈">圈</button>
                             </div>
                             <div class="category-row">
                                 <span class="category-title">【風格配件】</span>
-                                <button type="button" class="btn-multi" data-value="可愛風:{小表情,音軌}">可愛風(小表情/音軌)</button>
-                                <button type="button" class="btn-multi" data-value="拉風:{鐳射光}">拉風(鐳射光)</button>
-                                <button type="button" class="btn-multi" data-value="懸疑風:{人物藏文字}">懸疑風(人物藏文字)</button>
+                                <button type="button" class="btn-multi" data-value="復古風:{蒸汽波,舊式報紙,CRT大電視,街機,卡帶,唱片,磁帶}">復古風</button>
+                                <button type="button" class="btn-multi" data-value="潮流風:{鐳射/金框卡牌,票根,街頭壁畫}">潮流風</button>
+                                <button type="button" class="btn-multi" data-value="可愛風:{小表情,音軌,貼紙}">可愛風</button>
+                                <button type="button" class="btn-multi" data-value="潮玩風:{浮雕谷子,扭蛋,透明亞克力,鍵帽,鐳射光}">潮玩風</button>
+                                <button type="button" class="btn-multi" data-value="懸疑風:{人物藏文字}">懸疑風</button>
                                 <button type="button" class="btn-multi" data-value="彈幕內嵌角色">彈幕內嵌角色</button>
-                            </div>
+                                                        </div>
                         </div>
                     </div>
                 </details>
@@ -115,14 +124,10 @@
                     <div class="details-content">
                         <div class="category-group" id="group_focus">
                             <div class="category-row">
-                                <span class="category-title">【構圖與重心】</span>
-                                <button type="button" class="btn-multi" data-value="結構暗示：整體排版構成形狀為拱形，暗示結構">拱形排版結構暗示</button>
-                                <button type="button" class="btn-multi" data-value="重心集中在上半部分">重心集中在上半部</button>
-                            </div>
-                            <div class="category-row">
-                                <span class="category-title">【層次與質感】</span>
-                                <button type="button" class="btn-multi" data-value="高斯模糊給予一定前景感增加層次">高斯模糊增加前景層次感</button>
-                                <button type="button" class="btn-multi" data-value="照片">照片質感</button>
+                                <button type="button" class="btn-multi active"
+                                    data-value="結構暗示：整體排版構成形狀為拱形，暗示結構,重心集中在上半部分">拱形</button>
+                                <button type="button" class="btn-multi active" data-value="高斯模糊給前景感增加層次">高斯模糊</button>
+                                <button type="button" class="btn-multi" data-value="照片">照片</button>
                             </div>
                         </div>
                     </div>
@@ -150,15 +155,14 @@
             const sub_left_2 = document.getElementById('p_sub_left_2').value;
             const sub_right_1 = document.getElementById('p_sub_right_1').value;
             const sub_right_2 = document.getElementById('p_sub_right_2').value;
-            
+
             const bg = getSelectedValues('group_bg');
             const text = getSelectedValues('group_text');
             const elements = getSelectedValues('group_elements');
             const focus = getSelectedValues('group_focus');
 
             const fullPrompt = `平面設計 1920x1080 image
-0.文案 ["config": { "main_title": "${main_title}", "sub_title": "${sub_title}", "sub_left_1": "${sub_left_1}", "sub_left_2": "${sub_left_2}", "sub_right_1": "${sub_right_1}", "sub_right_2": "${sub_right_2}" },
-{ "main_title": { "box_2d": [134, 18, 514, 287], "heading": "h1" }, "sub_title": { "box_2d": [553, 27, 638, 313], "heading": "h2"}, "sub_left_1": { "box_2d": [662, 33, 768, 204], "heading": "h3"}, "sub_left_2": { "box_2d": [792, 33, 824 Peg], "heading": "h4",}, "character": { "box_2d": [3, 290, 447, 735], "heading": null }, "sub_right_1": { "box_2d": [551, 874, 712, 971], "heading": "h3" }, "sub_right_2": { "box_2d": [727, 753, 755, 971], "heading": "h4" } }] 信息集中在人物左右,底部不多
+0.文案 ["config": { "main_title": "${main_title}", "heading": "h1" ; "sub_title": "${sub_title}", "heading": "h2" ;  "sub_left_1": "${sub_left_1}", "heading": "h3" ;  "sub_left_2": "${sub_left_2}", "heading": "h4" ;  "sub_right_1": "${sub_right_1}", "heading": "h3" ;  "sub_right_2": "${sub_right_2}" , "heading": "h4" ; }] 信息集中在人物左右,底部不多
 1.人物 [用陰影增加層次感]
 2.背景 [${bg}]
 3.主色調[人物取色塊]
@@ -185,10 +189,10 @@
             });
         }
 
-        window.onload = function() {
+        window.onload = function () {
             const allMultiButtons = document.querySelectorAll('.btn-multi');
             allMultiButtons.forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     this.classList.toggle('active');
                     updatePrompt();
                 });
@@ -197,7 +201,8 @@
             updatePrompt();
         };
     </script>
-<hr>
-<textarea id="output-prompt"></textarea>
+    <hr>
+    <textarea id="output-prompt"></textarea>
 </body>
+
 </html>
