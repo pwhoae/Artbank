@@ -14,6 +14,15 @@
 畫面所有元素用矩形+矩形坐標框住並加中文描述
 ```
 ```
+平面設計 1920x1080 image
+0.文案 ["config": { "main_title": "", "heading": "h1" ; "sub_title": "", "heading": "h2" ;  "sub_left_1": "", "heading": "h3" ;  "sub_left_2": "", "heading": "h4" ;  "sub_right_1": "", "heading": "h3" ;  "sub_right_2": "" , "heading": "h4" ; }] 信息集中在人物左右,底部不多
+1.人物 [用陰影增加層次感]
+2.背景 [打光, 金屬紋路, 提取角色颜色调整渐变叠加, 漸變, 雙邊框斜線飾條, 太極, 星座, 角色海報, 拍立得, 懸疑感:{報紙揭開,警戒線}]
+3.主色調[人物取色塊]
+4.文字 [人物名字加大放在人物背後, 文字顏色漸變, 對比強烈風格, 立體動漫文字, 英文字體加工首字母特別處理,其餘正楷, 書法風格, 幾何圓形風格]
+5.人物元素[彈幕, 鼠標點, 4角星, 對話框, 圈, 復古風:{蒸汽波,舊式報紙,CRT大電視,街機,卡帶,唱片,磁帶}, 潮流風:{鐳射/金框卡牌,票根,街頭壁畫}, 可愛風:{小表情,音軌,貼紙}, 潮玩風:{浮雕谷子,扭蛋,透明亞克力,鍵帽,鐳射光}, 懸疑風:{人物藏文字}, 彈幕內嵌角色]
+6.焦點 [結構暗示：整體排版構成形狀為拱形，暗示結構,重心集中在上半部分, 高斯模糊給前景感增加層次]
+
 優化成HTML+類似canvas move x,y to test template (html no dark mode+need to preview image) image+text button設計 grid setting>100*100為1格>支持show+hide 支持拖拽加輸入坐標move element element 1.文案 (input string) 固定"config": [position,heading,font size,風格(书法风格,几何圆形风格)] main_title:"box_2d": [134, 18, 514, 287], "heading": "h1", sub_title:"box_2d": [553, 27, 638, 313], "heading": "h2", sub_left_1:"box_2d": [662, 33, 768, 204], "heading": "h3", sub_left_2:"box_2d": [792, 33, 824, 120], "heading": "h4", sub_right_1: "box_2d": [551, 874, 712, 971], "heading": "h3", sub_right_2: "box_2d": [727, 753, 755, 971], "heading": "h4", 信息集中在人物左右,底部不多 support可以增加文案:with input ["name":position,heading,font size,風格(书法风格,几何圆形风格)] element 2.人物 (input image>use folder to store) "character1": "box_2d": [3, 290, 447, 735], "heading": null, [用陰影增加層次感] support可以增加character:with input ["character"] element 3.人物元素 (input image>use folder to store) [insert image with label>label 分類 such as 可愛風:{小表情,音軌}] output:preview image+prompt prompt template: [ 平面設計 1920x1080 image 1.文案=""; 2.人物=""; 3.人物元素=""; ] element 4.焦點 [(修改)_结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分]
 
 2.背景:雙邊框斜線飾條,角色海報,拍立得
