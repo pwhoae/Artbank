@@ -16,6 +16,9 @@
 ```
 優化成HTML+類似canvas move x,y to test template (html no dark mode+need to preview image) image+text button設計 grid setting>100*100為1格>支持show+hide 支持拖拽加輸入坐標move element element 1.文案 (input string) 固定"config": [position,heading,font size,風格(书法风格,几何圆形风格)] main_title:"box_2d": [134, 18, 514, 287], "heading": "h1", sub_title:"box_2d": [553, 27, 638, 313], "heading": "h2", sub_left_1:"box_2d": [662, 33, 768, 204], "heading": "h3", sub_left_2:"box_2d": [792, 33, 824, 120], "heading": "h4", sub_right_1: "box_2d": [551, 874, 712, 971], "heading": "h3", sub_right_2: "box_2d": [727, 753, 755, 971], "heading": "h4", 信息集中在人物左右,底部不多 support可以增加文案:with input ["name":position,heading,font size,風格(书法风格,几何圆形风格)] element 2.人物 (input image>use folder to store) "character1": "box_2d": [3, 290, 447, 735], "heading": null, [用陰影增加層次感] support可以增加character:with input ["character"] element 3.人物元素 (input image>use folder to store) [insert image with label>label 分類 such as 可愛風:{小表情,音軌}] output:preview image+prompt prompt template: [ 平面設計 1920x1080 image 1.文案=""; 2.人物=""; 3.人物元素=""; ] element 4.焦點 [(修改)_结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分]
 
+2.背景:雙邊框斜線飾條,角色海報,拍立得
+復古{蒸汽波 cyber,報紙,CRT大電視,街機,卡帶,唱片,磁帶}
+潮流{鐳射/金框卡牌,票根,街頭壁畫,潮玩[浮雕谷子,扭蛋,透明亞克力,鍵帽],貼紙}
 平面設計 1920x1080 image
 0.文案 ["config": { "main_title": "(修改)_改新主標題內容", "sub_title": "(修改)_改新副標題內容", "sub_left_1": "(修改)_改左側區塊一", "sub_left_2": "(修改)_改左側區塊二", "sub_right_1": "(修改)_改右側區塊一", "sub_right_2": "(修改)_改右側區塊二" },
 { "main_title": { "box_2d": [134, 18, 514, 287], "heading": "h1" }, "sub_title": { "box_2d": [553, 27, 638, 313], "heading": "h2"}, "sub_left_1": { "box_2d": [662, 33, 768, 204], "heading": "h3"}, "sub_left_2": { "box_2d": [792, 33, 824, 120], "heading": "h4",}, "character": { "box_2d": [3, 290, 447, 735], "heading": null }, "sub_right_1": { "box_2d": [551, 874, 712, 971], "heading": "h3" }, "sub_right_2": { "box_2d": [727, 753, 755, 971], "heading": "h4" } }] 信息集中在人物左右,底部不多
