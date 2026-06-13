@@ -5,7 +5,7 @@
 特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///key扣/看價格的眼鏡/浮雕谷子/扭蛋/貼紙/街機/手機彀
 潮玩/中國武術/酒鬼賭鬼 
 金框卡牌,票根,街頭壁畫
-
+生成中文image prompt:參考圖+
 <br>
 <a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/
 <a href="https://itch.io/game-assets/tag-art">itch</a>/
