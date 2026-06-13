@@ -14,6 +14,8 @@
 畫面所有元素用矩形+矩形坐標框住並加中文描述
 ```
 ```
+風格放2邊
+
 平面設計 1920x1080 image
 0.文案 ["config": { "main_title": "", "heading": "h1" ; "sub_title": "", "heading": "h2" ;  "sub_left_1": "", "heading": "h3" ;  "sub_left_2": "", "heading": "h4" ;  "sub_right_1": "", "heading": "h3" ;  "sub_right_2": "" , "heading": "h4" ; }] 信息集中在人物左右,底部不多
 1.人物 [用陰影增加層次感]
