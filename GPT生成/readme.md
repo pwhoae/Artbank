@@ -57,14 +57,9 @@
 ```
 帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
-<details>
-	<summary><h1>潮玩</h1></summary> 
-	
-```
-[桌遊]以「參考圖」為核心，重新設計為一款高品質商業化桌遊（Board Game）產品。 畫面包含完整桌遊展示：角色卡牌、技能卡、遊戲版圖、骰子、指示物（tokens）、說明書與包裝盒。 角色風格保留原始造型特徵（髮型、服裝、配色、標誌性元素），但轉換為適合桌遊印刷的插畫風（高辨識度、簡化細節、清晰輪廓）。 🎨 美術風格：現代桌遊插畫風、類似歐美策略卡牌（如 Slay the Spire + Hearthstone + Gloomhaven 混合風格） 📦 包裝設計：精緻盒裝（Box Cover），有主視覺角色 + 遊戲LOGO + 副標題 🃏 卡牌設計：包含角色卡（HP / 技能 / 能量）、技能卡、事件卡，UI清晰 🗺️ 遊戲版圖：模組化拼接地圖 or 關卡式設計 🎲 配件：骰子、木製token、標記物、能量指示物 💡 排版：俯視 + 微透視（isometric / top-down showcase），整齊陳列 整體呈現為「Kickstarter 商品展示圖 / 商業宣傳圖」，高質感、乾淨背景、柔光打光、產品攝影風 高解析度、細節豐富、商業級設計、可上架販售
-```
-
-</details>
+### 潮玩
+https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md
+<hr>
 <details>
 <summary><h6>廢棄idea</h6></summary>
 985211恤/3D立體紙雕便條紙/iframe to preview/高达模/御神籤/改 .exe 圖示>.ico/demos畫圖/blindbox/沿虛線剪/冲破次元壁的/俯拍城景自拍
@@ -72,10 +67,7 @@
 ### 遊戲經驗
 ```
 沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
-```
-### 潮玩
-https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md
-	
+```	
 ### 高達模型板件
   <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
 
