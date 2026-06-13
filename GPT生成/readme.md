@@ -2,7 +2,8 @@
 <a id="readme_begin"></a>
 怎么把ChatGPT image 2拆
 开放世界
-特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///key扣/看價格的眼鏡/浮雕谷子/扭蛋/
+特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///key扣/看價格的眼鏡/浮雕谷子/扭蛋/貼紙/街機/手機彀
+潮玩/中國武術/酒鬼賭鬼 
 金框卡牌,票根,街頭壁畫
 
 <br>
