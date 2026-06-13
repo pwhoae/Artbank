@@ -58,8 +58,10 @@
 ```
 帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
-### 潮玩
-https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md
+###  <a href="https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md">潮玩</a>
+
+### 整活
+
 <hr>
 <details>
 <summary><h6>廢棄idea</h6></summary>
