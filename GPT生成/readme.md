@@ -1,16 +1,10 @@
 [回到底部](#readme)|<br>
 <a id="readme_begin"></a>
-怎么把ChatGPT image 2拆
-开放世界
-特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///key扣/看價格的眼鏡/浮雕谷子/扭蛋/貼紙/街機/手機彀+樂高+馬賽克拼接 扭蛋
-拼圖
-黑膠唱片
-裝飾奚帶
-紙摺扇
-生成image prompt:參考圖+樂高 商業化潮玩
-潮玩/中國武術/酒鬼賭鬼 
-金框卡牌,票根,街頭壁畫
-生成中文image prompt:參考圖+
+特效idea:猫爪鼠標/stringword/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨/看價格的眼鏡/<br>
+潮玩:key扣/浮雕谷子/扭蛋/街機/手機彀/樂高/馬賽克拼接/拼圖/黑膠唱片/紙摺扇/金框卡牌,票根,街頭壁畫<br>
+
+生成image prompt:參考圖+ 商業化潮玩
+
 <br>
 <a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/
 <a href="https://itch.io/game-assets/tag-art">itch</a>/
