@@ -2,7 +2,10 @@
 <a id="readme_begin"></a>
 怎么把ChatGPT image 2拆
 开放世界
-特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///IG風格的壓克力牌//key扣/看價格的眼鏡<br>
+特效idea:猫爪鼠標/string word/手電筒/刮刮樂/ppt>html>animation/光柵/天空中下起了表情雨///IG風格的壓克力牌//key扣/看價格的眼鏡/浮雕谷子/扭蛋/鍵帽/鐳射光票根
+金框卡牌,票根,街頭壁畫
+
+<br>
 <a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/
 <a href="https://itch.io/game-assets/tag-art">itch</a>/
 <a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
