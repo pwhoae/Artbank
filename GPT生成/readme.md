@@ -1,8 +1,12 @@
 [回到底部](#readme)|<br>
 <a id="readme_begin"></a>
-特效idea:猫爪鼠標/stringword/手電筒/刮刮樂/ppt>html>animation/光柵卡/天空中下起了表情雨/看價格的眼鏡/<br>
-潮玩:key扣/浮雕谷子/街機/手機彀/馬賽克拼接/拼圖/紙摺扇/金框卡牌,票根,街頭壁畫<br>
+```
+特效idea:猫爪鼠標/stringword/手電筒/刮刮樂/ppt>html>animation/光柵卡/天空中下起了表情雨/看價格的眼鏡
+潮玩:key扣/浮雕谷子/街機/手機彀/馬賽克拼接/拼圖/紙摺扇/金框卡牌,票根,街頭壁畫
+```
+```
 生成image prompt:參考圖+ 商業化潮玩
+```
 
 <br>
 <a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/
