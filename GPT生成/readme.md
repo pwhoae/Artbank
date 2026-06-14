@@ -52,11 +52,13 @@
 ```
 ```
 文字設計:结构提炼>形态调整>装饰添加>整体优化
-[书法风格]手法：在黑体结构基础上，微调撇捺笔画，使笔触下延并向外扩展，增加笔画粗细对比，并加入曲线连接，营造出流动的书写感和“飞白”效果。 
+[书法风格]手法：在黑体结构基础上，微调撇捺笔画，使笔触下延并向外扩展，增加笔画粗细对比，并加入曲线连接，营造出流动的书写感和“飞白”效果。
+创意艺术字体“纵有疾风起”，秀丽笔手写风格，整体文字横版排列，具有强烈视觉冲击力； 深度融合手写书法笔意，笔触带毛笔书写的粗犷洒脱，如挥毫泼墨的肆意劲道； 起收笔的飞白，顿挫，尽显促销的火爆张力，文字的形态打破规整，笔画的粗细变化； dutch angle，营造出动感冲刺的气势，字形呈奔放之势； 重心上扬如蓄势待发，笔画的伸展，穿插毫无拘束，似全力冲刺的劲道； 整体架构疏密交织，紧密处如促销热潮的汹涌，留白处似优惠间隙的呼吸感； 纯净黑色背景打底，完美契合热烈氛围，艺术字的形态与色彩酣畅传递。 
 [几何圆形风格]手法：将字体的下半部分简化为圆形设计，线条粗壮，结构稳重，结合顶部的装饰性笔画，体现出简洁的工业设计美感。 
 [流线型设计]手法：将笔画线条调细，横画加粗，日字部的竖画设计成流畅的曲线，横画首尾增加对称的衬角（Serif-like details）装饰，赋予字体优雅的曲线美。
-[对比强烈风格]手法：极致压缩线条宽度，增大撇捺与横画的粗细对比，笔画末端使用衬角装饰，并将中间的竖画进行“省笔”处理，呈现出极具现代感和艺术气息的视觉效果。 
+[对比强烈风格]手法：极致压缩线条宽度，增大撇捺与横画的粗细对比，笔画末端使用衬角装饰，并将中间的竖画进行“省笔”处理，呈现出极具现代感和艺术气息的视觉效果。
 ```
+
 ```
 帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
 ```
@@ -211,19 +213,10 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 <a name="case-196"></a>
 ### 例 196：试卷上的涂鸦巨龙
 
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case196.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case196.jpg" width="100" height="100"></img>
 ```text
 [中文]一个巨大的巨龙，庞大的规模，高耸的存在感，一个远超人类尺寸的巨大实体，压倒性和压迫性的，用极其密集的混乱涂鸦线条绘制，超密集的重叠笔触，纠缠和混乱的线条画，在真实的印刷英文/中文教科书或试卷页面上，可见的文本、布局和纸张纹理清晰透出，圆珠笔绘画风格，精细的墨水线条，杂乱的分层笔触，没有干净的轮廓，一切由混乱的涂鸦构成，黑暗和柔和的底色（黑色，深靛蓝，暗紫罗兰色），带有微妙的低饱和度霓虹点缀（蓝色，青色，紫色），仅在关键区域（眼睛，核心，裂缝，静脉）有选择性的生物发光，不是整体的亮度，取决于主体的有机或机械纹理，错综复杂的细节，复杂的表面图案，形态从混乱中浮现，高密度中心，边缘消融为松散的涂鸦，主体附近微小的人类剪影强调了尺度感，半透明层，由线条密度产生的深度，原始的，不完美的，嘈杂的，充满活力的手绘感，略带诡异，超现实，神秘的氛围，混合媒体插画，涂鸦艺术，极其详细，黑暗团块和发光点缀之间的高对比度，杰作，极其详细
 [English]A colossal [SUBJECT], massive scale, towering presence, a gigantic entity far beyond human size, overwhelming and oppressive, drawn with extremely dense chaotic scribble lines, ultra-dense overlapping pen strokes, tangled and chaotic linework, on top of a real printed English/Chinese textbook or exam paper page, visible text, layout, and paper texture clearly showing through, ballpoint pen drawing style, fine ink lines, messy layered strokes, no clean outlines, everything constructed from chaotic scribbles, dark and muted base tones (black, deep indigo, dark violet), with subtle low-saturation neon accents (blue, cyan, purple), selective bioluminescent glow only in key areas (eyes, core, cracks, veins), not overall brightness, organic or mechanical textures depending on subject, intricate details, complex surface patterns, form emerging from chaos, high-density center, edges dissolving into loose scribbles, sense of scale emphasized by tiny human silhouette near the subject, semi-transparent layers, depth created by line density, raw, imperfect, noisy, energetic hand-drawn feeling, slightly eerie, surreal, mysterious atmosphere, mixed media illustration, scribble art, extremely detailed, high contrast between dark mass and glowing accents, masterpiece, ultra detailed
-```
-<a name="case-231"></a>
-
-### 例 231：疾风起狂草艺术字体设计
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case231.jpg"></img>
-```text
-[中文]创意艺术字体“纵有疾风起”，秀丽笔手写风格，整体文字横版排列，具有强烈视觉冲击力； 深度融合手写书法笔意，笔触带毛笔书写的粗犷洒脱，如挥毫泼墨的肆意劲道； 起收笔的飞白，顿挫，尽显促销的火爆张力，文字的形态打破规整，笔画的粗细变化； dutch angle，营造出动感冲刺的气势，字形呈奔放之势； 重心上扬如蓄势待发，笔画的伸展，穿插毫无拘束，似全力冲刺的劲道； 整体架构疏密交织，紧密处如促销热潮的汹涌，留白处似优惠间隙的呼吸感； 纯净黑色背景打底，完美契合热烈氛围，艺术字的形态与色彩酣畅传递。
-[English]Creative artistic typography "Zong You Ji Feng Qi", hand-written style with a fine brush, overall text arranged horizontally, with strong visual impact; Deeply integrated with the essence of handwritten calligraphy, the brushstrokes carry the rugged and free-spirited nature of brush writing, like the unrestrained vigor of splashing ink; The flying white and pauses at the start and end of the strokes fully display the explosive tension of a promotion, the form of the text breaks away from neatness, with variations in the thickness of the strokes; dutch angle, creating a dynamic sprinting momentum, the font shape shows a bold and unrestrained trend; The center of gravity rises like being ready to launch, the stretching and interlacing of the strokes are completely unconstrained, like the vigor of a full-force sprint; The overall structure is intertwined with density and sparseness, the tight parts are like the surging of a promotional craze, and the blank spaces are like the breathing sense during promotional gaps; Pure black background as the base, perfectly fitting the passionate atmosphere, the form and color of the artistic typography are conveyed with full expressiveness.
 ```
 
 ***
@@ -253,19 +246,6 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 ```
 
 ***
-
-<a name="case-262"></a>
-
-### 例 262：苹果园远观库克发布新机
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case262.jpg"></img>
-
-```text
-[中文]在Apple Park iPhone 20主题演讲期间拍摄的业余iPhone照片，蒂姆·库克在舞台上演讲。从远处的观众人群中拍摄
-[English]Amateur iPhone photo at Apple Park during the iPhone 20 keynote, Tim Cook presenting on stage. Shot from the crowd at a distance
-```
-***
-
 <a name="case-299"></a>
 
 ### 例 299：极简留白涂鸦手绘草图
