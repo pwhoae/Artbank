@@ -1,6 +1,7 @@
 [回到底部](#readme)|<br>
 <a id="readme_begin"></a>
-過程要好玩快樂
+### 整活>過程要好玩快樂
+
 ```
 特效idea:猫爪鼠標/stringword/手電筒/刮刮樂/ppt>html>animation/光柵卡/天空中下起了表情雨/看價格的眼鏡
 潮玩:key扣/浮雕谷子/街機/手機彀/馬賽克拼接/拼圖/紙摺扇/街頭壁畫/摺紙/速照/水杯/高达模/御神籤/易拉罐拼接藝術/瓶蓋拼接藝術/主體空氣罐/主體香水/像素藝術/粉筆畫
@@ -44,10 +45,8 @@
 1.衣服[從上往下]>臉型裝飾>召喚物>武器
 2.靈感要素(主要區分點)[设计重点：头/肩膀/胸/腰/手臂/大腿/小腿/膝盖/选择1-2个作为设计重点]
 ```
-###  <a href="https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md">潮玩</a>
-```
 
-### 整活
+###  <a href="https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md">潮玩</a>
 
 <hr>
 <details>
