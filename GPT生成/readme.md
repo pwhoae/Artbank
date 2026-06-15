@@ -75,6 +75,8 @@ signal hp_changed/score_changed/speed_changed
 0. 狀態機  enum Phase { Fighting, Win, Resetting }
 1. 血量系统 max_hp = 3/current_hp =3/ hp_changed.emit(current_hp)>重置血量
 2. 分数系统 score = 0/score_changed.emit(score)>重置分数
+#enemy move to player
+var direction_to_player=position.direction_to(player.position)
 .1 速度系统 base_speed = 400.0/max_speed = 1000.0/speed_increment = 10.0/lerp_weight = 2.0 平滑加速 lerp(current_speed, target_speed, lerp_weight * delta)/speed_changed.emit(current_speed)>速度变化
 .2 角色互相面對
 .3 限制場地
