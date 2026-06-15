@@ -67,7 +67,20 @@
 ### 遊戲經驗
 ```
 沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
-```	
+```
+```
+### 📡 信号（Signals）
+signal hp_changed/score_changed/speed_changed
+
+0. 狀態機  enum Phase { Fighting, Win, Resetting }
+1. 血量系统 max_hp = 3/current_hp =3/ hp_changed.emit(current_hp)>重置血量
+2. 分数系统 score = 0/score_changed.emit(score)>重置分数
+.1 速度系统 base_speed = 400.0/max_speed = 1000.0/speed_increment = 10.0/lerp_weight = 2.0 平滑加速 lerp(current_speed, target_speed, lerp_weight * delta)/speed_changed.emit(current_speed)>速度变化
+.2 角色互相面對
+.3 限制場地
+.4 招式與動畫/特殊技能/攻擊判定/更新血條 + 判斷 KO>特效 + 音效
+3. 游戏结束
+```
 ### 高達模型板件
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
 
