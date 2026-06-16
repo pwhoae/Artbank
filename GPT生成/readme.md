@@ -4,10 +4,10 @@
 
 ```
 特效idea:猫爪鼠標/stringword/手電筒/刮刮樂/ppt>html>animation/光柵卡/天空中下起了表情雨/看價格的眼鏡
-潮玩:key扣/浮雕谷子/街機/手機彀/馬賽克拼接/拼圖/紙摺扇/街頭壁畫/摺紙/速照/水杯/高达模/御神籤/易拉罐拼接藝術/瓶蓋拼接藝術/主體空氣罐/主體香水/像素藝術/粉筆畫
+潮玩:key扣/浮雕谷子/街機/手機彀/馬賽克拼接/拼圖/紙摺扇/街頭壁畫/摺紙/速照/水杯/高达模/易拉罐拼接藝術/瓶蓋拼接藝術/主體空氣罐/主體香水/像素藝術/粉筆畫
 ```
 ```
-生成image prompt:參考圖+ 商業化潮玩 香港的士
+生成image prompt:參考圖+ 商業化潮玩 御神籤
 ```
 <br>
 遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
