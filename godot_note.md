@@ -8,6 +8,14 @@ signal
 var
 ```
 camera
+jump >ray for slideing 墻跳滑牆
+tilemap>terrain
+
+coin/box/spike interactive
+gui>playerdata>autoload
+
+🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
+UI>Camera2D/CanvasLayer /Label
 ```
 31 destruction效果 *44 骨綁**45 music player ** 46完整musicplayer
 jolt要下載 24奇怪專案參考 26材質參考 27（28）骨架參考（車）29/30 流體/衣服 37-39 動畫 40/41/42/43 動畫example/曲線/粒子/動畫狀態機 47/48 mixer effect
