@@ -1,0 +1,69 @@
+这是一个为你策划的《Flappy Bird》复刻版 Demo 方案，包含游戏核心机制规划以及用于 AI 绘图工具（如 Midjourney 或 DALL-E 3）的美术资产提示词。
+
+---
+
+## 一、 游戏策划方案：复刻版《Flappy Bird》
+
+### 1. 核心游戏循环 (Core Loop)
+
+* **输入方式：** 单机/触屏。点击屏幕，小鸟向上跳跃（施加一个向上的瞬间速度）。
+* **物理机制：** 持续的重力影响，导致小鸟自然下落。
+* **挑战点：** 避开随机高度的上下管道。
+* **失败判定：** 触碰管道或地面/天花板即判定失败。
+* **得分机制：** 成功穿过一对管道加 1 分。
+
+### 2. 关键系统模块
+
+* **场景滚动逻辑：** 背景与管道以恒定速度向左移动，营造前进感。
+* **对象池 (Object Pooling)：** 管道资源重复利用，避免频繁创建销毁导致掉帧。
+* **UI 状态机：** 初始界面（Start）、游戏进行中（Play）、结算界面（GameOver）。
+
+---
+
+## 二、 美术素材 AI Prompt (建议使用 Midjourney)
+
+为了保持风格统一，建议使用 **"2D vector art, clean lines, flat design, vibrant colors, minimalist"** 作为基调。
+
+| 素材名称 | AI Prompt 建议 |
+| --- | --- |
+| **主角 (小鸟)** | `A cute yellow round bird, simple cartoon style, side profile view, flat vector art, white background --v 6.0` |
+| **管道 (水管)** | `Vertical green pipe for a side-scrolling game, cartoon style, clean outline, flat vector, bright green, simple shading --v 6.0` |
+| **背景 (天空/城市)** | `Simple game background, blue sky with white clouds, distant green hills, minimalist flat illustration, side-scrolling perspective --v 6.0` |
+| **地板 (地面)** | `Grass platform, rectangular, cartoon style, flat vector, simple texture, white background --v 6.0` |
+
+> **提示：** 如果你需要直接用于开发，可以在生成后使用 `remove.bg` 等工具去除背景，并将其导出为 PNG 序列帧。
+
+---
+
+## 三、 开发技术建议
+
+如果你是使用 Unity 或 Cocos Creator 进行开发，建议遵循以下架构：
+
+1. **BirdController.cs:**
+* `Rigidbody2D` 组件控制速度。
+* `Update()` 中检测点击输入，通过 `velocity = Vector2.up * jumpForce` 实现跳跃。
+
+
+2. **PipeSpawner.cs:**
+* 设定 `SpawnRate`（生成频率）。
+* 生成管道时，随机化 Y 轴偏移量（Offset），保持上下管道间距恒定。
+
+
+3. **GameManager.cs:**
+* 管理单例模式，控制分数显示与场景重置。
+
+
+
+---
+
+## 四、 项目后续拓展方向
+
+为了让你的 Demo 更具吸引力，可以考虑加入以下功能：
+
+* **多皮肤系统：** 允许玩家更换不同的小鸟外观。
+* **难度梯度：** 随着分数增加，增加滚动速度或减少管道间距。
+* **粒子效果：** 小鸟死亡时触发简单的爆炸动画。
+
+---
+
+对于这个策划方案，你是打算使用 **Unity (C#)** 还是 **Web 技术 (JavaScript/Phaser)** 来实现这个 Demo？
