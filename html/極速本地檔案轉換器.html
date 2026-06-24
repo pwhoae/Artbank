@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>極速本地萬能檔案轉換器 (MP4 to MP3 / 圖片 / 文件)</title>
+    <!-- Tailwind CSS 適用於現代化 UI 設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 LameJS 用於瀏覽器端 MP3 編碼 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <!-- 引入 jsPDF 用於文字轉 PDF 功能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* 自訂動畫與樣式 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass-panel {
+            background: rgba(23, 23, 23, 0.85);
+        }
+        .tab-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- 頂部導覽列 -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-150">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">極速本地檔案轉換器</h1>
+                    <p class="text-xs text-green-600 flex items-center gap-1 font-medium mt-0.5">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        100% 瀏覽器本地安全轉換，檔案絕不上傳
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 轉換模式選單 -->
+            <nav class="flex p-1 bg-slate-100 rounded-xl" id="navTabs">
+                <button onclick="switchTab('audio-video')" id="tab-audio-video" class="px-4 py-2 text-sm font-semibold rounded-lg tab-transition bg-white text-indigo-600 shadow-sm">
+                    🎵 影音提取 (MP4/MP3)
+                </button>
+                <button onclick="switchTab('image')" id="tab-image" class="px-4 py-2 text-sm font-semibold rounded-lg tab-transition text-slate-600 hover:text-slate-900">
+                    🖼️ 圖片轉換
+                </button>
+                <button onclick="switchTab('document')" id="tab-document" class="px-4 py-2 text-sm font-semibold rounded-lg tab-transition text-slate-600 hover:text-slate-900">
+                    📄 數據文件
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-8">
+        
+        <!-- 1. 影音轉換區 (預設) -->
+        <section id="panel-audio-video" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-900 mb-2">🎵 影音提取器 (影片轉 MP3 / 音訊格式轉換)</h2>
+                <p class="text-sm text-slate-500 mb-6">支援將 MP4、WebM、MOV 等影片直接提取音軌，或進行 WAV 轉 MP3 等音訊格式轉換。</p>
+
+                <!-- 設定選單 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">輸出格式</label>
+                        <select id="audioFormat" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="mp3">MP3 (.mp3) - 推薦，相容性高</option>
+                            <option value="wav">WAV (.wav) - 無損音質，轉檔極快</option>
+                        </select>
+                    </div>
+                    <div id="bitrateContainer">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">MP3 位元率 (Bitrate)</label>
+                        <select id="audioBitrate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="320">320 kbps (高保真音質)</option>
+                            <option value="192" selected>192 kbps (標準音質 - 推薦)</option>
+                            <option value="128">128 kbps (小檔案空間)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 拖曳上傳區 -->
+                <div id="dropzone-audio" class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-8 text-center cursor-pointer transition-colors duration-200 bg-slate-50/50" onclick="document.getElementById('file-audio').click()">
+                    <input type="file" id="file-audio" class="hidden" accept="video/*,audio/*">
+                    <svg class="w-12 h-12 mx-auto text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p class="text-sm font-medium text-slate-700">點擊選擇或將 MP4 / 影音檔案拖曳至此</p>
+                    <p class="text-xs text-slate-400 mt-1">支援常用影音格式 (MP4, WebM, WAV, OGG, M4A 等)</p>
+                </div>
+
+                <!-- 檔案清單 & 處理進度 -->
+                <div id="audio-process-container" class="mt-6 hidden space-y-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg" id="fileIcon">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800" id="audio-filename">file_name.mp4</p>
+                                <p class="text-xs text-slate-400" id="audio-filesize">大小: -- MB</p>
+                            </div>
+                        </div>
+                        <button id="btn-start-audio" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition-all">
+                            開始轉換 🚀
+                        </button>
+                    </div>
+
+                    <!-- 進度條 -->
+                    <div id="audio-progress-bar-container" class="hidden space-y-2">
+                        <div class="flex justify-between text-xs font-semibold text-slate-500">
+                            <span id="audio-status-text">正在解碼影音資料...</span>
+                            <span id="audio-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div id="audio-progress-fill" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 下載區 -->
+                    <div id="audio-download-zone" class="hidden p-4 bg-green-50 border border-green-100 rounded-xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-green-500 text-white rounded-lg">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-green-800">轉換完成！</p>
+                                <p class="text-xs text-green-600" id="audio-output-info">新檔案大小: -- MB</p>
+                            </div>
+                        </div>
+                        <a id="btn-download-audio" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl shadow-md flex items-center gap-1 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            下載轉換後檔案
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 圖片轉換區 -->
+        <section id="panel-image" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-900 mb-2">🖼️ 圖片萬能格式轉換與壓縮</h2>
+                <p class="text-sm text-slate-500 mb-6">輕量快速轉換 PNG, JPG, WebP 格式，並提供即時品質壓縮控制。</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">目標格式</label>
+                        <select id="imageFormat" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="image/jpeg">JPEG (.jpg)</option>
+                            <option value="image/png">PNG (.png)</option>
+                            <option value="image/webp">WebP (.webp) - 推薦高壓縮比</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">品質 (Quality)</label>
+                            <span class="text-xs font-bold text-indigo-600" id="qualityVal">85%</span>
+                        </div>
+                        <input type="range" id="imageQuality" min="10" max="100" value="85" class="w-full accent-indigo-600 mt-2">
+                    </div>
+                </div>
+
+                <!-- 拖曳上傳 -->
+                <div id="dropzone-image" class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-8 text-center cursor-pointer transition-colors duration-200 bg-slate-50/50" onclick="document.getElementById('file-image').click()">
+                    <input type="file" id="file-image" class="hidden" accept="image/*">
+                    <svg class="w-12 h-12 mx-auto text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p class="text-sm font-medium text-slate-700">點擊選擇或將圖片拖曳至此</p>
+                    <p class="text-xs text-slate-400 mt-1">支援 PNG, JPG, WebP, GIF, BMP 等常見圖片</p>
+                </div>
+
+                <!-- 圖片轉換進度與預覽 -->
+                <div id="image-process-container" class="mt-6 hidden space-y-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <img id="image-preview" class="w-12 h-12 object-cover rounded-lg border border-slate-200 bg-slate-200" src="" alt="預覽">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-800 truncate" id="image-filename">image_name.png</p>
+                                <p class="text-xs text-slate-400" id="image-filesize">大小: -- KB</p>
+                            </div>
+                        </div>
+                        <button id="btn-start-image" class="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition-all">
+                            立即轉換 🚀
+                        </button>
+                    </div>
+
+                    <!-- 下載與比較 -->
+                    <div id="image-download-zone" class="hidden p-4 bg-green-50 border border-green-100 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-green-800">轉檔並優化成功！</p>
+                            <p class="text-xs text-green-600" id="image-output-info">新檔案大小: -- KB</p>
+                        </div>
+                        <a id="btn-download-image" class="w-full sm:w-auto px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl shadow-md flex items-center justify-center gap-1 cursor-pointer">
+                            下載轉換後圖片
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 文件轉換區 -->
+        <section id="panel-document" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-900 mb-2">📄 輕量數據與文件轉換工具</h2>
+                <p class="text-sm text-slate-500 mb-6">支援 JSON 轉 CSV、CSV 轉 JSON，以及將一般純文字檔 (.txt) 快速封裝為 PDF。</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">轉換模式</label>
+                        <select id="docMode" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="json2csv">JSON 轉 CSV (.csv)</option>
+                            <option value="csv2json">CSV 轉 JSON (.json)</option>
+                            <option value="txt2pdf">純文字 TXT 轉 PDF (.pdf)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 拖曳上傳 -->
+                <div id="dropzone-doc" class="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-8 text-center cursor-pointer transition-colors duration-200 bg-slate-50/50" onclick="document.getElementById('file-doc').click()">
+                    <input type="file" id="file-doc" class="hidden" accept=".json,.csv,.txt">
+                    <svg class="w-12 h-12 mx-auto text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p class="text-sm font-medium text-slate-700">點擊選擇或將文件拖曳至此</p>
+                    <p class="text-xs text-slate-400 mt-1">支援 .json, .csv, .txt 檔案</p>
+                </div>
+
+                <!-- 處理與下載 -->
+                <div id="doc-process-container" class="mt-6 hidden space-y-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800" id="doc-filename">data.json</p>
+                            <p class="text-xs text-slate-400" id="doc-filesize">大小: -- KB</p>
+                        </div>
+                        <button id="btn-start-doc" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition-all">
+                            執行轉換 🚀
+                        </button>
+                    </div>
+
+                    <!-- 下載區 -->
+                    <div id="doc-download-zone" class="hidden p-4 bg-green-50 border border-green-100 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold text-green-800">轉換成功！</p>
+                            <p class="text-xs text-green-600">已為您包裝好輸出檔案</p>
+                        </div>
+                        <a id="btn-download-doc" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium text-sm rounded-xl shadow-md flex items-center gap-1 cursor-pointer">
+                            下載轉換後檔案
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 底部資訊 -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
+        <p>© 2026 極速本地萬能檔案轉換器. 免安裝・無流量限制・純前端高效能核心.</p>
+        <p class="mt-1">Powered by Web Audio API, LameJS, jsPDF, and Canvas Technologies.</p>
+    </footer>
+
+    <!-- 通知小氣泡 -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 pointer-events-none"></div>
+
+    <!-- 邏輯腳本 -->
+    <script>
+        // --- 狀態管理 ---
+        let currentTab = 'audio-video';
+        let loadedAudioFile = null;
+        let loadedImageFile = null;
+        let loadedDocFile = null;
+
+        // --- Tab 切換功能 ---
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // 隱藏所有 Panel
+            document.getElementById('panel-audio-video').classList.add('hidden');
+            document.getElementById('panel-image').classList.add('hidden');
+            document.getElementById('panel-document').classList.add('hidden');
+            
+            // 顯示當前選中的 Panel
+            document.getElementById(`panel-${tabName}`).classList.remove('hidden');
+
+            // 更新 Tabs 按鈕樣式
+            const tabs = ['audio-video', 'image', 'document'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tabName) {
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg tab-transition bg-white text-indigo-600 shadow-sm";
+                } else {
+                    btn.className = "px-4 py-2 text-sm font-semibold rounded-lg tab-transition text-slate-600 hover:text-slate-900";
+                }
+            });
+        }
+
+        // --- 通用輔助函式：檔案大小格式化 ---
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // --- 通用輔助函式：Toast 通知 ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `p-4 mb-3 rounded-xl shadow-lg text-white font-medium text-sm transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${
+                type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-slate-800'
+            }`;
+            
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+            toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            // 動畫移入
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // 動畫移出並刪除
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ==========================================
+        //  一、影音提取模組 (MP4/Video to MP3/WAV)
+        // ==========================================
+        const audioFormatSelect = document.getElementById('audioFormat');
+        const bitrateContainer = document.getElementById('bitrateContainer');
+        const fileAudio = document.getElementById('file-audio');
+        const dropzoneAudio = document.getElementById('dropzone-audio');
+        const audioProcessContainer = document.getElementById('audio-process-container');
+        const audioFilename = document.getElementById('audio-filename');
+        const audioFilesize = document.getElementById('audio-filesize');
+        const btnStartAudio = document.getElementById('btn-start-audio');
+        const audioProgressBarContainer = document.getElementById('audio-progress-bar-container');
+        const audioStatusText = document.getElementById('audio-status-text');
+        const audioPercentage = document.getElementById('audio-percentage');
+        const audioProgressFill = document.getElementById('audio-progress-fill');
+        const audioDownloadZone = document.getElementById('audio-download-zone');
+        const audioOutputInfo = document.getElementById('audio-output-info');
+        const btnDownloadAudio = document.getElementById('btn-download-audio');
+
+        // 音訊格式切換顯示/隱藏位元率設定
+        audioFormatSelect.addEventListener('change', () => {
+            if (audioFormatSelect.value === 'wav') {
+                bitrateContainer.classList.add('hidden');
+            } else {
+                bitrateContainer.classList.remove('hidden');
+            }
+        });
+
+        // 影音上傳與拖曳監聽
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzoneAudio.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzoneAudio.classList.add('border-indigo-500', 'bg-indigo-50/20');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzoneAudio.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzoneAudio.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+            }, false);
+        });
+
+        dropzoneAudio.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) handleAudioSelect(files[0]);
+        });
+
+        fileAudio.addEventListener('change', (e) => {
+            if (e.target.files.length) handleAudioSelect(e.target.files[0]);
+        });
+
+        function handleAudioSelect(file) {
+            loadedAudioFile = file;
+            audioFilename.textContent = file.name;
+            audioFilesize.textContent = `大小: ${formatBytes(file.size)}`;
+            
+            // 重設 UI 狀態
+            audioProcessContainer.classList.remove('hidden');
+            audioProgressBarContainer.classList.add('hidden');
+            audioDownloadZone.classList.add('hidden');
+            audioProgressFill.style.width = '0%';
+            
+            showToast('已成功讀取媒體檔案，請設定並開始轉換。', 'info');
+        }
+
+        // 開始進行影音解碼與音軌轉檔
+        btnStartAudio.addEventListener('click', async () => {
+            if (!loadedAudioFile) return;
+
+            btnStartAudio.disabled = true;
+            btnStartAudio.classList.add('opacity-50', 'cursor-not-allowed');
+            audioProgressBarContainer.classList.remove('hidden');
+            audioDownloadZone.classList.add('hidden');
+
+            try {
+                updateAudioProgress('正在讀取並初始化解碼核心...', 5);
+                
+                // 1. 初始化 Web Audio API Context
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                
+                // 讀取成 ArrayBuffer
+                const arrayBuffer = await loadedAudioFile.arrayBuffer();
+                updateAudioProgress('正在解碼影音資料 (大型檔案需耗費數秒)...', 20);
+
+                // 解碼音軌
+                let audioBuffer;
+                try {
+                    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                } catch (decodeErr) {
+                    console.error(decodeErr);
+                    throw new Error('影音檔案解碼失敗。請確認該檔案在您的瀏覽器可正常播放，或轉換成更通用的 MP4/WAV。');
+                }
+
+                updateAudioProgress('解碼成功，開始進行音軌格式編碼...', 40);
+
+                const format = audioFormatSelect.value;
+                if (format === 'wav') {
+                    // 導出 WAV 檔 (快速直接)
+                    encodeWAV(audioBuffer);
+                } else if (format === 'mp3') {
+                    // 導出 MP3 檔 (透過 LameJS 進行分片不阻塞轉檔)
+                    const bitrate = parseInt(document.getElementById('audioBitrate').value);
+                    await encodeMP3(audioBuffer, bitrate);
+                }
+
+            } catch (err) {
+                showToast(err.message, 'error');
+                audioStatusText.textContent = '轉換失敗';
+                audioStatusText.className = 'text-red-500 text-xs font-semibold';
+            } finally {
+                btnStartAudio.disabled = false;
+                btnStartAudio.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        function updateAudioProgress(text, percentage) {
+            audioStatusText.textContent = text;
+            audioPercentage.textContent = `${percentage}%`;
+            audioProgressFill.style.width = `${percentage}%`;
+        }
+
+        // === WAV 編碼核心 ===
+        function encodeWAV(audioBuffer) {
+            const numOfChan = audioBuffer.numberOfChannels;
+            const sampleRate = audioBuffer.sampleRate;
+            const format = 1; // 1 = 16-bit PCM
+            const bitDepth = 16;
+            
+            let result;
+            if (numOfChan === 2) {
+                result = interleave(audioBuffer.getChannelData(0), audioBuffer.getChannelData(1));
+            } else {
+                result = audioBuffer.getChannelData(0);
+            }
+            
+            const buffer = new ArrayBuffer(44 + result.length * 2);
+            const view = new DataView(buffer);
+            
+            /* RIFF identifier */
+            writeString(view, 0, 'RIFF');
+            /* file length */
+            view.setUint32(4, 36 + result.length * 2, true);
+            /* RIFF type */
+            writeString(view, 8, 'WAVE');
+            /* format chunk identifier */
+            writeString(view, 12, 'fmt ');
+            /* format chunk length */
+            view.setUint32(16, 16, true);
+            /* sample format (raw) */
+            view.setUint16(20, format, true);
+            /* channel count */
+            view.setUint16(22, numOfChan, true);
+            /* sample rate */
+            view.setUint32(24, sampleRate, true);
+            /* byte rate (sample rate * block align) */
+            view.setUint32(28, sampleRate * numOfChan * (bitDepth / 8), true);
+            /* block align (channel count * bytes per sample) */
+            view.setUint16(32, numOfChan * (bitDepth / 8), true);
+            /* bits per sample */
+            view.setUint16(34, bitDepth, true);
+            /* data chunk identifier */
+            writeString(view, 36, 'data');
+            /* data chunk length */
+            view.setUint32(40, result.length * 2, true);
+            
+            // 寫入 PCM 數據
+            floatTo16BitPCM(view, 44, result);
+            
+            const blob = new Blob([view], { type: 'audio/wav' });
+            finishAudioConversion(blob, 'wav');
+        }
+
+        function interleave(inputL, inputR) {
+            const length = inputL.length + inputR.length;
+            const result = new Float32Array(length);
+            let index = 0;
+            let inputIndex = 0;
+            while (index < length) {
+                result[index++] = inputL[inputIndex];
+                result[index++] = inputR[inputIndex];
+                inputIndex++;
+            }
+            return result;
+        }
+
+        function floatTo16BitPCM(output, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                let s = Math.max(-1, Math.min(1, input[i]));
+                output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // === MP3 編碼核心 (採用 LameJS & 異步分段技術) ===
+        function encodeMP3(audioBuffer, bitrate) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const channels = audioBuffer.numberOfChannels;
+                    const sampleRate = audioBuffer.sampleRate;
+                    
+                    // 根據頻道選擇 Stereo 或 Mono 編碼器
+                    const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, bitrate);
+                    const mp3Data = [];
+                    
+                    // 提取左右聲道 PCM
+                    const left = audioBuffer.getChannelData(0);
+                    const right = channels > 1 ? audioBuffer.getChannelData(1) : null;
+                    
+                    // 轉換為 16-bit Int16Array
+                    const sampleCount = left.length;
+                    const leftInt16 = new Int16Array(sampleCount);
+                    const rightInt16 = right ? new Int16Array(sampleCount) : null;
+                    
+                    // 分段包裝與轉換，避免大檔案時瞬間阻塞
+                    for (let i = 0; i < sampleCount; i++) {
+                        leftInt16[i] = left[i] < 0 ? left[i] * 0x8000 : left[i] * 0x7FFF;
+                        if (right) {
+                            rightInt16[i] = right[i] < 0 ? right[i] * 0x8000 : right[i] * 0x7FFF;
+                        }
+                    }
+
+                    const chunkSize = 1152 * 10; // 每個分段的大小
+                    let offset = 0;
+
+                    function processChunk() {
+                        if (offset >= sampleCount) {
+                            // 結尾快取處理
+                            const mp3buf = mp3encoder.flush();
+                            if (mp3buf.length > 0) {
+                                mp3Data.push(mp3buf);
+                            }
+                            
+                            // 組合 Blob
+                            const blob = new Blob(mp3Data, { type: 'audio/mp3' });
+                            finishAudioConversion(blob, 'mp3');
+                            resolve();
+                            return;
+                        }
+
+                        // 計算切片範圍
+                        const end = Math.min(offset + chunkSize, sampleCount);
+                        const leftChunk = leftInt16.subarray(offset, end);
+                        
+                        let mp3buf;
+                        if (channels > 1) {
+                            const rightChunk = rightInt16.subarray(offset, end);
+                            mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+                        } else {
+                            mp3buf = mp3encoder.encodeBuffer(leftChunk);
+                        }
+
+                        if (mp3buf.length > 0) {
+                            mp3Data.push(mp3buf);
+                        }
+
+                        offset = end;
+                        
+                        // 更新進度條
+                        const progress = Math.min(40 + Math.floor((offset / sampleCount) * 55), 98);
+                        updateAudioProgress(`正在進行高保真 MP3 編碼 (${bitrate}kbps)...`, progress);
+
+                        // 使用 setTimeout 切割調度避免執行緒鎖死
+                        setTimeout(processChunk, 1);
+                    }
+
+                    processChunk();
+
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+
+        // 完成轉換：設定下載連結
+        function finishAudioConversion(blob, extension) {
+            updateAudioProgress('轉檔完成！正在準備下載...', 100);
+            
+            const originalName = loadedAudioFile.name;
+            const outputName = originalName.substring(0, originalName.lastIndexOf('.')) + '.' + extension;
+            
+            const url = URL.createObjectURL(blob);
+            btnDownloadAudio.href = url;
+            btnDownloadAudio.download = outputName;
+            
+            audioOutputInfo.textContent = `新檔案大小: ${formatBytes(blob.size)}`;
+            audioDownloadZone.classList.remove('hidden');
+            
+            showToast('轉檔成功！已可下載音軌。', 'success');
+        }
+
+
+        // ==========================================
+        //  二、圖片格式轉換模組
+        // ==========================================
+        const fileImage = document.getElementById('file-image');
+        const dropzoneImage = document.getElementById('dropzone-image');
+        const imageProcessContainer = document.getElementById('image-process-container');
+        const imageFilename = document.getElementById('image-filename');
+        const imageFilesize = document.getElementById('image-filesize');
+        const imagePreview = document.getElementById('image-preview');
+        const btnStartImage = document.getElementById('btn-start-image');
+        const imageDownloadZone = document.getElementById('image-download-zone');
+        const imageOutputInfo = document.getElementById('image-output-info');
+        const btnDownloadImage = document.getElementById('btn-download-image');
+        const imageQualitySlider = document.getElementById('imageQuality');
+        const qualityVal = document.getElementById('qualityVal');
+
+        // 更新品質 Slider 顯示數值
+        imageQualitySlider.addEventListener('input', (e) => {
+            qualityVal.textContent = `${e.target.value}%`;
+        });
+
+        // 圖片上傳拖曳監聽
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzoneImage.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzoneImage.classList.add('border-indigo-500', 'bg-indigo-50/20');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzoneImage.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzoneImage.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+            }, false);
+        });
+
+        dropzoneImage.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt.files.length) handleImageSelect(dt.files[0]);
+        });
+
+        fileImage.addEventListener('change', (e) => {
+            if (e.target.files.length) handleImageSelect(e.target.files[0]);
+        });
+
+        function handleImageSelect(file) {
+            loadedImageFile = file;
+            imageFilename.textContent = file.name;
+            imageFilesize.textContent = `大小: ${formatBytes(file.size)}`;
+            
+            // 載入預覽圖
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            imageProcessContainer.classList.remove('hidden');
+            imageDownloadZone.classList.add('hidden');
+            showToast('圖片讀取完成。', 'info');
+        }
+
+        // 開始進行圖片格式與品質轉換
+        btnStartImage.addEventListener('click', () => {
+            if (!loadedImageFile) return;
+
+            const format = document.getElementById('imageFormat').value;
+            const quality = parseFloat(imageQualitySlider.value) / 100;
+
+            const img = new Image();
+            img.onload = () => {
+                // 建立 Canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                
+                const ctx = canvas.getContext('2d');
+                
+                // 若轉為 JPEG / WebP 需為透明背景補上白色底色
+                if (format === 'image/jpeg') {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                ctx.drawImage(img, 0, 0);
+                
+                // 輸出為 DataURL
+                const dataURL = canvas.toDataURL(format, quality);
+                
+                // 將 Base64 轉換為 Blob 以計算精確檔案大小與建立下載
+                const byteString = atob(dataURL.split(',')[1]);
+                const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeString });
+                
+                // 輸出檔名設定
+                const ext = format === 'image/jpeg' ? 'jpg' : format === 'image/webp' ? 'webp' : 'png';
+                const originalName = loadedImageFile.name;
+                const outputName = originalName.substring(0, originalName.lastIndexOf('.')) + '_converted.' + ext;
+
+                const url = URL.createObjectURL(blob);
+                btnDownloadImage.href = url;
+                btnDownloadImage.download = outputName;
+
+                imageOutputInfo.textContent = `新檔案大小: ${formatBytes(blob.size)}`;
+                imageDownloadZone.classList.remove('hidden');
+                
+                showToast('圖片壓縮與格式轉換成功！', 'success');
+            };
+            
+            img.src = imagePreview.src;
+        });
+
+
+        // ==========================================
+        //  三、數據與文件轉換模組 (JSON/CSV/PDF)
+        // ==========================================
+        const fileDoc = document.getElementById('file-doc');
+        const dropzoneDoc = document.getElementById('dropzone-doc');
+        const docProcessContainer = document.getElementById('doc-process-container');
+        const docFilename = document.getElementById('doc-filename');
+        const docFilesize = document.getElementById('doc-filesize');
+        const btnStartDoc = document.getElementById('btn-start-doc');
+        const docDownloadZone = document.getElementById('doc-download-zone');
+        const btnDownloadDoc = document.getElementById('btn-download-doc');
+
+        // 文件上傳拖曳監聽
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzoneDoc.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzoneDoc.classList.add('border-indigo-500', 'bg-indigo-50/20');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzoneDoc.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzoneDoc.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+            }, false);
+        });
+
+        dropzoneDoc.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt.files.length) handleDocSelect(dt.files[0]);
+        });
+
+        fileDoc.addEventListener('change', (e) => {
+            if (e.target.files.length) handleDocSelect(e.target.files[0]);
+        });
+
+        function handleDocSelect(file) {
+            loadedDocFile = file;
+            docFilename.textContent = file.name;
+            docFilesize.textContent = `大小: ${formatBytes(file.size)}`;
+
+            docProcessContainer.classList.remove('hidden');
+            docDownloadZone.classList.add('hidden');
+            showToast('文件讀取完成。', 'info');
+        }
+
+        // 執行文件/數據轉換
+        btnStartDoc.addEventListener('click', () => {
+            if (!loadedDocFile) return;
+
+            const mode = document.getElementById('docMode').value;
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const textContent = e.target.result;
+                try {
+                    if (mode === 'json2csv') {
+                        // JSON 轉 CSV
+                        const json = JSON.parse(textContent);
+                        const csv = jsonToCsv(json);
+                        setupDocDownload(csv, 'text/csv;charset=utf-8;', 'csv');
+                    } else if (mode === 'csv2json') {
+                        // CSV 轉 JSON
+                        const jsonStr = csvToJson(textContent);
+                        setupDocDownload(jsonStr, 'application/json;charset=utf-8;', 'json');
+                    } else if (mode === 'txt2pdf') {
+                        // TXT 轉 PDF
+                        generatePDF(textContent);
+                    }
+                } catch (err) {
+                    showToast(`轉換出錯: ${err.message}`, 'error');
+                }
+            };
+
+            reader.readAsText(loadedDocFile);
+        });
+
+        // JSON 轉 CSV 核心邏輯
+        function jsonToCsv(json) {
+            const arr = Array.isArray(json) ? json : [json];
+            if (arr.length === 0) return '';
+            
+            const keys = Object.keys(arr[0]);
+            const csvRows = [];
+            
+            // 標題行
+            csvRows.push(keys.join(','));
+            
+            // 資料行
+            for (const row of arr) {
+                const values = keys.map(key => {
+                    const val = row[key];
+                    const escaped = ('' + (val !== null && val !== undefined ? val : '')).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            }
+            
+            return csvRows.join('\n');
+        }
+
+        // CSV 轉 JSON 核心邏輯
+        function csvToJson(csv) {
+            const lines = csv.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length < 2) return '[]';
+            
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const result = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const currentLine = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                const obj = {};
+                for (let j = 0; j < headers.length; j++) {
+                    obj[headers[j]] = currentLine[j] || '';
+                }
+                result.push(obj);
+            }
+            
+            return JSON.stringify(result, null, 2);
+        }
+
+        // 純文字封裝成 PDF 核心
+        function generatePDF(text) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // 由於預設 jsPDF 處理中文字型需載入外部字體，此處提供標準自動分行包裝
+            const splitText = doc.splitTextToSize(text, 180);
+            doc.text(splitText, 15, 15);
+            
+            const blob = doc.output('blob');
+            const originalName = loadedDocFile.name;
+            const outputName = originalName.substring(0, originalName.lastIndexOf('.')) + '.pdf';
+            
+            const url = URL.createObjectURL(blob);
+            btnDownloadDoc.href = url;
+            btnDownloadDoc.download = outputName;
+            
+            docDownloadZone.classList.remove('hidden');
+            showToast('PDF 生成成功！(提醒：若包含中文字型，標準 jsPDF 有時需自訂中文字體避免亂碼)', 'success');
+        }
+
+        // 設定數據下載
+        function setupDocDownload(content, type, extension) {
+            const blob = new Blob([content], { type: type });
+            const originalName = loadedDocFile.name;
+            const outputName = originalName.substring(0, originalName.lastIndexOf('.')) + '.' + extension;
+            
+            const url = URL.createObjectURL(blob);
+            btnDownloadDoc.href = url;
+            btnDownloadDoc.download = outputName;
+            
+            docDownloadZone.classList.remove('hidden');
+            showToast('文件轉換成功！', 'success');
+        }
+    </script>
+</body>
+</html>
