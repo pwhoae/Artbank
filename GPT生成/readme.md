@@ -1,4 +1,5 @@
 [回到底部](#readme)|<br>
+https://github.com/pwhoae/Artbank/blob/main/godot_note.md 
 <a id="readme_begin"></a>
 ### 整活>過程要好玩快樂
 
