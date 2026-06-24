@@ -1,27 +1,20 @@
-# godot note
-```
+# godot note (pck)
 GD順序
+```
 class_name
 signal
-@export
-@ready
-var
+@export>@ready>var
 ```
+idea:
+```
+滑板跑酷,streak連勝,草莓巴菲,掃雷
+```
+
 camera
 jump >ray for slideing 墻跳滑牆
-tilemap>terrain
-
-coin/box/spike interactive
-gui>playerdata>autoload
-
-🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
+gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 UI>Camera2D/CanvasLayer /Label
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
-q彈邦布/以骸/草莓巴菲
-掃雷/藥水 化衣
-streak連勝
-滑板跑酷
-pck exe
 ```
 31 destruction效果 *44 骨綁**45 music player ** 46完整musicplayer
 jolt要下載 24奇怪專案參考 26材質參考 27（28）骨架參考（車）29/30 流體/衣服 37-39 動畫 40/41/42/43 動畫example/曲線/粒子/動畫狀態機 47/48 mixer effect
@@ -118,6 +111,15 @@ file.close()
 ```
 <details><summary>次要</summary>
 
+### tilemap>terrain 
+```
++地圖html
+```
+###  interactive
+```
+coin/box/spike
+```
+
 ### 0. OS
 ```
 # "Windows" [OS.get_name()]
@@ -197,6 +199,7 @@ func _scroll():
 		scroll=0
 	background.position.x=-scroll	
 ```
+
 </details>
 
 
