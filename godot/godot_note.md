@@ -1,7 +1,8 @@
 # godot note (pck)
 GD順序
 ```
-53input 54 var》not dynamic
+53input 54 var》not dynamic56 resource
+63
 func 
 54-55 教寫gd
 remove_action(action_name: String):
