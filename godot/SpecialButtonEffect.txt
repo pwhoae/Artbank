@@ -1,0 +1,35 @@
+extends Button
+class_name SpecialButtonEffect
+var tween: Tween = null
+
+func _ready():
+	# 初始样式
+	setting_button()
+	
+func setting_button():
+	add_theme_stylebox_override("normal", create_style(Color("#4A90E2"), Color("#357ABD")));add_theme_stylebox_override("hover", create_style(Color("#5AA0F2"), Color("#4A90E2")));add_theme_stylebox_override("pressed", create_style(Color("#357ABD"), Color("#2C5F9E")))
+	connect("mouse_entered", _on_hover);connect("mouse_exited", _on_exit);connect("button_down", _on_pressed);connect("button_up", _on_released)
+
+func create_style(color_top: Color, color_bottom: Color) -> StyleBoxFlat:
+	var style = StyleBoxFlat.new()
+	style.bg_color = color_top;style.set_corner_radius_all(12)
+	# 阴影
+	style.shadow_color = Color(0, 0, 0, 0.25);style.shadow_size = 6;style.shadow_offset = Vector2(0, 4)
+	return style
+
+func play_scale_tween(target_scale: Vector2, duration: float):
+	if tween:
+		tween.kill() # Stop existing animation
+	tween = create_tween();tween.tween_property(self, "scale", target_scale, duration)
+	
+func _on_hover():
+	play_scale_tween(Vector2(1.05, 1.05), 0.15)
+
+func _on_exit():
+	play_scale_tween(Vector2(1, 1), 0.15)
+
+func _on_pressed():
+	play_scale_tween(Vector2(0.95, 0.95), 0.1)
+
+func _on_released():
+	play_scale_tween(Vector2(1.05, 1.05), 0.1)
