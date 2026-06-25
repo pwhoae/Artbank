@@ -1,0 +1,42 @@
+extends Control
+class_name MusicPlayer
+
+# 節點引用
+@onready var audio_player: AudioStreamPlayer2D = $AudioStreamPlayer
+@onready var play_button: Button = $PlayButton
+@onready var progress_bar: ProgressBar = $ProgressBar
+@onready var album_art: TextureRect = $AlbumArt
+@onready var timer_label: Label = $TimerLabel
+
+# 播放狀態
+var is_playing: bool = false
+
+func _ready():
+	# 初始化按鈕信號連接
+	play_button.pressed.connect(_on_play_button_pressed)
+
+func _process(delta):
+	# 更新進度條
+	if audio_player.playing:
+		progress_bar.value = audio_player.get_playback_position()
+		$TimerLabel.text=str(audio_player.get_playback_position())
+		# 讓專輯封面持續旋轉
+		album_art.rotation_degrees += 20 * delta
+
+func _on_play_button_pressed():
+	if is_playing:
+		audio_player.stream_paused = true
+		play_button.text = "▶"
+	else:
+		if audio_player.stream_paused:
+			audio_player.stream_paused = false
+		else:
+			audio_player.play()
+		play_button.text = "⏸"
+	
+	is_playing = !is_playing
+
+# 設定音樂長度 (在載入音檔後調用)
+func setup_audio(stream: AudioStream):
+	audio_player.stream = stream
+	progress_bar.max_value = stream.get_length()
