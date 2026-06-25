@@ -1,6 +1,156 @@
 # godot note (pck)
 GD順序
 ```
+53input 54 var》not dynamic
+func 
+54-55 教寫gd
+remove_action(action_name: String):
+    # 移除动作
+    if InputMap.has_action(action_name):
+        InputMap.erase_action(action_name)
+### 5.3 输入灵敏度
+
+```gdscript
+# 输入灵敏度
+class_name InputSensitivity
+
+extends Node
+
+@export var mouse_sensitivity: float = 1.0
+@export var gamepad_sensitivity: float = 1.0
+@export var axis_deadzone: float = 0.1
+
+func _ready():
+    load_sensitivity_settings()
+
+func load_sensitivity_settings():
+    # 加载灵敏度设置
+    var config = ConfigFile.new()
+    var err = config.load("user://input_sensitivity.ini")
+    
+    if err == OK:
+        mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0)
+        gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0)
+        axis_deadzone = config.get_value("deadzone", "axis", 0.1)
+
+func save_sensitivity_settings():
+    # 保存灵敏度设置
+    var config = ConfigFile.new()
+    config.set_value("sensitivity", "mouse", mouse_sensitivity)
+    config.set_value("sensitivity", "gamepad", gamepad_sensitivity)
+    config.set_value("deadzone", "axis", axis_deadzone)
+    config.save("user://input_sensitivity.ini")
+
+func set_mouse_sensitivity(sensitivity: float):
+    mouse_sensitivity = clamp(sensitivity, 0.1, 5.0)
+
+func set_gamepad_sensitivity(sensitivity: float):
+    gamepad_sensitivity = clamp(sensitivity, 0.1, 5.0)
+
+func set_axis_deadzone(zone: float):
+    axis_deadzone = clamp(zone, 0.0, 0.5)
+
+func get_mouse_sensitivity() -> float:
+    return mouse_sensitivity
+
+func get_gamepad_sensitivity() -> float:
+    return gamepad_sensitivity
+
+func get_axis_deadzone() -> float:
+    return axis_deadzone
+
+func apply_to_axis_value(value: float) -> float:
+    # 应用灵敏度到轴值
+    if abs(value) < axis_deadzone:
+        return 0.0
+    
+    # 应用死区
+    var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone)
+    adjusted = clamp(adjusted, 0.0, 1.0)
+    
+    # 应用灵敏度
+    return sign(value) * adjusted * gamepad_sensitivity
+```
+
+# 工厂模式
+class_name FactoryPattern
+
+extends Node
+
+# 简单工厂
+static func create_enemy(type: String) -> Node:
+    var enemy: Node
+    match type:
+        "basic":
+            enemy = BasicEnemy.new()
+        "advanced":
+            enemy = AdvancedEnemy.new()
+        "boss":
+            enemy = BossEnemy.new()
+    return enemy
+
+# 工厂方法
+func create_product(product_type: String) -> Object:
+    match product_type:
+        "weapon":
+            return create_weapon()
+        "armor":
+            return create_armor()
+        "potion":
+            return create_potion()
+    return null
+
+func create_weapon() -> Object:
+    var weapon = Node.new()
+    weapon.name = "Weapon"
+    return weapon
+
+func create_armor() -> Object:
+    var armor = Node.new()
+    armor.name = "Armor"
+    return armor
+
+func create_potion() -> Object:
+    var potion = Node.new()
+    potion.name = "Potion"
+    return potion
+
+# 抽象工厂
+interface ItemFactory:
+    func create_weapon() -> Object
+    func create_armor() -> Object
+
+class BasicItemFactory:
+    extends RefCounted
+    
+    func create_weapon() -> Object:
+        var weapon = Node.new()
+        weapon.name = "BasicWeapon"
+        return weapon
+    
+    func create_armor() -> Object:
+        var armor = Node.new()
+        armor.name = "BasicArmor"
+        return armor
+
+class AdvancedItemFactory:
+    extends RefCounted
+    
+    func create_weapon() -> Object:
+        var weapon = Node.new()
+        weapon.name = "AdvancedWeapon"
+        return weapon
+    
+    func create_armor() -> Object:
+        var armor = Node.new()
+        armor.name = "AdvancedArmor"
+        return armor
+var snake_case_variable: int  # 变量使用蛇形命名
+const CONSTANT_VALUE: int = 100  # 常量使用大写蛇形
+class_name ClassName  # 类使用帕斯卡命名
+func function_name():  # 函数使用蛇形命名
+```
+```
 class_name
 signal
 @export>@ready>var
