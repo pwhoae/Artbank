@@ -1,17 +1,18 @@
-# godot note (pck)
-`https://github.com/wangshucheng/godot-engine-book/tree/main/articles`
+# godot note (pck)看到53
+<details><summary>參考<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles">書</a></summary>
 | | 对应篇章 | 特別章 | 
 |------|---------|---------|
 | 基本 |1-10| |  
 | 物理系统 |23-32|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/31-destruction-systems.md">31:破坏系统</a> |
-| 动画系统 |37-44|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/44-skeletal-animation.md">44：骨骼动画</a> |
-| audio系统 |45-48|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/46-audio-player.md">46：音频播放器</a> |
-| network系统 |49-52||
-
-次要
-| 渲染系统 | 第 11-22 篇 |  |
+| 动画系统 |37-44|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/44-skeletal-animation.md">44:骨骼动画</a> |
+| audio系统 |45-48|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/46-audio-player.md">46:音频播放器</a> |
+| network系统 |49-52|沒看懂|
+||次要||
+| 渲染系统 |11-22|  |
 | GDScript | `modules/gdscript/` | 第 23-30 篇 |
 | UI 系统 | `scene/gui/` | 第 43-47 篇 |
+</details>
+
 GD順序
 ```
 53input 54 var》not dynamic56 resource
