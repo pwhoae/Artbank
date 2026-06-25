@@ -1,5 +1,6 @@
 # godot note (pck)看到53
-<details><summary>參考<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles">書</a></summary>
+<details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
+	
 | | 对应篇章 | 特別章 | 
 |------|---------|---------|
 | 基本 |1-10| |  
@@ -9,181 +10,29 @@
 | network系统 |49-52|沒看懂|
 ||次要||
 | 渲染系统 |11-22|  |
+||||
 | GDScript | `modules/gdscript/` | 第 23-30 篇 |
 | UI 系统 | `scene/gui/` | 第 43-47 篇 |
 </details>
 
 GD順序
 ```
-53input 54 var》not dynamic56 resource
-63
-func 
-54-55 教寫gd
-remove_action(action_name: String):
-    # 移除动作
-    if InputMap.has_action(action_name):
-        InputMap.erase_action(action_name)
-### 5.3 输入灵敏度
-
-```gdscript
-# 输入灵敏度
-class_name InputSensitivity
-
-extends Node
-
-@export var mouse_sensitivity: float = 1.0
-@export var gamepad_sensitivity: float = 1.0
-@export var axis_deadzone: float = 0.1
-
-func _ready():
-    load_sensitivity_settings()
-
-func load_sensitivity_settings():
-    # 加载灵敏度设置
-    var config = ConfigFile.new()
-    var err = config.load("user://input_sensitivity.ini")
-    
-    if err == OK:
-        mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0)
-        gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0)
-        axis_deadzone = config.get_value("deadzone", "axis", 0.1)
-
-func save_sensitivity_settings():
-    # 保存灵敏度设置
-    var config = ConfigFile.new()
-    config.set_value("sensitivity", "mouse", mouse_sensitivity)
-    config.set_value("sensitivity", "gamepad", gamepad_sensitivity)
-    config.set_value("deadzone", "axis", axis_deadzone)
-    config.save("user://input_sensitivity.ini")
-
-func set_mouse_sensitivity(sensitivity: float):
-    mouse_sensitivity = clamp(sensitivity, 0.1, 5.0)
-
-func set_gamepad_sensitivity(sensitivity: float):
-    gamepad_sensitivity = clamp(sensitivity, 0.1, 5.0)
-
-func set_axis_deadzone(zone: float):
-    axis_deadzone = clamp(zone, 0.0, 0.5)
-
-func get_mouse_sensitivity() -> float:
-    return mouse_sensitivity
-
-func get_gamepad_sensitivity() -> float:
-    return gamepad_sensitivity
-
-func get_axis_deadzone() -> float:
-    return axis_deadzone
-
-func apply_to_axis_value(value: float) -> float:
-    # 应用灵敏度到轴值
-    if abs(value) < axis_deadzone:
-        return 0.0
-    
-    # 应用死区
-    var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone)
-    adjusted = clamp(adjusted, 0.0, 1.0)
-    
-    # 应用灵敏度
-    return sign(value) * adjusted * gamepad_sensitivity
-```
-
-# 工厂模式
-class_name FactoryPattern
-
-extends Node
-
-# 简单工厂
-static func create_enemy(type: String) -> Node:
-    var enemy: Node
-    match type:
-        "basic":
-            enemy = BasicEnemy.new()
-        "advanced":
-            enemy = AdvancedEnemy.new()
-        "boss":
-            enemy = BossEnemy.new()
-    return enemy
-
-# 工厂方法
-func create_product(product_type: String) -> Object:
-    match product_type:
-        "weapon":
-            return create_weapon()
-        "armor":
-            return create_armor()
-        "potion":
-            return create_potion()
-    return null
-
-func create_weapon() -> Object:
-    var weapon = Node.new()
-    weapon.name = "Weapon"
-    return weapon
-
-func create_armor() -> Object:
-    var armor = Node.new()
-    armor.name = "Armor"
-    return armor
-
-func create_potion() -> Object:
-    var potion = Node.new()
-    potion.name = "Potion"
-    return potion
-
-# 抽象工厂
-interface ItemFactory:
-    func create_weapon() -> Object
-    func create_armor() -> Object
-
-class BasicItemFactory:
-    extends RefCounted
-    
-    func create_weapon() -> Object:
-        var weapon = Node.new()
-        weapon.name = "BasicWeapon"
-        return weapon
-    
-    func create_armor() -> Object:
-        var armor = Node.new()
-        armor.name = "BasicArmor"
-        return armor
-
-class AdvancedItemFactory:
-    extends RefCounted
-    
-    func create_weapon() -> Object:
-        var weapon = Node.new()
-        weapon.name = "AdvancedWeapon"
-        return weapon
-    
-    func create_armor() -> Object:
-        var armor = Node.new()
-        armor.name = "AdvancedArmor"
-        return armor
-var snake_case_variable: int  # 变量使用蛇形命名
-const CONSTANT_VALUE: int = 100  # 常量使用大写蛇形
-class_name ClassName  # 类使用帕斯卡命名
-func function_name():  # 函数使用蛇形命名
-```
-```
-class_name
-signal
-@export>@ready>var
+class_name [帕斯卡 ClassName]  
+signal [帕斯卡 HitPlayer]
+### 
+@export>@ready>var [蛇形 player_score]
+func [蛇形 player_score]
 ```
 idea:
 ```
 滑板跑酷,streak連勝,草莓巴菲,掃雷
 ```
-
 camera
 jump >ray for slideing 墻跳滑牆
 gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 UI>Camera2D/CanvasLayer /Label
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
-31 destruction效果 *44 骨綁**45 music player ** 46完整musicplayer
-jolt要下載 24奇怪專案參考 26材質參考 27（28）骨架參考（車）29/30 流體/衣服 37-39 動畫 40/41/42/43 動畫example/曲線/粒子/動畫狀態機 47/48 mixer effect
-49-52 network
 《笨办法学Python（第三版） 做游戏书籍
 #https://github.com/jess-hammer/dual-grid-tilemap-system-godot
 找目的+目標 確立成功 拆分/組合
@@ -364,6 +213,148 @@ func _scroll():
 		scroll=0
 	background.position.x=-scroll	
 ```
+func remove_action(action_name: String):
+    # 移除动作
+    if InputMap.has_action(action_name):
+        InputMap.erase_action(action_name)
+### 5.3 输入灵敏度
+
+```gdscript
+# 输入灵敏度
+class_name InputSensitivity
+
+extends Node
+
+@export var mouse_sensitivity: float = 1.0
+@export var gamepad_sensitivity: float = 1.0
+@export var axis_deadzone: float = 0.1
+
+func _ready():
+    load_sensitivity_settings()
+
+func load_sensitivity_settings():
+    # 加载灵敏度设置
+    var config = ConfigFile.new()
+    var err = config.load("user://input_sensitivity.ini")
+    
+    if err == OK:
+        mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0)
+        gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0)
+        axis_deadzone = config.get_value("deadzone", "axis", 0.1)
+
+func save_sensitivity_settings():
+    # 保存灵敏度设置
+    var config = ConfigFile.new()
+    config.set_value("sensitivity", "mouse", mouse_sensitivity)
+    config.set_value("sensitivity", "gamepad", gamepad_sensitivity)
+    config.set_value("deadzone", "axis", axis_deadzone)
+    config.save("user://input_sensitivity.ini")
+
+func set_mouse_sensitivity(sensitivity: float):
+    mouse_sensitivity = clamp(sensitivity, 0.1, 5.0)
+
+func set_gamepad_sensitivity(sensitivity: float):
+    gamepad_sensitivity = clamp(sensitivity, 0.1, 5.0)
+
+func set_axis_deadzone(zone: float):
+    axis_deadzone = clamp(zone, 0.0, 0.5)
+
+func get_mouse_sensitivity() -> float:
+    return mouse_sensitivity
+
+func get_gamepad_sensitivity() -> float:
+    return gamepad_sensitivity
+
+func get_axis_deadzone() -> float:
+    return axis_deadzone
+
+func apply_to_axis_value(value: float) -> float:
+    # 应用灵敏度到轴值
+    if abs(value) < axis_deadzone:
+        return 0.0
+    
+    # 应用死区
+    var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone)
+    adjusted = clamp(adjusted, 0.0, 1.0)
+    
+    # 应用灵敏度
+    return sign(value) * adjusted * gamepad_sensitivity
+```
+
+# 工厂模式
+class_name FactoryPattern
+
+extends Node
+
+# 简单工厂
+static func create_enemy(type: String) -> Node:
+    var enemy: Node
+    match type:
+        "basic":
+            enemy = BasicEnemy.new()
+        "advanced":
+            enemy = AdvancedEnemy.new()
+        "boss":
+            enemy = BossEnemy.new()
+    return enemy
+
+# 工厂方法
+func create_product(product_type: String) -> Object:
+    match product_type:
+        "weapon":
+            return create_weapon()
+        "armor":
+            return create_armor()
+        "potion":
+            return create_potion()
+    return null
+
+func create_weapon() -> Object:
+    var weapon = Node.new()
+    weapon.name = "Weapon"
+    return weapon
+
+func create_armor() -> Object:
+    var armor = Node.new()
+    armor.name = "Armor"
+    return armor
+
+func create_potion() -> Object:
+    var potion = Node.new()
+    potion.name = "Potion"
+    return potion
+
+# 抽象工厂
+interface ItemFactory:
+    func create_weapon() -> Object
+    func create_armor() -> Object
+
+class BasicItemFactory:
+    extends RefCounted
+    
+    func create_weapon() -> Object:
+        var weapon = Node.new()
+        weapon.name = "BasicWeapon"
+        return weapon
+    
+    func create_armor() -> Object:
+        var armor = Node.new()
+        armor.name = "BasicArmor"
+        return armor
+
+class AdvancedItemFactory:
+    extends RefCounted
+    
+    func create_weapon() -> Object:
+        var weapon = Node.new()
+        weapon.name = "AdvancedWeapon"
+        return weapon
+    
+    func create_armor() -> Object:
+        var armor = Node.new()
+        armor.name = "AdvancedArmor"
+        return armor
+
 
 </details>
 
