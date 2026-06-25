@@ -1,3 +1,5 @@
+flappy
+player+pipe+scorearea
 这是一个为你策划的《Flappy Bird》复刻版 Demo 方案，包含游戏核心机制规划以及用于 AI 绘图工具（如 Midjourney 或 DALL-E 3）的美术资产提示词。
 
 ---
