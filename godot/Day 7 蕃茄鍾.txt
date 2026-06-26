@@ -1,0 +1,375 @@
+extends Node
+
+enum State { FOCUS, BREAK }
+
+# 改為預設分鐘數
+var focus_minutes = 25
+var break_minutes = 5
+
+# 實際計算用的秒數
+@onready var focus_time = focus_minutes * 60
+@onready var break_time = break_minutes * 60
+@onready var time_left = focus_time
+
+var current_state = State.FOCUS
+var is_running = false
+
+# 節點引用
+@onready var timer = $PomodoroTimer
+@onready var label = $TimeLabel
+@onready var focus_input = $FocusInput
+@onready var break_input = $BreakInput
+
+func _ready():
+	timer.wait_time = 1.0
+	timer.one_shot = false
+	timer.timeout.connect(_on_timer_timeout)
+	
+	# 連結 SpinBox 的訊號：當數值被點擊或更改時，觸發函式
+	focus_input.value_changed.connect(_on_focus_input_changed)
+	break_input.value_changed.connect(_on_break_input_changed)
+	
+	# 初始化 UI 數值
+	focus_input.value = focus_minutes
+	break_input.value = break_minutes
+	update_ui()
+
+# 當玩家更改專注時間輸入框
+func _on_focus_input_changed(new_value: float):
+	focus_minutes = int(new_value)
+	focus_time = focus_minutes * 60
+	
+	# 如果「目前正好是專注狀態」且「計時器還沒開始」，就即時更新倒數顯示
+	if current_state == State.FOCUS and not is_running:
+		time_left = focus_time
+		update_ui()
+
+# 當玩家更改休息時間輸入框
+func _on_break_input_changed(new_value: float):
+	break_minutes = int(new_value)
+	break_time = break_minutes * 60
+	
+	# 如果「目前正好是休息狀態」且「計時器還沒開始」，就即時更新倒數顯示
+	if current_state == State.BREAK and not is_running:
+		time_left = break_time
+		update_ui()
+
+# 開始 / 暫停按鈕
+func toggle_timer():
+	is_running = !is_running
+	if is_running:
+		timer.start()
+		# 開始計時後，停用輸入框不讓玩家亂改，避免邏輯出錯
+		focus_input.editable = false
+		break_input.editable = false
+	else:
+		timer.stop()
+		# 暫停時，重新允許玩家修改時間
+		focus_input.editable = true
+		break_input.editable = true
+
+func _on_timer_timeout():
+	if time_left > 0:
+		time_left -= 1
+		update_ui()
+	else:
+		_switch_state()
+
+func _switch_state():
+	timer.stop()
+	is_running = false
+	
+	if current_state == State.FOCUS:
+		current_state = State.BREAK
+		time_left = break_time
+	else:
+		current_state = State.FOCUS
+		time_left = focus_time
+		
+	update_ui()
+	
+	# 當一階段結束切換時，保持輸入框不能亂改，直到手動暫停
+	# （如果你有設定自動播放下一階段，通常會保持鎖定）
+	toggle_timer() 
+
+func update_ui():
+	var minutes = int(time_left) / 60
+	var seconds = int(time_left) % 60
+	label.text = "%02d:%02d" % [minutes, seconds]
+
+下面給你一個**用 Godot（以 Godot 4 為例）實作「蕃茄鐘（Pomodoro Timer）」的完整設計思路 + 範例程式**，符合你的需求：
+
+✅ 預設 25 分鐘專注 / 5 分鐘休息
+✅ 可切換狀態（專注 ↔ 休息）
+✅ 支援 **多 spritesheet 動畫播放**
+✅ 支援 **多 mp3 音效播放（提示音 / 背景音）**
+
+---
+
+# 🧠 一、整體架構設計
+
+建議場景結構：
+
+```
+Pomodoro.tscn
+├── Control (主UI)
+│   ├── Label (時間顯示)
+│   ├── Button (開始/暫停)
+│   ├── Button (重置)
+│
+├── AnimatedSprite2D (動畫)
+├── Timer (倒數)
+├── AudioStreamPlayer (提示音)
+├── AudioStreamPlayer (背景音)
+```
+
+---
+
+# ⏱️ 二、核心邏輯（Timer + 狀態切換）
+
+### 狀態定義
+
+```gdscript
+enum State {
+    FOCUS,
+    BREAK
+}
+```
+
+---
+
+### 主腳本（Pomodoro.gd）
+
+```gdscript
+extends Control
+
+@onready var timer = $Timer
+@onready var label = $Label
+@onready var sprite = $AnimatedSprite2D
+@onready var sfx_player = $SFXPlayer
+@onready var bgm_player = $BGMPlayer
+
+var focus_time = 25 * 60
+var break_time = 5 * 60
+
+var time_left = focus_time
+var current_state = State.FOCUS
+var is_running = false
+
+func _ready():
+    update_label()
+    play_animation()
+
+func _on_start_pressed():
+    is_running = !is_running
+    if is_running:
+        timer.start()
+    else:
+        timer.stop()
+
+func _on_reset_pressed():
+    is_running = false
+    timer.stop()
+    current_state = State.FOCUS
+    time_left = focus_time
+    update_label()
+    play_animation()
+
+func _on_Timer_timeout():
+    time_left -= 1
+    update_label()
+
+    if time_left <= 0:
+        switch_state()
+
+func switch_state():
+    if current_state == State.FOCUS:
+        current_state = State.BREAK
+        time_left = break_time
+        play_sfx("break")
+    else:
+        current_state = State.FOCUS
+        time_left = focus_time
+        play_sfx("focus")
+
+    play_animation()
+```
+
+---
+
+### ⏳ 時間顯示
+
+```gdscript
+func update_label():
+    var m = time_left / 60
+    var s = time_left % 60
+    label.text = "%02d:%02d" % [m, s]
+```
+
+---
+
+# 🎬 三、支援多 spritesheet 動畫
+
+## 方法：用 AnimatedSprite2D + SpriteFrames
+
+### 1️⃣ 建立 SpriteFrames
+
+在 Inspector：
+
+* 新增 `SpriteFrames`
+* 加入多個 animation：
+
+  * `"focus"`
+  * `"break"`
+  * `"idle"`
+
+---
+
+### 2️⃣ 程式切換動畫
+
+```gdscript
+func play_animation():
+    if current_state == State.FOCUS:
+        sprite.play("focus")
+    else:
+        sprite.play("break")
+```
+
+---
+
+### 3️⃣ 多 spritesheet 加入方式
+
+👉 每個動畫可以用不同 spritesheet：
+
+* Add frames → "Add from Sprite Sheet"
+* 設定 Hframes / Vframes
+
+---
+
+# 🔊 四、支援多音訊（mp3）
+
+## 節點
+
+```
+AudioStreamPlayer (SFXPlayer)
+AudioStreamPlayer (BGMPlayer)
+```
+
+---
+
+## 載入多音效
+
+```gdscript
+var sounds = {
+    "focus": preload("res://audio/focus.mp3"),
+    "break": preload("res://audio/break.mp3")
+}
+```
+
+---
+
+## 播放音效
+
+```gdscript
+func play_sfx(type):
+    if sounds.has(type):
+        sfx_player.stream = sounds[type]
+        sfx_player.play()
+```
+
+---
+
+## 🎵 背景音樂（可循環）
+
+```gdscript
+func play_bgm():
+    bgm_player.stream = preload("res://audio/bgm.mp3")
+    bgm_player.play()
+```
+
+👉 設定 `loop = true`（在 import 或 AudioStream 設定）
+
+---
+
+# 🧩 五、進階功能（推薦加）
+
+### 🔁 自動循環 Pomodoro
+
+```gdscript
+var round = 0
+
+func switch_state():
+    if current_state == State.FOCUS:
+        current_state = State.BREAK
+        time_left = break_time
+    else:
+        round += 1
+        current_state = State.FOCUS
+        time_left = focus_time
+```
+
+---
+
+### ⏸️ 暫停功能（你已經有）
+
+✔ Timer.stop()
+
+---
+
+### 🔔 通知音 / UI 提示
+
+* 閃爍畫面
+* 改變背景顏色
+
+---
+
+### 🎨 狀態 UI 顏色
+
+```gdscript
+if current_state == State.FOCUS:
+    self.modulate = Color(1,1,1)
+else:
+    self.modulate = Color(0.7,1,0.7)
+```
+
+---
+
+# 📦 六、資源整理建議
+
+```
+res://
+├── scenes/
+├── scripts/
+├── sprites/
+│   ├── focus_sheet.png
+│   ├── break_sheet.png
+│
+├── audio/
+│   ├── focus.mp3
+│   ├── break.mp3
+│   ├── bgm.mp3
+```
+
+---
+
+# 🚀 七、你可以再升級的方向
+
+如果你想做更完整版本，可以加：
+
+* 🧠 任務清單（To-do）
+* 📊 專注統計（今日幾個番茄）
+* 💾 存檔（ConfigFile）
+* 🔔 系統通知（桌面提醒）
+* 🎮 遊戲化（經驗值 / 等級）
+
+---
+
+# 👍 如果你想我可以幫你
+
+👉 幫你做：
+
+* 完整 Godot 專案模板（可直接開）
+* UI 設計（像 Forest / TomatoTimer）
+* 加入角色動畫（像小貓專注 / 休息）
+
+只要跟我說你想要風格（可愛 / 極簡 / 遊戲化）我可以直接幫你補完整 👍
