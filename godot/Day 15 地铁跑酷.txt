@@ -1,0 +1,468 @@
+这是一份为您策划的《地铁跑酷》（Subway Surfers）风格游戏 Demo 方案。
+
+---
+
+## 🚇 游戏 Demo 策划案：都市极速 (Urban Sprint)
+
+### 1. 核心概念
+
+* **游戏类型**：3D 无尽跑酷 (Infinite Runner)
+* **视角**：第三人称背后视角 (追逐视角)
+* **核心循环**：奔跑 -> 闪避障碍 -> 收集货币 -> 获取道具 -> 挑战高分
+* **特色机制**：增加一个“动态天气系统”，不同天气会影响地面摩擦力和视野，增加游戏难度。
+
+### 2. 关卡设计
+
+* **环境**：现代赛博朋克风格的地铁站，包含轨道、维修平台、列车顶端。
+* **操作**：
+* **左/右滑动**：切换跑道 (3条跑道)。
+* **上滑**：跳跃。
+* **下滑**：翻滚。
+
+
+* **主要道具**：
+* **飞行背包**：进入空中自动收集金币。
+* **磁铁**：自动吸收周围金币。
+* **加速鞋**：短时间内提升移动速度。
+
+
+
+---
+
+## 🎨 美术素材 AI Prompt (Midjourney/Stable Diffusion 适用)
+
+为了保持风格统一，建议将这些 Prompt 配合特定的模型权重或风格词使用。
+
+### 角色设计 (主角)
+
+> **Prompt:** A stylized, trendy cartoon character, cool teenager wearing a futuristic streetwear hoodie, vibrant colors, expressive face, high-quality 3D render, Disney Pixar style, solid background, full body shot, bright lighting. --ar 2:3
+
+### 环境素材 (地铁轨道)
+
+> **Prompt:** Isometric view of a futuristic subway tunnel, glowing neon lights, sleek train carriages, metallic textures, vibrant graffiti art on walls, high speed motion blur effect, cyberpunk aesthetic, stylized 3D game art, Unreal Engine 5 render. --ar 16:9
+
+### 道具设计 (飞行背包)
+
+> **Prompt:** A high-tech jetpack for a stylized game, sleek design, glowing LED accents, metallic orange and blue color scheme, floating in the air, 3D icon, game asset, clean background, high detail, vibrant. --ar 1:1
+
+### 障碍物 (路障)
+
+> **Prompt:** A bright yellow and black caution barrier for a subway runner game, cartoon style, slightly worn out, 3D model, game asset, isolated on plain white background, high quality. --ar 1:1
+
+---
+
+## 🛠️ 开发建议路径
+
+1. **原型阶段**：使用 Unity 或 Godot，先用简单的胶囊体 (Capsule) 代替角色，方块代替障碍物，跑通“切换轨道”和“随机生成轨道障碍”逻辑。
+2. **美术植入**：将上述生成的 AI 素材导出为 `.png` 并处理透明背景，替换掉原型中的方块。
+3. **UI/UX**：设计简洁的计分板和“Game Over”界面，采用大字体和高对比度配色。
+
+---
+
+关于这个 Demo 的开发，您目前是更倾向于使用 Unity 进行开发，还是希望了解如何利用现有的 AI 工具快速生成游戏中的 3D 模型呢？
+----------------------------
+好，这里我直接帮你把**3D 跑酷方案 → 改成 2D 横版/伪3道跑道版本（Godot 4）**，而且是**可以直接照着做就能跑的项目结构 + 核心代码**👇
+
+---
+
+# 🎮 一、2D版本设计思路（关键变化）
+
+### ✔ 从3D改为2D的核心改动：
+
+* 使用 **Godot Engine 2D（Node2D体系）**
+* 用 **“3条Y轴跑道”** 代替3D左右切换
+* 摄像机固定，场景向左移动（经典跑酷2D做法）
+
+---
+
+# 📁 二、项目结构（2D版）
+
+```id="zjhc2m"
+UrbanSprint2D/
+├── scenes/
+│   ├── Main.tscn
+│   ├── Player.tscn
+│   └── Obstacle.tscn
+├── scripts/
+│   ├── main.gd
+│   ├── player.gd
+│   └── obstacle.gd
+├── assets/
+│   ├── sprites/
+```
+
+---
+
+# 🧍 三、玩家（Player.tscn）
+
+**节点结构：**
+
+```id="p3b92c"
+CharacterBody2D
+├── Sprite2D
+├── CollisionShape2D
+```
+
+---
+
+# 🧠 四、玩家控制（player.gd）
+
+👉 三条跑道 + 跳跃 + 下滑
+
+```gdscript id="ijj5dt"
+extends CharacterBody2D
+
+const LANES_Y = [200, 300, 400]  # 三条跑道（上下）
+var current_lane = 1
+
+var gravity = 1200
+var jump_force = -500
+var speed = 200
+
+func _physics_process(delta):
+    velocity.x = speed
+    
+    if not is_on_floor():
+        velocity.y += gravity * delta
+    
+    move_and_slide()
+
+    # 平滑移动到目标跑道
+    var target_y = LANES_Y[current_lane]
+    position.y = lerp(position.y, target_y, 0.2)
+
+func _input(event):
+    if event.is_action_pressed("ui_up"):
+        current_lane = max(0, current_lane - 1)
+    elif event.is_action_pressed("ui_down"):
+        current_lane = min(2, current_lane + 1)
+    elif event.is_action_pressed("ui_accept"):
+        if is_on_floor():
+            velocity.y = jump_force
+```
+
+---
+
+# 🚧 五、障碍物（Obstacle.tscn）
+
+```id="xrt5kx"
+Node2D
+├── Sprite2D
+├── CollisionShape2D
+```
+
+---
+
+# ⚠️ 六、障碍物移动（obstacle.gd）
+
+```gdscript id="8b72gq"
+extends Node2D
+
+var speed = 200
+
+func _process(delta):
+    position.x -= speed * delta
+    
+    if position.x < -100:
+        queue_free()
+```
+
+---
+
+# 🎯 七、主场景（Main.tscn）
+
+```id="kp9qrx"
+Node2D
+├── Player
+├── ObstacleSpawner
+```
+
+---
+
+# 🔁 八、生成障碍（main.gd）
+
+```gdscript id="ulth7l"
+extends Node2D
+
+@onready var player = $Player
+var obstacle_scene = preload("res://scenes/Obstacle.tscn")
+
+const LANES_Y = [200, 300, 400]
+
+func _ready():
+    spawn_loop()
+
+func spawn_loop():
+    while true:
+        await get_tree().create_timer(1.2).timeout
+        spawn_obstacle()
+
+func spawn_obstacle():
+    var obs = obstacle_scene.instantiate()
+    
+    var lane = randi() % 3
+    obs.position = Vector2(800, LANES_Y[lane])
+    
+    add_child(obs)
+```
+
+---
+
+# 🌧️ 九、2D天气系统（强化你原本策划）
+
+```gdscript id="vdg6z8"
+var weather = "clear"
+
+func change_weather():
+    var types = ["clear", "rain", "fog"]
+    weather = types.pick_random()
+
+    match weather:
+        "rain":
+            Engine.time_scale = 0.85  # 更滑（整体变慢）
+        "fog":
+            $CanvasModulate.color = Color(0.7,0.7,0.7)
+```
+
+---
+
+# 🎮 十、输入设置（必须做）
+
+| 动作        | 键     |
+| --------- | ----- |
+| ui_up     | ↑     |
+| ui_down   | ↓     |
+| ui_accept | 空格（跳） |
+
+---
+
+# 🧩 十一、你可以马上加的功能
+
+### ⭐ 必加（让它变成游戏）
+
+* 碰撞检测（撞到障碍 → Game Over）
+* 分数系统（时间/距离）
+* 金币收集
+
+### 🚀 进阶
+
+* 背景滚动（视差 Parallax）
+* 音效
+* 手机滑动操作
+* UI界面
+
+---
+
+# ⚡ 如果你想更快（我可以直接帮你）
+
+我可以帮你👇
+
+✅ 直接生成 **完整 Godot 2D 项目（可运行）**
+✅ 加入 **金币 + UI + 死亡系统**
+✅ 做成接近《地铁跑酷》的完整2D版
+✅ 或改成 **手机触控滑动操作**
+
+---
+
+👉 下一步你可以直接说：
+
+* “帮我生成完整2D项目下载”
+* “加入金币和碰撞”
+* “做手机触控版”
+* “做UI界面”
+
+我可以一步一步帮你做到可以发布 👍
+
+-----------------------
+很好，你已经有一份完整的跑酷游戏策划（类似《地铁跑酷》风格）。我可以直接帮你把它**转成一个可运行的 Godot 项目结构 + 核心代码**，让你快速起步。
+
+下面是一个适用于 **Godot Engine 4.x** 的基础项目生成方案👇
+
+---
+
+# 🚀 一、项目结构（直接照着建）
+
+```
+UrbanSprint/
+├── project.godot
+├── scenes/
+│   ├── Main.tscn
+│   ├── Player.tscn
+│   └── Obstacle.tscn
+├── scripts/
+│   ├── main.gd
+│   ├── player.gd
+│   └── obstacle.gd
+├── assets/
+│   ├── textures/
+│   └── models/
+```
+
+---
+
+# 🎮 二、核心场景：Main.tscn
+
+**节点结构：**
+
+```
+Node3D (Main)
+├── Player (实例)
+├── Ground (MeshInstance3D)
+├── Camera3D
+└── ObstacleSpawner (Node3D)
+```
+
+---
+
+# 🧠 三、玩家控制（player.gd）
+
+实现三条跑道 + 跳跃 + 下滑
+
+```gdscript
+extends CharacterBody3D
+
+const LANES = [-2, 0, 2]
+var current_lane = 1
+var speed = 10
+var jump_velocity = 8
+var gravity = 20
+
+func _physics_process(delta):
+    velocity.z = -speed
+    
+    if not is_on_floor():
+        velocity.y -= gravity * delta
+    
+    move_and_slide()
+
+func _input(event):
+    if event.is_action_pressed("ui_left"):
+        current_lane = max(0, current_lane - 1)
+    elif event.is_action_pressed("ui_right"):
+        current_lane = min(2, current_lane + 1)
+    elif event.is_action_pressed("ui_accept"):
+        if is_on_floor():
+            velocity.y = jump_velocity
+    
+    # 平滑移动到目标跑道
+    var target_x = LANES[current_lane]
+    position.x = lerp(position.x, target_x, 0.2)
+```
+
+---
+
+# 🚧 四、障碍物生成（main.gd）
+
+```gdscript
+extends Node3D
+
+@onready var player = $Player
+var obstacle_scene = preload("res://scenes/Obstacle.tscn")
+
+func _ready():
+    spawn_loop()
+
+func spawn_loop():
+    while true:
+        await get_tree().create_timer(1.5).timeout
+        spawn_obstacle()
+
+func spawn_obstacle():
+    var obstacle = obstacle_scene.instantiate()
+    var lane = randi() % 3
+    obstacle.position = Vector3([-2,0,2][lane], 0, player.position.z - 30)
+    add_child(obstacle)
+```
+
+---
+
+# ⚠️ 五、障碍物逻辑（obstacle.gd）
+
+```gdscript
+extends Node3D
+
+var speed = 10
+
+func _process(delta):
+    translate(Vector3(0, 0, speed * delta))
+    
+    if position.z > 10:
+        queue_free()
+```
+
+---
+
+# 🌧️ 六、动态天气系统（你的策划亮点）
+
+可以这样实现：
+
+```gdscript
+var weather = "clear"
+
+func change_weather():
+    var types = ["clear", "rain", "fog"]
+    weather = types.pick_random()
+    
+    match weather:
+        "rain":
+            Engine.time_scale = 0.9  # 地面更滑
+        "fog":
+            get_viewport().world_3d.environment.fog_enabled = true
+```
+
+---
+
+# 🎯 七、输入映射（Godot 设置）
+
+在 **Input Map** 中添加：
+
+| 动作        | 按键   |
+| --------- | ---- |
+| ui_left   | ←    |
+| ui_right  | →    |
+| ui_accept | ↑（跳） |
+| ui_down   | ↓（滑） |
+
+---
+
+# 🧩 八、下一步你可以升级的内容
+
+根据你上传的策划案，可以继续扩展：
+
+### 1️⃣ 道具系统
+
+* 磁铁（自动吸金币）
+* 飞行背包（进入空中模式）
+* 加速鞋
+
+### 2️⃣ 地图生成
+
+* 使用 Tile/Chunk 无限生成轨道
+* 不同天气影响生成概率
+
+### 3️⃣ UI
+
+* 分数系统
+* Game Over
+* 重开按钮
+
+---
+
+# 🛠️ 如果你想要更快（我可以直接帮你）
+
+我可以进一步帮你👇
+
+✅ 生成 **完整 Godot 项目压缩包（可下载）**
+✅ 加入 **金币 + 碰撞检测 + 死亡系统**
+✅ 做成接近《地铁跑酷》的完整 Demo
+✅ 或改成 **手机触控版本（滑动操作）**
+
+---
+
+👉 直接告诉我下一步你要什么，例如：
+
+* “帮我生成完整项目文件”
+* “加入金币系统”
+* “做手机版操作”
+
+我可以一步步帮你做成一个能发布的小游戏 👍
