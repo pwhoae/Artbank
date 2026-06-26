@@ -202,7 +202,9 @@ material.set_shader_parameter("roughness", 0.5)
 </details>
 ------------------------------------------------
 <details><summary>func記</summary>
-    
+var direction_to_player=position.direction_to(player.position)
+lerp(current_speed, target_speed, lerp_weight * delta)
+	
 ### 無盡scroll
 ```
 var scroll
