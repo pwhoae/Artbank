@@ -1,8 +1,7 @@
-[回到底部](#readme)|<br><a id="readme_begin"></a>
+[回到底部](#readme)|<br><a id="readme_begin"></a>https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md 
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
 ```
-https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md 
 ### 整活>過程要好玩快樂
 
 <br>
