@@ -19,7 +19,9 @@ GD順序
 ```
 class_name [帕斯卡 ClassName]  
 signal [帕斯卡 HitPlayer]
-### 
+###
+@export_category("Player Setting")
+@export_group("Player")
 @export>@ready>var [蛇形 player_score]
 func [蛇形 player_score]
 ```
