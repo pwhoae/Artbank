@@ -15,7 +15,7 @@
 | UI 系统 | `scene/gui/` | 第 43-47 篇 |
 </details>
 
-GD順序
+### GD順序
 ```
 class_name [帕斯卡 ClassName]  
 signal [帕斯卡 HitPlayer]
@@ -162,7 +162,7 @@ func save_to_json(path: String) -> Error:
 
 # 从 JSON 反序列化
 ```
-### 0. Json DisplayServer
+### 0. DisplayServer
 ```gdscript
 # 窗口管理
 DisplayServer.window_set_title("My Game")
