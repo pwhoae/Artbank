@@ -1,0 +1,110 @@
+⚔️ Weapons
+Sword
+Bow
+Arrow
+Dagger
+Axe
+Spear
+Crossbow
+Hammer
+Magic Staff
+Throwing Knives
+🛡️ Armor & Defense
+Helmet
+Shield
+Chestplate
+Gauntlets
+Boots
+Cloak
+Magic Barrier
+Armor Set
+Ring of Protection
+Amulet
+🧪 Consumables
+Health Potion
+Mana Potion
+Stamina Drink
+Antidote
+Elixir
+Energy Bar
+Bandage
+Revive Potion
+Strength Potion
+Invisibility Potion
+🧰 Tools
+Pickaxe
+Shovel
+Fishing Rod
+Hammer Tool
+Torch
+Compass
+Map
+Lockpick
+Rope
+Binoculars
+💎 Resources & Materials
+Wood
+Stone
+Iron Ore
+Gold
+Diamond
+Coal
+Leather
+Cloth
+Crystal
+Obsidian
+🎒 Inventory & Storage
+Backpack
+Storage Chest
+Magic Bag
+Item Pouch
+Vault Key
+Loot Crate
+Supply Box
+Treasure Chest
+Hidden Cache
+Inventory Upgrade
+🔮 Magic & Special Items
+Spell Book
+Wand
+Magic Scroll
+Rune Stone
+Enchanted Orb
+Teleport Crystal
+Summoning Stone
+Curse Item
+Blessing Charm
+Time Relic
+🚗 Utility & Movement
+Grappling Hook
+Glider
+Mount Saddle
+Jetpack
+Boots of Speed
+Teleporter Device
+Hoverboard
+Climbing Gear
+Parachute
+Portal Gun
+🧩 Quest & Key Items
+Golden Key
+Ancient Artifact
+Quest Scroll
+Secret Letter
+Treasure Map
+Puzzle Piece
+Royal Seal
+Lost Relic
+Code Device
+Sacred Gem
+🎮 Fun / Unique Items
+Rubber Chicken (joke weapon)
+Music Box
+Fireworks
+Paint Bomb
+Confetti Gun
+Hologram Projector
+Voice Changer
+Pet Summon Item
+Dice of Fate
+Mystery Box
