@@ -1,0 +1,145 @@
+这里为你编写一套基于 **Godot 4.x (GDScript)** 的 2D 传送门核心逻辑代码。这套代码实现了上述策划案中的核心机制：**发射左/右门、角色穿越、以及穿越时的动能继承 ($v_{out} = v_{in}$)**。
+
+---
+
+## 1. 传送门脚本 (`Portal.gd`)
+
+将此脚本挂载到你的传送门预制体（Area2D）上。你需要创建两个实例：一个设为蓝色，一个设为橙色。
+
+```gdscript
+extends Area2D
+class_name Portal
+
+@export_enum("Blue", "Orange") var portal_color: String = "Blue"
+@export var target_portal: Portal # 指向另一个颜色的传送门
+
+# 获取传送门的射出方向（通常是向外）
+func get_exit_direction() -> Vector2:
+	return Vector2.RIGHT.rotated(global_rotation)
+
+func _on_body_entered(body: Node2D) -> void:
+	if not target_portal:
+		return
+		
+	# 检查进入的对象是否具有速度（例如玩家或子弹）
+	if "velocity" in body and body.has_method("teleport"):
+		# 1. 计算相对进入方向和速度大小
+		var in_dir = Vector2.RIGHT.rotated(global_rotation)
+		var speed = body.velocity.length()
+		
+		# 如果物体是迎面撞向传送门的，才触发传送
+		if body.velocity.dot(in_dir) > 0:
+			return 
+			
+		# 2. 计算传送后的新位置（目标传送门的前方稍微偏移一点，防止卡墙）
+		var exit_dir = target_portal.get_exit_direction()
+		var new_position = target_portal.global_position + exit_dir * 32
+		
+		# 3. 计算新速度：保持原本的速度大小，方向变为目标门的射出方向
+		var new_velocity = exit_dir * max(speed, 300.0) # 给予一个基础弹射速度
+		
+		# 4. 执行传送
+		body.teleport(new_position, new_velocity)
+
+```
+
+---
+
+## 2. 玩家控制与传送响应脚本 (`Player.gd`)
+
+将此脚本挂载到你的玩家（CharacterBody2D）上。包含基础移动、重力，以及接收传送门改变位置和速度的函数。
+
+```gdscript
+extends CharacterBody2D
+
+const SPEED = 300.0
+const JUMP_VELOCITY = -400.0
+
+# 获取项目设置中的重力
+var gravity: int = ProjectSettings.get_setting("physics/2d/default_gravity")
+var is_teleporting: bool = false
+
+func _physics_process(delta: float) -> void:
+	# 增加重力
+	if not is_on_floor():
+		velocity.y += gravity * delta
+
+	# 处理跳跃
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	# 左右移动（在空中时也能靠惯性移动，但受控度降低）
+	var direction := Input.get_axis("ui_left", "ui_right")
+	if direction:
+		if is_on_floor():
+			velocity.x = direction * SPEED
+		else:
+			# 空中微调
+			velocity.x = move_toward(velocity.x, direction * SPEED, SPEED * delta)
+	else:
+		if is_on_floor():
+			velocity.x = move_toward(velocity.x, 0, SPEED)
+
+	move_and_slide()
+	is_teleporting = false # 重置传送状态
+
+# 被传送门调用的关键函数
+func teleport(new_pos: Vector2, new_vel: Vector2) -> void:
+	if is_teleporting: return # 防止双向传送门死循环
+	
+	is_teleporting = true
+	global_position = new_pos
+	velocity = new_vel # 完美继承并重定向动能
+
+```
+
+---
+
+## 3. 传送门枪发射逻辑 (`Weapon.gd`)
+
+挂载到玩家手里的武器或直接写在 Player 节点下，用于通过鼠标点击在墙面上生成/移动传送门。
+
+```gdscript
+extends Node2D
+
+@export var blue_portal: Portal
+@export var orange_portal: Portal
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		# 射线检测鼠标点击的位置是否是墙面
+		var space_state = get_world_2d().direct_space_state
+		var mouse_pos = get_global_mouse_position()
+		
+		var query = PhysicsRayQueryParameters2D.create(global_position, mouse_pos)
+		var result = space_state.intersect_ray(query)
+		
+		if result:
+			# 如果射中了静态碰撞体（比如 StaticBody2D 墙面）
+			if result.collider is StaticBody2D:
+				if event.button_index == MOUSE_BUTTON_LEFT:
+					deploy_portal(blue_portal, result.position, result.normal)
+				elif event.button_index == MOUSE_BUTTON_RIGHT:
+					deploy_portal(orange_portal, result.position, result.normal)
+
+func deploy_portal(portal: Portal, pos: Vector2, normal: Vector2) -> void:
+	portal.global_position = pos
+	# 让传送门的朝向与墙面法线一致（面向外侧）
+	portal.global_rotation = normal.angle()
+
+```
+
+---
+
+### 💡 节点配置提示 (Godot 4 节点树推荐)
+
+为了让上方代码直接跑通，你的 Scene 树应该长这样：
+
+* **Main (Node2D)**
+* **TileMap/StaticBody2D** (墙壁，记得开启 Collision Layer)
+* **Player (CharacterBody2D)** -> 挂载 `Player.gd`
+* **Weapon (Node2D)** -> 挂载 `Weapon.gd` (并在 Inspector 中把下面的两个 Portal 拖入它的变量槽)
+
+
+* **BluePortal (Area2D)** -> 挂载 `Portal.gd` (Color 设为 Blue，Target 指向 OrangePortal，**记得链接 `body_entered` 信号到自身**)
+* **OrangePortal (Area2D)** -> 挂载 `Portal.gd` (Color 设为 Orange，Target 指向 BluePortal，**记得链接 `body_entered` 信号到自身**)
