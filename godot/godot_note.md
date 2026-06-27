@@ -1,4 +1,4 @@
-# godot note (pck)
+<img width="906" height="487" alt="image" src="https://github.com/user-attachments/assets/8cf0e809-66f5-4c3c-b346-ce5ca7c093bb" /># godot note (pck)
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 	
 | | 对应篇章 | 特別章 | 
@@ -23,6 +23,19 @@ signal [帕斯卡 HitPlayer]
 @export>@ready>var [蛇形 player_score]
 func [蛇形 player_score]
 ```
+### 3D Notes
+```
+1.場景光照+環境光
+2.mesh>網格>static>3角網格
+3.springarm camera
+```
+### 輔助func
+```
+clamp
+lerp
+tween
+```
+
 idea:
 ```
 滑板跑酷,streak連勝,草莓巴菲,掃雷
