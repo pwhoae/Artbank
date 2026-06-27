@@ -7,7 +7,7 @@
 | 物理系统 |23-32|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/31-destruction-systems.md">31:破坏系统</a> |
 | 动画系统 |37-44|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/44-skeletal-animation.md">44:骨骼动画</a> |
 | audio系统 |45-48|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/46-audio-player.md">46:音频播放器</a> |
-| network系统 |49-52|沒看懂|
+| network系统 |49-52,57,58|沒看懂|
 ||次要||
 | 渲染系统 |11-22|  |
 ||||
