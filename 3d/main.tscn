@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://njsgb768eabq"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_d5h13"]
+
+[sub_resource type="TextMesh" id="TextMesh_v1ejs"]
+text = "Test"
+
+[sub_resource type="Environment" id="Environment_blpp0"]
+tonemap_mode = 2
+fog_enabled = true
+fog_density = 0.02
+
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_exqiu"]
+
+[sub_resource type="Compositor" id="Compositor_x4vld"]
+
+[node name="Main" type="Node3D" unique_id=423558295]
+
+[node name="Plane" type="MeshInstance3D" parent="." unique_id=530912837]
+mesh = SubResource("PlaneMesh_d5h13")
+
+[node name="Cube" type="MeshInstance3D" parent="." unique_id=1726808636]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.73815286, 0.3539709, -2.3841858e-07)
+mesh = SubResource("TextMesh_v1ejs")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1234416793]
+light_energy = 2.0
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=822595876]
+environment = SubResource("Environment_blpp0")
+camera_attributes = SubResource("CameraAttributesPractical_exqiu")
+compositor = SubResource("Compositor_x4vld")
