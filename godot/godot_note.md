@@ -5,13 +5,14 @@
 | | 对应篇章 | 特別章 | 
 |------|---------|---------|
 | 基本 |1-10| |  
-| 鞏固基本 |53-56,60|建議看完1-10深化, |  
+| 鞏固基本 |53-56,60|建議看完1-10深化,<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-b-gdscript-reference.md">GDScript 快速参考</a>, <a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-c-unity-migration.md">Unity vs Godot</a>|  
 | 物理系统 |23-32|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/31-destruction-systems.md">31:破坏系统</a> |
 | 动画系统 |37-44|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/44-skeletal-animation.md">44:骨骼动画</a> |
 | audio系统 |45-48|<a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/46-audio-player.md">46:音频播放器</a> |
 | network系统 |49-52,57,58|沒看懂|
 |------次要------|
 | 渲染系统 |11-22|  |
+|# 性能分析 var start = Time.get_ticks_usec() # ... 代码 var elapsed = Time.get_ticks_usec() - start print("耗时：", elapsed / 1000.0, " ms") # 调用栈 print_stack()|| <a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-d-performance-checklist.md">附录 D：性能优化清单</a> |
 </details>
 
 ### GD順序
@@ -35,6 +36,20 @@ func [蛇形 player_score]
 clamp
 lerp
 tween
+
+### 時間
+var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間
+var split_date=date.split('T')	#split 分開
+text=str(", ".join(split_date))	#join 組合
+
+### 打印调试
+print_rich("[color=red]Error[/color]")
+#push_warning("Warning message")
+#push_error("Error message")
+
+### 断言
+assert(value > 0, "Value must be positive")
+
 ```
 
 idea:
