@@ -1,5 +1,5 @@
 ### godot note (pck)
-玩法>美術
+先建[玩法](#玩法) 再填[美術](#美術)
 
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 	
@@ -13,8 +13,11 @@
 | network系统 |49-52,57,58|沒看懂|
 |------次要------|
 | 渲染系统 |11-22|  |
-|# 性能分析 var start = Time.get_ticks_usec() # ... 代码 var elapsed = Time.get_ticks_usec() - start print("耗时：", elapsed / 1000.0, " ms") # 调用栈 print_stack()|| <a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-d-performance-checklist.md">附录 D：性能优化清单</a> |
+|性能分析|| var start = Time.get_ticks_usec() <br> var elapsed = Time.get_ticks_usec() - start print("耗时：", elapsed / 1000.0, " ms") <br> # 调用栈 print_stack() <br><a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-d-performance-checklist.md">附录 D：性能优化清单</a> |
 </details>
+
+<a id="玩法"></a>
+<h1>先建玩法</h1> 
 
 ### GD順序
 ```
@@ -24,6 +27,7 @@ signal [帕斯卡 HitPlayer]
 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]
 func [蛇形 player_score]
 ```
+<a id="美術"></a>
 ### 美術
 ```
 https://godotshaders.com
