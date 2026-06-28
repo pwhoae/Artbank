@@ -17,29 +17,13 @@
 </details>
 
 <a id="玩法"></a>
-<h1>先建玩法</h1> 
+先建玩法
 
 ### GD順序
 ```
-class_name [帕斯卡 ClassName]  
-signal [帕斯卡 HitPlayer]
-###
-@export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]
-func [蛇形 player_score]
+#帕斯卡 class_name [ClassName]  /signal [HitPlayer]
+#蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
 ```
-<a id="美術"></a>
-### 美術
-```
-https://godotshaders.com
-```
-### 3D Notes
-```
-1.場景光照+環境光
-2.mesh>網格>static>3角網格
-3.springarm camera
-```
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
-
 ### 輔助func
 ```
 clamp
@@ -53,23 +37,9 @@ text=str(", ".join(split_date))	#join 組合
 
 ### 打印调试
 print_rich("[color=red]Error[/color]")
-#push_warning("Warning message")
-#push_error("Error message")
-
-### 断言
-assert(value > 0, "Value must be positive")
-
+assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
 ```
 
-idea:
-```
-滑板跑酷,streak連勝,草莓巴菲,掃雷
-```
-camera
-jump >ray for slideing 墻跳滑牆
-gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
-UI>Camera2D/CanvasLayer /Label
-像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
 《笨办法学Python（第三版） 做游戏书籍
 #https://github.com/jess-hammer/dual-grid-tilemap-system-godot
@@ -397,7 +367,12 @@ class AdvancedItemFactory:
 
 
 </details>
-
+<a id="美術"></a>
+### 美術
+```
+https://godotshaders.com
+像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
+```
 
 土豆兄弟Brotato Roguelike 生存者
 穹顶守护者 Dome Keeper 生存者
