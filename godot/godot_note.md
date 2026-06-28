@@ -1,4 +1,5 @@
 ### godot note (pck)
+玩法>美術
 
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 	
@@ -22,6 +23,10 @@ signal [帕斯卡 HitPlayer]
 ###
 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]
 func [蛇形 player_score]
+```
+### 美術
+```
+https://godotshaders.com
 ```
 ### 3D Notes
 ```
