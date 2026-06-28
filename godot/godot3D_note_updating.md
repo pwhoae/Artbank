@@ -5,6 +5,10 @@
 3.springarm camera
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
+3d tsun (glb,gltf)
+mesh 物理
+收藏 property (position,rotation,scale,shape)
+animatable body
 
 camera
 jump >ray for slideing 墻跳滑牆
