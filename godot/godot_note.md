@@ -1,4 +1,61 @@
 ### godot note (pck)
+68+apB +apc ```gdscript
+# 时间获取
+var unix_time = Time.get_unix_time_from_system()
+var datetime = Time.get_datetime_dict_from_system()
+var string = Time.get_datetime_string_from_system()
+
+### 调试
+
+```gdscript
+# 打印调试
+print("Value: ", value)
+print_rich("[color=red]Error[/color]")
+push_warning("Warning message")
+push_error("Error message")
+
+# 断言
+assert(value > 0, "Value must be positive")
+
+# 性能分析
+var start = Time.get_ticks_usec()
+# ... 代码
+var elapsed = Time.get_ticks_usec() - start
+print("耗时：", elapsed / 1000.0, " ms")
+
+# 调用栈
+print_stack()
+```
+
+### 6.2 社区资源
+
+```
+社区资源:
+┌─────────────────────────────────────────────────────────────┐
+│                      社区资源                                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. GodotAssetLib                                           │
+│     - URL: https://godotengine.org/asset-library             │
+│     - 描述: 官方资源库                                       │
+│                                                             │
+│  2. GodotSteam                                              │
+│     - URL: https://godotsteam.com                            │
+│     - 描述: Steam集成插件                                    │
+│                                                             │
+│  3. GodotShaders                                            │
+│     - URL: https://godotshaders.com                          │
+│     - 描述: 着色器分享网站                                   │
+│                                                             │
+│  4. GodotRecipes                                          │
+│     - URL: https://godotrecipes.com                          │
+│     - 描述: 代码片段集合                                     │
+│                                                             │
+│  5. GodotECS                                                │
+│     - URL: https://github.com/kubecz3k/GodotECS             │
+│     - 描述: 实体组件系统                                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 	
 | | 对应篇章 | 特別章 | 
