@@ -1,0 +1,538 @@
+我看了你上傳的 `demo.html`，這其實是一個完整的 **HTML Canvas 類倖存者 Demo**。如果要「生成 Godot 版本」，並不是直接翻譯語法，而是要把它拆成 Godot 的節點與腳本架構。
+
+這個 Demo 的核心系統可以完整移植到 **Godot 4.x (GDScript)**。
+
+## Godot 專案架構
+
+```
+Main.tscn
+├─ World (Node2D)
+│  ├─ Player
+│  ├─ EnemyManager
+│  ├─ WeaponManager
+│  ├─ GemManager
+│  ├─ BulletManager
+│  ├─ Effects
+│  └─ UI
+│
+├─ UpgradeOverlay
+├─ GameOverOverlay
+└─ CanvasLayer
+```
+
+---
+
+# 1. Player.gd
+
+對應 HTML 的：
+
+```js
+class Player
+```
+
+Godot：
+
+```gdscript
+extends CharacterBody2D
+
+@export var speed := 250.0
+
+var hp := 100
+var max_hp := 100
+
+var laser_lv := 1
+var shield_lv := 0
+var grenade_lv := 0
+
+func _physics_process(delta):
+
+    var input_dir := Input.get_vector(
+        "move_left",
+        "move_right",
+        "move_up",
+        "move_down"
+    )
+
+    velocity = input_dir * speed
+    move_and_slide()
+
+    if input_dir != Vector2.ZERO:
+        rotation = input_dir.angle()
+```
+
+InputMap：
+
+```
+WASD
+Arrow Keys
+```
+
+---
+
+# 2. Enemy.gd
+
+對應：
+
+```js
+class Enemy
+```
+
+Godot：
+
+```gdscript
+extends CharacterBody2D
+
+enum EnemyType {
+    HOUND,
+    ENFORCER,
+    BOSS
+}
+
+@export var enemy_type : EnemyType
+
+var hp
+var damage
+var speed
+
+func _ready():
+
+    match enemy_type:
+
+        EnemyType.HOUND:
+            hp = 22
+            damage = 8
+            speed = 120
+
+        EnemyType.ENFORCER:
+            hp = 80
+            damage = 18
+            speed = 70
+
+        EnemyType.BOSS:
+            hp = 1000
+            damage = 25
+            speed = 50
+
+
+func update_ai(player_pos):
+
+    var dir = (player_pos - global_position).normalized()
+
+    velocity = dir * speed
+    move_and_slide()
+
+
+func hit(amount):
+
+    hp -= amount
+
+    if hp <= 0:
+        die()
+
+
+func die():
+    queue_free()
+```
+
+---
+
+# 3. EnemyManager.gd
+
+對應：
+
+```js
+spawnEnemyRandomly()
+```
+
+Godot：
+
+```gdscript
+extends Node
+
+@export var enemy_scene : PackedScene
+
+var spawn_timer := 0.0
+
+func _process(delta):
+
+    spawn_timer += delta
+
+    if spawn_timer >= 1.0:
+
+        spawn_timer = 0
+
+        spawn_enemy()
+
+
+func spawn_enemy():
+
+    var enemy = enemy_scene.instantiate()
+
+    var player = get_tree().get_first_node_in_group("player")
+
+    var angle = randf()*TAU
+    var dist = 800
+
+    enemy.global_position =
+        player.global_position +
+        Vector2.RIGHT.rotated(angle)*dist
+
+    get_parent().add_child(enemy)
+```
+
+---
+
+# 4. Laser Weapon
+
+HTML：
+
+```js
+LaserBeam
+```
+
+Godot 建議：
+
+不用生成實體子彈。
+
+直接：
+
+```gdscript
+func fire_laser():
+
+    var target = find_nearest_enemy()
+
+    if target == null:
+        return
+
+    target.hit(18 + player.laser_lv * 4)
+
+    spawn_laser_effect(
+        player.global_position,
+        target.global_position
+    )
+```
+
+---
+
+Laser 特效：
+
+```gdscript
+extends Line2D
+
+var timer := 0.08
+
+func setup(start,end):
+
+    points = [start,end]
+
+func _process(delta):
+
+    timer -= delta
+
+    if timer <= 0:
+        queue_free()
+```
+
+---
+
+# 5. Shield Orbit
+
+HTML：
+
+```js
+ShieldOrbit
+```
+
+Godot：
+
+```gdscript
+extends Node2D
+
+var angle := 0.0
+var level := 1
+
+func _process(delta):
+
+    angle += delta*4
+
+    for i in get_children().size():
+
+        var orb = get_child(i)
+
+        var a = angle + TAU*i/level
+
+        orb.position =
+            Vector2(cos(a),sin(a))
+            *(55+level*8)
+```
+
+Orb：
+
+```
+Area2D
+```
+
+碰撞：
+
+```gdscript
+func _on_body_entered(enemy):
+
+    enemy.hit(2)
+```
+
+---
+
+# 6. Plasma Grenade
+
+HTML：
+
+```js
+PlasmaGrenade
+```
+
+Godot：
+
+## 飛行
+
+```gdscript
+extends Node2D
+
+var target
+var t := 0.0
+
+func _process(delta):
+
+    t += delta*2
+
+    global_position =
+        start.lerp(target,t)
+
+    if t>=1:
+        explode()
+```
+
+---
+
+## 爆炸區域
+
+```
+Area2D
+├ CollisionShape2D
+└ AnimatedSprite2D
+```
+
+```gdscript
+func explode():
+
+    for enemy in area.get_overlapping_bodies():
+
+        enemy.hit(20)
+
+    queue_free()
+```
+
+---
+
+# 7. Exp Gem
+
+HTML：
+
+```js
+ExpGem
+```
+
+Godot：
+
+```gdscript
+extends Area2D
+
+var exp_value := 15
+
+func _process(delta):
+
+    var player = get_tree().get_first_node_in_group("player")
+
+    var dist = global_position.distance_to(player.global_position)
+
+    if dist < 150:
+
+        global_position += (
+            player.global_position-global_position
+        ).normalized()*300*delta
+
+
+func _on_body_entered(body):
+
+    if body.is_in_group("player"):
+
+        body.add_exp(exp_value)
+
+        queue_free()
+```
+
+---
+
+# 8. Level Up 系統
+
+HTML：
+
+```js
+triggerLevelUp()
+```
+
+Godot：
+
+Player：
+
+```gdscript
+var exp := 0
+var level := 1
+var next_exp := 60
+
+func add_exp(value):
+
+    exp += value
+
+    if exp >= next_exp:
+
+        level_up()
+
+
+func level_up():
+
+    level += 1
+
+    exp -= next_exp
+
+    next_exp *= 1.35
+
+    get_tree().paused = true
+
+    UI.show_upgrade()
+```
+
+---
+
+Upgrade UI：
+
+```gdscript
+func choose_laser():
+
+    player.laser_lv += 1
+
+    resume()
+
+
+func choose_shield():
+
+    player.shield_lv += 1
+
+    resume()
+
+
+func choose_grenade():
+
+    player.grenade_lv += 1
+
+    resume()
+
+
+func resume():
+
+    visible = false
+
+    get_tree().paused = false
+```
+
+---
+
+# 9. Boss
+
+HTML：
+
+```js
+fireBossBullets()
+```
+
+Godot：
+
+```gdscript
+func fire_ring():
+
+    for i in 12:
+
+        var bullet = bullet_scene.instantiate()
+
+        var angle = TAU*i/12
+
+        bullet.direction =
+            Vector2.RIGHT.rotated(angle)
+
+        bullet.global_position = global_position
+
+        add_child(bullet)
+```
+
+---
+
+Boss Bullet：
+
+```gdscript
+extends Area2D
+
+var direction
+var speed := 200
+
+func _process(delta):
+
+    global_position += direction*speed*delta
+```
+
+---
+
+# 10. Main Game Loop
+
+HTML：
+
+```js
+requestAnimationFrame(gameLoop)
+```
+
+Godot 不需要。
+
+Godot 自帶遊戲循環：
+
+```gdscript
+func _process(delta):
+    update_ui()
+
+func _physics_process(delta):
+    player_logic()
+    enemy_logic()
+```
+
+---
+
+## 最終對照
+
+| HTML Canvas Demo      | Godot 實作                    |
+| --------------------- | --------------------------- |
+| requestAnimationFrame | `_process()`                |
+| Canvas draw()         | Sprite2D / AnimatedSprite2D |
+| Player class          | CharacterBody2D             |
+| Enemy class           | CharacterBody2D             |
+| LaserBeam             | Line2D 特效                   |
+| ShieldOrbit           | Node2D + Area2D             |
+| PlasmaGrenade         | Node2D + Area2D             |
+| ExpGem                | Area2D                      |
+| UpgradeOverlay        | Control                     |
+| Boss Bullet           | Area2D                      |
+| gameLoop              | Godot SceneTree             |
+
+這份 Demo 幾乎可以 **100% 重建成 Godot 4 類倖存者原型**。如果你要做真正可玩的版本，我建議下一步把它拆成：
+
+> **Player → Enemy → EXP → 升級 → 武器模組 → Boss → UI**
+
+六個階段開發。
+
+我也可以直接幫你把這個 HTML Demo 轉成完整的 **Godot 4 專案版（含 `.tscn` + 全部 `.gd` 腳本）**。

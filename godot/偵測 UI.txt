@@ -1,0 +1,284 @@
+這張圖其實是**典型「掃描 / 偵測 UI（Scan Detection System）」**，可以拆成 4 個核心模組來做（Godot 完全能還原）：
+
+---
+
+# 🧠 一、效果拆解（你圖中的系統）
+
+![Image](https://images.openai.com/static-rsc-4/LTzghYvxeBKIFb-b6zb_9uwQbQnWxS207H8UYnEfsXSFZt6O1Hc5HGrf5j41vSmvcxbAQ4r26n7a9uuwUTVtGW1ox26VmR0yvNEl3pMpt7v3TH5GiV_CDhznsf7Pma2uompBjSSjSDhv_Kklsja_vCaISSN4ImWIyJDyPNei_k8il4vSYcgFXIwuoCF7rm0y?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/ja9iMIn78cS84JMVFSskWDjiqmoO7mMmolGDdN-drOeHD0W4rzsf8QVG4Z6Xez1njZOYPt3C0I7JmBgo3X7cUK2v9uqltPkHY33IhoaYF4PolbRWj6LYve_4jvrFE9nEy4ulgB7-eEzBUJ0XMnFd50oxMhZFhbvnow0HFQt1IBKl0Eqrro2VGki-T9Z3Rl8S?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/g0udvtJqTTVEXhhQCFMRKxENDgaYoTq5PNCmfQdWuUy-r6Qo3PN5l_Jw0eRrJLz7idacUV3a2Q7xZkVjnzxYiw621Wy5IUVflA1OmkklZ9SP-f68b5YRdoQSZ_xHetYF7d17A85WxbT2hiWypEVDLSi7NFG2BY1FiPt5wRnxQDvzp0zjDkSftusk0oxMAXdz?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/gEHgf6uBGadHmlfyp6yJpG2kgno18ycd5fMHOaElVXJKgWgWcDI3HioWnJwgyap8gy6pKHgJk-ntHVJxNDUR03v_4WBe0mTBn1Nr2knJkv0RbmtPok4Za2X9K4xag3cJ_DPK0PJ8joug5PtWQTN1p4gmeuUjFw5VCAqboWoBzh5Nw3Pu_qz16kMp6G0x_buS?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/irRVx-pi-cxvCTNLHkNe7y70WrJ4614zal725i8mfT4_ke5tQbWNopIeLs0L2G2f6Y6nsVN6YIgozcBVRBo2NJ3BlGCBdDRV-_eN5GeiBibqmEZoxNG5Zf9zW1WWAdoXFJS7PMtHQq2S5Rk5NBfsk34o4S9HLooGhmTOxmXXDuxBM9i4GUVfuhZHH9WfFdVK?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/t7fJx-ejSybq6FGhPdIHvTPROfU_IX_6pxscfnKizDz2OC9BQB4o0qf-LoPcJNLhIOFTOWru0lLXJi4FMv6hCQx49hGTFb9pMSQybBYrgt2TeJCeS42WZiN2KlYjzkVfjp3Yh57YeNhdvb5p82v1jNEqwY9APeFtdJ73AJ6V8_fULCIusbRBfB6iPxCapL9j?purpose=fullsize)
+
+### 1️⃣ 掃描圈（核心）
+
+* 一個圓形 HUD（CanvasLayer）
+* 有「進度弧形」逐步填滿
+* 可旋轉（雷達感）
+
+👉 本質：
+
+```
+Shader / TextureProgressBar + radial fill
+```
+
+---
+
+### 2️⃣ 偵測區域（Area）
+
+* 玩家附近有一個圓形偵測範圍
+* 進入就開始 scan
+
+👉 本質：
+
+```
+Area2D / Area3D + CollisionShape
+```
+
+---
+
+### 3️⃣ 目標鎖定（Target Lock）
+
+* 掃描對象顯示 icon
+* 有 UI pointer / marker
+
+👉 本質：
+
+```
+Node2D + Sprite + outline + UI跟隨
+```
+
+---
+
+### 4️⃣ 掃描進度系統
+
+* 0 → 100%
+* 中斷會歸零 / 緩慢下降
+
+👉 本質：
+
+```
+timer-based progress
+```
+
+---
+
+# 🧱 二、Godot 節點架構（推薦）
+
+```
+Player
+├── ScannerArea (Area2D)
+│   └── CollisionShape2D (Circle)
+├── ScannerUI (CanvasLayer)
+│   ├── ScanCircle (TextureProgressBar)
+│   ├── TargetIcon (TextureRect)
+│   └── InfoPanel (Control)
+```
+
+---
+
+# ⚙️ 三、完整 Godot 4 Code（可直接用）
+
+## 🎯 1. Scanner.gd（核心邏輯）
+
+```gdscript
+extends Node2D
+
+@export var scan_time := 2.0
+@export var scan_radius := 200.0
+
+var current_target = null
+var scan_progress := 0.0
+
+@onready var area = $ScannerArea
+@onready var ui = $ScannerUI
+
+func _ready():
+    area.body_entered.connect(_on_body_entered)
+    area.body_exited.connect(_on_body_exited)
+
+func _process(delta):
+    if current_target:
+        scan_progress += delta / scan_time
+        scan_progress = clamp(scan_progress, 0, 1)
+
+        ui.update_progress(scan_progress)
+        ui.update_target_position(current_target.global_position)
+
+        if scan_progress >= 1:
+            complete_scan()
+    else:
+        # 沒目標 → 慢慢下降
+        scan_progress = max(scan_progress - delta * 0.5, 0)
+        ui.update_progress(scan_progress)
+
+func _on_body_entered(body):
+    if body.is_in_group("scannable"):
+        current_target = body
+        ui.show_target(body)
+
+func _on_body_exited(body):
+    if body == current_target:
+        current_target = null
+        ui.hide_target()
+
+func complete_scan():
+    print("掃描完成:", current_target.name)
+    ui.show_info(current_target)
+```
+
+---
+
+## 🎯 2. ScannerUI.gd（UI控制）
+
+```gdscript
+extends CanvasLayer
+
+@onready var progress = $ScanCircle
+@onready var target_icon = $TargetIcon
+@onready var info_panel = $InfoPanel
+
+func update_progress(value):
+    progress.value = value * 100
+
+func show_target(target):
+    target_icon.visible = true
+
+func hide_target():
+    target_icon.visible = false
+    info_panel.visible = false
+
+func update_target_position(world_pos):
+    var cam = get_viewport().get_camera_2d()
+    if cam:
+        var screen_pos = cam.unproject_position(world_pos)
+        target_icon.position = screen_pos
+
+func show_info(target):
+    info_panel.visible = true
+    info_panel.get_node("Name").text = "名稱: " + target.name
+    info_panel.get_node("Status").text = "狀態: 已掃描"
+```
+
+---
+
+## 🎯 3. Scannable.gd（被掃描物件）
+
+```gdscript
+extends CharacterBody2D
+
+func _ready():
+    add_to_group("scannable")
+```
+
+---
+
+# 🎨 四、掃描圓 UI 做法（重點）
+
+## 方法 A（最簡單）
+
+👉 用 `TextureProgressBar`
+
+設定：
+
+```
+Fill Mode → Radial
+Min = 0
+Max = 100
+```
+
+---
+
+## 方法 B（高級：Shader）
+
+```glsl
+shader_type canvas_item;
+
+uniform float progress : hint_range(0.0, 1.0);
+
+void fragment() {
+    vec2 uv = UV - vec2(0.5);
+    float angle = atan(uv.y, uv.x);
+
+    float normalized = (angle + PI) / (2.0 * PI);
+
+    if (normalized < progress) {
+        COLOR = vec4(0.0, 1.0, 1.0, 1.0);
+    } else {
+        discard;
+    }
+}
+```
+
+---
+
+# 🔥 五、進階還原你張圖效果
+
+### ✔ 掃描動畫
+
+* 圓圈 rotate
+* 波紋 pulse
+* 邊緣 glow
+
+👉 Tween：
+
+```gdscript
+$ScanCircle.rotation += delta * 1.5
+```
+
+---
+
+### ✔ UI Lock 線（你圖右邊那條）
+
+👉 用 Line2D：
+
+```gdscript
+line.points = [scan_circle_pos, target_icon_pos]
+```
+
+---
+
+### ✔ 100% 時效果
+
+* 閃光
+* sound
+* freeze target
+
+---
+
+# 🚀 六、你可以再升級（做成作品集🔥）
+
+👉 加這些直接變 AAA：
+
+* ❗ 多目標切換（closest target）
+* ❗ 掃描被遮擋（raycast）
+* ❗ 不同掃描等級（速度不同）
+* ❗ CV / AI detect（你背景加分）
+
+---
+
+# 🧠 給你最重要一句（面試會問）
+
+👉 這個系統本質是：
+
+```
+Area Detection + State Machine + UI Binding
+```
+
+---
+
+# 如果你想再升級👇
+
+我可以幫你做：
+
+* 🎮 Godot完整 Demo 專案（可下載）
+* 🎨 UI 資產（掃描圈 + shader pack）
+* 🤖 AI 自動掃描系統（你之前想做 offline assistant 可接）
+
+直接講：「做進階版」我幫你拉到作品集等級 🚀

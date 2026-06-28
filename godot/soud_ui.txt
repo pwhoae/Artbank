@@ -1,0 +1,68 @@
+这是一个针对**專業的聲音 UI (Audio UI / Sound UI) 概念展示 Demo**的策划方案。
+
+声音 UI 的核心在于通过听觉反馈（点击音、提示音、环境音）来辅助或引导用户的视觉操作。为了在 Demo 中最直观地展示声音的“质感”与“功能性”，我们将其设计为一个“太空舱控制面板” (Space Capsule Control Panel)。这种科幻且高精度的场景，最能放大声音 UI 的存在感。
+
+由于这是一个前端/交互 Demo，我们需要**视觉美术素材**来搭建界面，以便用户触发声音。以下是完整的策划方案及配套的 AI 绘画 Prompt。
+
+---
+
+## 🛸 項目企劃：太空艙控制面板 (Audio UI Demo)
+
+### 1. 核心交互場景與聲音矩陣
+
+Demo 将包含四个核心交互区域，每个区域对应不同属性的專業声音 UI：
+
+| 區域 | 視覺元素 | 聲音 UI 設計方向 (Audio UI Spec) |
+| --- | --- | --- |
+| **A. 系統解鎖區** | 掌纹/视网膜扫描仪 | **啟動音 (Boot Up):** 低频环境气流声，逐渐升调的电子合成音，充满能量感。 |
+| **B. 矩陣切換區** | 4-6 个机械质感实体按钮 | **點擊反饋音 (Click/Tap):** 极短、清脆的金属微动开关声，伴随轻微的高频重音（类似高档跑车按键）。 |
+| **C. 參數調節區** | 弧形或直线型的滑动条 (Slider) | **連續動態音 (Scroll/Slide):** 随着滑动位置改变频率的颗粒感声音，类似复古收音机调频或能量蓄积。 |
+| **D. 警報與通知** | 红色覆蓋式紧急按钮 | **警告音 (Alert/Notification):** 不刺耳但具备极高穿透力的双音调交替声，带有微弱的回音效果。 |
+
+### 2. 介面視覺風格 (UI/UX Direction)
+
+* **主題色调：** **現代高質感亮色系 (Modern Premium Light Mode)**。打破传统的暗色科幻，采用类似苹果（Apple）或极简医疗器械的“白科幻/高科技极简”风格。
+* **主色：** 极简陶瓷白、太空铝银、微光浅灰。
+* **点缀色：** 柔和荧光蓝（激活态）、琥珀金（警告态）。
+
+---
+
+## 🎨 美術素材 AI Prompt 輸出
+
+为了让你顺利搭建 Demo 的前端界面，以下提供对应的 Midjourney / Stable Diffusion 提示词（Prompt）。所有 Prompt 已自动优化为**高质感亮色界面风格**。
+
+### 1. 主控制面板背景 (Main UI Dashboard Background)
+
+> **Prompt:**
+> A UI dashboard mockup for a sci-fi space capsule control panel, premium light mode aesthetic, minimalist tech design. Pure white ceramic and space aluminum silver textures, subtle light gray grids. Clean interfaces, floating holographic elements in soft blue, no dark shadows, hyper-detailed, clean user interface design, 8k resolution, UX/UI portfolio style, studio lighting --ar 16:9 --v 6.0
+
+### 2. 系統解鎖按鈕 (Biometric Scanner Icon/Button)
+
+> **Prompt:**
+> A high-tech biometric palm scanner button icon, flat UI design, light mode. White and metallic silver material, glowing soft neon blue circular scanning lines, minimal look, premium tech aesthetic, isolated on a light gray background, game asset, 3D render style but clean and flat --ar 1:1 --v 6.0
+
+### 3. 實體機械按鈕組 (Mechanical UI Buttons Pack)
+
+> **Prompt:**
+> A set of premium mechanical UI buttons for a tech interface, light mode. Minimalist design, brushed aluminum and white polymer materials, tactile micro-switch style, some buttons showing active state with a soft amber or cyan indicator dot, clean shadows, game UI assets, white background --ar 4:3 --v 6.0
+
+### 4. 參數調節滑塊 (Sci-Fi Slider Track & Knob)
+
+> **Prompt:**
+> A linear slider UI component for parameter adjustment, modern sci-fi style, light mode. Matte white track with ultra-fine increment marks, sleek silver metal knob capsule, clean and premium tech feel, isolated on light background --ar 16:9 --v 6.0
+
+### 5. 緊急警報按鈕 (Emergency Alert Button)
+
+> **Prompt:**
+> An emergency alert button UI element, sci-fi style, light mode adaptation. A translucent amber-orange protective flip cover over a glossy white button, premium minimalist tech aesthetic, clean crisp edges, soft shadow, game asset, light gray background --ar 1:1 --v 6.0
+
+---
+
+## 🛠️ Demo 實施建議 (Tech Stack & Implementation)
+
+1. **前端框架：** 建议使用 React 或 Vue。利用 `Tailwind CSS` 可以极其轻松地还原上述 Prompt 产生的“高质感亮色”微渐变与金属阴影效果。
+2. **聲音引擎：** 推荐使用 **`Howler.js`** 或 Web Audio API。
+* *小技巧：* 滑动条（Slider）的声音可以通过 Web Audio API 的 `OscillatorNode`（振荡器）来实时改变频率（Frequency），实现丝滑的跟随效果，而不需要加载大量的音频文件。
+
+
+3. **動態配合：** 声音播放的触发点必须与视觉动画（如 CSS Scale 缩放、Opacity 渐变）**严格同步（延迟控制在 10ms 以内）**，这是展现“专业声音 UI”流畅度的关键。
