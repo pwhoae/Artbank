@@ -1,6 +1,6 @@
 ### godot note (pck)
 先建[玩法](#玩法) 再填[美術](#美術)
-
+https://github.com/pwhoae/Artbank/blob/main/godot/godot3D_note_updating.md
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 	
 | | 对应篇章 | 特別章 | 
@@ -24,6 +24,15 @@
 #帕斯卡 class_name [ClassName]  /signal [HitPlayer]
 #蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
 ```
+### 0.0 基本
+```
+# export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
+# @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
+# enum [enum Phase { Fighting, Win, Resetting }]
+# 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
+# 显示系统对话框 OS.alert("message")
+await get_tree().create_timer(2).timeout # 等待時間 
+```
 ### 輔助func
 ```
 clamp
@@ -40,30 +49,11 @@ print_rich("[color=red]Error[/color]")
 assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
 ```
 
-```
-《笨办法学Python（第三版） 做游戏书籍
-#https://github.com/jess-hammer/dual-grid-tilemap-system-godot
-找目的+目標 確立成功 拆分/組合
-```
-### 0.0 基本
-
-```
-# export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
-# @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
-# enum [enum Phase { Fighting, Win, Resetting }]
-# 等待時間 [await get_tree().create_timer(2).timeout]
-# 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
-# 显示系统对话框 OS.alert("message")  
-```
 ### 0. signal
 用法
-``` player.gd
-1 signal start
-2 start.emit() #发射信号
-------------------------
-another.gd
-@export player
-3 player.start.connect(func) #only start.emit()>turn on the func 
+```
+|player.gd|another.gd|
+|1 signal start <br> 2 start.emit() #发射信号|@export player <br> 3 player.start.connect(func) #only start.emit()>turn on the func |
 ```
 ```
 # 信号定义 [signal player_died]
