@@ -1,5 +1,12 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a>https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md <br>
 resource import once+no change
+_工具箱
+    - _[1 玩法 GDScript]
+    - _[2 美術]
+    - _[3 音頻]
+    - _[4 影片]
+    - _[5 資源 (tres)]
+    - _[9 成品]
 平設8/拍攝7/遊戲7/音樂7
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
