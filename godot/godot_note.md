@@ -363,18 +363,5 @@ class AdvancedItemFactory:
 https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
-
 土豆兄弟Brotato Roguelike 生存者
-穹顶守护者 Dome Keeper 生存者
->???| **Estabash** | 动作 | Steam 热门 | 2023 |
 
-**核心模块源码位置**（后续文章会深入分析）：
-
-| 模块 | 源码路径 | 对应文章 |
-|------|---------|---------|
-| 对象系统 | `core/object/` | 第 5 篇 
-| 渲染系统 | `servers/rendering/` | 第 11-22 篇 |
-| GDScript | `modules/gdscript/` | 第 23-30 篇 |
-| 动画系统 | `scene/animation/` | 第 31-36 篇 |
-| 物理系统 | `servers/physics/` | 第 37-42 篇 |
-| UI 系统 | `scene/gui/` | 第 43-47 篇 |
