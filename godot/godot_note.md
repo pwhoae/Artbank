@@ -18,7 +18,7 @@
 
 <a id="玩法"></a>
 先建玩法
-
+## Tsun gd用蛇形
 ### GD順序
 ```
 #帕斯卡 class_name [ClassName]  /signal [HitPlayer]
