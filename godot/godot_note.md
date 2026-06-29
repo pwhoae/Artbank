@@ -1,6 +1,6 @@
 ### godot note (pck)
-先建[玩法](#玩法) 再填[美術](#美術)
-https://github.com/pwhoae/Artbank/blob/main/godot/godot3D_note_updating.md
+先建[玩法](#玩法) 再填[美術](#美術)<br>
+<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 	
 | | 对应篇章 | 特別章 | 
