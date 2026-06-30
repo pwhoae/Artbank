@@ -39,6 +39,7 @@ await get_tree().create_timer(2).timeout # 等待時間
 clamp
 lerp
 tween
+randi/randf
 
 ### 時間
 var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間
