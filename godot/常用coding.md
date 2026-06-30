@@ -11,6 +11,9 @@ mesh 物理
 收藏 property (position,rotation,scale,shape)
 animatable body
 
+omnienergy/spotlight
+toon 3渲2
+
 ### 粒子系统(次研究) 【Godot进阶教学】做出你的第一个3D游戏：粒子系统的运用
 ```
 process material
