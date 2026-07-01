@@ -1,33 +1,23 @@
-
 ### 3D Notes
 ```
+### 思考方向
+收藏 property (position,rotation,scale,shape) Collision3D常用
 1.場景光照+環境光
-2.mesh>網格>static>3角網格
-3.springarm camera
+2.Player+camera (springarm)
+3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
+4.move>animationplayer
+5.death zone>worldboundary
+X0.UI>CanvasLayer>Label
+X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
+X2.gpuparticle>cpuparticle
+XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
-3d tsun (glb,gltf)
-mesh 物理
-收藏 property (position,rotation,scale,shape)
-animatable body
-
-omnienergy/spotlight
-toon 3渲2
 
 ### 粒子系统(次研究) 【Godot进阶教学】做出你的第一个3D游戏：粒子系统的运用
 ```
-process material
-gpuparticle>cpu
-standard3d albedo
-time amount spawn
-direction sprad
-align y
-accel +爆炸
+process material/standard3d albedo/time amount spawn出生/direction sparation/align y/accel +爆炸
 ```
-camera
-jump >ray for slideing 墻跳滑牆
-gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
-UI>Camera2D/CanvasLayer /Label
 
 ### 2D Notes
 ```
