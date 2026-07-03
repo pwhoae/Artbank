@@ -33,7 +33,7 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 ## 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖
 ## 被動遊戲 vs 主動遊戲
 ```
-
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%8F%90%E7%A4%BA%E6%89%8B%E6%B3%95%E7%8D%8E%E5%8B%B5.jpeg" width="300" height="300"></img>
 ## Tsun gd用蛇形
 ### GD順序
 ```
