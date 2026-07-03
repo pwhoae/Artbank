@@ -27,8 +27,13 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 |性能分析|| var start = Time.get_ticks_usec() <br> var elapsed = Time.get_ticks_usec() - start print("耗时：", elapsed / 1000.0, " ms") <br> # 调用栈 print_stack() <br><a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-d-performance-checklist.md">附录 D：性能优化清单</a> |
 </details>
 
-<a id="玩法"></a>
-先建玩法
+<a id="玩法"></a>先建玩法
+### 線性公式
+```
+## 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖
+## 被動遊戲 vs 主動遊戲
+```
+
 ## Tsun gd用蛇形
 ### GD順序
 ```
@@ -206,6 +211,11 @@ var material = ShaderMaterial.new()
 material.shader = load("res://shaders/custom.gdshader")
 material.set_shader_parameter("albedo", Color.RED)
 material.set_shader_parameter("roughness", 0.5)
+```
+```
+2. 解決方案：串流技術（Streaming）與世界重塑
+串流技術的運作：技術負責人 Adam Fowler 提出了解決方案。遊戲將地圖拆分為數千個小區域（Sectors），並在玩家周圍設定一個隱形的方形區域。只有該區域內所需的模型與貼圖才會被載入記憶體。當玩家移動時，前方新區域的資產會被讀取，後方離開的資產則會被默默刪除，像一個隨玩家移動的「視窗」。
+層次細節（LOD）解決破圖問題：如果只載入身邊的物件，遠處世界會顯得憑空出現（Pop-in）。因此，遊戲在遠處只會載入大型結構（如高樓、橋樑、吊車），且使用的是低多邊形（Low poly）模型與低解析度貼圖。當玩家靠近時，高畫質模型才會無縫淡入替換，藉此省下大量記憶體。
 ```
 </details>
 ------------------------------------------------
