@@ -10,6 +10,11 @@
 X0.UI>CanvasLayer>Label
 X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
 X2.gpuparticle>cpuparticle
+X3.3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
+### 4. 骨骼动画（Animated Characters）
+
+* Godot 会将包含动画的 GLTF 文件自动识别并创建 `AnimationPlayer` 节点。
+* **动画库工作流**：支持将模型与动画拆分导入。可以将不带网格的动画文件导入为“动画库（Animation Library）”，供相同骨骼架构（或通过 Retargeting 重定向）的不同角色复用。
 XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
