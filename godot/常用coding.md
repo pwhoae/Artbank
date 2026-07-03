@@ -16,6 +16,10 @@ X3.3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文
 * Godot 会将包含动画的 GLTF 文件自动识别并创建 `AnimationPlayer` 节点。
 * **动画库工作流**：支持将模型与动画拆分导入。可以将不带网格的动画文件导入为“动画库（Animation Library）”，供相同骨骼架构（或通过 Retargeting 重定向）的不同角色复用。
 XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
+5. 巡邏敵人 (Slime Enemy)
+以 Node2D 為基底配合 AnimatedSprite2D 動畫。
+運用 RayCast2D（射線偵測） 向左、向右發射隱形射線，當偵測到牆壁碰撞時，腳本會自動將移動方向（direction）乘以 -1，並切換 flip_h 水平翻轉精靈圖，達成自動無盡巡邏。
+
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
 
