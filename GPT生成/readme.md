@@ -1,17 +1,9 @@
-[回到底部](#readme)|<br><a id="readme_begin"></a>https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md <br>
-https://brackeysgames.itch.io/brackeys-3d-game-tutorial-assets 
-
-平設8/拍攝7/遊戲7/音樂7
+[回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|平設8/拍攝7/遊戲7/音樂7|
+### 整活>過程要好玩快樂
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
 ```
-### 整活>過程要好玩快樂
-
-<br>
-遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
 <hr>
-滑板跑酷,streak連勝,草莓巴菲,掃雷
-
 
 ### 平面設計 prompt html
 ```
@@ -178,8 +170,6 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 {"type":"video game screenshot mockup","perspective":"third-person over-the-shoulder","character":{"description":"male protagonist seen from behind","clothing":"grey tank top with graphic '{argument name=\"shirt graphic\" default=\"LEONIDA MARINE CENTER\"}', camouflage cargo shorts"},"environment":{"setting":"tropical coastal town, dirt road, sunny daytime with scattered clouds","left_side":"wooden welcome sign reading 'Welcome to {argument name=\"location name\" default=\"LEONIDA KEYS\"} YOUR PARADISE', pink plastic flamingo, tropical foliage, distant water tower","center":"green building with 'FISH' sign and marlin graphic, sign reading 'BAIT TACKLE ICE BEER WINE', pedestrians walking","right_side":"two-story wooden building 'Brian's Boat Works & Marina', 'Brian's Bar' neon sign, parked pickup truck, jet skis on a trailer"},"ui_elements":{"count":5,"components":[{"position":"top-left","type":"mission objective","text":"{argument name=\"mission title\" default=\"MEET RAUL\"}\n{argument name=\"mission description\" default=\"Raul has some work for you at his boatyard\"}"},{"position":"top-right","type":"status HUD","text":"13:47\n$1,142","icon":"pink palm tree"},{"position":"bottom-left","type":"minimap","description":"circular map with purple border, white map icons including 'N' for north"},{"position":"bottom-left, right of minimap","type":"location text","text":"{argument name=\"location name\" default=\"LEONIDA KEYS\"}\nPALM ISLAND"},{"position":"bottom-right","type":"watermark","text":"{argument name=\"game title\" default=\"GTA VI\"}\nPRE-ALPHA FOOTAGE"}]}}
 ```
 ***
-
-<hr>
 <a name="case-186"></a>
 
 ### 例 186：品牌视觉识别图
