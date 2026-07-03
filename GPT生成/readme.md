@@ -1,4 +1,5 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a>https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md <br>
+https://brackeysgames.itch.io/brackeys-3d-game-tutorial-assets 
 
 平設8/拍攝7/遊戲7/音樂7
 ```
