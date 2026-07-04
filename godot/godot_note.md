@@ -47,13 +47,14 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 # 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
 # 显示系统对话框 OS.alert("message")
 await get_tree().create_timer(2).timeout # 等待時間 
-```
+
 ### 輔助func
-```
 clamp
-lerp
+lerp/lerp_angle
 tween
 randi/randf
+position.direction_to(player.position)
+match type
 
 ### 時間
 var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間
@@ -225,8 +226,6 @@ material.set_shader_parameter("roughness", 0.5)
 </details>
 ------------------------------------------------
 <details><summary>func記</summary>
-var direction_to_player=position.direction_to(player.position)
-lerp(current_speed, target_speed, lerp_weight * delta)
 	
 ### 無盡scroll
 ```
@@ -235,153 +234,64 @@ const SCROLL_SPEED:int =4
 @onready var background=$Background
 
 func _scroll():
-	scroll+=SCROLL_SPEED
-	if scroll>=1000:
-		scroll=0
+	scroll+=SCROLL_SPEED;if scroll>=1000:scroll=0;
 	background.position.x=-scroll	
 ```
+### 移除动作
+```
 func remove_action(action_name: String):
-    # 移除动作
-    if InputMap.has_action(action_name):
-        InputMap.erase_action(action_name)
+    if InputMap.has_action(action_name):InputMap.erase_action(action_name)
+```
 ### 5.3 输入灵敏度
-
 ```gdscript
-# 输入灵敏度
 class_name InputSensitivity
-
-extends Node
-
-@export var mouse_sensitivity: float = 1.0
-@export var gamepad_sensitivity: float = 1.0
-@export var axis_deadzone: float = 0.1
-
 func _ready():
     load_sensitivity_settings()
 
+# 加载灵敏度设置
 func load_sensitivity_settings():
-    # 加载灵敏度设置
     var config = ConfigFile.new()
     var err = config.load("user://input_sensitivity.ini")
     
-    if err == OK:
-        mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0)
-        gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0)
-        axis_deadzone = config.get_value("deadzone", "axis", 0.1)
+    if err == OK:mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0);gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0);axis_deadzone = config.get_value("deadzone", "axis", 0.1);
 
 func save_sensitivity_settings():
     # 保存灵敏度设置
     var config = ConfigFile.new()
-    config.set_value("sensitivity", "mouse", mouse_sensitivity)
-    config.set_value("sensitivity", "gamepad", gamepad_sensitivity)
-    config.set_value("deadzone", "axis", axis_deadzone)
+    config.set_value("sensitivity", "mouse", mouse_sensitivity);config.set_value("sensitivity", "gamepad", gamepad_sensitivity);config.set_value("deadzone", "axis", axis_deadzone);
     config.save("user://input_sensitivity.ini")
 
-func set_mouse_sensitivity(sensitivity: float):
+func set_sensitivity(sensitivity: float):
     mouse_sensitivity = clamp(sensitivity, 0.1, 5.0)
-
-func set_gamepad_sensitivity(sensitivity: float):
     gamepad_sensitivity = clamp(sensitivity, 0.1, 5.0)
-
-func set_axis_deadzone(zone: float):
     axis_deadzone = clamp(zone, 0.0, 0.5)
 
-func get_mouse_sensitivity() -> float:
-    return mouse_sensitivity
+func get_sensitivity() -> float:
+    return mouse_sensitivity;return gamepad_sensitivity;return axis_deadzone;
 
-func get_gamepad_sensitivity() -> float:
-    return gamepad_sensitivity
-
-func get_axis_deadzone() -> float:
-    return axis_deadzone
-
+# 应用灵敏度到轴值
 func apply_to_axis_value(value: float) -> float:
-    # 应用灵敏度到轴值
-    if abs(value) < axis_deadzone:
-        return 0.0
-    
-    # 应用死区
-    var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone)
-    adjusted = clamp(adjusted, 0.0, 1.0)
-    
-    # 应用灵敏度
-    return sign(value) * adjusted * gamepad_sensitivity
+    if abs(value) < axis_deadzone:return 0.0;
+	var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone);adjusted = clamp(adjusted, 0.0, 1.0);return sign(value) * adjusted * gamepad_sensitivity;# 应用灵敏度 
 ```
 
 # 工厂模式
+```
 class_name FactoryPattern
-
-extends Node
-
 # 简单工厂
 static func create_enemy(type: String) -> Node:
     var enemy: Node
-    match type:
-        "basic":
-            enemy = BasicEnemy.new()
-        "advanced":
-            enemy = AdvancedEnemy.new()
-        "boss":
-            enemy = BossEnemy.new()
-    return enemy
+    match type:"basic":enemy = BasicEnemy.new();"advanced":enemy = AdvancedEnemy.new();"boss":enemy = BossEnemy.new();return enemy;
 
 # 工厂方法
 func create_product(product_type: String) -> Object:
-    match product_type:
-        "weapon":
-            return create_weapon()
-        "armor":
-            return create_armor()
-        "potion":
-            return create_potion()
-    return null
-
-func create_weapon() -> Object:
-    var weapon = Node.new()
-    weapon.name = "Weapon"
-    return weapon
-
-func create_armor() -> Object:
-    var armor = Node.new()
-    armor.name = "Armor"
-    return armor
-
-func create_potion() -> Object:
-    var potion = Node.new()
-    potion.name = "Potion"
-    return potion
+    match product_type: "weapon":return create_weapon();"armor":return create_armor();"potion":return create_potion();return null;
 
 # 抽象工厂
 interface ItemFactory:
     func create_weapon() -> Object
     func create_armor() -> Object
-
-class BasicItemFactory:
-    extends RefCounted
-    
-    func create_weapon() -> Object:
-        var weapon = Node.new()
-        weapon.name = "BasicWeapon"
-        return weapon
-    
-    func create_armor() -> Object:
-        var armor = Node.new()
-        armor.name = "BasicArmor"
-        return armor
-
-class AdvancedItemFactory:
-    extends RefCounted
-    
-    func create_weapon() -> Object:
-        var weapon = Node.new()
-        weapon.name = "AdvancedWeapon"
-        return weapon
-    
-    func create_armor() -> Object:
-        var armor = Node.new()
-        armor.name = "AdvancedArmor"
-        return armor
-
+```
 
 </details>
 <a id="美術"></a>
@@ -390,5 +300,4 @@ class AdvancedItemFactory:
 https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
-土豆兄弟Brotato Roguelike 生存者
 
