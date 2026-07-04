@@ -11,6 +11,7 @@ X0.UI>CanvasLayer>Label
 X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
 X2.gpuparticle>cpuparticle
 X3.3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
+animationtree xfadetime editable velocity.length()
 ### 4. 骨骼动画（Animated Characters）
 
 * Godot 会将包含动画的 GLTF 文件自动识别并创建 `AnimationPlayer` 节点。
