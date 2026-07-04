@@ -22,6 +22,7 @@ XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數
 
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/editable.jpeg" width="500" height="500"></img>
 
 ### 粒子系统(次研究) 【Godot进阶教学】做出你的第一个3D游戏：粒子系统的运用
 ```
