@@ -1,6 +1,8 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|平設8/拍攝7/遊戲7/音樂7|
 ### 整活>過程要好玩快樂
 遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
+滑板跑酷,streak連勝,草莓巴菲,掃雷
+
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
 ```
