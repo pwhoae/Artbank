@@ -24,6 +24,7 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 |------次要------|
 | 渲染系统 |11-22|  |
 |性能分析|| var start = Time.get_ticks_usec() <br> var elapsed = Time.get_ticks_usec() - start print("耗时：", elapsed / 1000.0, " ms") <br> # 调用栈 print_stack() <br><a href="https://github.com/wangshucheng/godot-engine-book/blob/main/articles/appendix-d-performance-checklist.md">附录 D：性能优化清单</a> |
+|Other||https://reimenn.github.io/MyGDSciprtBook/|
 </details>
 
 <a id="玩法"></a>先建玩法
