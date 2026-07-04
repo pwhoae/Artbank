@@ -1,5 +1,5 @@
 ### godot note (pck)
-先建[玩法](#玩法) 再填[美術](#美術)<br>
+先建[玩法](#玩法) 再填[美術](#美術)<br><a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
 ```
 _工具箱
     - _[0 場景 (tscn)]
@@ -10,7 +10,6 @@ _工具箱
     - _[5 資源 (tres)]
     - _[9 成品]
 ```
-<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 	
