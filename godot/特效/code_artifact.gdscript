@@ -1,0 +1,63 @@
+extends ColorRect
+
+# 這個腳本用於動態傳遞點的坐標給 Shader
+# 可以模擬滑鼠指針附近的玻璃液化融接，或者輸入框獲得焦點時的液體擠壓效果
+
+@export var max_points: int = 8
+@export var bubble_radius: float = 0.15
+
+# 儲存動態點的資訊：{ "pos": Vector2, "target": Vector2, "radius": float, "speed": float }
+var active_bubbles = []
+
+func _ready():
+	# 確保 Material 是 ShaderMaterial
+	if not material is ShaderMaterial:
+		push_error("請將 ColorRect 的 Material 設定為 ShaderMaterial，並指定 liquid_glass.gdshader")
+		return
+		
+	# 範例：初始化兩個會在背景緩慢飄動並與主體融合的玻璃液態泡泡
+	add_bubble(Vector2(0.2, 0.5), bubble_radius)
+	add_bubble(Vector2(0.8, 0.5), bubble_radius)
+
+func _process(delta):
+	if not material is ShaderMaterial:
+		return
+		
+	var sm = material as ShaderMaterial
+	
+	# 1. 讓泡泡產生微小的飄動或跟隨滑鼠
+	var mouse_pos = get_local_mouse_position()
+	# 將像素坐標轉換為 0.0 ~ 1.0 的 UV 空間坐標
+	var mouse_uv = mouse_pos / size
+	
+	# 讓第一個泡泡去追隨滑鼠坐標，製造滑鼠與玻璃面板融合的視覺感
+	if active_bubbles.size() > 0:
+		active_bubbles[0].target = mouse_uv
+		
+	# 更新所有泡泡的位置 (平滑插值 Lerp)
+	var points_array = []
+	var radii_array = []
+	
+	for b in active_bubbles:
+		b.pos = b.pos.lerp(b.target, delta * b.speed)
+		points_array.append(b.pos)
+		radii_array.append(b.radius)
+		
+		# 如果不是追隨滑鼠的泡泡，可以讓它隨機游走
+		if b != active_bubbles[0] and b.pos.distance_to(b.target) < 0.05:
+			b.target = Vector2(randf_range(0.1, 0.9), randf_range(0.1, 0.9))
+	
+	# 2. 將更新後的位置與半徑傳送給 Shader
+	sm.set_shader_parameter("active_points_count", active_bubbles.size())
+	sm.set_shader_parameter("points", points_array)
+	sm.set_shader_parameter("point_radii", radii_array)
+
+# 動態新增液態融合點的方法
+func add_bubble(start_pos: Vector2, radius: float, speed: float = 3.0):
+	if active_bubbles.size() < max_points:
+		active_bubbles.append({
+			"pos": start_pos,
+			"target": start_pos,
+			"radius": radius,
+			"speed": speed
+		})

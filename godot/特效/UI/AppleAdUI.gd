@@ -1,0 +1,408 @@
+# ==============================================================================
+#  仿蘋果手機廣告 UI 動效 - Godot 4 實作版本
+# ==============================================================================
+#  【使用方法】：
+#  1. 在場景中新建一個 Control 節點（例如命名為 AppleAdUI），將其佈局設為 Full Rect。
+#  2. 將此腳本掛載至該 Control 節點上。
+#  3. 運行場景，點擊畫面即可觸發或循環播放整套流暢的 UI 轉換動畫！
+# ==============================================================================
+
+class_name AppleAdUI
+extends Control
+
+# --- 狀態定義 ---
+enum State {
+	IDLE_DOT,       # 0: 初始藍色圓點
+	CAPSULE_INPUT,  # 1: 展開為膠囊輸入框
+	CARD_PRODUCT,   # 2: 向上、下展開為商品展示卡片
+	TRACK_STATUS,   # 3: 點擊 Pay 後收縮為藍色追蹤條
+	SHRINK_DOT,     # 4: 收縮回藍色圓點
+	BUY_NOW_BG      # 5: 轉場至暗色調 "Buy Now" 畫面
+}
+
+var current_state: State = State.IDLE_DOT
+
+# --- 動畫核心參數 (由 Tween 進行補間) ---
+var panel_size: Vector2 = Vector2(32, 32)            # 主面板當前大小
+var panel_position: Vector2 = Vector2.ZERO            # 主面板中心坐標
+var panel_color: Color = Color("#0043f6")             # 蘋果藍色
+var corner_radius: float = 16.0                       # 圓角半徑
+var panel_shadow_color: Color = Color(0, 0, 0, 0.0)   # 陰影顏色
+var transition_progress: float = 0.0                  # 整體動畫淡入淡出控制
+
+# 全域黑色遮罩 (用於最後的 Buy Now 轉場)
+var dark_overlay_color: Color = Color("#0c0c14", 0.0)
+
+# --- 動態建立的 UI 子容器 ---
+var state_containers: Dictionary = {}
+
+func _ready() -> void:
+	# 確保控制項滿版並居中定位
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	
+	# 初始化主面板位置於畫面正中央
+	panel_position = size / 2.0
+	
+	# 動態建立各個階段的 UI 內容，方便我們控制各自的淡入淡出 (modulate.a)
+	_setup_ui_elements()
+	
+	# 註冊視窗大小改變事件，保持 UI 始終居中
+	resized.connect(func(): panel_position = size / 2.0; _layout_ui_elements())
+	
+	# 開始初始狀態
+	_set_state_ui_visibility(State.IDLE_DOT)
+
+func _process(_delta: float) -> void:
+	# 每一幀更新動態 UI 容器的位置，使其始終對齊主面板中心
+	_layout_ui_elements()
+	queue_redraw()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		trigger_next_stage()
+
+# --- 核心繪製邏輯 ---
+func _draw() -> void:
+	# 1. 繪製最後一階段的滿版暗色背景
+	if dark_overlay_color.a > 0.0:
+		draw_rect(Rect2(Vector2.ZERO, size), dark_overlay_color)
+		
+	# 2. 繪製主背景板的陰影 (模擬擬物懸浮感)
+	if panel_shadow_color.a > 0.0:
+		var shadow_rect = Rect2(panel_position - panel_size / 2.0 + Vector2(0, 6), panel_size)
+		draw_style_box_flat_custom(shadow_rect, panel_shadow_color, corner_radius + 4.0)
+
+	# 3. 繪製主背景板 (膠囊/卡片本體)
+	var main_rect = Rect2(panel_position - panel_size / 2.0, panel_size)
+	draw_style_box_flat_custom(main_rect, panel_color, corner_radius)
+
+# 輔助繪製：使用 Godot 的 StyleBoxFlat 快速繪製高品質抗鋸齒圓角矩形
+func draw_style_box_flat_custom(rect: Rect2, color: Color, radius: float) -> void:
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = color
+	sb.set_corner_radius_all(radius)
+	sb.anti_aliasing = true
+	sb.anti_aliasing_size = 1.0
+	draw_style_box(sb, rect)
+
+# --- UI 元素初始化與擺放 ---
+func _setup_ui_elements() -> void:
+	# 建立各個狀態的專屬包裝容器
+	for s in [State.CAPSULE_INPUT, State.CARD_PRODUCT, State.TRACK_STATUS, State.BUY_NOW_BG]:
+		var container = Control.new()
+		container.mouse_filter = Control.MOUSE_FILTER_PASS
+		add_child(container)
+		state_containers[s] = container
+		container.modulate.a = 0.0 # 預設隱藏
+
+	# ==========================================
+	# 階段 1 (CAPSULE_INPUT) 的子元件
+	# ==========================================
+	var s1_container = state_containers[State.CAPSULE_INPUT]
+	
+	# 輸入提示文字
+	var s1_label = Label.new()
+	s1_label.name = "Text"
+	s1_label.text = "iPhone 17 Pro"
+	s1_label.add_theme_color_override("font_color", Color("#222222"))
+	s1_label.add_theme_font_size_override("font_size", 15)
+	s1_container.add_child(s1_label)
+	
+	# 右側打勾圖示 (用簡單向量繪製或純文字符號模擬)
+	var s1_check = Control.new()
+	s1_check.name = "CheckIcon"
+	s1_check.custom_minimum_size = Vector2(24, 24)
+	s1_check.draw.connect(func():
+		# 繪製藍底白勾
+		s1_check.draw_circle(Vector2(12, 12), 11, Color("#0043f6"))
+		s1_check.draw_line(Vector2(8, 12), Vector2(11, 15), Color.WHITE, 2.0, true)
+		s1_check.draw_line(Vector2(11, 15), Vector2(16, 9), Color.WHITE, 2.0, true)
+	)
+	s1_container.add_child(s1_check)
+
+	# ==========================================
+	# 階段 2 (CARD_PRODUCT) 的子元件
+	# ==========================================
+	var s2_container = state_containers[State.CARD_PRODUCT]
+	
+	# 商品名稱
+	var s2_title = Label.new()
+	s2_title.name = "Title"
+	s2_title.text = "iPhone 17 Pro"
+	s2_title.add_theme_color_override("font_color", Color("#111111"))
+	s2_title.add_theme_font_size_override("font_size", 18)
+	s2_container.add_child(s2_title)
+	
+	# 價格
+	var s2_price = Label.new()
+	s2_price.name = "Price"
+	s2_price.text = "$1099"
+	s2_price.add_theme_color_override("font_color", Color("#888888"))
+	s2_price.add_theme_font_size_override("font_size", 14)
+	s2_container.add_child(s2_price)
+	
+	# 向量手機示意圖 (純代碼自繪，精準重現影片中的橘色手機與三鏡頭)
+	var s2_phone = Control.new()
+	s2_phone.name = "PhoneMockup"
+	s2_phone.custom_minimum_size = Vector2(80, 110)
+	s2_phone.draw.connect(func():
+		var p_rect = Rect2(Vector2(10, 5), Vector2(60, 100))
+		# 繪製手機主體 (精緻的金屬橘/鈦金屬色)
+		var sb_phone = StyleBoxFlat.new()
+		sb_phone.bg_color = Color("#e76f51")
+		sb_phone.set_corner_radius_all(10)
+		s2_phone.draw_style_box(sb_phone, p_rect)
+		
+		# 繪製手機螢幕邊框/聽筒微小細節
+		s2_phone.draw_rect(Rect2(Vector2(32, 9), Vector2(16, 4)), Color("#111111"), true)
+		
+		# 繪製後置相機島模組
+		var cam_island = Rect2(Vector2(16, 12), Vector2(24, 24))
+		var sb_cam = StyleBoxFlat.new()
+		sb_cam.bg_color = Color("#f4a261") # 稍亮一點的同色系做相機底板
+		sb_cam.set_corner_radius_all(6)
+		s2_phone.draw_style_box(sb_cam, cam_island)
+		
+		# 繪製經典的三眼相機鏡頭
+		s2_phone.draw_circle(Vector2(22, 18), 3, Color("#111111"))
+		s2_phone.draw_circle(Vector2(34, 18), 3, Color("#111111"))
+		s2_phone.draw_circle(Vector2(28, 28), 3, Color("#111111"))
+	)
+	s2_container.add_child(s2_phone)
+	
+	# 「Pay」黑色膠囊按鈕
+	var s2_pay_btn = Button.new()
+	s2_pay_btn.name = "PayButton"
+	s2_pay_btn.text = "Pay"
+	s2_pay_btn.focus_mode = Control.FOCUS_NONE
+	s2_pay_btn.add_theme_color_override("font_color", Color.WHITE)
+	s2_pay_btn.add_theme_font_size_override("font_size", 14)
+	
+	# 自訂按鈕圓角外觀
+	var sb_btn_normal = StyleBoxFlat.new()
+	sb_btn_normal.bg_color = Color("#000000")
+	sb_btn_normal.set_corner_radius_all(18)
+	var sb_btn_hover = StyleBoxFlat.new()
+	sb_btn_hover.bg_color = Color("#222222")
+	sb_btn_hover.set_corner_radius_all(18)
+	
+	s2_pay_btn.add_theme_stylebox_override("normal", sb_btn_normal)
+	s2_pay_btn.add_theme_stylebox_override("hover", sb_btn_hover)
+	s2_pay_btn.add_theme_stylebox_override("pressed", sb_btn_normal)
+	s2_container.add_child(s2_pay_btn)
+	
+	# 點擊 Pay 按鈕後自動進入下一階段 (收縮追蹤)
+	s2_pay_btn.pressed.connect(func():
+		if current_state == State.CARD_PRODUCT:
+			trigger_next_stage()
+	)
+
+	# ==========================================
+	# 階段 3 (TRACK_STATUS) 的子元件
+	# ==========================================
+	var s3_container = state_containers[State.TRACK_STATUS]
+	
+	# 追蹤文字
+	var s3_label = Label.new()
+	s3_label.name = "TrackLabel"
+	s3_label.text = "Track Order"
+	s3_label.add_theme_color_override("font_color", Color.WHITE)
+	s3_label.add_theme_font_size_override("font_size", 15)
+	s3_container.add_child(s3_label)
+	
+	# 迷你版手機圖示 (用簡單向量繪製在左側)
+	var s3_mini_phone = Control.new()
+	s3_mini_phone.name = "MiniPhone"
+	s3_mini_phone.custom_minimum_size = Vector2(20, 26)
+	s3_mini_phone.draw.connect(func():
+		var sb_mini = StyleBoxFlat.new()
+		sb_mini.bg_color = Color("#e76f51")
+		sb_mini.set_corner_radius_all(3)
+		s3_mini_phone.draw_style_box(sb_mini, Rect2(Vector2(2, 2), Vector2(16, 22)))
+		# 鏡頭特徵簡化
+		s3_mini_phone.draw_circle(Vector2(6, 6), 1.5, Color("#111111"))
+	)
+	s3_container.add_child(s3_mini_phone)
+
+	# ==========================================
+	# 階段 5 (BUY_NOW_BG) 的子元件 (滿版點擊轉場)
+	# ==========================================
+	var s5_container = state_containers[State.BUY_NOW_BG]
+	
+	var s5_label = Label.new()
+	s5_label.name = "BuyNowLabel"
+	s5_label.text = "Buy Now"
+	s5_label.add_theme_color_override("font_color", Color("#ffffff"))
+	s5_label.add_theme_font_size_override("font_size", 32)
+	s5_container.add_child(s5_label)
+
+# --- 佈局定位計算 ---
+# 此函式確保子元件完美的對齊動態變化的主面板（以 panel_position 為中心）
+func _layout_ui_elements() -> void:
+	# 1. CAPSULE_INPUT 佈局
+	var s1 = state_containers[State.CAPSULE_INPUT]
+	s1.size = panel_size
+	s1.position = panel_position - panel_size / 2.0
+	
+	var s1_lbl = s1.get_node("Text")
+	var s1_chk = s1.get_node("CheckIcon")
+	if s1_lbl and s1_chk:
+		# 文字置左靠中，預留打勾位置
+		s1_lbl.position = Vector2(16, (panel_size.y - s1_lbl.size.y) / 2.0)
+		s1_chk.position = Vector2(panel_size.x - s1_chk.size.x - 14, (panel_size.y - s1_chk.size.y) / 2.0)
+
+	# 2. CARD_PRODUCT 佈局
+	var s2 = state_containers[State.CARD_PRODUCT]
+	s2.size = panel_size
+	s2.position = panel_position - panel_size / 2.0
+	
+	var s2_title = s2.get_node("Title")
+	var s2_price = s2.get_node("Price")
+	var s2_phone = s2.get_node("PhoneMockup")
+	var s2_pay = s2.get_node("PayButton")
+	
+	if s2_title and s2_price and s2_phone and s2_pay:
+		# 卡片內部排版，由上往下：
+		# - 商品名 (Title)
+		# - 價格 (Price)
+		# - 手機圖片 (PhoneMockup)
+		# - 按鈕 (Pay)
+		s2_title.position = Vector2((panel_size.x - s2_title.size.x) / 2.0, 20)
+		s2_price.position = Vector2((panel_size.x - s2_price.size.x) / 2.0, 44)
+		s2_phone.position = Vector2((panel_size.x - s2_phone.size.x) / 2.0, 72)
+		
+		s2_pay.size = Vector2(panel_size.x - 32, 36)
+		s2_pay.position = Vector2(16, panel_size.y - s2_pay.size.y - 18)
+
+	# 3. TRACK_STATUS 佈局
+	var s3 = state_containers[State.TRACK_STATUS]
+	s3.size = panel_size
+	s3.position = panel_position - panel_size / 2.0
+	
+	var s3_lbl = s3.get_node("TrackLabel")
+	var s3_phone = s3.get_node("MiniPhone")
+	if s3_lbl and s3_phone:
+		# 整體在藍色膠囊中水平置中
+		var combined_width = s3_phone.size.x + 8 + s3_lbl.size.x
+		var start_x = (panel_size.x - combined_width) / 2.0
+		s3_phone.position = Vector2(start_x, (panel_size.y - s3_phone.size.y) / 2.0)
+		s3_lbl.position = Vector2(start_x + s3_phone.size.x + 8, (panel_size.y - s3_lbl.size.y) / 2.0)
+
+	# 4. BUY_NOW_BG 佈局 (滿版置中)
+	var s5 = state_containers[State.BUY_NOW_BG]
+	s5.size = size
+	s5.position = Vector2.ZERO
+	var s5_lbl = s5.get_node("BuyNowLabel")
+	if s5_lbl:
+		s5_lbl.position = (size - s5_lbl.size) / 2.0
+
+# --- 控制不同狀態下子元件的淡入/淡出 ---
+func _set_state_ui_visibility(state: State) -> void:
+	for s in state_containers.keys():
+		var tween = create_tween().set_parallel(true)
+		if s == state:
+			# 淡入目標
+			tween.tween_property(state_containers[s], "modulate:a", 1.0, 0.25).set_delay(0.1)
+		else:
+			# 淡出其餘
+			tween.tween_property(state_containers[s], "modulate:a", 0.0, 0.15)
+
+# --- 核心狀態切換與絲滑補間動畫 (Tweens) ---
+func trigger_next_stage() -> void:
+	match current_state:
+		State.IDLE_DOT:
+			animate_to_capsule()
+		State.CAPSULE_INPUT:
+			animate_to_card()
+		State.CARD_PRODUCT:
+			animate_to_track()
+		State.TRACK_STATUS:
+			animate_to_dot_shrink()
+		State.SHRINK_DOT:
+			animate_to_buy_now()
+		State.BUY_NOW_BG:
+			# 循環回到初始狀態
+			reset_to_start()
+
+# 階段 0 -> 1: 藍色圓點 ➔ 膠囊輸入框
+func animate_to_capsule() -> void:
+	current_state = State.CAPSULE_INPUT
+	_set_state_ui_visibility(State.CAPSULE_INPUT)
+	
+	var t = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	# 尺寸從 (32, 32) 變寬到 (320, 50)
+	t.tween_property(self, "panel_size", Vector2(320, 50), 0.6)
+	# 圓角微調以保持完美的 Capsule 弧度
+	t.tween_property(self, "corner_radius", 25.0, 0.6)
+	# 顏色由藍變白
+	t.tween_property(self, "panel_color", Color.WHITE, 0.5)
+	# 漸顯陰影，呈現懸浮於灰色背景的效果
+	t.tween_property(self, "panel_shadow_color", Color(0, 0, 0, 0.08), 0.6)
+
+# 階段 1 -> 2: 膠囊輸入框 ➔ 商品卡片
+func animate_to_card() -> void:
+	current_state = State.CARD_PRODUCT
+	_set_state_ui_visibility(State.CARD_PRODUCT)
+	
+	var t = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# 膠囊上下左右完全拉開，變成大卡片 (320, 280)
+	t.tween_property(self, "panel_size", Vector2(320, 280), 0.75)
+	# 圓角收斂為圓潤的卡片圓角
+	t.tween_property(self, "corner_radius", 28.0, 0.7)
+	# 增強陰影表現
+	t.tween_property(self, "panel_shadow_color", Color(0, 0, 0, 0.12), 0.7)
+
+# 階段 2 -> 3: 商品卡片 ➔ 藍色追蹤條
+func animate_to_track() -> void:
+	current_state = State.TRACK_STATUS
+	_set_state_ui_visibility(State.TRACK_STATUS)
+	
+	var t = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	# 迅速收縮為比先前略窄的藍色高質感條狀
+	t.tween_property(self, "panel_size", Vector2(280, 50), 0.65)
+	t.tween_property(self, "corner_radius", 25.0, 0.6)
+	t.tween_property(self, "panel_color", Color("#0043f6"), 0.5) # 變回亮藍色
+	t.tween_property(self, "panel_shadow_color", Color(0, 0, 0, 0.15), 0.6)
+
+# 階段 3 -> 4: 藍色追蹤條 ➔ 縮回小圓點
+func animate_to_dot_shrink() -> void:
+	current_state = State.SHRINK_DOT
+	_set_state_ui_visibility(State.SHRINK_DOT)
+	
+	var t = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	# 從膠囊急劇向內收縮成一個完美的圓點
+	t.tween_property(self, "panel_size", Vector2(32, 32), 0.5)
+	t.tween_property(self, "corner_radius", 16.0, 0.5)
+	# 陰影退去
+	t.tween_property(self, "panel_shadow_color", Color(0, 0, 0, 0.0), 0.4)
+
+# 階段 4 -> 5: 小圓點 ➔ 展開轉場為 Buy Now 深色全螢幕
+func animate_to_buy_now() -> void:
+	current_state = State.BUY_NOW_BG
+	
+	# 首先將圓點快速變大，製造爆發感，隨後黑幕落下
+	var t1 = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t1.tween_property(self, "panel_size", Vector2(48, 48), 0.25)
+	
+	# 黑幕淡入 & "Buy Now" 文字顯現
+	t1.chain().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t1.tween_property(self, "dark_overlay_color", Color("#0a0a10"), 0.5)
+	# 圓點此時可以融於黑幕，將其大小歸零
+	t1.tween_property(self, "panel_size", Vector2.ZERO, 0.3)
+	
+	# 顯現 "Buy Now" 本文
+	t1.tween_callback(func(): _set_state_ui_visibility(State.BUY_NOW_BG)).set_delay(0.15)
+
+# 循環重設：從黑色 Buy Now 畫面淡出重設為初始小圓點
+func reset_to_start() -> void:
+	current_state = State.IDLE_DOT
+	_set_state_ui_visibility(State.IDLE_DOT)
+	
+	var t = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	# 黑幕淡出
+	t.tween_property(self, "dark_overlay_color", Color("#0a0a10", 0.0), 0.4)
+	# 圓點重現
+	t.tween_property(self, "panel_size", Vector2(32, 32), 0.45)
+	t.tween_property(self, "corner_radius", 16.0, 0.45)
+	t.tween_property(self, "panel_color", Color("#0043f6"), 0.45)
