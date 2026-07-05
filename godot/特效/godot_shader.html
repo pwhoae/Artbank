@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 遊戲進度條 Shader 產生器與展示面板</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0d0f14;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #141822;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-slate-900">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-cyan-500 to-indigo-500 p-2.5 rounded-xl shadow-lg shadow-cyan-500/20">
+                    <svg class="w-8 h-8 text-slate-900" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24 4C12.95 4 4 12.95 4 24C4 35.05 12.95 44 24 44C35.05 44 44 35.05 44 24C44 12.95 35.05 4 24 4ZM24 38C16.27 38 10 31.73 10 24C10 16.27 16.27 10 24 10C31.73 10 38 16.27 38 24C38 31.73 31.73 38 24 38Z" fill="currentColor"/>
+                        <path d="M24 14V24L31 28" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">Godot Shader 進度條特效工房</h1>
+                    <p class="text-xs text-slate-400 mt-0.5">基於 Godot 4.x CanvasItem | 互動式預覽與程式碼產生器</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-3 py-1 bg-slate-800 text-slate-300 text-xs rounded-full border border-slate-700">Godot 4.x 相容</span>
+                <span class="px-3 py-1 bg-cyan-950/50 text-cyan-400 text-xs rounded-full border border-cyan-800/50">附繁體中文註解</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Controller & Live Preview (7/12) -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Shader selector -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i> 選擇進度條風格
+                </h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2" id="shaderSelector">
+                    <!-- Option 1 -->
+                    <button onclick="selectShader('glowing')" id="btn-glowing" class="shader-tab flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 bg-slate-950 border-cyan-500/50 text-cyan-400 shadow-md shadow-cyan-500/5">
+                        <i class="fa-solid fa-wave-square text-lg mb-1.5"></i>
+                        <span class="text-xs font-medium">流光霓虹</span>
+                    </button>
+                    <!-- Option 2 -->
+                    <button onclick="selectShader('segmented')" id="btn-segmented" class="shader-tab flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 bg-slate-800/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700">
+                        <i class="fa-solid fa-grip-lines text-lg mb-1.5"></i>
+                        <span class="text-xs font-medium">科技分段</span>
+                    </button>
+                    <!-- Option 3 -->
+                    <button onclick="selectShader('radial')" id="btn-radial" class="shader-tab flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 bg-slate-800/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700">
+                        <i class="fa-solid fa-circle-notch text-lg mb-1.5"></i>
+                        <span class="text-xs font-medium">環形圓角</span>
+                    </button>
+                    <!-- Option 4 -->
+                    <button onclick="selectShader('rhythm')" id="btn-rhythm" class="shader-tab flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 bg-slate-800/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700">
+                        <i class="fa-solid fa-gem text-lg mb-1.5"></i>
+                        <span class="text-xs font-medium">節奏鑽石</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Canvas Preview Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center relative overflow-hidden min-h-[280px]">
+                <!-- Grid background simulation -->
+                <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:16px_16px] opacity-20 pointer-events-none"></div>
+                
+                <span class="absolute top-4 left-4 px-2 py-0.5 bg-slate-950/80 border border-slate-800 rounded text-[10px] text-slate-400 font-mono tracking-wider z-10">即時渲染畫布</span>
+
+                <!-- Target Canvas -->
+                <div class="w-full flex items-center justify-center py-8 z-10">
+                    <canvas id="previewCanvas" class="max-w-full drop-shadow-[0_0_25px_rgba(6,182,212,0.15)]"></canvas>
+                </div>
+
+                <!-- Live Info Display -->
+                <div class="w-full flex justify-between items-center text-xs text-slate-400 border-t border-slate-800/60 pt-4 z-10">
+                    <span id="previewStatus">風格: 流光霓虹進度條</span>
+                    <span class="font-mono text-cyan-400 font-semibold" id="progressVal">Progress: 50%</span>
+                </div>
+            </div>
+
+            <!-- Parameters Controls Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> 動態參數微調 (Uniforms)
+                </h3>
+                
+                <div class="space-y-5">
+                    <!-- Progress (Common) -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-300 font-medium">當前進度 (progress)</span>
+                            <span class="font-mono text-cyan-400" id="slideProgressVal">50.0%</span>
+                        </div>
+                        <input type="range" id="input-progress" min="0" max="100" value="50" class="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Custom parameters based on selected shader -->
+                    <div id="dynamic-controls" class="space-y-5">
+                        <!-- Will be dynamically generated based on selection -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Code Generator (5/12) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Code view container -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col min-h-[500px]">
+                <div class="bg-slate-950 px-5 py-3.5 border-b border-slate-800 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500/70"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500/70"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500/70"></div>
+                        <span class="text-xs font-mono text-slate-400 ml-2" id="fileNameText">glowing_progress.gdshader</span>
+                    </div>
+                    <button onclick="copyShaderCode()" class="text-xs bg-slate-850 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 px-3 py-1.5 rounded-lg border border-slate-800 hover:border-cyan-500/30 transition-all flex items-center gap-1.5 shadow-sm active:scale-95">
+                        <i class="fa-regular fa-copy"></i> <span id="copyBtnText">複製代碼</span>
+                    </button>
+                </div>
+
+                <div class="flex-1 relative overflow-hidden bg-slate-950 flex flex-col">
+                    <pre class="p-5 overflow-auto text-xs code-font text-slate-300 leading-relaxed flex-1" id="codePre"><code>// Shader code will load here...</code></pre>
+                    
+                    <!-- Copy Alert Toast (Embedded) -->
+                    <div id="copyToast" class="absolute bottom-4 right-4 bg-emerald-500 text-slate-950 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-lg shadow-emerald-500/20 translate-y-12 opacity-0 transition-all duration-300">
+                        <i class="fa-solid fa-circle-check"></i> 已複製至剪貼簿！
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godot Setup Tutorial Box -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap text-indigo-400"></i> Godot 引擎設定步驟
+                </h4>
+                <ol class="text-xs text-slate-300 space-y-2.5 list-decimal pl-4">
+                    <li>在場景中建立一個 <code class="px-1.5 py-0.5 bg-slate-950 text-indigo-400 rounded font-mono">ColorRect</code> 或 <code class="px-1.5 py-0.5 bg-slate-950 text-indigo-400 rounded font-mono">TextureRect</code> 節點。</li>
+                    <li>在右側屬性面板找到 <strong>CanvasItem -> Material</strong> 欄位。</li>
+                    <li>新增一個 <strong>ShaderMaterial</strong>，並在其中新增一個 <strong>Shader</strong>。</li>
+                    <li>點擊該 Shader 展開編輯器，貼上左側產生的代碼。</li>
+                    <li>在產生的 <strong>Shader Parameters</strong> 中直接拖拽調整控制參數，或是在腳本中使用代碼進行控制。</li>
+                </ol>
+                <div class="mt-4 pt-3.5 border-t border-slate-800/80 flex items-center gap-2">
+                    <span class="text-[10px] text-indigo-400 bg-indigo-950/40 border border-indigo-900/50 px-2 py-0.5 rounded font-mono">提示</span>
+                    <p class="text-[11px] text-slate-400">您可以在 GDScript 中使用 <code class="text-cyan-400 font-mono">material.set_shader_parameter("progress", 0.75)</code> 來動態控制進度值。</p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950/80 py-4 px-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>Godot Shader Workshop © 2026</span>
+            <div class="flex gap-4">
+                <span class="hover:text-slate-400 cursor-help"><i class="fa-solid fa-circle-info mr-1"></i>完美適配各類 UI 設計</span>
+                <span class="hover:text-slate-400 cursor-help"><i class="fa-solid fa-bolt mr-1"></i>高效 GPU 加速渲染</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script Section for Logic and Rendering -->
+    <script>
+        // Global State
+        let activeShader = 'glowing';
+        let progress = 0.5; // range 0 to 1
+        
+        // Shader Specific Uniforms (Stored in object to preserve state)
+        const uniforms = {
+            glowing: {
+                colorLeft: '#22d3ee', // Cyan 400
+                colorRight: '#6366f1', // Indigo 500
+                glowStrength: 1.2,
+                waveSpeed: 3.0,
+                glowWidth: 0.15
+            },
+            segmented: {
+                segments: 8,
+                gapSize: 0.08,
+                colorActive: '#ec4899', // Pink 500
+                colorInactive: '#1e293b' // Slate 800
+            },
+            radial: {
+                thickness: 0.12,
+                colorMain: '#f59e0b', // Amber 500
+                roundCap: true,
+                angleOffset: -90 // Standard top start
+            },
+            rhythm: {
+                diamondCount: 5,
+                colorFill: '#10b981', // Emerald 500
+                slantAngle: 15,
+                pulseSpeed: 4.0
+            }
+        };
+
+        // DOM elements
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d');
+        const codePre = document.getElementById('codePre');
+        const fileNameText = document.getElementById('fileNameText');
+        const dynamicControls = document.getElementById('dynamic-controls');
+        
+        // Setup Canvas Resolution
+        function initCanvas() {
+            // Set canvas dynamic width and height responsive to screen
+            const width = activeShader === 'radial' ? 240 : 440;
+            const height = activeShader === 'radial' ? 240 : 80;
+            previewCanvas.width = width * window.devicePixelRatio;
+            previewCanvas.height = height * window.devicePixelRatio;
+            previewCanvas.style.width = `${width}px`;
+            previewCanvas.style.height = `${height}px`;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        // Color converter helpers
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16) / 255,
+                g: parseInt(result[2], 16) / 255,
+                b: parseInt(result[3], 16) / 255
+            } : { r: 1, g: 1, b: 1 };
+        }
+
+        function formatVec4(hex, alpha = 1.0) {
+            const rgb = hexToRgb(hex);
+            return `vec4(${rgb.r.toFixed(2)}, ${rgb.g.toFixed(2)}, ${rgb.b.toFixed(2)}, ${alpha.toFixed(1)})`;
+        }
+
+        // Generator functions for Godot Shaders
+        const shaderTemplates = {
+            glowing: () => {
+                const u = uniforms.glowing;
+                return `shader_type canvas_item;
+
+// ----------------------------------------
+// Godot 4 流光霓虹進度條 Shader
+// ----------------------------------------
+
+uniform float progress : hint_range(0.0, 1.0) = ${progress.toFixed(2)};
+uniform vec4 color_left : source_color = ${formatVec4(u.colorLeft)};
+uniform vec4 color_right : source_color = ${formatVec4(u.colorRight)};
+uniform float glow_strength : hint_range(0.0, 3.0) = ${u.glowStrength.toFixed(1)};
+uniform float wave_speed : hint_range(0.0, 10.0) = ${u.waveSpeed.toFixed(1)};
+uniform float glow_width : hint_range(0.0, 0.5) = ${u.glowWidth.toFixed(2)};
+
+void fragment() {
+    vec2 uv = UV;
+    
+    // 平滑圓角遮罩
+    float radius = 0.5;
+    vec2 aspect = vec2(3.0, 1.0); // 假設寬高比為 3:1
+    vec2 center_dist = abs(uv - vec2(0.5)) * aspect;
+    float dist = length(max(center_dist - vec2(1.5 - radius, 0.5 - radius), 0.0));
+    float alpha = smoothstep(radius, radius - 0.02, dist);
+    
+    // 進度條主體填滿
+    float bar_mask = step(uv.x, progress);
+    
+    // 生成跑馬燈與炫光波浪效果
+    float wave = sin(uv.x * 8.0 - TIME * wave_speed) * 0.5 + 0.5;
+    vec4 base_color = mix(color_left, color_right, uv.x);
+    
+    // 在進度前沿產生極光亮點霓虹效果
+    float glow_pos = progress;
+    float glow_edge = smoothstep(glow_pos - glow_width, glow_pos, uv.x) * (1.0 - step(glow_pos, uv.x));
+    vec4 edge_glow = base_color * glow_edge * glow_strength * 2.5;
+    
+    // 最終顏色融合
+    vec4 final_color = (base_color + edge_glow * wave) * bar_mask;
+    
+    // 設置暗色背景底版
+    vec4 bg_color = vec4(0.08, 0.10, 0.15, 0.85);
+    final_color = mix(bg_color, final_color, bar_mask);
+    
+    COLOR = vec4(final_color.rgb, final_color.a * alpha);
+}`;
+            },
+            segmented: () => {
+                const u = uniforms.segmented;
+                return `shader_type canvas_item;
+
+// ----------------------------------------
+// Godot 4 科技格柵分段式進度條 Shader
+// ----------------------------------------
+
+uniform float progress : hint_range(0.0, 1.0) = ${progress.toFixed(2)};
+uniform int total_segments = ${u.segments};
+uniform float gap_size : hint_range(0.0, 0.3) = ${u.gapSize.toFixed(2)};
+uniform vec4 color_active : source_color = ${formatVec4(u.colorActive)};
+uniform vec4 color_inactive : source_color = ${formatVec4(u.colorInactive)};
+
+void fragment() {
+    vec2 uv = UV;
+    
+    // 計算格柵劃分
+    float seg_width = 1.0 / float(total_segments);
+    float local_x = mod(uv.x, seg_width) / seg_width;
+    
+    // 格柵間隔遮罩
+    float grid_mask = step(gap_size, local_x) * step(local_x, 1.0 - gap_size);
+    
+    // 平滑圓角框剪裁
+    float radius = 0.3;
+    vec2 aspect = vec2(4.0, 1.0);
+    vec2 center_dist = abs(uv - vec2(0.5)) * aspect;
+    float dist = length(max(center_dist - vec2(2.0 - radius, 0.5 - radius), 0.0));
+    float border_alpha = smoothstep(radius, radius - 0.01, dist);
+    
+    // 判斷哪些格柵該亮起
+    float current_seg = floor(uv.x * float(total_segments));
+    float active_seg_count = progress * float(total_segments);
+    float is_active = step(current_seg, active_seg_count - 0.01);
+    
+    // 計算格柵呼吸感與發光度
+    float pulse = sin(TIME * 2.0 + current_seg * 0.5) * 0.15 + 0.85;
+    vec4 cell_color = mix(color_inactive, color_active * pulse, is_active);
+    
+    // 最終合成
+    COLOR = vec4(cell_color.rgb, cell_color.a * grid_mask * border_alpha);
+}`;
+            },
+            radial: () => {
+                const u = uniforms.radial;
+                return `shader_type canvas_item;
+
+// ----------------------------------------
+// Godot 4 環形圓角進度條 Shader
+// ----------------------------------------
+
+uniform float progress : hint_range(0.0, 1.0) = ${progress.toFixed(2)};
+uniform float thickness : hint_range(0.01, 0.5) = ${u.thickness.toFixed(2)};
+uniform vec4 color_main : source_color = ${formatVec4(u.colorMain)};
+uniform bool round_cap = ${u.roundCap};
+
+void fragment() {
+    vec2 uv = UV - vec2(0.5); // 將 UV 原點移到正中心
+    float dist = length(uv);
+    
+    // 建立環形空心範圍遮罩
+    float ring_mask = smoothstep(0.5, 0.5 - 0.01, dist) * smoothstep(0.5 - thickness, (0.5 - thickness) + 0.01, dist);
+    
+    // 計算角度資訊 (-PI 至 PI)
+    float angle = atan(uv.y, uv.x);
+    // 將角度重置到 0 至 2*PI 區間 (從 12 點鐘方向開始順時針)
+    float normalized_angle = (angle + PI / 2.0);
+    if (normalized_angle < 0.0) {
+        normalized_angle += 2.0 * PI;
+    }
+    float angle_progress = normalized_angle / (2.0 * PI);
+    
+    // 基本扇形填滿
+    float bar_mask = step(angle_progress, progress);
+    
+    // 圓角端點處理 (Round Caps)
+    if (round_cap) {
+        // 起始端點 (0度)
+        vec2 start_cap_center = vec2(0.0, -0.5 + thickness / 2.0);
+        float start_dist = length(uv - start_cap_center);
+        if (start_dist < thickness / 2.0) {
+            bar_mask = 1.0;
+            ring_mask = smoothstep(thickness / 2.0, thickness / 2.0 - 0.01, start_dist);
+        }
+        
+        // 結束端點 (動態進度角)
+        float end_rad = progress * 2.0 * PI - PI / 2.0;
+        vec2 end_cap_center = vec2(cos(end_rad), sin(end_rad)) * (0.5 - thickness / 2.0);
+        float end_dist = length(uv - end_cap_center);
+        if (end_dist < thickness / 2.0) {
+            bar_mask = 1.0;
+            ring_mask = max(ring_mask, smoothstep(thickness / 2.0, thickness / 2.0 - 0.01, end_dist));
+        }
+    }
+    
+    // 背景底軌
+    vec4 bg_color = vec4(0.12, 0.15, 0.20, 0.5);
+    vec4 final_color = mix(bg_color, color_main, bar_mask);
+    
+    COLOR = vec4(final_color.rgb, final_color.a * ring_mask);
+}`;
+            },
+            rhythm: () => {
+                const u = uniforms.rhythm;
+                const slantRad = (u.slantAngle * Math.PI) / 180;
+                return `shader_type canvas_item;
+
+// ----------------------------------------
+// Godot 4 傾斜音訊與節奏鑽石進度條 Shader
+// ----------------------------------------
+
+uniform float progress : hint_range(0.0, 1.0) = ${progress.toFixed(2)};
+uniform int diamond_count = ${u.diamondCount};
+uniform vec4 color_fill : source_color = ${formatVec4(u.colorFill)};
+uniform float slant_factor : hint_range(-1.0, 1.0) = ${Math.sin(slantRad).toFixed(2)};
+uniform float pulse_speed : hint_range(0.0, 10.0) = ${u.pulseSpeed.toFixed(1)};
+
+// 繪製鑽石節點的輔助函式
+float draw_diamond(vec2 uv, vec2 center, float size) {
+    vec2 d = abs(uv - center);
+    return step(d.x + d.y, size);
+}
+
+void fragment() {
+    vec2 uv = UV;
+    
+    // 套用傾斜 (Slant) 效果至整個橫條
+    float skewed_x = uv.x - (uv.y - 0.5) * slant_factor;
+    float slant_mask = step(skewed_x, progress);
+    
+    // 主進度條顏色渲染 (帶有邊緣微光與律動)
+    float pulse = sin(TIME * pulse_speed) * 0.12 + 0.88;
+    vec4 bar_color = color_fill * pulse;
+    
+    // 背景底版
+    vec4 bg_color = vec4(0.1, 0.12, 0.18, 0.9);
+    
+    // 計算圓角傾斜裁剪
+    float clip = step(0.01, skewed_x) * step(skewed_x, 0.99);
+    
+    // 融合主進度條
+    vec4 final_color = mix(bg_color, bar_color, slant_mask);
+    
+    // 繪製間隔格線 (裝飾性科技網格)
+    float grid_lines = sin(skewed_x * 40.0) * 0.5 + 0.5;
+    grid_lines = step(0.92, grid_lines);
+    final_color = mix(final_color, final_color * 1.3, grid_lines * slant_mask);
+    
+    COLOR = vec4(final_color.rgb, final_color.a * clip);
+}`;
+            }
+        };
+
+        // Render Canvas Previews mimicking shader math using Canvas 2D Context
+        function drawPreview() {
+            const width = previewCanvas.width / window.devicePixelRatio;
+            const height = previewCanvas.height / window.devicePixelRatio;
+            
+            // Clear
+            ctx.clearRect(0, 0, width, height);
+            
+            // Dynamic Time variable simulation
+            const time = Date.now() / 1000;
+
+            if (activeShader === 'glowing') {
+                const u = uniforms.glowing;
+                
+                // Draw BG panel
+                ctx.fillStyle = '#080a0f';
+                ctx.beginPath();
+                ctx.roundRect(10, height/2 - 18, width - 20, 36, 18);
+                ctx.fill();
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Draw filled gradient bar
+                const barWidth = (width - 20) * progress;
+                if (barWidth > 0) {
+                    ctx.save();
+                    // clip within bar boundary rounded shape
+                    ctx.beginPath();
+                    ctx.roundRect(10, height/2 - 18, width - 20, 36, 18);
+                    ctx.clip();
+
+                    // Create Gradient
+                    const grad = ctx.createLinearGradient(10, 0, width - 10, 0);
+                    grad.addColorStop(0, u.colorLeft);
+                    grad.addColorStop(1, u.colorRight);
+                    
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.roundRect(10, height/2 - 18, barWidth, 36, 18);
+                    ctx.fill();
+
+                    // Animate a glowing aura flow over the active progress bar
+                    const waveOffset = Math.sin(time * u.waveSpeed) * 15;
+                    const glowGrad = ctx.createLinearGradient(10 + barWidth - 60, 0, 10 + barWidth + 10, 0);
+                    glowGrad.addColorStop(0, 'rgba(255,255,255,0)');
+                    glowGrad.addColorStop(0.5, `rgba(255,255,255,${0.3 + Math.sin(time*5)*0.15})`);
+                    glowGrad.addColorStop(1, 'rgba(255,255,255,0)');
+
+                    ctx.fillStyle = glowGrad;
+                    ctx.fillRect(10, height/2 - 18, barWidth, 36);
+
+                    ctx.restore();
+                }
+            }
+            else if (activeShader === 'segmented') {
+                const u = uniforms.segmented;
+                const totalWidth = width - 30;
+                const cellWidth = totalWidth / u.segments;
+                const gapPixels = cellWidth * u.gapSize;
+                const activeCells = progress * u.segments;
+
+                for (let i = 0; i < u.segments; i++) {
+                    const x = 15 + i * cellWidth + gapPixels/2;
+                    const w = cellWidth - gapPixels;
+                    const h = 28;
+                    const y = height/2 - h/2;
+
+                    // Pulsing animation for active cells
+                    const pulse = 0.95 + Math.sin(time * 3 + i * 0.4) * 0.05;
+                    const isActive = i < Math.floor(activeCells);
+                    const isPartial = i === Math.floor(activeCells);
+                    
+                    ctx.fillStyle = u.colorInactive;
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, w, h, 4);
+                    ctx.fill();
+
+                    if (isActive) {
+                        ctx.fillStyle = u.colorActive;
+                        ctx.save();
+                        ctx.globalAlpha = pulse;
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, w, h, 4);
+                        ctx.fill();
+                        ctx.restore();
+                    } else if (isPartial) {
+                        // partial fill
+                        const partialRatio = activeCells % 1;
+                        ctx.fillStyle = u.colorActive;
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, w * partialRatio, h, 4);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+            }
+            else if (activeShader === 'radial') {
+                const u = uniforms.radial;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = 80;
+                const thicknessPx = radius * u.thickness * 2;
+
+                // BG Circle track
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius - thicknessPx/2, 0, Math.PI * 2);
+                ctx.strokeStyle = '#181f2f';
+                ctx.lineWidth = thicknessPx;
+                ctx.stroke();
+
+                // Active Arc
+                if (progress > 0) {
+                    ctx.beginPath();
+                    const startAngle = (u.angleOffset * Math.PI) / 180;
+                    const endAngle = startAngle + progress * Math.PI * 2;
+                    ctx.arc(centerX, centerY, radius - thicknessPx/2, startAngle, endAngle);
+                    ctx.strokeStyle = u.colorMain;
+                    ctx.lineWidth = thicknessPx;
+                    ctx.lineCap = u.roundCap ? 'round' : 'butt';
+                    ctx.stroke();
+                }
+
+                // Inner core percent counter
+                ctx.font = 'bold 24px "Plus Jakarta Sans"';
+                ctx.fillStyle = '#f8fafc';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${Math.round(progress * 100)}%`, centerX, centerY);
+            }
+            else if (activeShader === 'rhythm') {
+                const u = uniforms.rhythm;
+                const slantRad = (u.slantAngle * Math.PI) / 180;
+                const slantOffset = Math.sin(slantRad) * 20;
+
+                // Draw Track background
+                ctx.save();
+                ctx.fillStyle = '#0f131d';
+                ctx.beginPath();
+                ctx.moveTo(20 + slantOffset, height/2 - 16);
+                ctx.lineTo(width - 20 + slantOffset, height/2 - 16);
+                ctx.lineTo(width - 20 - slantOffset, height/2 + 16);
+                ctx.lineTo(20 - slantOffset, height/2 + 16);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+
+                // Fill Dynamic progress
+                const barProgressWidth = (width - 40) * progress;
+                if (barProgressWidth > 0) {
+                    ctx.save();
+                    ctx.fillStyle = u.colorFill;
+                    // Add subtle breathing pulse to rhythm bar
+                    ctx.globalAlpha = 0.85 + Math.sin(time * u.pulseSpeed) * 0.1;
+                    ctx.beginPath();
+                    ctx.moveTo(20 + slantOffset, height/2 - 16);
+                    ctx.lineTo(20 + barProgressWidth + slantOffset, height/2 - 16);
+                    ctx.lineTo(20 + barProgressWidth - slantOffset, height/2 + 16);
+                    ctx.lineTo(20 - slantOffset, height/2 + 16);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Grid ticks lines overlay inside progress bar
+                    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                    ctx.lineWidth = 1;
+                    for (let step = 30; step < barProgressWidth; step += 30) {
+                        ctx.beginPath();
+                        ctx.moveTo(20 + step + slantOffset, height/2 - 16);
+                        ctx.lineTo(20 + step - slantOffset, height/2 + 16);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        // Handle dynamically updating inputs/uniform controllers inside UI
+        function updateUIControls() {
+            let html = '';
+            
+            if (activeShader === 'glowing') {
+                const u = uniforms.glowing;
+                html = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-medium">起點色彩 (color_left)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="glowing-colorLeft" value="${u.colorLeft}" class="w-8 h-8 rounded bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs font-mono text-slate-300 uppercase">${u.colorLeft}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-medium">終點色彩 (color_right)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="glowing-colorRight" value="${u.colorRight}" class="w-8 h-8 rounded bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs font-mono text-slate-300 uppercase">${u.colorRight}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">霓虹發光強度 (glow_strength)</span>
+                            <span class="font-mono text-cyan-400" id="glowStrengthVal">${u.glowStrength.toFixed(1)}</span>
+                        </div>
+                        <input type="range" id="glowing-strength" min="0" max="3" step="0.1" value="${u.glowStrength}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">流光溢出寬度</span>
+                                <span class="font-mono text-cyan-400" id="glowWidthVal">${u.glowWidth.toFixed(2)}</span>
+                            </div>
+                            <input type="range" id="glowing-width" min="0.05" max="0.3" step="0.01" value="${u.glowWidth}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">極光流動速度</span>
+                                <span class="font-mono text-cyan-400" id="waveSpeedVal">${u.waveSpeed.toFixed(1)}</span>
+                            </div>
+                            <input type="range" id="glowing-waveSpeed" min="0" max="10" step="0.5" value="${u.waveSpeed}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                    </div>
+                `;
+            } 
+            else if (activeShader === 'segmented') {
+                const u = uniforms.segmented;
+                html = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-medium">啟用格柵顏色</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="segmented-colorActive" value="${u.colorActive}" class="w-8 h-8 rounded bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs font-mono text-slate-300 uppercase">${u.colorActive}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-medium">底槽格柵顏色</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="segmented-colorInactive" value="${u.colorInactive}" class="w-8 h-8 rounded bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs font-mono text-slate-300 uppercase">${u.colorInactive}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">分段格數 (total_segments)</span>
+                                <span class="font-mono text-cyan-400" id="segmentsVal">${u.segments}</span>
+                            </div>
+                            <input type="range" id="segmented-num" min="3" max="24" step="1" value="${u.segments}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">間隙寬度 (gap_size)</span>
+                                <span class="font-mono text-cyan-400" id="gapSizeVal">${u.gapSize.toFixed(2)}</span>
+                            </div>
+                            <input type="range" id="segmented-gap" min="0.01" max="0.25" step="0.01" value="${u.gapSize}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                    </div>
+                `;
+            }
+            else if (activeShader === 'radial') {
+                const u = uniforms.radial;
+                html = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-medium">環形主題顏色 (color_main)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="radial-colorMain" value="${u.colorMain}" class="w-8 h-8 rounded bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs font-mono text-slate-300 uppercase">${u.colorMain}</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <span class="block text-xs text-slate-400 mb-2 font-medium">端點形狀圓化 (round_cap)</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="radial-roundCap" class="sr-only peer" ${u.roundCap ? 'checked' : ''}>
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                                <span class="ml-2 text-xs font-medium text-slate-300">開啟圓角</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">圓環厚度 (thickness)</span>
+                                <span class="font-mono text-cyan-400" id="radialThicknessVal">${u.thickness.toFixed(2)}</span>
+                            </div>
+                            <input type="range" id="radial-thickness" min="0.03" max="0.35" step="0.01" value="${u.thickness}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">開始角度旋轉</span>
+                                <span class="font-mono text-cyan-400" id="radialAngleVal">${u.angleOffset}°</span>
+                            </div>
+                            <input type="range" id="radial-angle" min="-360" max="360" step="15" value="${u.angleOffset}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                    </div>
+                `;
+            }
+            else if (activeShader === 'rhythm') {
+                const u = uniforms.rhythm;
+                html = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 font-medium">核心亮色 (color_fill)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="rhythm-colorFill" value="${u.colorFill}" class="w-8 h-8 rounded bg-transparent border-0 cursor-pointer">
+                                <span class="text-xs font-mono text-slate-300 uppercase">${u.colorFill}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-400">呼吸律動速度 (pulse_speed)</span>
+                                <span class="font-mono text-cyan-400" id="pulseSpeedVal">${u.pulseSpeed.toFixed(1)}</span>
+                            </div>
+                            <input type="range" id="rhythm-pulse" min="0" max="10" step="0.5" value="${u.pulseSpeed}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">進度條切角斜率 (slant_angle)</span>
+                            <span class="font-mono text-cyan-400" id="slantAngleVal">${u.slantAngle}°</span>
+                        </div>
+                        <input type="range" id="rhythm-slant" min="0" max="45" step="1" value="${u.slantAngle}" class="w-full h-1.5 accent-cyan-500 bg-slate-800 rounded">
+                    </div>
+                `;
+            }
+
+            dynamicControls.innerHTML = html;
+            attachDynamicEvents();
+        }
+
+        // Attach listeners for dynamic controls
+        function attachDynamicEvents() {
+            if (activeShader === 'glowing') {
+                const u = uniforms.glowing;
+                document.getElementById('glowing-colorLeft').addEventListener('input', (e) => { u.colorLeft = e.target.value; update(); });
+                document.getElementById('glowing-colorRight').addEventListener('input', (e) => { u.colorRight = e.target.value; update(); });
+                document.getElementById('glowing-strength').addEventListener('input', (e) => { u.glowStrength = parseFloat(e.target.value); update(); });
+                document.getElementById('glowing-width').addEventListener('input', (e) => { u.glowWidth = parseFloat(e.target.value); update(); });
+                document.getElementById('glowing-waveSpeed').addEventListener('input', (e) => { u.waveSpeed = parseFloat(e.target.value); update(); });
+            }
+            else if (activeShader === 'segmented') {
+                const u = uniforms.segmented;
+                document.getElementById('segmented-colorActive').addEventListener('input', (e) => { u.colorActive = e.target.value; update(); });
+                document.getElementById('segmented-colorInactive').addEventListener('input', (e) => { u.colorInactive = e.target.value; update(); });
+                document.getElementById('segmented-num').addEventListener('input', (e) => { u.segments = parseInt(e.target.value); update(); });
+                document.getElementById('segmented-gap').addEventListener('input', (e) => { u.gapSize = parseFloat(e.target.value); update(); });
+            }
+            else if (activeShader === 'radial') {
+                const u = uniforms.radial;
+                document.getElementById('radial-colorMain').addEventListener('input', (e) => { u.colorMain = e.target.value; update(); });
+                document.getElementById('radial-roundCap').addEventListener('change', (e) => { u.roundCap = e.target.checked; update(); });
+                document.getElementById('radial-thickness').addEventListener('input', (e) => { u.thickness = parseFloat(e.target.value); update(); });
+                document.getElementById('radial-angle').addEventListener('input', (e) => { u.angleOffset = parseInt(e.target.value); update(); });
+            }
+            else if (activeShader === 'rhythm') {
+                const u = uniforms.rhythm;
+                document.getElementById('rhythm-colorFill').addEventListener('input', (e) => { u.colorFill = e.target.value; update(); });
+                document.getElementById('rhythm-pulse').addEventListener('input', (e) => { u.pulseSpeed = parseFloat(e.target.value); update(); });
+                document.getElementById('rhythm-slant').addEventListener('input', (e) => { u.slantAngle = parseInt(e.target.value); update(); });
+            }
+        }
+
+        // Trigger update to re-draw canvas and generate shader text
+        function update() {
+            // Update Text Displays
+            document.getElementById('progressVal').innerText = `Progress: ${Math.round(progress * 100)}%`;
+            document.getElementById('slideProgressVal').innerText = `${(progress * 100).toFixed(1)}%`;
+            
+            if (activeShader === 'glowing') {
+                document.getElementById('previewStatus').innerText = '風格: 流光霓虹進度條';
+                document.getElementById('glowStrengthVal') && (document.getElementById('glowStrengthVal').innerText = uniforms.glowing.glowStrength.toFixed(1));
+                document.getElementById('glowWidthVal') && (document.getElementById('glowWidthVal').innerText = uniforms.glowing.glowWidth.toFixed(2));
+                document.getElementById('waveSpeedVal') && (document.getElementById('waveSpeedVal').innerText = uniforms.glowing.waveSpeed.toFixed(1));
+            } else if (activeShader === 'segmented') {
+                document.getElementById('previewStatus').innerText = '風格: 科技分段式進度條';
+                document.getElementById('segmentsVal') && (document.getElementById('segmentsVal').innerText = uniforms.segmented.segments);
+                document.getElementById('gapSizeVal') && (document.getElementById('gapSizeVal').innerText = uniforms.segmented.gapSize.toFixed(2));
+            } else if (activeShader === 'radial') {
+                document.getElementById('previewStatus').innerText = '風格: 環形圓角進度條';
+                document.getElementById('radialThicknessVal') && (document.getElementById('radialThicknessVal').innerText = uniforms.radial.thickness.toFixed(2));
+                document.getElementById('radialAngleVal') && (document.getElementById('radialAngleVal').innerText = `${uniforms.radial.angleOffset}°`);
+            } else if (activeShader === 'rhythm') {
+                document.getElementById('previewStatus').innerText = '風格: 傾斜音律進度條';
+                document.getElementById('pulseSpeedVal') && (document.getElementById('pulseSpeedVal').innerText = uniforms.rhythm.pulseSpeed.toFixed(1));
+                document.getElementById('slantAngleVal') && (document.getElementById('slantAngleVal').innerText = `${uniforms.rhythm.slantAngle}°`);
+            }
+
+            // Draw current canvas
+            drawPreview();
+
+            // Refresh Shader Code Block
+            const code = shaderTemplates[activeShader]();
+            codePre.querySelector('code').textContent = code;
+        }
+
+        // Handle Selector click
+        function selectShader(type) {
+            activeShader = type;
+            
+            // Set tab active state
+            document.querySelectorAll('.shader-tab').forEach(btn => {
+                btn.className = 'shader-tab flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 bg-slate-800/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700';
+            });
+            
+            const activeBtn = document.getElementById(`btn-${type}`);
+            activeBtn.className = 'shader-tab flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 bg-slate-950 border-cyan-500/50 text-cyan-400 shadow-md shadow-cyan-500/5';
+            
+            // Update filename
+            fileNameText.innerText = `${type}_progress.gdshader`;
+
+            // Adjust Canvas Size and reset controls
+            initCanvas();
+            updateUIControls();
+            update();
+        }
+
+        // Copy Clipboard Helper
+        function copyShaderCode() {
+            const codeText = codePre.querySelector('code').textContent;
+            
+            // Re-usable mock input or direct selection since window.navigator might be sandboxed
+            const el = document.createElement('textarea');
+            el.value = codeText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            // Change button UI feedback
+            const copyBtnText = document.getElementById('copyBtnText');
+            copyBtnText.innerText = '已複製！';
+            
+            const toast = document.getElementById('copyToast');
+            toast.className = "absolute bottom-4 right-4 bg-emerald-500 text-slate-950 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-lg shadow-emerald-500/20 translate-y-0 opacity-100 transition-all duration-300";
+
+            setTimeout(() => {
+                copyBtnText.innerText = '複製代碼';
+                toast.className = "absolute bottom-4 right-4 bg-emerald-500 text-slate-950 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-lg shadow-emerald-500/20 translate-y-12 opacity-0 transition-all duration-300";
+            }, 2000);
+        }
+
+        // Init App On Window Load
+        window.onload = function() {
+            // Main Progress Slider listener
+            const progressInput = document.getElementById('input-progress');
+            progressInput.addEventListener('input', (e) => {
+                progress = e.target.value / 100;
+                update();
+            });
+
+            // Initialize first view
+            selectShader('glowing');
+
+            // Start animation loop for glowing waves / pulse previews
+            function renderLoop() {
+                drawPreview();
+                requestAnimationFrame(renderLoop);
+            }
+            renderLoop();
+        };
+
+        // Resize handler to ensure canvas maintains ratios
+        window.addEventListener('resize', () => {
+            initCanvas();
+            drawPreview();
+        });
+    </script>
+</body>
+</html>

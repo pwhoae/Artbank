@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 高質感 UI 互動模擬器與代碼導出工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1115;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* 淺色擬物化陰影 */
+        .neumorphic-light-out {
+            background: #e6e9ef;
+            box-shadow: 9px 9px 16px #cbd1db, -9px -9px 16px #ffffff;
+        }
+        .neumorphic-light-in {
+            background: #e6e9ef;
+            box-shadow: inset 6px 6px 10px #cbd1db, inset -6px -6px 10px #ffffff;
+        }
+        .neumorphic-light-knob {
+            background: linear-gradient(135deg, #f3f5f8, #d8dee8);
+            box-shadow: 5px 5px 10px #c0c7d3, -5px -5px 10px #ffffff;
+        }
+        .neumorphic-light-knob-active {
+            background: linear-gradient(135deg, #d8dee8, #f3f5f8);
+            box-shadow: inset 2px 2px 5px #c0c7d3, inset -2px -2px 5px #ffffff;
+        }
+
+        /* 深色擬物化陰影 */
+        .neumorphic-dark-out {
+            background: #191b20;
+            box-shadow: 9px 9px 16px #0d0f11, -9px -9px 16px #25272f;
+        }
+        .neumorphic-dark-in {
+            background: #191b20;
+            box-shadow: inset 6px 6px 10px #0d0f11, inset -6px -6px 10px #25272f;
+        }
+        .neumorphic-dark-knob {
+            background: linear-gradient(135deg, #22252c, #131518);
+            box-shadow: 5px 5px 10px #0c0d0f, -5px -5px 10px #262931;
+        }
+        .neumorphic-dark-knob-active {
+            background: linear-gradient(135deg, #131518, #22252c);
+            box-shadow: inset 2px 2px 5px #0c0d0f, inset -2px -2px 5px #262931;
+        }
+
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #16181d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="transition-colors duration-300">
+
+    <!-- 主容器 -->
+    <div class="min-h-screen flex flex-col">
+        <!-- 導航列 -->
+        <header class="border-b border-slate-800 bg-[#12141a] px-6 py-4 flex flex-wrap items-center justify-between gap-4 z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/30">G</div>
+                <div>
+                    <h1 class="font-bold text-base tracking-wide text-white">Godot Premium UI</h1>
+                    <p class="text-xs text-slate-400">寫實質感與流暢微交互解決方案</p>
+                </div>
+            </div>
+
+            <!-- 控制選項 -->
+            <div class="flex items-center gap-4">
+                <!-- 淺色/深色 模式切換 -->
+                <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button id="btn-dark" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-blue-600 text-white shadow-sm">
+                        深色主題
+                    </button>
+                    <button id="btn-light" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-slate-400 hover:text-white">
+                        淺色主題
+                    </button>
+                </div>
+
+                <!-- 預覽/代碼 切換 -->
+                <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button id="tab-preview" class="px-4 py-1.5 rounded-md text-xs font-semibold transition-all bg-blue-600 text-white">
+                        互動模擬面板
+                    </button>
+                    <button id="tab-code" class="px-4 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-white">
+                        Godot 代碼導出
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要工作區 -->
+        <main class="flex-1 flex flex-col lg:flex-row relative">
+            
+            <!-- 區域一：模擬器面板 (Tab 1) -->
+            <div id="panel-preview-area" class="flex-1 flex items-center justify-center p-6 md:p-12 overflow-y-auto">
+                
+                <!-- 模擬外殼背景 (模擬 Godot 視窗) -->
+                <div id="ui-container" class="neumorphic-dark-out rounded-[40px] p-8 max-w-4xl w-full transition-all duration-500 transform scale-95 md:scale-100 flex flex-col md:flex-row gap-8">
+                    
+                    <!-- 左側單獨小組件展示 (影片左邊的 獨立大按鈕 & 微型進度條) -->
+                    <div class="flex flex-col gap-6 justify-between items-center w-full md:w-1/3 border-b md:border-b-0 md:border-r border-dashed border-slate-700/50 pb-6 md:pb-0 md:pr-8">
+                        <div class="text-center w-full">
+                            <span class="text-xs uppercase tracking-widest text-slate-500 font-bold block mb-4">獨立控制節點</span>
+                            
+                            <!-- 經典大溫控按鈕 -->
+                            <div class="flex flex-col gap-6 items-center">
+                                <!-- 溫控盤 (可點擊切換數值) -->
+                                <div id="independent-dial" class="w-36 h-36 rounded-full neumorphic-dark-knob flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 group relative">
+                                    <!-- 內環微光 -->
+                                    <div class="absolute inset-2 rounded-full border border-slate-700/20 pointer-events-none"></div>
+                                    <span id="independent-value" class="text-3xl font-light text-white tracking-tight">30</span>
+                                    <span class="text-[10px] text-slate-500 mt-1 uppercase tracking-wider">Target °C</span>
+                                    <!-- 微型呼吸燈 -->
+                                    <div class="absolute bottom-4 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                                </div>
+                                <p class="text-xs text-slate-400 italic">點擊中央旋鈕調整設定值</p>
+                            </div>
+                        </div>
+
+                        <!-- 影片中上方微型長條膠囊 -->
+                        <div class="w-full flex flex-col items-center gap-3">
+                            <span class="text-xs text-slate-500">微型狀態指示器</span>
+                            <div class="w-24 h-8 rounded-full neumorphic-dark-in p-1 flex items-center">
+                                <div class="h-full w-2/3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                            </div>
+                            <div class="w-24 h-3 rounded-full neumorphic-dark-in p-0.5">
+                                <div class="h-full w-1/2 bg-emerald-500 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右側主要儀表板組裝 (影片右側的 多功能大卡片) -->
+                    <div class="flex-1 flex flex-col gap-6">
+                        <div class="flex justify-between items-center">
+                            <h2 id="panel-title" class="text-sm font-semibold text-slate-400 uppercase tracking-widest">中央多功能控制面板</h2>
+                            <div class="flex gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-500/80"></span>
+                            </div>
+                        </div>
+
+                        <!-- 上半部：主進度表與四組線性滑塊 -->
+                        <div id="main-card-top" class="neumorphic-dark-in rounded-3xl p-6 flex flex-col md:flex-row gap-6 items-center">
+                            
+                            <!-- 圓形大刻度儀表 (Canvas 繪製，高像真度) -->
+                            <div class="relative w-40 h-40 flex items-center justify-center select-none">
+                                <canvas id="radial-gauge-canvas" width="320" height="320" class="w-full h-full cursor-pointer"></canvas>
+                                <!-- 中心文字 -->
+                                <div class="absolute flex flex-col items-center justify-center pointer-events-none">
+                                    <span id="gauge-center-value" class="text-3xl font-light text-white tracking-tighter">45</span>
+                                    <span class="text-[9px] text-slate-500 uppercase font-semibold">Power</span>
+                                </div>
+                            </div>
+
+                            <!-- 四個線性進度滑塊 -->
+                            <div class="flex-1 w-full flex flex-col gap-4">
+                                <!-- 滑桿 1 -->
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500 font-medium">系統核心負載</span>
+                                        <span id="slider-val-1" class="text-blue-400 font-mono">100%</span>
+                                    </div>
+                                    <div class="h-5 rounded-full neumorphic-dark-in p-1 relative flex items-center group cursor-pointer" data-slider="1">
+                                        <div id="slider-bar-1" class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(56,189,248,0.3)]" style="width: 100%;"></div>
+                                        <div id="slider-thumb-1" class="absolute w-5 h-5 rounded-full bg-white shadow-md border border-slate-300 cursor-grab active:cursor-grabbing transition-transform group-hover:scale-110 pointer-events-none" style="left: calc(100% - 20px);"></div>
+                                    </div>
+                                </div>
+                                <!-- 滑桿 2 -->
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500 font-medium">音訊串流增益</span>
+                                        <span id="slider-val-2" class="text-indigo-400 font-mono">100%</span>
+                                    </div>
+                                    <div class="h-5 rounded-full neumorphic-dark-in p-1 relative flex items-center group cursor-pointer" data-slider="2">
+                                        <div id="slider-bar-2" class="h-full bg-gradient-to-r from-indigo-600 to-purple-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(129,140,248,0.3)]" style="width: 100%;"></div>
+                                        <div id="slider-thumb-2" class="absolute w-5 h-5 rounded-full bg-white shadow-md border border-slate-300 cursor-grab active:cursor-grabbing transition-transform group-hover:scale-110 pointer-events-none" style="left: calc(100% - 20px);"></div>
+                                    </div>
+                                </div>
+                                <!-- 滑桿 3 -->
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500 font-medium">光源渲染強度</span>
+                                        <span id="slider-val-3" class="text-pink-400 font-mono">100%</span>
+                                    </div>
+                                    <div class="h-5 rounded-full neumorphic-dark-in p-1 relative flex items-center group cursor-pointer" data-slider="3">
+                                        <div id="slider-bar-3" class="h-full bg-gradient-to-r from-pink-600 to-rose-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(244,63,94,0.3)]" style="width: 100%;"></div>
+                                        <div id="slider-thumb-3" class="absolute w-5 h-5 rounded-full bg-white shadow-md border border-slate-300 cursor-grab active:cursor-grabbing transition-transform group-hover:scale-110 pointer-events-none" style="left: calc(100% - 20px);"></div>
+                                    </div>
+                                </div>
+                                <!-- 滑桿 4 -->
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-500 font-medium">全局阻尼係數</span>
+                                        <span id="slider-val-4" class="text-emerald-400 font-mono">100%</span>
+                                    </div>
+                                    <div class="h-5 rounded-full neumorphic-dark-in p-1 relative flex items-center group cursor-pointer" data-slider="4">
+                                        <div id="slider-bar-4" class="h-full bg-gradient-to-r from-emerald-600 to-teal-400 rounded-full pointer-events-none shadow-[0_0_8px_rgba(16,185,129,0.3)]" style="width: 100%;"></div>
+                                        <div id="slider-thumb-4" class="absolute w-5 h-5 rounded-full bg-white shadow-md border border-slate-300 cursor-grab active:cursor-grabbing transition-transform group-hover:scale-110 pointer-events-none" style="left: calc(100% - 20px);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 下半部：2x2小儀表 與 右側垂直推子 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- 2x2 圓形多色儀表陣列 -->
+                            <div id="sub-card-left" class="neumorphic-dark-in rounded-3xl p-4 grid grid-cols-2 gap-4 items-center justify-center">
+                                <!-- 小儀表 1 -->
+                                <div class="flex flex-col items-center justify-center p-2 relative">
+                                    <canvas id="mini-canvas-1" width="160" height="160" class="w-20 h-20 cursor-pointer" data-mini="1"></canvas>
+                                    <span id="mini-val-1" class="absolute top-[34px] text-xs font-semibold text-white">25</span>
+                                    <span class="text-[9px] text-slate-500 mt-1">Temp</span>
+                                </div>
+                                <!-- 小儀表 2 -->
+                                <div class="flex flex-col items-center justify-center p-2 relative">
+                                    <canvas id="mini-canvas-2" width="160" height="160" class="w-20 h-20 cursor-pointer" data-mini="2"></canvas>
+                                    <span id="mini-val-2" class="absolute top-[34px] text-xs font-semibold text-white">58</span>
+                                    <span class="text-[9px] text-slate-500 mt-1">Speed</span>
+                                </div>
+                                <!-- 小儀表 3 -->
+                                <div class="flex flex-col items-center justify-center p-2 relative">
+                                    <canvas id="mini-canvas-3" width="160" height="160" class="w-20 h-20 cursor-pointer" data-mini="3"></canvas>
+                                    <span id="mini-val-3" class="absolute top-[34px] text-xs font-semibold text-white">31</span>
+                                    <span class="text-[9px] text-slate-500 mt-1">Flow</span>
+                                </div>
+                                <!-- 小儀表 4 -->
+                                <div class="flex flex-col items-center justify-center p-2 relative">
+                                    <canvas id="mini-canvas-4" width="160" height="160" class="w-20 h-20 cursor-pointer" data-mini="4"></canvas>
+                                    <span id="mini-val-4" class="absolute top-[34px] text-xs font-semibold text-white">8</span>
+                                    <span class="text-[9px] text-slate-500 mt-1">Echo</span>
+                                </div>
+                            </div>
+
+                            <!-- 右側高質感：垂直弧形溫控推子 -->
+                            <div id="sub-card-right" class="neumorphic-dark-in rounded-3xl p-6 flex items-center justify-between gap-4 h-[210px] relative select-none">
+                                
+                                <!-- 垂直刻度指針與數值拖拽滑動條 -->
+                                <div class="flex-1 flex flex-col justify-between h-full py-1">
+                                    <div class="text-left">
+                                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest block">Thermostat</span>
+                                        <h3 class="text-xs text-slate-400 font-semibold">室內恆溫調節器</h3>
+                                    </div>
+                                    <!-- 巨大發光數字 -->
+                                    <div class="flex items-baseline gap-1">
+                                        <span id="vertical-val-display" class="text-5xl font-extralight tracking-tighter text-blue-400 transition-all">41</span>
+                                        <span class="text-xs text-slate-500">°C</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500">上下拖動右側滑槽即可調整</span>
+                                </div>
+
+                                <!-- 垂直溫控弧度/拖拽區域 (高像真度刻度尺) -->
+                                <div class="w-24 h-full relative flex items-center justify-center">
+                                    <canvas id="vertical-slider-canvas" width="180" height="340" class="w-full h-full cursor-ns-resize"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 區域二：代碼與技術說明面板 (Tab 2 - 預設隱藏) -->
+            <div id="panel-code-area" class="flex-1 hidden p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
+                
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    <!-- 左欄：結構與設計原理說明 -->
+                    <div class="xl:col-span-1 space-y-6">
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                            <h3 class="text-lg font-bold text-white mb-3">高級感 UI 核心設計手法</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed mb-4">
+                                影片中展現的 Godot 擬物化 UI（Skeuomorphic / Neumorphism）主要透過以下三個層次實現：
+                            </p>
+                            <ul class="space-y-3 text-sm text-slate-300">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-blue-500 font-bold">1.</span>
+                                    <span><strong>精細的雙向立體投影：</strong>左上高光與右下深色投影的相互堆疊（凸起按鈕與內陷凹槽），為 2D 介面創造驚人的物理立體縱深。</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-blue-500 font-bold">2.</span>
+                                    <span><strong>著色器（Shaders）繪製刻度：</strong>不使用靜態圖片，而是用 GPU 逐像素渲染高精度的弧形刻度、虛線與發光點，保證動態縮放不模糊。</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-blue-500 font-bold">3.</span>
+                                    <span><strong>數值平滑插值（Tweening）：</strong>在拖拽或設定數值時，數值和指標不會瞬間跳變，而是透過 GDScript 的 <code>lerp()</code> 進行緩動過渡。</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                            <h4 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Godot 節點層級建議</h4>
+                            <div class="bg-black/40 p-4 rounded-xl text-xs font-mono text-slate-300 space-y-1">
+                                <div>└─ Control (MainPanel) [Shader: Neumorphic]</div>
+                                <div>&nbsp;&nbsp;&nbsp;├─ PanelContainer (TopCard)</div>
+                                <div>&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;├─ HBoxContainer</div>
+                                <div>&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;│&nbsp;&nbsp;├─ TextureRect (RadialGauge) [Shader: Dial]</div>
+                                <div>&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;│&nbsp;&nbsp;└─ VBoxContainer (Sliders)</div>
+                                <div>&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ HSlider (Custom StyleBox)</div>
+                                <div>&nbsp;&nbsp;&nbsp;├─ GridContainer (2x2 MiniDials)</div>
+                                <div>&nbsp;&nbsp;&nbsp;└─ Panel (VerticalSliderContainer)</div>
+                                <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ TextureRect (ArcScale) [Shader: VerticalScale]</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右欄：核心源碼瀏覽器 -->
+                    <div class="xl:col-span-2 space-y-6">
+                        
+                        <!-- 代碼分頁器 -->
+                        <div class="bg-[#12141a] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                            <!-- 代碼頁籤 -->
+                            <div class="flex border-b border-slate-800 bg-slate-900/50 p-2">
+                                <button onclick="switchCodeTab('tab-shader-dial')" id="btn-shader-dial" class="px-4 py-2 text-xs font-medium rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all">
+                                    儀表板着色器 (.gdshader)
+                                </button>
+                                <button onclick="switchCodeTab('tab-script-knob')" id="btn-script-knob" class="px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">
+                                    平滑控制器 (.gd)
+                                </button>
+                                <button onclick="switchCodeTab('tab-shader-panel')" id="btn-shader-panel" class="px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all">
+                                    擬物立體面板 (.gdshader)
+                                </button>
+                            </div>
+
+                            <!-- 代碼顯示區 -->
+                            <div class="p-6">
+                                <!-- 代碼 1: 圓形進度 Shader -->
+                                <div id="code-content-shader-dial" class="code-block-content block">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="text-xs text-slate-400">應用於 TextureRect 節點，可完美渲染出帶發光虛線的圓環進度條。</span>
+                                        <button onclick="copyCode('code-shader-dial')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+                                            複製代碼
+                                        </button>
+                                    </div>
+                                    <pre class="bg-black/60 p-4 rounded-xl overflow-x-auto text-xs text-slate-300 font-mono leading-relaxed" id="code-shader-dial">shader_type canvas_item;
+
+uniform float value : hint_range(0.0, 1.0) = 0.45; // 目前進度 (0.0 到 1.0)
+uniform vec4 track_color : source_color = vec4(0.1, 0.12, 0.15, 1.0); // 底色
+uniform vec4 progress_color : source_color = vec4(0.0, 0.7, 1.0, 1.0); // 進度發光顏色
+uniform float thickness : hint_range(0.01, 0.2) = 0.06; // 圓環厚度
+uniform float num_dashes : hint_range(10.0, 100.0) = 48.0; // 刻度線數量
+uniform float gap_ratio : hint_range(0.1, 0.9) = 0.4; // 刻度虛線間距比例
+
+void fragment() {
+    vec2 uv = UV - vec2(0.5);
+    float dist = length(uv);
+    
+    // 限制在圓環厚度範圍內
+    float inner_radius = 0.4 - thickness;
+    float outer_radius = 0.4;
+    float ring_mask = smoothstep(inner_radius - 0.005, inner_radius, dist) * (1.0 - smoothstep(outer_radius, outer_radius + 0.005, dist));
+    
+    // 計算角度分量
+    float angle = atan(uv.y, uv.x) + PI; // 對齊到 0 到 2PI
+    float normalized_angle = angle / (2.0 * PI);
+    
+    // 建立起始缺口 (模仿影片下方的部分空缺，例如 240度環繞)
+    // 假設留空底部的 60度 (約合 0.83 的扇形)
+    float active_range = 0.83; 
+    float offset_angle = mod(normalized_angle + 0.58, 1.0); // 旋轉起點至頂部偏下
+    
+    if (offset_angle > active_range) {
+        discard; // 裁切掉多餘的環狀缺口
+    }
+    
+    float range_angle = offset_angle / active_range;
+    
+    // 虛線刻度遮罩
+    float dash_val = fract(range_angle * num_dashes);
+    float dash_mask = step(gap_ratio, dash_val);
+    
+    // 計算最終色彩
+    vec4 final_color = track_color;
+    if (range_angle <= value) {
+        // 渲染發光進度色，並在邊緣添加發光感
+        float glow = 1.0 + 0.5 * sin(TIME * 2.0);
+        final_color = progress_color * glow;
+    }
+    
+    COLOR = final_color * ring_mask * dash_mask;
+}</pre>
+                                </div>
+
+                                <!-- 代碼 2: GDScript Knob 拖拽邏輯 -->
+                                <div id="code-content-script-knob" class="code-block-content hidden">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="text-xs text-slate-400">掛載於控制節點，處理滑動/旋轉，並提供極致流暢的彈簧緩動。</span>
+                                        <button onclick="copyCode('code-script-knob')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+                                            複製代碼
+                                        </button>
+                                    </div>
+                                    <pre class="bg-black/60 p-4 rounded-xl overflow-x-auto text-xs text-slate-300 font-mono leading-relaxed" id="code-script-knob">extends TextureRect
+
+# 信號通知
+signal value_changed(new_value)
+
+@export var min_value: float = 0.0
+@export var max_value: float = 100.0
+@export var current_value: float = 45.0:
+	set(val):
+		current_value = clamp(val, min_value, max_value)
+		_update_ui()
+
+# 用於平滑視覺過渡
+var visual_value: float = 45.0
+var is_dragging: bool = false
+var drag_start_angle: float = 0.0
+var value_on_drag_start: float = 0.0
+
+@onready var label: Label = $ValueLabel
+
+func _ready() -> void:
+	visual_value = current_value
+	_update_ui()
+
+func _process(delta: float) -> void:
+	# 物理平滑過渡 (Lerp)，達成高級感的核心
+	if not is_equal_approx(visual_value, current_value):
+		visual_value = lerp(visual_value, current_value, 15.0 * delta)
+		# 將進度值平滑傳遞給 Shader
+		(material as ShaderMaterial).set_shader_parameter("value", visual_value / max_value)
+		if label:
+			label.text = str(round(visual_value))
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				is_dragging = true
+				drag_start_angle = _get_mouse_angle(event.position)
+				value_on_drag_start = current_value
+			else:
+				is_dragging = false
+				
+	elif event is InputEventMouseMotion and is_dragging:
+		var current_angle = _get_mouse_angle(event.position)
+		var angle_diff = current_angle - drag_start_angle
+		
+		# 邊界防止突變處理
+		if angle_diff > PI: angle_diff -= 2.0 * PI
+		elif angle_diff < -PI: angle_diff += 2.0 * PI
+		
+		# 1 弧度代表 25 單位數值變化
+		var sensitivity: float = 25.0 
+		self.current_value = value_on_drag_start + (angle_diff * sensitivity)
+		value_changed.emit(current_value)
+
+func _get_mouse_angle(mouse_pos: Vec2) -> float:
+	var center = size / 2.0
+	var dir = mouse_pos - center
+	return atan2(dir.y, dir.x)
+
+func _update_ui() -> void:
+	# 靜態更新備份
+	if not is_inside_tree(): return
+	if label and not is_dragging:
+		label.text = str(round(current_value))</pre>
+                                </div>
+
+                                <!-- 代碼 3: 擬物立體面板 Shader -->
+                                <div id="code-content-shader-panel" class="code-block-content hidden">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <span class="text-xs text-slate-400">利用片元著色器精確繪製擬物面板的軟陰影（Soft Shadow）與內凹槽質感。</span>
+                                        <button onclick="copyCode('code-shader-panel')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
+                                            複製代碼
+                                        </button>
+                                    </div>
+                                    <pre class="bg-black/60 p-4 rounded-xl overflow-x-auto text-xs text-slate-300 font-mono leading-relaxed" id="code-shader-panel">shader_type canvas_item;
+
+uniform vec4 base_color : source_color = vec4(0.1, 0.11, 0.13, 1.0);
+uniform float corner_radius : hint_range(0.01, 0.5) = 0.1;
+uniform bool is_inset = false; // 是否為內凹槽
+
+// 用於計算圓角矩形距離場
+float sd_round_rect(vec2 p, vec2 b, float r) {
+    vec2 q = abs(p) - b + r;
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+void fragment() {
+    vec2 size = 1.0 / TEXTURE_PIXEL_SIZE;
+    vec2 uv = (UV - vec2(0.5)) * size;
+    vec2 half_size = size * 0.5;
+    
+    float radius = min(half_size.x, half_size.y) * corner_radius;
+    float dist = sd_round_rect(uv, half_size, radius);
+    
+    // 裁剪外圍圓角以外的部分
+    if (dist > 0.0) {
+        discard;
+    }
+    
+    vec4 final_color = base_color;
+    
+    // 精準微光陰影疊加
+    if (is_inset) {
+        // 內陷效果：左上深色，右下亮色微光
+        float shadow_mask = smoothstep(-25.0, 0.0, dist);
+        vec2 shadow_dir = normalize(vec2(1.0, 1.0));
+        float light_factor = dot(normalize(uv), shadow_dir);
+        
+        if (light_factor > 0.0) {
+            // 右下邊緣亮光
+            final_color += vec4(0.08, 0.09, 0.12, 0.0) * light_factor * shadow_mask;
+        } else {
+            // 左上邊緣深色陰影
+            final_color -= vec4(0.08, 0.08, 0.09, 0.0) * abs(light_factor) * shadow_mask;
+        }
+    } else {
+        // 凸起效果：邊緣細緻高光
+        float edge_width = 1.5;
+        if (dist > -edge_width) {
+            float edge_factor = smoothstep(-edge_width, 0.0, dist);
+            // 頂部與左側有微弱高光，營造光源自左上角照下的立體感
+            if (uv.y < 0.0 || uv.x < 0.0) {
+                final_color += vec4(0.12, 0.14, 0.18, 0.0) * edge_factor;
+            }
+        }
+    }
+    
+    COLOR = final_color;
+}</pre>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+        
+        <!-- 底部提示 -->
+        <footer class="bg-[#0b0c0f] border-t border-slate-800 px-6 py-3 text-center text-xs text-slate-500">
+            基於 Godot Engine 4.x 架構優化 · 精密擬物化 UI 設計工具 · 請任意調整上方旋鈕進行動態測試
+        </footer>
+    </div>
+
+    <!-- 提示框 -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-emerald-600 text-white font-medium text-xs px-4 py-2.5 rounded-lg shadow-lg opacity-0 pointer-events-none transform translate-y-2 transition-all duration-300 z-50">
+        代碼已成功複製到剪貼簿！
+    </div>
+
+    <!-- 腳本處理邏輯 -->
+    <script>
+        // 全局狀態變量
+        let themeMode = 'dark'; // 'dark' 或 'light'
+        
+        // 滑桿與旋鈕控制變量 (模擬影片數值)
+        const state = {
+            independentValue: 30,
+            gaugeValue: 45,
+            slider1: 100,
+            slider2: 100,
+            slider3: 100,
+            slider4: 100,
+            mini1: 25,
+            mini2: 58,
+            mini3: 31,
+            mini4: 8,
+            verticalValue: 41
+        };
+
+        // 頁面加載初始化
+        window.addEventListener('load', () => {
+            initRadialGauge();
+            initMiniGauges();
+            initVerticalSlider();
+            initSliders();
+            initIndependentDial();
+            updateAllCanvases();
+        });
+
+        // ==================== 主題切換與佈局 ====================
+        const btnDark = document.getElementById('btn-dark');
+        const btnLight = document.getElementById('btn-light');
+        const uiContainer = document.getElementById('ui-container');
+        const independentDial = document.getElementById('independent-dial');
+        const mainCardTop = document.getElementById('main-card-top');
+        const subCardLeft = document.getElementById('sub-card-left');
+        const subCardRight = document.getElementById('sub-card-right');
+
+        btnDark.addEventListener('click', () => setTheme('dark'));
+        btnLight.addEventListener('click', () => setTheme('light'));
+
+        function setTheme(mode) {
+            themeMode = mode;
+            if (mode === 'dark') {
+                btnDark.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-blue-600 text-white shadow-sm";
+                btnLight.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all text-slate-400 hover:text-white";
+                document.body.style.backgroundColor = '#0f1115';
+                
+                // 容器變色
+                uiContainer.className = "neumorphic-dark-out rounded-[40px] p-8 max-w-4xl w-full transition-all duration-500 transform scale-95 md:scale-100 flex flex-col md:flex-row gap-8";
+                independentDial.className = "w-36 h-36 rounded-full neumorphic-dark-knob flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 group relative";
+                mainCardTop.className = "neumorphic-dark-in rounded-3xl p-6 flex flex-col md:flex-row gap-6 items-center";
+                subCardLeft.className = "neumorphic-dark-in rounded-3xl p-4 grid grid-cols-2 gap-4 items-center justify-center";
+                subCardRight.className = "neumorphic-dark-in rounded-3xl p-6 flex items-center justify-between gap-4 h-[210px] relative select-none";
+
+                // 文字修正
+                document.getElementById('independent-value').className = "text-3xl font-light text-white tracking-tight";
+                document.getElementById('panel-title').className = "text-sm font-semibold text-slate-400 uppercase tracking-widest";
+            } else {
+                btnLight.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white text-slate-800 shadow-sm";
+                btnDark.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all text-slate-400 hover:text-white";
+                document.body.style.backgroundColor = '#e1e5eb';
+                
+                // 容器變色
+                uiContainer.className = "neumorphic-light-out rounded-[40px] p-8 max-w-4xl w-full transition-all duration-500 transform scale-95 md:scale-100 flex flex-col md:flex-row gap-8";
+                independentDial.className = "w-36 h-36 rounded-full neumorphic-light-knob flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 group relative";
+                mainCardTop.className = "neumorphic-light-in rounded-3xl p-6 flex flex-col md:flex-row gap-6 items-center";
+                subCardLeft.className = "neumorphic-light-in rounded-3xl p-4 grid grid-cols-2 gap-4 items-center justify-center";
+                subCardRight.className = "neumorphic-light-in rounded-3xl p-6 flex items-center justify-between gap-4 h-[210px] relative select-none";
+
+                // 文字修正
+                document.getElementById('independent-value').className = "text-3xl font-light text-slate-800 tracking-tight";
+                document.getElementById('panel-title').className = "text-sm font-semibold text-slate-600 uppercase tracking-widest";
+            }
+            updateAllCanvases();
+        }
+
+        // 頁籤切換
+        const tabPreview = document.getElementById('tab-preview');
+        const tabCode = document.getElementById('tab-code');
+        const panelPreviewArea = document.getElementById('panel-preview-area');
+        const panelCodeArea = document.getElementById('panel-code-area');
+
+        tabPreview.addEventListener('click', () => {
+            tabPreview.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition-all bg-blue-600 text-white";
+            tabCode.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-white";
+            panelPreviewArea.classList.remove('hidden');
+            panelCodeArea.classList.add('hidden');
+        });
+
+        tabCode.addEventListener('click', () => {
+            tabCode.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition-all bg-blue-600 text-white";
+            tabPreview.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition-all text-slate-400 hover:text-white";
+            panelCodeArea.classList.remove('hidden');
+            panelPreviewArea.classList.add('hidden');
+        });
+
+        function switchCodeTab(targetId) {
+            // 所有內容隱藏
+            document.querySelectorAll('.code-block-content').forEach(block => block.classList.add('hidden'));
+            document.querySelectorAll('.code-block-content').forEach(block => block.classList.remove('block'));
+            
+            // 點亮按鈕樣式重置
+            const buttons = ['btn-shader-dial', 'btn-script-knob', 'btn-shader-panel'];
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                btn.className = "px-4 py-2 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition-all";
+            });
+
+            // 顯示目標
+            if (targetId === 'tab-shader-dial') {
+                document.getElementById('code-content-shader-dial').className = "code-block-content block";
+                document.getElementById('btn-shader-dial').className = "px-4 py-2 text-xs font-medium rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all";
+            } else if (targetId === 'tab-script-knob') {
+                document.getElementById('code-content-script-knob').className = "code-block-content block";
+                document.getElementById('btn-script-knob').className = "px-4 py-2 text-xs font-medium rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all";
+            } else if (targetId === 'tab-shader-panel') {
+                document.getElementById('code-content-shader-panel').className = "code-block-content block";
+                document.getElementById('btn-shader-panel').className = "px-4 py-2 text-xs font-medium rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-all";
+            }
+        }
+
+        // ==================== 1. 左側獨立大溫控盤 ====================
+        function initIndependentDial() {
+            const dial = document.getElementById('independent-dial');
+            const valDisplay = document.getElementById('independent-value');
+            
+            dial.addEventListener('click', () => {
+                // 每點一次增加 5，循環於 10~90
+                state.independentValue += 5;
+                if (state.independentValue > 90) state.independentValue = 15;
+                valDisplay.textContent = state.independentValue;
+                
+                // 附加縮放動畫
+                dial.classList.add('scale-95');
+                setTimeout(() => dial.classList.remove('scale-95'), 120);
+            });
+        }
+
+        // ==================== 2. 中央大圓形刻度儀表 (Canvas) ====================
+        let isRadialDragging = false;
+        const radialCanvas = document.getElementById('radial-gauge-canvas');
+        const radialCtx = radialCanvas.getContext('2d');
+
+        function initRadialGauge() {
+            const handleRotate = (e) => {
+                const rect = radialCanvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const x = clientX - rect.left - rect.width / 2;
+                const y = clientY - rect.top - rect.height / 2;
+                
+                // 計算角度（從 X 軸正半軸算起，順時針 0 到 2PI）
+                let angle = Math.atan2(y, x);
+                if (angle < 0) angle += 2 * Math.PI;
+
+                // 轉換為 0 - 100 的值 (設定起點在底部偏左 - 約 240度環形)
+                // 將角度旋轉使其起點從左下方約 135度 (0.75 PI) 開始
+                let normAngle = angle - (0.75 * Math.PI);
+                if (normAngle < 0) normAngle += 2 * Math.PI;
+
+                // 270度的可旋轉弧
+                const limitArc = 1.5 * Math.PI;
+                if (normAngle <= limitArc) {
+                    const percentage = Math.round((normAngle / limitArc) * 100);
+                    state.gaugeValue = Math.max(0, Math.min(100, percentage));
+                    document.getElementById('gauge-center-value').textContent = state.gaugeValue;
+                    drawRadialGauge();
+                }
+            };
+
+            // 滑鼠與觸控事件
+            radialCanvas.addEventListener('mousedown', (e) => { isRadialDragging = true; handleRotate(e); });
+            window.addEventListener('mousemove', (e) => { if (isRadialDragging) handleRotate(e); });
+            window.addEventListener('mouseup', () => { isRadialDragging = false; });
+
+            radialCanvas.addEventListener('touchstart', (e) => { isRadialDragging = true; handleRotate(e); e.preventDefault(); }, {passive: false});
+            window.addEventListener('touchmove', (e) => { if (isRadialDragging) { handleRotate(e); e.preventDefault(); } }, {passive: false});
+            window.addEventListener('touchend', () => { isRadialDragging = false; });
+        }
+
+        function drawRadialGauge() {
+            const ctx = radialCtx;
+            ctx.clearRect(0, 0, 320, 320);
+
+            const centerX = 160;
+            const centerY = 160;
+            const radius = 120;
+            const startAngle = 0.75 * Math.PI; // 起點左下
+            const endAngle = 2.25 * Math.PI;   // 終點右下
+            const activeArc = endAngle - startAngle;
+
+            const isDark = themeMode === 'dark';
+            
+            // 1. 繪製底部凹陷圓盤陰影
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(200, 207, 218, 0.5)';
+            ctx.fillStyle = isDark ? '#14161a' : '#eceff4';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + 20, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0; // 重置陰影
+
+            // 2. 繪製精細刻度線
+            const tickCount = 60;
+            for (let i = 0; i <= tickCount; i++) {
+                const angle = startAngle + (i / tickCount) * activeArc;
+                const valueRatio = i / tickCount;
+                const targetVal = Math.round(valueRatio * 100);
+
+                const length = i % 5 === 0 ? 15 : 8;
+                const innerR = radius - length;
+                const outerR = radius;
+
+                const isLit = targetVal <= state.gaugeValue;
+
+                ctx.beginPath();
+                ctx.moveTo(centerX + innerR * Math.cos(angle), centerY + innerR * Math.sin(angle));
+                ctx.lineTo(centerX + outerR * Math.cos(angle), centerY + outerR * Math.sin(angle));
+                
+                if (isLit) {
+                    ctx.strokeStyle = '#00adff';
+                    ctx.lineWidth = i % 5 === 0 ? 3.5 : 2;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = '#00adff';
+                } else {
+                    ctx.strokeStyle = isDark ? '#272d37' : '#cfd5e0';
+                    ctx.lineWidth = 1.5;
+                    ctx.shadowBlur = 0;
+                }
+                ctx.stroke();
+            }
+            ctx.shadowBlur = 0; // 再次重置
+
+            // 3. 繪製內部小圓環凸起（控制球感覺）
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 25, 0, 2 * Math.PI);
+            ctx.fillStyle = isDark ? '#1a1c22' : '#e6e9ef';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = isDark ? 'rgba(0,0,0,0.5)' : 'rgba(180,187,200,0.6)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 4. 繪製當前進度點 indicator 
+            const currentAngle = startAngle + (state.gaugeValue / 100) * activeArc;
+            const indicatorR = radius - 12;
+            ctx.beginPath();
+            ctx.arc(centerX + indicatorR * Math.cos(currentAngle), centerY + indicatorR * Math.sin(currentAngle), 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#00adff';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#00adff';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // ==================== 3. 2x2 迷你多色儀表 ====================
+        const miniGauges = [
+            { id: 1, canvasId: 'mini-canvas-1', color: '#ec4899', valId: 'mini-val-1', key: 'mini1' }, // 粉色
+            { id: 2, canvasId: 'mini-canvas-2', color: '#84cc16', valId: 'mini-val-2', key: 'mini2' }, // 綠色
+            { id: 3, canvasId: 'mini-canvas-3', color: '#06b6d4', valId: 'mini-val-3', key: 'mini3' }, // 青色
+            { id: 4, canvasId: 'mini-canvas-4', color: '#8b5cf6', valId: 'mini-val-4', key: 'mini4' }  // 紫色
+        ];
+
+        function initMiniGauges() {
+            miniGauges.forEach(gauge => {
+                const canvas = document.getElementById(gauge.canvasId);
+                let isDragging = false;
+
+                const handleUpdate = (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    const x = clientX - rect.left - rect.width / 2;
+                    const y = clientY - rect.top - rect.height / 2;
+                    
+                    let angle = Math.atan2(y, x) - (0.75 * Math.PI);
+                    if (angle < 0) angle += 2 * Math.PI;
+
+                    const activeArc = 1.5 * Math.PI;
+                    if (angle <= activeArc) {
+                        const percent = Math.round((angle / activeArc) * 100);
+                        state[gauge.key] = Math.max(0, Math.min(100, percent));
+                        document.getElementById(gauge.valId).textContent = state[gauge.key];
+                        drawMiniGauge(gauge);
+                    }
+                };
+
+                canvas.addEventListener('mousedown', (e) => { isDragging = true; handleUpdate(e); });
+                window.addEventListener('mousemove', (e) => { if (isDragging) handleUpdate(e); });
+                window.addEventListener('mouseup', () => { isDragging = false; });
+
+                canvas.addEventListener('touchstart', (e) => { isDragging = true; handleUpdate(e); e.preventDefault(); }, {passive: false});
+                window.addEventListener('touchmove', (e) => { if (isDragging) { handleUpdate(e); e.preventDefault(); } }, {passive: false});
+                window.addEventListener('touchend', () => { isDragging = false; });
+            });
+        }
+
+        function drawMiniGauge(gauge) {
+            const canvas = document.getElementById(gauge.canvasId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 160, 160);
+
+            const isDark = themeMode === 'dark';
+            const centerX = 80;
+            const centerY = 80;
+            const radius = 55;
+            const startAngle = 0.75 * Math.PI;
+            const endAngle = 2.25 * Math.PI;
+            const activeArc = endAngle - startAngle;
+
+            // 1. 底環
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.strokeStyle = isDark ? '#1d222b' : '#d2d7e0';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // 2. 實時進度條
+            const valueRatio = state[gauge.key] / 100;
+            const currentAngle = startAngle + valueRatio * activeArc;
+            
+            if (state[gauge.key] > 0) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, startAngle, currentAngle);
+                ctx.strokeStyle = gauge.color;
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = gauge.color;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // 3. 內飾裝點 (高質感虛線小刻度)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 15, startAngle, endAngle);
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([2, 6]);
+            ctx.stroke();
+            ctx.setLineDash([]); // 恢復常規實線
+        }
+
+        // ==================== 4. 垂直滑動溫度推子 ====================
+        let isVerticalDragging = false;
+        const vCanvas = document.getElementById('vertical-slider-canvas');
+        const vCtx = vCanvas.getContext('2d');
+
+        function initVerticalSlider() {
+            const handleVerticalUpdate = (e) => {
+                const rect = vCanvas.getBoundingClientRect();
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const relativeY = clientY - rect.top;
+                
+                // 限制推動範圍 (邊緣留空)
+                const margin = 20;
+                const activeHeight = rect.height - 2 * margin;
+                let normY = (relativeY - margin) / activeHeight;
+                normY = Math.max(0, Math.min(1, normY));
+
+                // 數值倒轉 (上方大，下方小)
+                const percentage = Math.round((1 - normY) * 80 + 10); // 範圍：10 ~ 90 度
+                state.verticalValue = percentage;
+                document.getElementById('vertical-val-display').textContent = percentage;
+                drawVerticalSlider();
+            };
+
+            vCanvas.addEventListener('mousedown', (e) => { isVerticalDragging = true; handleVerticalUpdate(e); });
+            window.addEventListener('mousemove', (e) => { if (isVerticalDragging) handleVerticalUpdate(e); });
+            window.addEventListener('mouseup', () => { isVerticalDragging = false; });
+
+            vCanvas.addEventListener('touchstart', (e) => { isVerticalDragging = true; handleVerticalUpdate(e); e.preventDefault(); }, {passive: false});
+            window.addEventListener('touchmove', (e) => { if (isVerticalDragging) { handleVerticalUpdate(e); e.preventDefault(); } }, {passive: false});
+            window.addEventListener('touchend', () => { isVerticalDragging = false; });
+        }
+
+        function drawVerticalSlider() {
+            const ctx = vCtx;
+            ctx.clearRect(0, 0, 180, 340);
+
+            const isDark = themeMode === 'dark';
+            const width = 180;
+            const height = 340;
+            const margin = 30;
+            const sliderX = width / 2 + 15; // 右傾，模仿弧形滑道
+
+            // 1. 繪製圓弧底槽 (擬物化深空拉槽)
+            ctx.beginPath();
+            ctx.moveTo(sliderX, margin);
+            ctx.lineTo(sliderX, height - margin);
+            ctx.strokeStyle = isDark ? '#14161b' : '#cbd1db';
+            ctx.lineWidth = 14;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // 2. 刻度線繪製 (滑槽左側 10 到 90 刻度)
+            const tickCount = 9;
+            const tickInterval = (height - 2 * margin) / (tickCount - 1);
+            
+            for (let i = 0; i < tickCount; i++) {
+                const y = margin + i * tickInterval;
+                const valueOfTick = Math.round((1 - (i / (tickCount - 1))) * 80 + 10);
+                
+                const isHighlight = valueOfTick <= state.verticalValue;
+                const tickLen = i % 2 === 0 ? 12 : 6;
+
+                ctx.beginPath();
+                ctx.moveTo(sliderX - 25, y);
+                ctx.lineTo(sliderX - 25 - tickLen, y);
+                
+                if (isHighlight) {
+                    ctx.strokeStyle = '#00adff';
+                    ctx.lineWidth = 2.5;
+                } else {
+                    ctx.strokeStyle = isDark ? '#2e3541' : '#a2aab8';
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+
+                // 偶數刻度顯示數值
+                if (i % 2 === 0) {
+                    ctx.fillStyle = isHighlight ? '#00adff' : (isDark ? '#4b5563' : '#718096');
+                    ctx.font = '10px "JetBrains Mono"';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(valueOfTick, sliderX - 45, y + 4);
+                }
+            }
+
+            // 3. 發光拉桿滑塊 (圓形金屬拉盤)
+            const tRatio = (state.verticalValue - 10) / 80;
+            const sliderY = margin + (1 - tRatio) * (height - 2 * margin);
+
+            ctx.beginPath();
+            ctx.arc(sliderX, sliderY, 18, 0, 2 * Math.PI);
+            ctx.fillStyle = isDark ? '#1e2229' : '#f0f3f8';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = isDark ? 'rgba(0,0,0,0.8)' : 'rgba(150,157,170,0.6)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 滑塊中心發光藍點
+            ctx.beginPath();
+            ctx.arc(sliderX, sliderY, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = '#00adff';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#00adff';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // ==================== 5. 線性滑桿操控組 ====================
+        let activeSliderNum = null;
+
+        function initSliders() {
+            const sliders = [1, 2, 3, 4];
+            
+            sliders.forEach(num => {
+                const bar = document.getElementById(`slider-bar-${num}`);
+                const thumb = document.getElementById(`slider-thumb-${num}`);
+                const container = bar.parentElement;
+
+                const updateSlider = (clientX) => {
+                    const rect = container.getBoundingClientRect();
+                    let ratio = (clientX - rect.left) / rect.width;
+                    ratio = Math.max(0, Math.min(1, ratio));
+                    
+                    const percent = Math.round(ratio * 100);
+                    state[`slider${num}`] = percent;
+                    
+                    // 實時改變進度條與滑桿位置
+                    bar.style.width = `${percent}%`;
+                    thumb.style.left = `calc(${percent}% - 10px)`;
+                    document.getElementById(`slider-val-${num}`).textContent = `${percent}%`;
+                };
+
+                container.addEventListener('mousedown', (e) => {
+                    activeSliderNum = num;
+                    updateSlider(e.clientX);
+                });
+
+                container.addEventListener('touchstart', (e) => {
+                    activeSliderNum = num;
+                    updateSlider(e.touches[0].clientX);
+                }, {passive: true});
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (activeSliderNum) {
+                    const container = document.getElementById(`slider-bar-${activeSliderNum}`).parentElement;
+                    const rect = container.getBoundingClientRect();
+                    let ratio = (e.clientX - rect.left) / rect.width;
+                    ratio = Math.max(0, Math.min(1, ratio));
+                    const percent = Math.round(ratio * 100);
+                    state[`slider${activeSliderNum}`] = percent;
+                    
+                    document.getElementById(`slider-bar-${activeSliderNum}`).style.width = `${percent}%`;
+                    document.getElementById(`slider-thumb-${activeSliderNum}`).style.left = `calc(${percent}% - 10px)`;
+                    document.getElementById(`slider-val-${activeSliderNum}`).textContent = `${percent}%`;
+                }
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                if (activeSliderNum) {
+                    const container = document.getElementById(`slider-bar-${activeSliderNum}`).parentElement;
+                    const rect = container.getBoundingClientRect();
+                    let ratio = (e.touches[0].clientX - rect.left) / rect.width;
+                    ratio = Math.max(0, Math.min(1, ratio));
+                    const percent = Math.round(ratio * 100);
+                    state[`slider${activeSliderNum}`] = percent;
+                    
+                    document.getElementById(`slider-bar-${activeSliderNum}`).style.width = `${percent}%`;
+                    document.getElementById(`slider-thumb-${activeSliderNum}`).style.left = `calc(${percent}% - 10px)`;
+                    document.getElementById(`slider-val-${activeSliderNum}`).textContent = `${percent}%`;
+                }
+            }, {passive: true});
+
+            window.addEventListener('mouseup', () => { activeSliderNum = null; });
+            window.addEventListener('touchend', () => { activeSliderNum = null; });
+        }
+
+        // 刷新所有 Canvas 的公共函數
+        function updateAllCanvases() {
+            drawRadialGauge();
+            miniGauges.forEach(g => drawMiniGauge(g));
+            drawVerticalSlider();
+        }
+
+        // ==================== 複製代碼實用程序 ====================
+        function copyCode(elementId) {
+            const preElement = document.getElementById(elementId);
+            const textToCopy = preElement.textContent;
+
+            // 使用安全可靠的舊版剪貼簿 API（ Canvas iframe 沙盒相容性最佳 ）
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            
+            try {
+                document.execCommand('copy');
+                const toast = document.getElementById('toast');
+                toast.classList.remove('opacity-0', 'translate-y-2');
+                toast.classList.add('opacity-100', 'translate-y-0');
+                
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', 'translate-y-2');
+                }, 2000);
+            } catch (err) {
+                console.error("無法複製代碼到剪貼簿", err);
+            }
+            
+            document.body.removeChild(tempTextArea);
+        }
+    </script>
+</body>
+</html>
