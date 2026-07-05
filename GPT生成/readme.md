@@ -1,22 +1,7 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|平設8/拍攝7/遊戲7/音樂7|
 Apple 風格:變形（Morphing）技術，單位逐次登場<br>
-Jennie Mok
-SenseTime Senior HR Manager
-mokhuiyin@sensetime.com
-+852 9035 8591
-400 900 5986
-www.sensetime.com
-sanseLmnd
-AR.名片
-【【靠技能年入十万】学生党，该如何自学技能？】 https://www.bilibili.com/video/BV1vz411z7zv/?share_source=copy_web
-【【献给毕业的你】我找了6位职场一线前辈，聊聊那些毕业后，没有人告诉你的事情｜建议收藏】 https://www.bilibili.com/video/BV1Na411n7nM/?share_source=copy_web
-【【Q版人物绘画教程】B站最全⚠️Q版人物绘画教程，包含日系/扁平/水彩/等各种风格画法！Q版人体/人物/上色/头像/procreate】 https://www.bilibili.com/video/BV1E4S1YdEVh/?share_source=copy_web 
-【絕區零面板】https://enka.network/zzz/1303689027/ 
-【B站出品，必剪教程剪辑教程，只需2小时学会剪辑！】
-https://www.bilibili.com/video/BV17ZK8zmEQT?spm_id_from=333.788.player.switch&p=11 
-【UST Grad photo】
-https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng
-【【UE5】仿绝区零六分街风格化日式街道场景 | 实机演示分享】 https://www.bilibili.com/video/BV1i4YxziEem/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e 
+
+
 【火花只是在玩瑜伽球】 https://www.bilibili.com/video/BV1wXAezdExr/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 【（转载）视奸 绿幕/紫幕 GB素材】 https://www.bilibili.com/video/BV16gwPezEg3/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 【We'll Be Right Back 【补档】【绿幕素材】】 https://www.bilibili.com/video/BV1Fy4y1B7A9/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
