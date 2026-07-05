@@ -1,22 +1,15 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|平設8/拍攝7/遊戲7/音樂7|
 Apple 風格:變形（Morphing）技術，單位逐次登場<br>
 
-
-【火花只是在玩瑜伽球】 https://www.bilibili.com/video/BV1wXAezdExr/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-【（转载）视奸 绿幕/紫幕 GB素材】 https://www.bilibili.com/video/BV16gwPezEg3/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-【We'll Be Right Back 【补档】【绿幕素材】】 https://www.bilibili.com/video/BV1Fy4y1B7A9/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-【【Krene】3分钟，做一个角色设计】 https://www.bilibili.com/video/BV13AFYz8Ee4/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-【绿幕卡点视频】 https://www.bilibili.com/video/BV1VWmcBkETc/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-
-一键绑定模型骨骼：www.mixamo.com
-写实风素材：quixel.com
-风格统一的素材：www.kenney.nl
-ui图标：www.svgrepo.com
-音乐音效：pixabay.com
+一键绑定模型骨骼：www.mixamo.com<br>
+写实风素材：quixel.com<br>
+风格统一的素材：www.kenney.nl<br>
+ui图标：www.svgrepo.com<br>
+音乐音效：pixabay.com<br>
 
 HolopixAI 
 krene
-
+<br>
 ### 整活>過程要好玩快樂
 ```
 卖什么→谁来卖→卖给谁→怎么卖
