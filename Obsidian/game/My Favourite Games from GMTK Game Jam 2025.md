@@ -1,10 +1,10 @@
 ---
 title: "My Favourite Games from GMTK Game Jam 2025"
-source: "https://www.youtube.com/watch?v=kG3LWpuiLqg&t=1s"
+source: "https://www.youtube.com/watch?v=kG3LWpuiLqg"
 author:
   - "[[Game Maker's Toolkit]]"
 published: 2025-08-18
-created: 2026-07-03
+created: 2026-07-05
 description: "🔴 Try the games - https://itch.io/jam/gmtk-2025/results 🔴🔴 Register your interest for 2026 - https://itch.io/jam/gmtk-jam-2026 🔴This year's GMTK Game Jam was all about loops. Here are 20 of my"
 tags:
   - "clippings"
