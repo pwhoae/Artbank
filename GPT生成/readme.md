@@ -1,4 +1,5 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|平設8/拍攝7/遊戲7/音樂7|
+Apple 風格:變形（Morphing）技術，單位逐次登場
 ### 整活>過程要好玩快樂
 ```
 卖什么→谁来卖→卖给谁→怎么卖
