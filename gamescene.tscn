@@ -1,0 +1,299 @@
+[gd_scene format=3 uid="uid://blanwg2g3wlvk"]
+
+[ext_resource type="PackedScene" uid="uid://cxr404yphiiwc" path="res://3d學習/3dplayer.tscn" id="1_wbu43"]
+[ext_resource type="PackedScene" uid="uid://1h1hg8br6hri" path="res://Assets/gltf/Cube_Prototype_Large_A.gltf" id="2_4mv74"]
+[ext_resource type="MeshLibrary" uid="uid://cuv4h26ar0qmp" path="res://Assets/grid.meshlib" id="2_j0tic"]
+[ext_resource type="PackedScene" uid="uid://drl547jp33ots" path="res://3d學習/moving_platform.tscn" id="3_6ykjh"]
+[ext_resource type="Script" uid="uid://dl2q4xsqfo5jw" path="res://3d學習/腳本/3dgamemanager.gd" id="4_dgkh7"]
+[ext_resource type="PackedScene" uid="uid://dx5mgv6ejy174" path="res://3d學習/death_area.tscn" id="4_slijs"]
+[ext_resource type="PackedScene" uid="uid://danm7q3doj0vi" path="res://3d學習/jump_pad.tscn" id="6_cp34g"]
+[ext_resource type="PackedScene" uid="uid://i4t7hkgbshcx" path="res://3d學習/collectable_coin.tscn" id="7_rknot"]
+[ext_resource type="PackedScene" uid="uid://badbbjrxe52xh" path="res://3d學習/ui.tscn" id="8_is84y"]
+[ext_resource type="Texture2D" uid="uid://cumrebwbxngo1" path="res://icon.svg" id="9_m4ko7"]
+[ext_resource type="Script" uid="uid://7kbgnrqgqnih" path="res://3d學習/腳本/checkpoint.gd" id="10_mtxne"]
+[ext_resource type="PackedScene" uid="uid://bkcqoeykkivwb" path="res://Assets/gltf/target_wall_large_A.gltf" id="11_eplna"]
+[ext_resource type="PackedScene" uid="uid://dja3esuw656k4" path="res://3d學習/gltf/Wolf-Blender-2.82a.gltf" id="12_eplna"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_srqb0"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_wbu43"]
+sky_material = SubResource("ProceduralSkyMaterial_srqb0")
+
+[sub_resource type="Environment" id="Environment_4mv74"]
+background_mode = 2
+sky = SubResource("Sky_wbu43")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_srqb0"]
+size = Vector3(10, 1, 10)
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_wbu43"]
+data = PackedVector3Array(-5, 0.5, 5, 5, 0.5, 5, -5, -0.5, 5, 5, 0.5, 5, 5, -0.5, 5, -5, -0.5, 5, 5, 0.5, -5, -5, 0.5, -5, 5, -0.5, -5, -5, 0.5, -5, -5, -0.5, -5, 5, -0.5, -5, 5, 0.5, 5, 5, 0.5, -5, 5, -0.5, 5, 5, 0.5, -5, 5, -0.5, -5, 5, -0.5, 5, -5, 0.5, -5, -5, 0.5, 5, -5, -0.5, -5, -5, 0.5, 5, -5, -0.5, 5, -5, -0.5, -5, 5, 0.5, 5, -5, 0.5, 5, 5, 0.5, -5, -5, 0.5, 5, -5, 0.5, -5, 5, 0.5, -5, -5, -0.5, 5, 5, -0.5, 5, -5, -0.5, -5, 5, -0.5, 5, 5, -0.5, -5, -5, -0.5, -5)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rlls3"]
+bg_color = Color(0.06666667, 0.06666667, 0.06666667, 0)
+border_width_left = 10
+border_width_top = 10
+border_width_right = 10
+border_width_bottom = 10
+border_color = Color(0.9137255, 0.6, 0.3529412, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_size = 10
+
+[sub_resource type="Animation" id="Animation_m4ko7"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-3.4075618, 2.6218815, 7.8557773)]
+}
+
+[sub_resource type="Animation" id="Animation_rlls3"]
+resource_name = "rotate"
+length = 4.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1, 2, 3),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-3.4075618, 2.6218815, 7.8557773), Vector3(-10.563215, 2.622, 7.856), Vector3(-11.022616, 2.6219604, 15.360236), Vector3(-3.459529, 2.621921, 14.35526)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_mtxne"]
+_data = {
+&"RESET": SubResource("Animation_m4ko7"),
+&"rotate": SubResource("Animation_rlls3")
+}
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_j0tic"]
+size = Vector3(4.290039, 2.8494873, 4.1601257)
+
+[node name="Gamescene" type="Node3D" unique_id=1397403725]
+
+[node name="3DGameManager" type="Node3D" parent="." unique_id=1908862164 node_paths=PackedStringArray("item_score")]
+script = ExtResource("4_dgkh7")
+item_score = {
+"BRONZE": NodePath("../CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer3/BRONZE"),
+"GOLD": NodePath("../CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer/GOLD"),
+"SILVER": NodePath("../CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer2/SILVER")
+}
+
+[node name="GridMap" type="GridMap" parent="." unique_id=431272041]
+mesh_library = ExtResource("2_j0tic")
+data = {
+"cells": PackedInt32Array(65535, 1, 7, 65534, 1, 7, 65533, 1, 7, 65532, 1, 7, 65531, 1, 7, 65530, 2, 7, 0, 1, 7, 2, 65534, 7, 2, 65535, 7, 2, 0, 7)
+}
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1752499198]
+environment = SubResource("Environment_4mv74")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1305260122]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Player" parent="." unique_id=902411466 instance=ExtResource("1_wbu43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.961538, 5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1229552861]
+visible = false
+mesh = SubResource("BoxMesh_srqb0")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1598629989]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D/StaticBody3D" unique_id=369796269]
+shape = SubResource("ConcavePolygonShape3D_wbu43")
+
+[node name="Ground" type="Node3D" parent="." unique_id=1851044574]
+
+[node name="Cube_Prototype_Large_A2" parent="Ground" unique_id=1198888715 instance=ExtResource("2_4mv74")]
+
+[node name="Cube_Prototype_Large_A3" parent="Ground" unique_id=1708759226 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4516845, -0.91109943, 0.1735996)
+
+[node name="Cube_Prototype_Large_A4" parent="Ground" unique_id=992997149 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.526119, -0.91109943, 0.1735996)
+
+[node name="Cube_Prototype_Large_A5" parent="Ground" unique_id=2161244 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.04169, 6.494933, 0.026636124)
+
+[node name="Cube_Prototype_Large_A6" parent="Ground" unique_id=1562294699 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.085814, 6.494933, 0.068761826)
+
+[node name="Cube_Prototype_Large_A7" parent="Ground" unique_id=1558971192 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.160248, 6.494933, 0.068761826)
+
+[node name="Cube_Prototype_Large_A8" parent="Ground" unique_id=1708467496 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.534172, 6.4163465, 0.13147354)
+
+[node name="Cube_Prototype_Large_A9" parent="Ground" unique_id=1445365890 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36.578297, 6.4163465, 0.1735996)
+
+[node name="Cube_Prototype_Large_A10" parent="Ground" unique_id=156262859 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40.652733, 6.4163465, 0.1735996)
+
+[node name="Cube_Prototype_Large_A11" parent="Ground" unique_id=2101389322 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4075618, -0.91109943, 7.7478304)
+visible = false
+
+[node name="Cube_Prototype_Large_A12" parent="Ground" unique_id=678760863 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4516845, -0.91109943, 7.7899566)
+visible = false
+
+[node name="Cube_Prototype_Large_A13" parent="Ground" unique_id=2065908063 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.526119, -0.91109943, 7.7899566)
+visible = false
+
+[node name="Cube_Prototype_Large_A14" parent="Ground" unique_id=77896721 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4075618, -0.91109943, 11.737348)
+visible = false
+
+[node name="Cube_Prototype_Large_A15" parent="Ground" unique_id=1927836466 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4516845, -0.91109943, 11.779474)
+visible = false
+
+[node name="Cube_Prototype_Large_A16" parent="Ground" unique_id=497402555 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.526119, -0.91109943, 11.779474)
+visible = false
+
+[node name="Cube_Prototype_Large_A17" parent="Ground" unique_id=1482279568 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4075618, -0.91109943, 15.74783)
+visible = false
+
+[node name="Cube_Prototype_Large_A18" parent="Ground" unique_id=1278700032 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.4516845, -0.91109943, 15.789957)
+visible = false
+
+[node name="Cube_Prototype_Large_A19" parent="Ground" unique_id=2144887571 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.526119, -0.91109943, 15.789957)
+visible = false
+
+[node name="Moving_platform" parent="." unique_id=1700248711 instance=ExtResource("3_6ykjh")]
+
+[node name="Death_Area" parent="." unique_id=608424517 instance=ExtResource("4_slijs")]
+
+[node name="Jump_pad" parent="." unique_id=1145440253 instance=ExtResource("6_cp34g")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.776593, 3.0390215, -0.039785504)
+
+[node name="CollectableItem" type="Node3D" parent="." unique_id=1390754371]
+
+[node name="Collectable" parent="CollectableItem" unique_id=78671139 instance=ExtResource("7_rknot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3102756, 4.950176, 0)
+
+[node name="Collectable2" parent="CollectableItem" unique_id=1935538043 instance=ExtResource("7_rknot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.3834605, 4.950176, 0)
+
+[node name="Collectable3" parent="CollectableItem" unique_id=906855509 instance=ExtResource("7_rknot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.993933, 12.9265785, 0)
+
+[node name="Collectable4" parent="CollectableItem" unique_id=1598344844 instance=ExtResource("7_rknot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.067118, 12.9265785, 0)
+
+[node name="Collectable5" parent="CollectableItem" unique_id=839600275 instance=ExtResource("7_rknot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.23941, 12.856871, 0)
+
+[node name="Collectable6" parent="CollectableItem" unique_id=318649256 instance=ExtResource("7_rknot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.312595, 12.856871, 0)
+
+[node name="UI" parent="." unique_id=640062532 instance=ExtResource("8_is84y")]
+visible = false
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=45191824]
+
+[node name="PanelContainer" type="PanelContainer" parent="CanvasLayer" unique_id=1409740073]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_bottom = 203.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_rlls3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/PanelContainer" unique_id=725635818]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_constants/separation = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/PanelContainer/VBoxContainer" unique_id=2065209184]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer" unique_id=2010135886]
+layout_mode = 2
+texture = ExtResource("9_m4ko7")
+expand_mode = 2
+
+[node name="GOLD" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer" unique_id=140582658]
+layout_mode = 2
+text = "Gold"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CanvasLayer/PanelContainer/VBoxContainer" unique_id=399893526]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer2" unique_id=1675322056]
+layout_mode = 2
+texture = ExtResource("9_m4ko7")
+expand_mode = 2
+
+[node name="SILVER" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer2" unique_id=850417056]
+layout_mode = 2
+text = "Silver"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="CanvasLayer/PanelContainer/VBoxContainer" unique_id=1332426683]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer3" unique_id=2065966519]
+layout_mode = 2
+texture = ExtResource("9_m4ko7")
+expand_mode = 2
+
+[node name="BRONZE" type="Label" parent="CanvasLayer/PanelContainer/VBoxContainer/HBoxContainer3" unique_id=581801384]
+layout_mode = 2
+text = "Bronze"
+
+[node name="Cube_Prototype_Large_A2" parent="." unique_id=1695352688 instance=ExtResource("2_4mv74")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.4075618, 2.6218815, 7.8557773)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Cube_Prototype_Large_A2" unique_id=1061529838]
+callback_mode_process = 0
+libraries/ = SubResource("AnimationLibrary_mtxne")
+autoplay = &"rotate"
+
+[node name="Checkpoint" type="Area3D" parent="." unique_id=1675906488]
+script = ExtResource("10_mtxne")
+
+[node name="target_wall_large_A3" parent="Checkpoint" unique_id=1703475524 instance=ExtResource("11_eplna")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.556881, 4.1334, 6.7206516)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Checkpoint" unique_id=705336626]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.687961, 4.5837326, 7.852724)
+shape = SubResource("BoxShape3D_j0tic")
+
+[node name="Wolf-Blender-2_82a" parent="." unique_id=559916068 instance=ExtResource("12_eplna")]
+visible = false
+
+[connection signal="body_entered" from="Death_Area" to="3DGameManager" method="_on_death_area_body_entered"]
+[connection signal="body_entered" from="Checkpoint" to="Checkpoint" method="_on_body_entered"]
+
+[editable path="Wolf-Blender-2_82a"]
