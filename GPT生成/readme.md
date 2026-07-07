@@ -1,11 +1,11 @@
-[回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|/拍攝7/遊戲7/音樂7|<br>
+[回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|/拍攝7/遊戲7/|<br>
 【godot实现米塔字幕效果的思路分享-哔哩哔哩】 https://b23.tv/hTAh9qs
 <br>
 1-2天法則
 |||
 |------|---------|
-|設計|平設8<br>敘事性時尚海報<br>背景圖*10 artstation<br> bili片*10 appledesign<br>md youtube*10 game 設計<br>Camera跑一圈
-<br>去像素|
+|設計|平設8<br>敘事性時尚海報<br>背景圖*10 artstation<br> bili片*10 appledesign<br>md youtube*10 game 設計<br>Camera跑一圈<br>去像素+賽璐璐畫風|
+|音樂|音樂7 https://suno.com/create?wid=default|
 
 一键绑定模型骨骼：www.mixamo.com<br>
 写实风素材：quixel.com<br>
