@@ -5,7 +5,7 @@
 |||
 |------|---------|
 |設計|平設8<br>敘事性時尚海報<br>背景圖*10 artstation<br> bili片*10 appledesign<br>md youtube*10 game 設計<br>Camera跑一圈
-<br>|
+<br>去像素|
 
 一键绑定模型骨骼：www.mixamo.com<br>
 写实风素材：quixel.com<br>
