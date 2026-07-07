@@ -1,5 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|平設8/拍攝7/遊戲7/音樂7|<br>
-idea:敘事性時尚海報
+idea:敘事性時尚海報<br>
+背景圖*10 artstation<br>
 1-2天法則
 
 一键绑定模型骨骼：www.mixamo.com<br>
