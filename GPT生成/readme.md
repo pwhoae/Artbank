@@ -1,5 +1,9 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 <br>
+每日
+```
+md/bili/圖
+```
 1-2天法則
 |||
 |------|---------|
