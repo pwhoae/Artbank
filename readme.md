@@ -41,6 +41,7 @@ Strudel<br>
 |Youtube|Youtube懶人包<br>sponsorblock|
 |BiliBili|黑名單:BiliBlock<br>封廣告:小电视空降助手|
 |thread|影片下載:https://threadsdownloader.com/zh|
+||https://ikigaitool.com/result/Vj9gQALBtx|
 ### 遊戲
 |遊戲|links|
 |------|---------|
