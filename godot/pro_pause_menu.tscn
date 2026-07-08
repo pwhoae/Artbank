@@ -1,0 +1,100 @@
+[gd_scene format=3 uid="uid://cv46ev71a2alx"]
+
+[ext_resource type="Shader" uid="uid://cvcv03jw635c7" path="res://Assets/[6 shader (shader)]/pause_menu.gdshader" id="1_52lux"]
+[ext_resource type="Script" uid="uid://cia783dvavhfa" path="res://3d學習/腳本/pro_pause_menu.gd" id="2_myxmg"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_Background"]
+shader = ExtResource("1_52lux")
+shader_parameter/lod = 0.5
+
+[node name="Pause_menu" type="Control" unique_id=156131347]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_myxmg")
+
+[node name="Background" type="Panel" parent="." unique_id=1739192188]
+material = SubResource("ShaderMaterial_Background")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DarkOverlay" type="ColorRect" parent="." unique_id=102731194]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=205252063]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="CenterContainer" unique_id=1044962686]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CenterContainer/PanelContainer" unique_id=475843922]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer" unique_id=1131684911]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=517557486]
+layout_mode = 2
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=1569212277]
+layout_mode = 2
+
+[node name="ResumeButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=679610644]
+layout_mode = 2
+text = "Resume"
+
+[node name="RestartButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=1540394287]
+layout_mode = 2
+text = "Restart"
+
+[node name="SettingsButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=624472770]
+layout_mode = 2
+text = "Settings"
+
+[node name="QuitButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=693751836]
+layout_mode = 2
+text = "Quit"
+
+[node name="Spacer" type="Control" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=450964708]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="Version" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBox" unique_id=1980485436]
+visible = false
+layout_mode = 2
+text = "v1.0"
+horizontal_alignment = 1
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=230629467]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=654079483]
+
+[connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBox/ResumeButton" to="." method="_on_resume_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBox/RestartButton" to="." method="_on_restart_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBox/SettingsButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="CenterContainer/PanelContainer/MarginContainer/VBox/QuitButton" to="." method="_on_quit_pressed"]
