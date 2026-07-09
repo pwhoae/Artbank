@@ -1,18 +1,32 @@
 ### 面試題目:
 ## 個人
 ```
-1. embedded system (20260709 八達通)
-2. rasberry (20260709 八達通)
-3. ai內容 (20260709 八達通)
+(20260528 DPO) 基於我的問題去出,沒普通話
+1. (Chair) 英文:3個特質
+2. (男1) teamleader沖突 情景題
+3. 婆婆 智方便廚餘
+4. ai 是什麼
+5. 老師學生
+6. ap2落選/入選
+7. security
+
+(20260709 八達通)
+1. embedded system 
+2. rasberry 
+3. ai內容
+
 ```
 ## tech題目
 ```
-1. code 2常用loop  (20260709 八達通)
-2. binary search》time? complexity  (20260709 八達通)
-3. capacitor (20260709 八達通)
-4. try catch  (20260709 八達通)
-5. activity 是什麼  (20260709 八達通)
+(20260709 八達通)
+1. code 2常用loop 
+2. binary search》time? complexity  
+3. capacitor 
+4. try catch  
+5. activity 是什麼
 ```
+
+
 ## **面試:STAR-T 原則**
 
 * **S (Situation) 情境**：描述事情發生的時間、背景、原因，引導面試官進入當時的狀況，亦可適度加入當時的心境（如焦慮、慌張）來引發共鳴。  
