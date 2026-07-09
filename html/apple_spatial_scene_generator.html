@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple 空間場景照片生成器 - Spatial Scene Creator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js (For High Performance WebGL 3D Parallax Shader) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- FontAwesome for Apple-like Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Playfair -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                    },
+                    colors: {
+                        apple: {
+                            blue: '#0071e3',
+                            dark: '#161617',
+                            gray: '#86868b',
+                            light: '#f5f5f7',
+                            glass: 'rgba(255, 255, 255, 0.08)',
+                            glassDark: 'rgba(10, 10, 12, 0.72)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #1e1e24 0%, #0c0c0e 100%);
+            overflow-x: hidden;
+        }
+        
+        /* Premium visionOS Glassmorphism Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Ambient Glow animation background */
+        .ambient-glow-1 {
+            background: radial-gradient(circle, rgba(0, 113, 227, 0.15) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(80px);
+            animation: pulse-ambient 15s infinite alternate;
+        }
+        .ambient-glow-2 {
+            background: radial-gradient(circle, rgba(161, 85, 233, 0.12) 0%, rgba(0,0,0,0) 70%);
+            filter: blur(100px);
+            animation: pulse-ambient-2 20s infinite alternate;
+        }
+        @keyframes pulse-ambient {
+            0% { transform: translate(-10%, -10%) scale(1); }
+            100% { transform: translate(10%, 10%) scale(1.2); }
+        }
+        @keyframes pulse-ambient-2 {
+            0% { transform: translate(10%, 10%) scale(1.2); }
+            100% { transform: translate(-10%, -10%) scale(0.9); }
+        }
+        
+        /* Toggle Switch styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            background-color: #0071e3;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: rgba(0, 113, 227, 0.3);
+        }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen relative flex flex-col justify-between overflow-y-auto">
+
+    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 left-1/4 w-[600px] h-[600px] ambient-glow-1"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] ambient-glow-2"></div>
+    </div>
+
+    <!-- UI Notification Toast -->
+    <div id="toast" class="fixed top-6 right-6 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 ease-out bg-apple-glassDark border border-white/10 backdrop-blur-xl px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-apple-blue/20 flex items-center justify-center text-apple-blue">
+            <i id="toast-icon" class="fas fa-info"></i>
+        </div>
+        <div>
+            <p id="toast-text" class="text-sm font-medium text-white">通知訊息</p>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="relative z-10 w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-white/5 backdrop-blur-md bg-black/10">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-apple-blue to-purple-600 flex items-center justify-center shadow-lg shadow-apple-blue/20">
+                <i class="fa-solid fa-cube text-white text-xl animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+                    Apple Spatial Scene 空間場景
+                </h1>
+                <p class="text-[10px] text-apple-gray font-medium uppercase tracking-widest">Vision Pro 3D Simulator</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="#quickstart" class="text-xs text-apple-gray hover:text-white transition-colors flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+                <i class="far fa-question-circle"></i> 操作指南
+            </a>
+            <span class="text-[10px] bg-apple-blue/20 text-apple-blue border border-apple-blue/30 font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                V2.5 Immersive
+            </span>
+        </div>
+    </header>
+
+    <!-- MAIN IMMERSIVE INTERFACE -->
+    <main class="relative z-10 w-full max-w-7xl mx-auto px-4 py-6 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT CONTROL PANEL (5 columns) -->
+        <section class="lg:col-span-5 flex flex-col gap-5 bg-apple-glassDark/40 border border-white/10 backdrop-blur-2xl rounded-3xl p-5 shadow-2xl h-[calc(100vh-140px)] min-h-[600px] overflow-y-auto">
+            
+            <!-- Upload Container -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-apple-gray tracking-wider uppercase">1. 上傳來源圖片</label>
+                <div class="relative group cursor-pointer transition-all duration-300">
+                    <input type="file" id="image-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer">
+                    <div id="dropzone" class="border-2 border-dashed border-white/15 group-hover:border-apple-blue/50 rounded-2xl p-6 text-center transition-all bg-white/[0.02] group-hover:bg-apple-blue/[0.02]">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-apple-gray group-hover:text-apple-blue mb-2 transition-colors"></i>
+                        <h3 class="text-sm font-semibold text-white group-hover:text-apple-blue transition-colors">點擊或拖曳圖片至此</h3>
+                        <p class="text-xs text-apple-gray mt-1">支援 PNG, JPG (建議 16:9 或 4:3 比例)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Depth Map Generation Tools -->
+            <div class="flex flex-col gap-3 pt-3 border-t border-white/5">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-semibold text-apple-gray tracking-wider uppercase">2. 空間深度圖生成</label>
+                    <span id="depth-status" class="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-md border border-green-500/20 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> 智能預置就緒
+                    </span>
+                </div>
+                
+                <!-- Quick AI/Algorithm Heuristics Presets -->
+                <div class="grid grid-cols-4 gap-2">
+                    <button id="preset-portrait" class="depth-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-apple-blue/20 hover:border-apple-blue/30 transition-all group" title="適合人物或單一主體在中心">
+                        <i class="fa-solid fa-circle-user text-lg text-apple-gray group-hover:text-apple-blue mb-1"></i>
+                        <span class="text-[10px] text-white">人像(放射)</span>
+                    </button>
+                    <button id="preset-landscape" class="depth-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-apple-blue/20 hover:border-apple-blue/30 transition-all group" title="適合地平線、風景、下近上遠">
+                        <i class="fa-solid fa-mountain-sun text-lg text-apple-gray group-hover:text-apple-blue mb-1"></i>
+                        <span class="text-[10px] text-white">風景(垂直)</span>
+                    </button>
+                    <button id="preset-tunnel" class="depth-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-apple-blue/20 hover:border-apple-blue/30 transition-all group" title="適合走廊、室內、縱深場景">
+                        <i class="fa-solid fa-circle-nodes text-lg text-apple-gray group-hover:text-apple-blue mb-1"></i>
+                        <span class="text-[10px] text-white">通道(向心)</span>
+                    </button>
+                    <button id="preset-luminance" class="depth-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-apple-blue/20 hover:border-apple-blue/30 transition-all group" title="亮部為前景，暗部為背景">
+                        <i class="fa-solid fa-wand-magic-sparkles text-lg text-apple-gray group-hover:text-apple-blue mb-1"></i>
+                        <span class="text-[10px] text-white">亮度轉深度</span>
+                    </button>
+                </div>
+
+                <!-- Custom Depth Painting Tool -->
+                <div class="bg-white/[0.03] border border-white/5 rounded-2xl p-3 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-paintbrush text-apple-blue"></i> 手動深度繪製筆刷
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-apple-gray">模式:</span>
+                            <button id="brush-toggle-btn" class="text-[10px] bg-white/10 hover:bg-white/20 text-white font-medium px-2 py-0.5 rounded-md border border-white/5 transition-all">
+                                進入繪圖模式
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Brush settings (Only visible when drawing active) -->
+                    <div id="brush-controls" class="hidden flex flex-col gap-2 pt-2 border-t border-white/5">
+                        <div class="flex justify-between items-center text-[11px] text-apple-gray">
+                            <span>深度灰階值 (黑=遠, 白=近)</span>
+                            <span id="brush-color-val" class="text-white font-semibold">128 (中深度)</span>
+                        </div>
+                        <input type="range" id="brush-color" min="0" max="255" value="128" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-apple-blue">
+                        <div class="flex justify-between items-center text-[11px] pt-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-black border border-white/20"></span>
+                                <span class="text-apple-gray">背景 (遠)</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-white"></span>
+                                <span class="text-apple-gray">前景 (近)</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-2">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-[11px] text-apple-gray">
+                                    <span>筆刷大小</span>
+                                    <span id="brush-size-val">40px</span>
+                                </div>
+                                <input type="range" id="brush-size" min="5" max="150" value="40" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-apple-blue">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between text-[11px] text-apple-gray">
+                                    <span>筆刷羽化</span>
+                                    <span id="brush-hardness-val">50%</span>
+                                </div>
+                                <input type="range" id="brush-hardness" min="0" max="100" value="50" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-apple-blue">
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-2">
+                            <button id="btn-clear-depth" class="flex-1 text-[11px] bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium py-1.5 rounded-lg border border-red-500/20 transition-all flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-trash-can"></i> 清空重置
+                            </button>
+                            <button id="btn-invert-depth" class="flex-1 text-[11px] bg-white/5 hover:bg-white/10 text-white font-medium py-1.5 rounded-lg border border-white/15 transition-all flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-circle-half-stroke"></i> 反轉深度
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Depth Map Upload -->
+                <div class="flex justify-between items-center bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2">
+                    <span class="text-[11px] text-apple-gray flex items-center gap-1.5">
+                        <i class="fa-regular fa-file-image"></i> 已有自備深度圖？
+                    </span>
+                    <div class="relative cursor-pointer">
+                        <input type="file" id="depth-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <span class="text-[10px] bg-white/10 hover:bg-white/15 text-white font-medium px-2 py-1 rounded-md border border-white/5 transition-all">
+                            上傳深度圖
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parallax and Spatial Settings -->
+            <div class="flex flex-col gap-3 pt-3 border-t border-white/5">
+                <label class="text-xs font-semibold text-apple-gray tracking-wider uppercase">3. 空間立體設定</label>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between text-xs text-apple-gray">
+                            <span>立體強度 (位移)</span>
+                            <span id="val-depth-strength" class="text-white font-semibold">1.5</span>
+                        </div>
+                        <input type="range" id="input-depth-strength" min="0.1" max="5.0" step="0.1" value="1.5" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-apple-blue">
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between text-xs text-apple-gray">
+                            <span>相機聚焦平面</span>
+                            <span id="val-focus" class="text-white font-semibold">0.5</span>
+                        </div>
+                        <input type="range" id="input-focus" min="0.0" max="1.0" step="0.05" value="0.5" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-apple-blue">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <span class="text-xs text-apple-gray flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic"></i> 自動微幅呼吸搖擺 (Wiggle)
+                    </span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="auto-wiggle" id="auto-wiggle" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-transparent appearance-none cursor-pointer transition-all duration-300 right-4"/>
+                        <label for="auto-wiggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-white/10 cursor-pointer"></label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[11px] text-apple-gray">自動搖擺速度</span>
+                        <input type="range" id="wiggle-speed" min="0.5" max="4.0" step="0.1" value="1.5" class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-apple-blue">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[11px] text-apple-gray">搖擺軌跡</span>
+                        <select id="wiggle-pattern" class="bg-black/40 border border-white/15 text-white text-[11px] rounded-lg px-2 py-1 focus:outline-none focus:border-apple-blue">
+                            <option value="horizontal">水平橫移</option>
+                            <option value="circle">圓形盤旋</option>
+                            <option value="figure8">無限形 (8 字)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spatial Modes & Rendering Actions -->
+            <div class="flex flex-col gap-2 pt-3 border-t border-white/5 mt-auto">
+                <label class="text-xs font-semibold text-apple-gray tracking-wider uppercase">4. 空間呈現模式</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="mode-parallax" class="mode-btn py-2 px-1 rounded-xl border border-apple-blue bg-apple-blue/10 text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                        <i class="fa-solid fa-glasses"></i> 3D 空間視差
+                    </button>
+                    <button id="mode-anaglyph" class="mode-btn py-2 px-1 rounded-xl border border-white/5 bg-white/5 text-apple-gray hover:text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                        <i class="fa-solid fa-circle-half-stroke"></i> 紅藍 3D 立體
+                    </button>
+                    <button id="mode-sbs" class="mode-btn py-2 px-1 rounded-xl border border-white/5 bg-white/5 text-apple-gray hover:text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all">
+                        <i class="fa-solid fa-cubes"></i> 左右雙眼 (SBS)
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT RENDER VIEWPORT (7 columns) -->
+        <section class="lg:col-span-7 flex flex-col gap-4 h-[calc(100vh-140px)] min-h-[600px]">
+            
+            <!-- Immersive Vision Pro Frame -->
+            <div class="flex-grow bg-apple-glassDark/35 border border-white/10 backdrop-blur-2xl rounded-3xl p-4 shadow-2xl relative flex flex-col items-center justify-center overflow-hidden group">
+                
+                <!-- Vision Pro Volumetric Header Bezel -->
+                <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-30 pointer-events-none">
+                    <div class="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
+                        <span class="w-2 h-2 rounded-full bg-apple-blue animate-ping"></span>
+                        <span id="current-view-tag" class="text-[10px] font-semibold text-white tracking-wider uppercase">3D Parallax Spatial Mode</span>
+                    </div>
+                    
+                    <!-- View toggle overlays (Show depth layer or original) -->
+                    <div class="flex gap-2 pointer-events-auto">
+                        <button id="view-original-toggle" class="bg-black/40 hover:bg-black/60 backdrop-blur-md text-apple-gray hover:text-white text-[10px] font-semibold px-3 py-1.5 rounded-full border border-white/5 transition-all">
+                            檢視原圖
+                        </button>
+                        <button id="view-depth-toggle" class="bg-black/40 hover:bg-black/60 backdrop-blur-md text-apple-gray hover:text-white text-[10px] font-semibold px-3 py-1.5 rounded-full border border-white/5 transition-all">
+                            檢視深度圖
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main ThreeJS/Depth Canvas Wrapper -->
+                <div id="canvas-container" class="relative w-full h-full rounded-2xl overflow-hidden flex items-center justify-center cursor-crosshair">
+                    
+                    <!-- WebGL Parallax Render Target -->
+                    <div id="webgl-container" class="absolute inset-0 w-full h-full"></div>
+                    
+                    <!-- Painting Depth Overlay Canvas -->
+                    <canvas id="depth-painting-canvas" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-0 z-20 transition-opacity duration-300"></canvas>
+                    
+                    <!-- Setup State / Empty State Placeholder -->
+                    <div id="viewport-placeholder" class="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8 z-30 transition-all duration-500">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-apple-blue to-purple-600 flex items-center justify-center text-3xl text-white mb-4 shadow-lg shadow-apple-blue/20">
+                            <i class="fa-solid fa-photo-film"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">上傳照片以生成「空間場景」</h3>
+                        <p class="text-sm text-apple-gray max-w-md">
+                            本工具將生成擬真的 visionOS 3D 空間立體照。你可以自由繪製深度、傾斜畫面、或匯出成多種 3D 模式。
+                        </p>
+                        <button onclick="document.getElementById('image-upload').click();" class="mt-5 px-5 py-2.5 bg-apple-blue hover:bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg transition-all">
+                            <i class="fa-solid fa-plus mr-1.5"></i> 上傳圖片開始體驗
+                        </button>
+                    </div>
+
+                    <!-- Holographic Glow & Gyro tilt instruction overlay -->
+                    <div id="interactive-hint" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md border border-white/5 text-[10px] text-apple-gray px-4 py-1.5 rounded-full flex items-center gap-1.5 z-30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <i class="fa-solid fa-computer-mouse animate-bounce"></i> 滑鼠在畫面中移動可產生立體偏轉，宛如透視 Vision Pro 視窗
+                    </div>
+
+                    <!-- Virtual Reflection Line for Vision Pro Glass Effect -->
+                    <div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/[0.03] to-white/0 pointer-events-none z-10"></div>
+                </div>
+
+                <!-- Vision Pro Window Control Dot -->
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full shadow-inner z-20"></div>
+
+            </div>
+
+            <!-- EXPORTS BAR -->
+            <div class="bg-apple-glassDark/35 border border-white/10 backdrop-blur-2xl rounded-3xl p-4 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-white">匯出高階立體照片 / 影片：</span>
+                    <span class="text-[10px] text-apple-gray">支持本地高畫質算圖</span>
+                </div>
+                
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button id="btn-export-sbs" class="export-btn px-4 py-2 bg-gradient-to-r from-apple-blue to-blue-600 hover:opacity-90 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 shadow-md shadow-apple-blue/15 transition-all">
+                        <i class="fa-solid fa-download"></i> 匯出左右 SBS 立體照
+                    </button>
+                    <button id="btn-export-anaglyph" class="export-btn px-4 py-2 bg-white/10 hover:bg-white/15 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5 border border-white/10 transition-all">
+                        <i class="fa-solid fa-image"></i> 匯出紅藍 3D 照
+                    </button>
+                    <button id="btn-record-video" class="export-btn px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-300 font-semibold text-xs rounded-xl flex items-center gap-1.5 border border-red-500/30 transition-all">
+                        <i id="record-icon" class="fa-solid fa-circle-play text-red-500 animate-pulse"></i> <span id="record-text">錄製 3D 空間短片 (WebM)</span>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FLOATING HELP/TUTORIAL SECTION -->
+    <section id="quickstart" class="relative z-10 w-full max-w-7xl mx-auto px-4 py-6 border-t border-white/5 bg-black/10 mt-8">
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wider mb-4"><i class="fa-regular fa-compass text-apple-blue"></i> 空間照片製作指南：</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs text-apple-gray">
+            <div class="flex gap-2">
+                <div class="w-6 h-6 rounded-full bg-apple-blue/20 text-apple-blue font-bold flex items-center justify-center shrink-0">1</div>
+                <div>
+                    <h4 class="text-white font-medium mb-1">上傳基準圖片</h4>
+                    <p>拖曳你最喜歡的照片到編輯器中，系統會立即對齊畫布大小，進入空間渲染管線。</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div class="w-6 h-6 rounded-full bg-apple-blue/20 text-apple-blue font-bold flex items-center justify-center shrink-0">2</div>
+                <div>
+                    <h4 class="text-white font-medium mb-1">自訂或繪製深度</h4>
+                    <p>可以使用快速預設深度圖，亦可開啟「繪製筆刷」在人物、前景塗白色，背景塗黑色。灰階深淺代表前景到背景的距離，繪製時 3D 效果會同步即時重算！</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div class="w-6 h-6 rounded-full bg-apple-blue/20 text-apple-blue font-bold flex items-center justify-center shrink-0">3</div>
+                <div>
+                    <h4 class="text-white font-medium mb-1">傾斜互動體驗</h4>
+                    <p>滑鼠滑入畫面可立即操控立體動差，也可開啟「自動微幅呼吸搖擺」體驗立體的深邃。可自由調整立體強度與聚焦。</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div class="w-6 h-6 rounded-full bg-apple-blue/20 text-apple-blue font-bold flex items-center justify-center shrink-0">4</div>
+                <div>
+                    <h4 class="text-white font-medium mb-1">多格式輸出分享</h4>
+                    <p>匯出成左右眼立體 SBS 照片（可用 VR 設備裸眼看），或是錄製一段動態 3D 微幅搖擺影片，發佈到社交平台。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="relative z-10 text-center py-6 border-t border-white/5 text-[11px] text-apple-gray">
+        <p>© 2026 Apple Spatial Scene Platform. Designed for spatial experiences & immersive computing.</p>
+    </footer>
+
+    <!-- RAW SCRIPT IMPLEMENTATION (Three.js WebGL & Logical Matrix) -->
+    <script>
+        // Global State Variables
+        let baseImage = null;
+        let isImageLoaded = false;
+        
+        // Canvas Elements
+        const sourceCanvas = document.createElement('canvas'); // Keep original scale image
+        const depthCanvas = document.createElement('canvas'); // Store generated depth map
+        const depthCtx = depthCanvas.getContext('2d');
+        
+        // Drawing tools states
+        let isDrawingMode = false;
+        let isDrawing = false;
+        let brushColor = 128; // default middle gray
+        let brushSize = 40;
+        let brushHardness = 0.5; // 0 (soft) to 1 (hard)
+        let drawHistory = [];
+
+        // Three.js State Variables
+        let renderer, scene, camera, planeMesh;
+        let imageTexture, depthTexture;
+        let customShaderMaterial;
+        let parallaxOffset = { x: 0, y: 0, targetX: 0, targetY: 0 };
+        let settings = {
+            depthStrength: 1.5,
+            focus: 0.5,
+            autoWiggle: true,
+            wiggleSpeed: 1.5,
+            wigglePattern: 'horizontal',
+            activeMode: 'parallax' // 'parallax', 'anaglyph', 'sbs'
+        };
+
+        // UI Element Selection
+        const imageUpload = document.getElementById('image-upload');
+        const depthUpload = document.getElementById('depth-upload');
+        const dropzone = document.getElementById('dropzone');
+        const viewportPlaceholder = document.getElementById('viewport-placeholder');
+        const canvasContainer = document.getElementById('canvas-container');
+        const webglContainer = document.getElementById('webgl-container');
+        const depthPaintingCanvas = document.getElementById('depth-painting-canvas');
+        const depthPaintingCtx = depthPaintingCanvas.getContext('2d');
+        
+        // Controls selectors
+        const brushToggleBtn = document.getElementById('brush-toggle-btn');
+        const brushControls = document.getElementById('brush-controls');
+        const brushColorInput = document.getElementById('brush-color');
+        const brushColorVal = document.getElementById('brush-color-val');
+        const brushSizeInput = document.getElementById('brush-size');
+        const brushSizeVal = document.getElementById('brush-size-val');
+        const brushHardnessInput = document.getElementById('brush-hardness');
+        const brushHardnessVal = document.getElementById('brush-hardness-val');
+        const clearDepthBtn = document.getElementById('btn-clear-depth');
+        const invertDepthBtn = document.getElementById('btn-invert-depth');
+        
+        const inputDepthStrength = document.getElementById('input-depth-strength');
+        const valDepthStrength = document.getElementById('val-depth-strength');
+        const inputFocus = document.getElementById('input-focus');
+        const valFocus = document.getElementById('val-focus');
+        const autoWiggleCheckbox = document.getElementById('auto-wiggle');
+        const wiggleSpeedInput = document.getElementById('wiggle-speed');
+        const wigglePatternSelect = document.getElementById('wiggle-pattern');
+        
+        const modeParallax = document.getElementById('mode-parallax');
+        const modeAnaglyph = document.getElementById('mode-anaglyph');
+        const modeSbs = document.getElementById('mode-sbs');
+        const currentViewTag = document.getElementById('current-view-tag');
+        
+        const viewOriginalToggle = document.getElementById('view-original-toggle');
+        const viewDepthToggle = document.getElementById('view-depth-toggle');
+
+        function showToast(text, icon = 'fa-info-circle') {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toastText.textContent = text;
+            toastIcon.className = `fas ${icon}`;
+            
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateY(-100px)';
+                toast.style.opacity = '0';
+            }, 3000);
+        }
+
+        // WebGL Vertex Shader
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 1.0);
+            }
+        `;
+
+        // WebGL Fragment Shader for Displacement-based Parallax
+        const parallaxFragmentShader = `
+            varying vec2 vUv;
+            uniform sampler2D u_image;
+            uniform sampler2D u_depth;
+            uniform vec2 u_offset;
+            uniform float u_depthStrength;
+            uniform float u_focus;
+            
+            void main() {
+                // Fetch Depth Map Grayscale Value (Normalized)
+                float depthVal = texture2D(u_depth, vUv).r;
+                
+                // Adjust displacement shift by focus level.
+                // Near layers (depthVal > focus) move opposite to far layers (depthVal < focus).
+                float displacement = (depthVal - u_focus);
+                
+                // Slightly zoom/compress UV coordinate plane margin to avoid stretching boundaries
+                vec2 adjustedUv = vUv * 0.95 + 0.025;
+                vec2 finalUv = adjustedUv + u_offset * displacement * u_depthStrength * 0.03;
+                
+                // Guardrail clamping
+                finalUv = clamp(finalUv, 0.001, 0.999);
+                
+                gl_FragColor = texture2D(u_image, finalUv);
+            }
+        `;
+
+        // WebGL Fragment Shader for Anaglyph 3D Stereo render
+        const anaglyphFragmentShader = `
+            varying vec2 vUv;
+            uniform sampler2D u_image;
+            uniform sampler2D u_depth;
+            uniform float u_depthStrength;
+            uniform float u_focus;
+            
+            void main() {
+                vec2 adjustedUv = vUv * 0.95 + 0.025;
+                
+                // Left Eye Perspective UV offset
+                float leftDepth = texture2D(u_depth, adjustedUv - vec2(0.015, 0.0)).r;
+                vec2 leftUv = adjustedUv - vec2(0.012, 0.0) * (leftDepth - u_focus) * u_depthStrength;
+                leftUv = clamp(leftUv, 0.001, 0.999);
+                vec4 leftColor = texture2D(u_image, leftUv);
+                
+                // Right Eye Perspective UV offset
+                float rightDepth = texture2D(u_depth, adjustedUv + vec2(0.015, 0.0)).r;
+                vec2 rightUv = adjustedUv + vec2(0.012, 0.0) * (rightDepth - u_focus) * u_depthStrength;
+                rightUv = clamp(rightUv, 0.001, 0.999);
+                vec4 rightColor = texture2D(u_image, rightUv);
+                
+                // Mix Anaglyph Red-Cyan spectrum
+                // Red Channel from Left Eye, Blue & Green from Right Eye
+                gl_FragColor = vec4(leftColor.r, rightColor.g, rightColor.b, 1.0);
+            }
+        `;
+
+        // WebGL Fragment Shader for Side-by-Side (SBS) stereogram display
+        const sbsFragmentShader = `
+            varying vec2 vUv;
+            uniform sampler2D u_image;
+            uniform sampler2D u_depth;
+            uniform float u_depthStrength;
+            uniform float u_focus;
+            
+            void main() {
+                // Split UV viewport horizontally in middle
+                if (vUv.x < 0.5) {
+                    // Left Eye Viewport (Map [0, 0.5] -> [0.05, 0.95] for safe visual display)
+                    vec2 subUv = vec2(vUv.x * 2.0, vUv.y);
+                    vec2 adjustedUv = subUv * 0.92 + 0.04;
+                    float depth = texture2D(u_depth, adjustedUv).r;
+                    vec2 shiftedUv = adjustedUv - vec2(0.015, 0.0) * (depth - u_focus) * u_depthStrength;
+                    shiftedUv = clamp(shiftedUv, 0.001, 0.999);
+                    gl_FragColor = texture2D(u_image, shiftedUv);
+                } else {
+                    // Right Eye Viewport (Map [0.5, 1.0] -> [0.05, 0.95] for safe visual display)
+                    vec2 subUv = vec2((vUv.x - 0.5) * 2.0, vUv.y);
+                    vec2 adjustedUv = subUv * 0.92 + 0.04;
+                    float depth = texture2D(u_depth, adjustedUv).r;
+                    vec2 shiftedUv = adjustedUv + vec2(0.015, 0.0) * (depth - u_focus) * u_depthStrength;
+                    shiftedUv = clamp(shiftedUv, 0.001, 0.999);
+                    gl_FragColor = texture2D(u_image, shiftedUv);
+                }
+            }
+        `;
+
+        // Initialize file dropzone & listeners
+        imageUpload.addEventListener('change', handleImageUpload);
+        depthUpload.addEventListener('change', handleDepthUpload);
+        
+        // Drag and drop event listeners
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('border-apple-blue', 'bg-apple-blue/5');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-apple-blue', 'bg-apple-blue/5');
+            }, false);
+        });
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                imageUpload.files = files;
+                handleImageUpload({ target: { files: files } });
+            }
+        });
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                baseImage = new Image();
+                baseImage.onload = function() {
+                    setupWorkspace();
+                };
+                baseImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleDepthUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!isImageLoaded) {
+                showToast("請先上傳原始圖片！", "fa-exclamation-triangle");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // Draw custom depth image into local depth map system
+                    depthCtx.drawImage(img, 0, 0, depthCanvas.width, depthCanvas.height);
+                    updatePaintingCanvasFromDepth();
+                    updateThreeDepthTexture();
+                    showToast("深度圖上傳成功！", "fa-check-circle");
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setupWorkspace() {
+            // Unify image dimensions and resize canvases internally
+            const width = baseImage.naturalWidth;
+            const height = baseImage.naturalHeight;
+            
+            sourceCanvas.width = width;
+            sourceCanvas.height = height;
+            const srcCtx = sourceCanvas.getContext('2d');
+            srcCtx.drawImage(baseImage, 0, 0);
+            
+            depthCanvas.width = width;
+            depthCanvas.height = height;
+            
+            // Set up local overlay painting size match
+            depthPaintingCanvas.width = width;
+            depthPaintingCanvas.height = height;
+            
+            // Initialize default depth map as subtle radial vignette (human-eye centric default)
+            generateRadialDepth();
+            
+            // Initialize Three.js WebGL rendering viewport
+            initThreeJS();
+            
+            // Toggle view visibility states
+            viewportPlaceholder.classList.add('opacity-0', 'pointer-events-none');
+            isImageLoaded = true;
+            
+            showToast("圖片上傳完成，開始生成 3D 空間照片！", "fa-sparkles");
+        }
+
+        function initThreeJS() {
+            // Clean up existing container elements
+            webglContainer.innerHTML = '';
+            
+            // Setup ThreeJS Viewport Boundaries
+            const width = webglContainer.clientWidth;
+            const height = webglContainer.clientHeight;
+            
+            scene = new THREE.Scene();
+            
+            // Simple Orthographic Camera for pixel-perfect planes
+            camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+            camera.position.z = 1;
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            webglContainer.appendChild(renderer.domElement);
+            
+            // Texturize canvases directly
+            imageTexture = new THREE.CanvasTexture(sourceCanvas);
+            imageTexture.minFilter = THREE.LinearFilter;
+            imageTexture.magFilter = THREE.LinearFilter;
+            
+            depthTexture = new THREE.CanvasTexture(depthCanvas);
+            depthTexture.minFilter = THREE.LinearFilter;
+            depthTexture.magFilter = THREE.LinearFilter;
+            
+            // Create Core displacement shader material
+            customShaderMaterial = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: getShaderByMode(settings.activeMode),
+                uniforms: {
+                    u_image: { value: imageTexture },
+                    u_depth: { value: depthTexture },
+                    u_offset: { value: new THREE.Vector2(0, 0) },
+                    u_depthStrength: { value: settings.depthStrength },
+                    u_focus: { value: settings.focus }
+                },
+                depthWrite: false,
+                depthTest: false
+            });
+            
+            // Cover coordinate Plane inside view
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            planeMesh = new THREE.Mesh(geometry, customShaderMaterial);
+            scene.add(planeMesh);
+            
+            // Fit aspect ratio cleanly
+            adjustThreePlaneAspect();
+            
+            // Wire listeners
+            window.addEventListener('resize', onWindowResize);
+            setupInteractiveMoveListeners();
+        }
+
+        function getShaderByMode(mode) {
+            if (mode === 'parallax') return parallaxFragmentShader;
+            if (mode === 'anaglyph') return anaglyphFragmentShader;
+            if (mode === 'sbs') return sbsFragmentShader;
+            return parallaxFragmentShader;
+        }
+
+        function adjustThreePlaneAspect() {
+            if (!planeMesh || !baseImage) return;
+            
+            const containerWidth = webglContainer.clientWidth;
+            const containerHeight = webglContainer.clientHeight;
+            
+            const imgAspect = baseImage.naturalWidth / baseImage.naturalHeight;
+            const containerAspect = containerWidth / containerHeight;
+            
+            if (imgAspect > containerAspect) {
+                // Image wider than container
+                planeMesh.scale.set(1, containerAspect / imgAspect, 1);
+            } else {
+                // Container wider than image
+                planeMesh.scale.set(imgAspect / containerAspect, 1, 1);
+            }
+        }
+
+        function onWindowResize() {
+            if (!renderer) return;
+            const width = webglContainer.clientWidth;
+            const height = webglContainer.clientHeight;
+            renderer.setSize(width, height);
+            adjustThreePlaneAspect();
+        }
+
+        function updateThreeDepthTexture() {
+            if (depthTexture) {
+                depthTexture.needsUpdate = true;
+            }
+        }
+
+        // Generate Preset: Portrait (Radial Gradient)
+        function generateRadialDepth() {
+            const w = depthCanvas.width;
+            const h = depthCanvas.height;
+            depthCtx.fillStyle = '#000000'; // Fill base deep black (far)
+            depthCtx.fillRect(0, 0, w, h);
+            
+            const grad = depthCtx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h)/1.5);
+            grad.addColorStop(0, 'rgba(255,255,255,1.0)'); // Pure white center foreground
+            grad.addColorStop(0.3, 'rgba(180,180,180,0.8)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)'); // Soft edge falloff
+            
+            depthCtx.fillStyle = grad;
+            depthCtx.fillRect(0, 0, w, h);
+            
+            updatePaintingCanvasFromDepth();
+            updateThreeDepthTexture();
+        }
+
+        // Generate Preset: Landscape (Linear Top-to-Bottom Gradient)
+        function generateLandscapeDepth() {
+            const w = depthCanvas.width;
+            const h = depthCanvas.height;
+            depthCtx.fillStyle = '#000000';
+            depthCtx.fillRect(0, 0, w, h);
+            
+            const grad = depthCtx.createLinearGradient(0, h, 0, 0);
+            grad.addColorStop(0, '#ffffff'); // Ground is very close (white)
+            grad.addColorStop(0.6, '#404040'); // Horizon is mid-depth
+            grad.addColorStop(1, '#000000'); // Sky is infinite far (black)
+            
+            depthCtx.fillStyle = grad;
+            depthCtx.fillRect(0, 0, w, h);
+            
+            updatePaintingCanvasFromDepth();
+            updateThreeDepthTexture();
+        }
+
+        // Generate Preset: Tunnel (Depth Ring corridors)
+        function generateTunnelDepth() {
+            const w = depthCanvas.width;
+            const h = depthCanvas.height;
+            depthCtx.fillStyle = '#ffffff'; // Center starts deep
+            depthCtx.fillRect(0, 0, w, h);
+            
+            const grad = depthCtx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h)/2);
+            grad.addColorStop(0, 'rgba(0,0,0,1.0)'); // Dark tunnel exit center
+            grad.addColorStop(0.8, 'rgba(200,200,200,1.0)');
+            grad.addColorStop(1, 'rgba(255,255,255,1.0)'); // Outer walls are very close
+            
+            depthCtx.fillStyle = grad;
+            depthCtx.fillRect(0, 0, w, h);
+            
+            updatePaintingCanvasFromDepth();
+            updateThreeDepthTexture();
+        }
+
+        // Generate Preset: Convert Luminance into Depth map values
+        function generateLuminanceDepth() {
+            if (!baseImage) return;
+            const w = depthCanvas.width;
+            const h = depthCanvas.height;
+            
+            // Read source pixels
+            const imgData = sourceCanvas.getContext('2d').getImageData(0, 0, w, h);
+            const data = imgData.data;
+            
+            const depthData = depthCtx.createImageData(w, h);
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i+1];
+                const b = data[i+2];
+                // Human eye luminance conversion formula
+                const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+                
+                depthData.data[i] = luma;
+                depthData.data[i+1] = luma;
+                depthData.data[i+2] = luma;
+                depthData.data[i+3] = 255;
+            }
+            
+            depthCtx.putImageData(depthData, 0, 0);
+            updatePaintingCanvasFromDepth();
+            updateThreeDepthTexture();
+        }
+
+        // Sync drawing layer overlay with core depth storage representation
+        function updatePaintingCanvasFromDepth() {
+            depthPaintingCtx.drawImage(depthCanvas, 0, 0, depthPaintingCanvas.width, depthPaintingCanvas.height);
+        }
+
+        // Set Brush Toggle Actions
+        brushToggleBtn.addEventListener('click', () => {
+            if (!isImageLoaded) {
+                showToast("請上傳圖片後再使用畫筆！", "fa-exclamation-triangle");
+                return;
+            }
+            isDrawingMode = !isDrawingMode;
+            if (isDrawingMode) {
+                brushToggleBtn.textContent = "完成並套用";
+                brushToggleBtn.classList.remove('bg-white/10');
+                brushToggleBtn.classList.add('bg-apple-blue', 'hover:bg-blue-600');
+                brushControls.classList.remove('hidden');
+                depthPaintingCanvas.classList.remove('pointer-events-none', 'opacity-0');
+                depthPaintingCanvas.classList.add('pointer-events-auto', 'opacity-70'); // transparency preview
+                showToast("已開啟深度畫筆！塗白色代表越近、塗黑色越遠。3D效果將即時更新！", "fa-paintbrush");
+            } else {
+                brushToggleBtn.textContent = "進入繪圖模式";
+                brushToggleBtn.classList.remove('bg-apple-blue', 'hover:bg-blue-600');
+                brushToggleBtn.classList.add('bg-white/10');
+                brushControls.classList.add('hidden');
+                depthPaintingCanvas.classList.add('pointer-events-none', 'opacity-0');
+                depthPaintingCanvas.classList.remove('pointer-events-auto', 'opacity-70');
+                showToast("已保存手動繪製的空間深度。", "fa-save");
+            }
+        });
+
+        // Brush slider readouts
+        brushColorInput.addEventListener('input', (e) => {
+            brushColor = parseInt(e.target.value);
+            brushColorVal.textContent = `${brushColor} (${brushColor > 180 ? '近' : brushColor < 80 ? '遠' : '中深度'})`;
+        });
+        brushSizeInput.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            brushSizeVal.textContent = `${brushSize}px`;
+        });
+        brushHardnessInput.addEventListener('input', (e) => {
+            brushHardness = parseFloat(e.target.value) / 100;
+            brushHardnessVal.textContent = `${Math.round(brushHardness * 100)}%`;
+        });
+
+        // Clear Depth utility
+        clearDepthBtn.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            depthCtx.fillStyle = '#000000'; // Reset back to endless infinity
+            depthCtx.fillRect(0, 0, depthCanvas.width, depthCanvas.height);
+            updatePaintingCanvasFromDepth();
+            updateThreeDepthTexture();
+            showToast("已重設深度圖為全黑。", "fa-trash-can");
+        });
+
+        // Invert Depth utility
+        invertDepthBtn.addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            const w = depthCanvas.width;
+            const h = depthCanvas.height;
+            const imgData = depthCtx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = 255 - data[i];       // R
+                data[i+1] = 255 - data[i+1];   // G
+                data[i+2] = 255 - data[i+2];   // B
+            }
+            depthCtx.putImageData(imgData, 0, 0);
+            updatePaintingCanvasFromDepth();
+            updateThreeDepthTexture();
+            showToast("深度圖已反轉！", "fa-arrows-rotate");
+        });
+
+        function getCanvasMouseCoords(canvas, evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Map viewport coordinates proportionally to real canvas resolutions
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (evt.clientX - rect.left) * scaleX,
+                y: (evt.clientY - rect.top) * scaleY
+            };
+        }
+
+        // Register Paint Actions
+        depthPaintingCanvas.addEventListener('mousedown', (e) => {
+            if (!isDrawingMode) return;
+            isDrawing = true;
+            paintStroke(e);
+        });
+        depthPaintingCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawingMode || !isDrawing) return;
+            paintStroke(e);
+        });
+        window.addEventListener('mouseup', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                // Once stroke finishes, copy result onto core spatial texture buffer mapping
+                depthCtx.drawImage(depthPaintingCanvas, 0, 0, depthCanvas.width, depthCanvas.height);
+                updateThreeDepthTexture();
+            }
+        });
+
+        // Touch event handling for iPad and Mobile drawing compatibility
+        depthPaintingCanvas.addEventListener('touchstart', (e) => {
+            if (!isDrawingMode) return;
+            e.preventDefault();
+            isDrawing = true;
+            paintStroke(e.touches[0]);
+        }, {passive: false});
+        depthPaintingCanvas.addEventListener('touchmove', (e) => {
+            if (!isDrawingMode || !isDrawing) return;
+            e.preventDefault();
+            paintStroke(e.touches[0]);
+        }, {passive: false});
+        depthPaintingCanvas.addEventListener('touchend', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                depthCtx.drawImage(depthPaintingCanvas, 0, 0, depthCanvas.width, depthCanvas.height);
+                updateThreeDepthTexture();
+            }
+        });
+
+        function paintStroke(evt) {
+            const coords = getCanvasMouseCoords(depthPaintingCanvas, evt);
+            
+            depthPaintingCtx.save();
+            // Setup brush tip softness using standard canvas gradients
+            const grad = depthPaintingCtx.createRadialGradient(
+                coords.x, coords.y, brushSize * brushHardness * 0.5,
+                coords.x, coords.y, brushSize * 0.5
+            );
+            
+            const colorStr = `rgb(${brushColor}, ${brushColor}, ${brushColor})`;
+            grad.addColorStop(0, colorStr);
+            grad.addColorStop(1, `rgba(${brushColor}, ${brushColor}, ${brushColor}, 0)`);
+            
+            depthPaintingCtx.fillStyle = grad;
+            depthPaintingCtx.beginPath();
+            depthPaintingCtx.arc(coords.x, coords.y, brushSize * 0.5, 0, Math.PI * 2);
+            depthPaintingCtx.fill();
+            depthPaintingCtx.restore();
+        }
+
+        // Bind Depth preset triggers
+        document.getElementById('preset-portrait').addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            generateRadialDepth();
+            showToast("已生成人像(放射)深度漸層。", "fa-circle-user");
+        });
+        document.getElementById('preset-landscape').addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            generateLandscapeDepth();
+            showToast("已生成風景(線性)地平線深度。", "fa-mountain-sun");
+        });
+        document.getElementById('preset-tunnel').addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            generateTunnelDepth();
+            showToast("已生成隧道式深度漸層。", "fa-circle-nodes");
+        });
+        document.getElementById('preset-luminance').addEventListener('click', () => {
+            if (!isImageLoaded) return;
+            generateLuminanceDepth();
+            showToast("已基於圖片亮度重算深度圖。", "fa-wand-magic-sparkles");
+        });
+
+        // Parametric UI adjustments
+        inputDepthStrength.addEventListener('input', (e) => {
+            settings.depthStrength = parseFloat(e.target.value);
+            valDepthStrength.textContent = settings.depthStrength.toFixed(1);
+            if (customShaderMaterial) {
+                customShaderMaterial.uniforms.u_depthStrength.value = settings.depthStrength;
+            }
+        });
+        inputFocus.addEventListener('input', (e) => {
+            settings.focus = parseFloat(e.target.value);
+            valFocus.textContent = settings.focus.toFixed(2);
+            if (customShaderMaterial) {
+                customShaderMaterial.uniforms.u_focus.value = settings.focus;
+            }
+        });
+
+        // Toggle automatic wiggle configs
+        autoWiggleCheckbox.addEventListener('change', (e) => {
+            settings.autoWiggle = e.target.checked;
+        });
+        wiggleSpeedInput.addEventListener('input', (e) => {
+            settings.wiggleSpeed = parseFloat(e.target.value);
+        });
+        wigglePatternSelect.addEventListener('change', (e) => {
+            settings.wigglePattern = e.target.value;
+        });
+
+        // Toggle Viewer Modes
+        function resetModeButtons() {
+            [modeParallax, modeAnaglyph, modeSbs].forEach(btn => {
+                btn.className = "mode-btn py-2 px-1 rounded-xl border border-white/5 bg-white/5 text-apple-gray hover:text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all";
+            });
+        }
+
+        modeParallax.addEventListener('click', () => {
+            settings.activeMode = 'parallax';
+            resetModeButtons();
+            modeParallax.className = "mode-btn py-2 px-1 rounded-xl border border-apple-blue bg-apple-blue/10 text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all";
+            currentViewTag.textContent = "3D Parallax Spatial Mode";
+            if (customShaderMaterial) {
+                customShaderMaterial.fragmentShader = parallaxFragmentShader;
+                customShaderMaterial.needsUpdate = true;
+            }
+        });
+
+        modeAnaglyph.addEventListener('click', () => {
+            settings.activeMode = 'anaglyph';
+            resetModeButtons();
+            modeAnaglyph.className = "mode-btn py-2 px-1 rounded-xl border border-apple-blue bg-apple-blue/10 text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all";
+            currentViewTag.textContent = "Anaglyph 3D 立體模式";
+            if (customShaderMaterial) {
+                customShaderMaterial.fragmentShader = anaglyphFragmentShader;
+                customShaderMaterial.needsUpdate = true;
+            }
+        });
+
+        modeSbs.addEventListener('click', () => {
+            settings.activeMode = 'sbs';
+            resetModeButtons();
+            modeSbs.className = "mode-btn py-2 px-1 rounded-xl border border-apple-blue bg-apple-blue/10 text-white font-medium text-xs flex flex-col items-center justify-center gap-1 transition-all";
+            currentViewTag.textContent = "Side-by-Side (SBS) 左右眼模式";
+            if (customShaderMaterial) {
+                customShaderMaterial.fragmentShader = sbsFragmentShader;
+                customShaderMaterial.needsUpdate = true;
+            }
+        });
+
+        // Fast inspect original image
+        let originalInspActive = false;
+        viewOriginalToggle.addEventListener('mousedown', () => {
+            if (!customShaderMaterial) return;
+            // Inject blank solid depth mapping temporarily
+            originalInspActive = true;
+            customShaderMaterial.uniforms.u_depthStrength.value = 0.0;
+        });
+        const stopOriginalInspect = () => {
+            if (originalInspActive && customShaderMaterial) {
+                originalInspActive = false;
+                customShaderMaterial.uniforms.u_depthStrength.value = settings.depthStrength;
+            }
+        };
+        viewOriginalToggle.addEventListener('mouseup', stopOriginalInspect);
+        viewOriginalToggle.addEventListener('mouseleave', stopOriginalInspect);
+        viewOriginalToggle.addEventListener('touchend', stopOriginalInspect);
+
+        // Fast inspect raw depth map overlay
+        let depthOverlayMesh = null;
+        let depthOverlayActive = false;
+        
+        viewDepthToggle.addEventListener('mousedown', () => {
+            if (!scene || !depthTexture) return;
+            depthOverlayActive = true;
+            
+            // Generate basic mesh that displays depth directly
+            const geom = new THREE.PlaneGeometry(2, 2);
+            const mat = new THREE.MeshBasicMaterial({ map: depthTexture });
+            depthOverlayMesh = new THREE.Mesh(geom, mat);
+            
+            // Align aspect scale
+            const containerWidth = webglContainer.clientWidth;
+            const containerHeight = webglContainer.clientHeight;
+            const imgAspect = baseImage.naturalWidth / baseImage.naturalHeight;
+            const containerAspect = containerWidth / containerHeight;
+            if (imgAspect > containerAspect) {
+                depthOverlayMesh.scale.set(1, containerAspect / imgAspect, 1);
+            } else {
+                depthOverlayMesh.scale.set(imgAspect / containerAspect, 1, 1);
+            }
+            depthOverlayMesh.position.z = 2; // on top
+            
+            scene.add(depthOverlayMesh);
+        });
+        
+        const stopDepthInspect = () => {
+            if (depthOverlayActive && scene && depthOverlayMesh) {
+                scene.remove(depthOverlayMesh);
+                depthOverlayMesh.geometry.dispose();
+                depthOverlayMesh.material.dispose();
+                depthOverlayMesh = null;
+                depthOverlayActive = false;
+            }
+        };
+        viewDepthToggle.addEventListener('mouseup', stopDepthInspect);
+        viewDepthToggle.addEventListener('mouseleave', stopDepthInspect);
+        viewDepthToggle.addEventListener('touchend', stopDepthInspect);
+
+        function setupInteractiveMoveListeners() {
+            const container = canvasContainer;
+            
+            container.addEventListener('mousemove', (e) => {
+                if (isDrawingMode) return;
+                const rect = container.getBoundingClientRect();
+                // Normalized Coordinates (-1 to 1)
+                const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+                
+                // Track relative target displacements
+                parallaxOffset.targetX = x;
+                parallaxOffset.targetY = y;
+            });
+            
+            container.addEventListener('mouseleave', () => {
+                if (isDrawingMode) return;
+                // Return smoothly to center equilibrium point
+                parallaxOffset.targetX = 0;
+                parallaxOffset.targetY = 0;
+            });
+
+            // Gyroscope mobile support
+            window.addEventListener('deviceorientation', (e) => {
+                if (isDrawingMode || !isImageLoaded) return;
+                if (e.beta === null || e.gamma === null) return;
+                
+                // Maps beta/gamma rotations cleanly onto parallax offset vectors
+                // Typically clamp around +/- 20 degrees
+                const gamma = Math.max(-20, Math.min(20, e.gamma)) / 20;
+                const beta = Math.max(-20, Math.min(20, e.beta - 45)) / 20; // assumed 45 deg viewing angle
+                
+                parallaxOffset.targetX = gamma;
+                parallaxOffset.targetY = -beta;
+            });
+        }
+
+        let lastTime = 0;
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+            
+            if (!isImageLoaded || !renderer) return;
+            
+            const delta = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            
+            // Calculate dynamic wiggle offsets if enabled
+            let wiggleX = 0;
+            let wiggleY = 0;
+            
+            if (settings.autoWiggle && !isDrawingMode && !originalInspActive && !depthOverlayActive) {
+                const speedMult = settings.wiggleSpeed * 3;
+                if (settings.wigglePattern === 'horizontal') {
+                    wiggleX = Math.sin(timestamp * 0.001 * speedMult) * 0.5;
+                } else if (settings.wigglePattern === 'circle') {
+                    wiggleX = Math.sin(timestamp * 0.001 * speedMult) * 0.4;
+                    wiggleY = Math.cos(timestamp * 0.001 * speedMult) * 0.4;
+                } else if (settings.wigglePattern === 'figure8') {
+                    wiggleX = Math.sin(timestamp * 0.001 * speedMult) * 0.5;
+                    wiggleY = Math.sin(timestamp * 0.002 * speedMult) * 0.25;
+                }
+            }
+            
+            // Interpolate parallax targets with damping inertia
+            const damping = 0.07;
+            parallaxOffset.x += (parallaxOffset.targetX - parallaxOffset.x) * damping;
+            parallaxOffset.y += (parallaxOffset.targetY - parallaxOffset.y) * damping;
+            
+            // Feed offset sum variables to Shader values
+            if (customShaderMaterial && settings.activeMode === 'parallax') {
+                customShaderMaterial.uniforms.u_offset.value.set(
+                    parallaxOffset.x + wiggleX,
+                    parallaxOffset.y + wiggleY
+                );
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Start standard infinite frames processing immediately upon loading windows
+        window.onload = function() {
+            requestAnimationFrame(animate);
+        };
+
+        
+        // Export: SBS Side-by-Side 立體照片
+        document.getElementById('btn-export-sbs').addEventListener('click', () => {
+            if (!isImageLoaded) {
+                showToast("無可匯出的圖片資源，請先上傳！", "fa-triangle-exclamation");
+                return;
+            }
+            
+            // Set render temporarily to clean SBS mode
+            const prevMode = settings.activeMode;
+            settings.activeMode = 'sbs';
+            customShaderMaterial.fragmentShader = sbsFragmentShader;
+            customShaderMaterial.needsUpdate = true;
+            
+            // Render one immediate frame explicitly
+            renderer.render(scene, camera);
+            
+            // Extract WebGL image stream
+            const dataUrl = renderer.domElement.toDataURL('image/png');
+            
+            // Auto trigger hidden download prompt
+            const link = document.createElement('a');
+            link.download = `SpatialScene_SBS_${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            // Revert back safely
+            settings.activeMode = prevMode;
+            customShaderMaterial.fragmentShader = getShaderByMode(prevMode);
+            customShaderMaterial.needsUpdate = true;
+            
+            showToast("成功匯出左右眼 3D (Side-by-Side) 立體照片！", "fa-circle-check");
+        });
+
+        // Export: Anaglyph 3D 立體紅藍照片
+        document.getElementById('btn-export-anaglyph').addEventListener('click', () => {
+            if (!isImageLoaded) {
+                showToast("無可匯出的圖片資源，請先上傳！", "fa-triangle-exclamation");
+                return;
+            }
+            
+            const prevMode = settings.activeMode;
+            settings.activeMode = 'anaglyph';
+            customShaderMaterial.fragmentShader = anaglyphFragmentShader;
+            customShaderMaterial.needsUpdate = true;
+            
+            renderer.render(scene, camera);
+            
+            const dataUrl = renderer.domElement.toDataURL('image/png');
+            
+            const link = document.createElement('a');
+            link.download = `SpatialScene_Anaglyph3D_${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            settings.activeMode = prevMode;
+            customShaderMaterial.fragmentShader = getShaderByMode(prevMode);
+            customShaderMaterial.needsUpdate = true;
+            
+            showToast("成功匯出紅藍立體 3D 照片！", "fa-circle-check");
+        });
+
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        document.getElementById('btn-record-video').addEventListener('click', () => {
+            if (!isImageLoaded) {
+                showToast("無可錄製的圖片資源，請先上傳！", "fa-triangle-exclamation");
+                return;
+            }
+
+            const recordText = document.getElementById('record-text');
+            const recordIcon = document.getElementById('record-icon');
+
+            if (isRecording) {
+                // Stop Recording
+                mediaRecorder.stop();
+                isRecording = false;
+                recordText.textContent = "錄製 3D 空間短片 (WebM)";
+                recordIcon.className = "fa-solid fa-circle-play text-red-500 animate-pulse";
+                return;
+            }
+
+            // Start Recording
+            recordedChunks = [];
+            
+            // Stream canvas element
+            const stream = renderer.domElement.captureStream(30); // 30 FPS
+            
+            // Setup recorder
+            let options = { mimeType: 'video/webm; codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm' };
+            }
+            
+            try {
+                mediaRecorder = new MediaRecorder(stream, options);
+            } catch (e) {
+                showToast("當前瀏覽器不支援 WebM 錄製", "fa-exclamation-triangle");
+                return;
+            }
+            
+            mediaRecorder.ondataavailable = function(e) {
+                if (e.data && e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+            
+            mediaRecorder.onstop = function() {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.download = `SpatialScene_Video_${Date.now()}.webm`;
+                link.href = url;
+                link.click();
+                
+                showToast("空間影片錄製完成並成功匯出！", "fa-check-double");
+            };
+
+            // Enable automatic wiggle for dynamic output visibility if user had disabled it
+            if (!settings.autoWiggle) {
+                autoWiggleCheckbox.checked = true;
+                settings.autoWiggle = true;
+                showToast("已自動開啟空間呼吸搖擺以優化錄像立體視覺！", "fa-sparkles");
+            }
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordText.textContent = "停止錄製並產生影片";
+            recordIcon.className = "fa-solid fa-circle-stop text-white animate-ping";
+            
+            showToast("開始錄製中！請隨意移動滑鼠或等待 3-5 秒後按下停止錄製...", "fa-video");
+        });
+
+    </script>
+</body>
+</html>

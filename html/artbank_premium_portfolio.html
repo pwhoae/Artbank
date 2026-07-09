@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARTBANK — 頂級藝術品集與智能風格化平台</title>
+    
+    <!-- Google Fonts & Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind Custom Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Cinzel', 'serif'],
+                    },
+                    colors: {
+                        gold: {
+                            50: '#fdfbf7',
+                            100: '#fbf7ed',
+                            200: '#f4e9cf',
+                            300: '#ebd3a3',
+                            400: '#dfb770',
+                            500: '#d49b43',
+                            600: '#c58434',
+                            700: '#a36629',
+                            800: '#824f24',
+                            900: '#69401f',
+                        }
+                    },
+                    animation: {
+                        'spin-slow': 'spin 20s linear infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS for specialized elements -->
+    <style>
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(15, 15, 15, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-light {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d49b43;
+        }
+
+        /* Comparison Slider CSS */
+        .slider-container {
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+        .slider-before {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .slider-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #d49b43;
+            cursor: ew-resize;
+        }
+    </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 font-sans overflow-x-hidden">
+
+    
+    <!-- Generative Ambient Backdrop -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <canvas id="ambientBg" class="w-full h-full opacity-40"></canvas>
+    </div>
+
+    
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-md w-full px-4 md:px-0 pointer-events-none"></div>
+
+    
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 left-0 w-full z-40 glass border-b border-neutral-900 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl font-serif tracking-widest bg-gradient-to-r from-gold-300 via-gold-500 to-amber-600 bg-clip-text text-transparent font-extrabold">ARTBANK</span>
+                    <span class="hidden md:inline px-2 py-0.5 text-[10px] uppercase font-semibold tracking-widest border border-gold-500/30 text-gold-400 rounded-full">v2.0 Beta</span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center gap-8 text-sm font-medium tracking-wider">
+                    <a href="#hero" class="hover:text-gold-400 transition-colors py-2 text-neutral-300">首頁</a>
+                    <a href="#gallery" class="hover:text-gold-400 transition-colors py-2 text-neutral-300">數位典藏</a>
+                    <a href="#playground" class="hover:text-gold-400 transition-colors py-2 text-neutral-300">風格化實驗室</a>
+                    <a href="#about" class="hover:text-gold-400 transition-colors py-2 text-neutral-300">策展理念</a>
+                    <a href="#contact" class="hover:text-gold-400 transition-colors py-2 text-neutral-300">聯絡我們</a>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleLeasePlanner()" class="relative p-2.5 rounded-full hover:bg-neutral-900 text-neutral-300 transition-all border border-neutral-800" aria-label="Lease Cart">
+                        <i class="fa-solid fa-briefcase text-lg"></i>
+                        <span id="plannerCount" class="absolute -top-1 -right-1 bg-gold-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-md shadow-gold-950/50">0</span>
+                    </button>
+                    <a href="#playground" class="hidden lg:flex items-center gap-2 bg-gradient-to-r from-gold-600 to-amber-700 hover:from-gold-500 hover:to-amber-600 text-neutral-900 font-bold px-5 py-2.5 rounded-full text-xs tracking-widest transition-all shadow-lg shadow-gold-900/20 uppercase">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 智能風格化
+                    </a>
+                    
+                    <!-- Mobile Menu Button -->
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-neutral-300" aria-label="Toggle Menu">
+                        <i class="fa-solid fa-bars text-xl" id="menuIcon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Panel -->
+        <div class="hidden md:hidden glass border-t border-neutral-900 px-6 py-6 space-y-4 shadow-2xl" id="mobileMenu">
+            <a href="#hero" onclick="toggleMobileMenu()" class="block text-lg hover:text-gold-400 transition-colors py-1">首頁</a>
+            <a href="#gallery" onclick="toggleMobileMenu()" class="block text-lg hover:text-gold-400 transition-colors py-1">數位典藏</a>
+            <a href="#playground" onclick="toggleMobileMenu()" class="block text-lg hover:text-gold-400 transition-colors py-1">風格化實驗室</a>
+            <a href="#about" onclick="toggleMobileMenu()" class="block text-lg hover:text-gold-400 transition-colors py-1">策展理念</a>
+            <a href="#contact" onclick="toggleMobileMenu()" class="block text-lg hover:text-gold-400 transition-colors py-1">聯絡我們</a>
+            <hr class="border-neutral-900">
+            <a href="#playground" onclick="toggleMobileMenu()" class="flex items-center justify-center gap-2 w-full bg-gold-500 hover:bg-gold-600 text-neutral-950 font-bold py-3 rounded-xl text-sm tracking-wider transition-all">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 智能風格化
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center pt-24 pb-12 px-4 z-10">
+        <div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <!-- Hero Info -->
+            <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass border border-neutral-800 text-xs text-gold-400 font-medium tracking-wide">
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
+                    </span>
+                    基於 AAAI 2024 / KBS 2025 的智能畫廊系統
+                </div>
+                
+                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-serif tracking-tight leading-none text-white">
+                    遇見藝術的<br>
+                    <span class="bg-gradient-to-r from-gold-300 via-gold-500 to-amber-500 bg-clip-text text-transparent font-extrabold drop-shadow">智能轉化</span>
+                </h1>
+                
+                <p class="text-neutral-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                    Artbank 是一個革命性的虛擬收藏與藝術品轉化平台。我們將傳統的「藝術銀行」租賃體系與尖端的<b>隱式風格提示庫（Implicit Style Prompt Bank）</b>結合，讓您不僅能瀏覽與租借當代藝術大作，還能即時賦予您照片頂級藝術大師的光輝。
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                    <a href="#playground" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-gold-600 via-gold-500 to-amber-600 text-neutral-950 font-bold hover:shadow-lg hover:shadow-gold-500/20 transform hover:-translate-y-0.5 transition-all text-center tracking-wider text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-base"></i> 進入風格化 Playground
+                    </a>
+                    <a href="#gallery" class="w-full sm:w-auto px-8 py-4 rounded-xl glass text-neutral-200 border border-neutral-800 hover:border-gold-500/50 hover:bg-neutral-900/50 transition-all text-center tracking-wider text-sm flex items-center justify-center gap-2">
+                        探索收藏畫廊 <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-6 pt-6 border-t border-neutral-900 max-w-lg mx-auto lg:mx-0">
+                    <div>
+                        <div class="text-2xl sm:text-3xl font-serif font-bold text-gold-400">12,000+</div>
+                        <div class="text-[11px] uppercase tracking-widest text-neutral-500">典藏名作</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl sm:text-3xl font-serif font-bold text-gold-400">500+</div>
+                        <div class="text-[11px] uppercase tracking-widest text-neutral-500">合作藝術家</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl sm:text-3xl font-serif font-bold text-gold-400">&lt; 3s</div>
+                        <div class="text-[11px] uppercase tracking-widest text-neutral-500">智能渲染</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Interactive Preview -->
+            <div class="lg:col-span-5 relative w-full aspect-square max-w-md mx-auto">
+                <div class="absolute inset-0 bg-gradient-to-tr from-gold-500/20 to-purple-500/20 rounded-3xl filter blur-2xl opacity-40 animate-pulse-slow"></div>
+                
+                <div class="relative w-full h-full rounded-2xl overflow-hidden glass border border-neutral-800 shadow-2xl p-4 flex flex-col justify-between">
+                    <!-- Top Info bar -->
+                    <div class="flex justify-between items-center text-xs text-neutral-400">
+                        <span><i class="fa-solid fa-microchip text-gold-500"></i> AI Agent ACTIVE</span>
+                        <span class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 text-[10px]">Real-Time Rendering</span>
+                    </div>
+
+                    <!-- Comparison Demonstration Box -->
+                    <div class="relative my-4 flex-1 w-full rounded-xl overflow-hidden shadow-inner border border-neutral-900 group">
+                        <div class="absolute inset-0 flex items-center justify-center bg-neutral-900 text-neutral-700 font-serif">
+                            <span>正在載入互動示例...</span>
+                        </div>
+                        <!-- Hero Slider -->
+                        <div class="slider-container w-full h-full" id="heroComparison">
+                            <!-- After (Van Gogh style) -->
+                            <img src="https://placehold.co/600x600/18181b/ffffff?text=Stylized+Masterpiece" id="heroImgAfter" alt="Stylized" class="absolute inset-0 w-full h-full object-cover">
+                            <!-- Before (Landscape original) -->
+                            <div class="slider-before" id="heroSliderBefore">
+                                <img src="https://placehold.co/600x600/27272a/ffffff?text=Original+Content" id="heroImgBefore" alt="Original" class="absolute top-0 left-0 w-full h-full object-cover" style="max-width: none;">
+                            </div>
+                            <!-- Handle -->
+                            <div class="slider-handle" id="heroSliderHandle">
+                                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center text-neutral-950 text-xs shadow-lg cursor-ew-resize">
+                                    <i class="fa-solid fa-left-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom caption -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-baseline">
+                            <h4 class="text-sm font-semibold font-serif text-white" id="heroDemoTitle">正在載入經典藝術風格...</h4>
+                            <span class="text-[10px] text-gold-400 font-medium">ISPB Prompter v4</span>
+                        </div>
+                        <p class="text-[11px] text-neutral-400">拖曳中央滑桿，感受隱式風格提示庫（ISPB）對原生照片細節結構與筆觸色彩的魔幻轉化。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- Gallery Section -->
+    <section id="gallery" class="relative py-24 px-4 z-10 border-t border-neutral-900 bg-neutral-950/80">
+        <div class="max-w-7xl mx-auto space-y-12">
+            <!-- Header -->
+            <div class="text-center space-y-4">
+                <h2 class="text-3xl sm:text-4xl font-serif tracking-wide text-white">數位精品藝術典藏</h2>
+                <div class="h-1 w-20 bg-gradient-to-r from-gold-600 to-amber-500 mx-auto rounded-full"></div>
+                <p class="text-neutral-400 max-w-xl mx-auto text-sm sm:text-base">
+                    精選具備高流通性與當代美學價值的各門類藝術典藏。支援即時租借規劃、現場虛擬空間陳列以及大師風格重塑。
+                </p>
+            </div>
+
+            <!-- Search, Filter & Controls Panel -->
+            <div class="glass p-6 rounded-2xl border border-neutral-900 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <!-- Tabs -->
+                <div class="flex flex-wrap gap-2 w-full md:w-auto justify-center md:justify-start" id="galleryFilters">
+                    <button onclick="filterGallery('all')" class="gallery-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all bg-gold-600 text-neutral-950" data-filter="all">
+                        全部藏品
+                    </button>
+                    <button onclick="filterGallery('painting')" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all text-neutral-400 hover:text-white" data-filter="painting">
+                        架上繪畫
+                    </button>
+                    <button onclick="filterGallery('digital')" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all text-neutral-400 hover:text-white" data-filter="digital">
+                        數位藝術
+                    </button>
+                    <button onclick="filterGallery('photography')" class="gallery-tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all text-neutral-400 hover:text-white" data-filter="photography">
+                        影像寫實
+                    </button>
+                </div>
+
+                <!-- Search -->
+                <div class="relative w-full md:w-72">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-neutral-500">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input type="text" id="gallerySearch" oninput="searchGallery()" placeholder="搜尋藏品、藝術家或媒材..." class="w-full pl-9 pr-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-gold-500/50 transition-all">
+                </div>
+            </div>
+
+            <!-- Artwork Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="artworkGrid">
+                <!-- Dynamic Content Loaded by JS -->
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- Style Transfer Playground Section -->
+    <section id="playground" class="relative py-24 px-4 z-10 border-t border-neutral-900 bg-neutral-900/20">
+        <div class="max-w-7xl mx-auto space-y-12">
+            <!-- Header -->
+            <div class="text-center space-y-4">
+                <span class="text-xs uppercase tracking-widest text-gold-500 font-semibold">AAAI2024 / KBS2025 核心技術實踐</span>
+                <h2 class="text-3xl sm:text-4xl font-serif tracking-wide text-white">大師風格化實驗室 (Style Playground)</h2>
+                <div class="h-1 w-20 bg-gradient-to-r from-gold-600 to-amber-500 mx-auto rounded-full"></div>
+                <p class="text-neutral-400 max-w-xl mx-auto text-sm sm:text-base">
+                    基於<b>「隱式風格提示庫（ISPB）」</b>理念，在瀏覽器本地實現大師級的風格轉化。選取原圖與風格，目睹畫布重組，實時繪製！
+                </p>
+            </div>
+
+            <!-- Playground Interface -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- LEFT COLUMN: Configurations & Style Prompt Selection -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="glass p-6 rounded-2xl border border-neutral-900 space-y-6">
+                        <h3 class="text-base font-serif text-white tracking-wider flex items-center gap-2">
+                            <span class="flex h-2 w-2 rounded-full bg-gold-500"></span> 1. 挑選或上傳源圖像
+                        </h3>
+                        
+                        <!-- Source Presets -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="selectSourcePreset(0)" id="sourcePreset0" class="source-preset-btn relative aspect-square rounded-lg overflow-hidden border-2 border-gold-500 cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80" alt="Mountain" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] font-semibold text-white">風景 A</div>
+                            </button>
+                            <button onclick="selectSourcePreset(1)" id="sourcePreset1" class="source-preset-btn relative aspect-square rounded-lg overflow-hidden border border-neutral-800 cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=300&q=80" alt="Forest" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] font-semibold text-white">森林 B</div>
+                            </button>
+                            <button onclick="selectSourcePreset(2)" id="sourcePreset2" class="source-preset-btn relative aspect-square rounded-lg overflow-hidden border border-neutral-800 cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Portrait" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-[10px] font-semibold text-white">肖像 C</div>
+                            </button>
+                        </div>
+
+                        <!-- Custom Image File Upload -->
+                        <div class="relative">
+                            <label class="flex flex-col items-center justify-center w-full h-24 border border-dashed border-neutral-800 rounded-xl hover:border-gold-500/50 hover:bg-neutral-900/40 transition-all cursor-pointer">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <i class="fa-solid fa-cloud-arrow-up text-lg text-neutral-500 mb-2"></i>
+                                    <p class="text-xs text-neutral-400">或者上傳您的本地照片</p>
+                                    <p class="text-[10px] text-neutral-600">Supports PNG, JPG (1:1 Ratio Best)</p>
+                                </div>
+                                <input type="file" id="imageUpload" accept="image/*" onchange="handleImageUpload(event)" class="hidden" />
+                            </label>
+                        </div>
+
+                        <hr class="border-neutral-900">
+
+                        <h3 class="text-base font-serif text-white tracking-wider flex items-center gap-2">
+                            <span class="flex h-2 w-2 rounded-full bg-gold-500"></span> 2. 激活隱式風格提示
+                        </h3>
+
+                        <!-- Styles Palette -->
+                        <div class="space-y-3" id="stylePromptsContainer">
+                            <!-- Populated dynamically via JavaScript with master styles -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Simulated Real-Time Style Transfer Canvas -->
+                <div class="lg:col-span-8 flex flex-col gap-6">
+                    <div class="glass p-6 rounded-2xl border border-neutral-900 flex-1 flex flex-col">
+                        <!-- Controls Row -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pb-4 border-b border-neutral-900 gap-4 mb-4">
+                            <div>
+                                <h3 class="text-lg font-serif text-white tracking-wide">風格化主畫布</h3>
+                                <p class="text-xs text-neutral-500" id="renderingStatus">等待開始轉化...</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="startStyleTransfer()" class="flex-1 sm:flex-initial bg-gradient-to-r from-gold-600 via-gold-500 to-amber-600 hover:from-gold-500 hover:to-amber-500 text-neutral-950 font-bold px-6 py-3 rounded-xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-gold-500/10">
+                                    <i class="fa-solid fa-play"></i> 啟動風格繪製
+                                </button>
+                                <button onclick="resetStyleTransferCanvas()" class="p-3 bg-neutral-900 text-neutral-400 hover:text-white rounded-xl border border-neutral-800 transition-all text-xs" title="Reset Canvas">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Processing Logs / Neural Feed Simulation -->
+                        <div class="hidden bg-neutral-950/80 rounded-xl p-3 mb-4 font-mono text-[10px] text-neutral-400 border border-neutral-900 space-y-1 max-h-24 overflow-y-auto" id="neuralLogs">
+                            <div>[INFO] System initialized. Ready to load Implicit Style Bank...</div>
+                        </div>
+
+                        <!-- Main Interplay Canvas Area -->
+                        <div class="relative flex-1 min-h-[350px] md:min-h-[450px] w-full rounded-xl overflow-hidden border border-neutral-900 bg-neutral-950 flex items-center justify-center group">
+                            <!-- Real-time painting canvas -->
+                            <canvas id="playgroundCanvas" class="w-full h-full max-w-full max-h-full object-contain absolute inset-0 m-auto"></canvas>
+                            
+                            <!-- Static Overlay showing comparison slider once finished -->
+                            <div class="absolute inset-0 w-full h-full hidden" id="comparisonWidget">
+                                <div class="slider-container w-full h-full">
+                                    <!-- Styled result from rendered canvas -->
+                                    <img src="" id="comparisonImgStyled" alt="Styled" class="absolute inset-0 w-full h-full object-contain bg-neutral-950">
+                                    <!-- Original Source Image -->
+                                    <div class="slider-before bg-neutral-950" id="comparisonSliderBefore">
+                                        <img src="" id="comparisonImgOriginal" alt="Original" class="absolute top-0 bottom-0 left-0 right-0 m-auto max-w-full max-h-full object-contain bg-neutral-950">
+                                    </div>
+                                    <!-- Slider Handle -->
+                                    <div class="slider-handle" id="comparisonSliderHandle">
+                                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center text-neutral-950 text-xs shadow-lg cursor-ew-resize">
+                                            <i class="fa-solid fa-left-right"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Spinner and details overlay -->
+                            <div class="absolute inset-0 bg-neutral-950/90 flex flex-col items-center justify-center p-6 text-center z-10 transition-all duration-300 pointer-events-none opacity-0" id="canvasLoader">
+                                <div class="relative flex items-center justify-center mb-6">
+                                    <!-- Rotating loading ring -->
+                                    <div class="w-16 h-16 rounded-full border-4 border-neutral-800 border-t-gold-500 animate-spin"></div>
+                                    <i class="fa-solid fa-brain absolute text-gold-400 text-lg"></i>
+                                </div>
+                                <h4 class="font-serif text-white text-base tracking-widest mb-1" id="loaderStage">隱式風格提取中...</h4>
+                                <div class="w-48 bg-neutral-900 h-1.5 rounded-full overflow-hidden mb-3">
+                                    <div class="bg-gold-500 h-full w-0 transition-all duration-200" id="loaderProgress"></div>
+                                </div>
+                                <p class="text-xs text-neutral-500 italic max-w-xs" id="loaderSubtext">正在優化對比度矩陣與特徵分布...</p>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Slider Guide Alert -->
+                        <div class="hidden justify-center items-center gap-2 mt-4 text-xs text-gold-400 animate-pulse" id="sliderGuide">
+                            <i class="fa-solid fa-circle-info"></i> 轉化已完成！您可以在主畫布上<b>左右拖拽滑桿</b>對比原始照片與風格化效果。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- View-In-Room Virtual Exhibition Simulator Section -->
+    <section id="exhibition" class="relative py-24 px-4 z-10 border-t border-neutral-900 bg-neutral-950">
+        <div class="max-w-7xl mx-auto space-y-12">
+            <!-- Header -->
+            <div class="text-center space-y-4">
+                <span class="text-xs uppercase tracking-widest text-gold-500 font-semibold">AR 空間微縮模擬</span>
+                <h2 class="text-3xl sm:text-4xl font-serif tracking-wide text-white">虛擬展示室 (View In Room)</h2>
+                <div class="h-1 w-20 bg-gradient-to-r from-gold-600 to-amber-500 mx-auto rounded-full"></div>
+                <p class="text-neutral-400 max-w-xl mx-auto text-sm sm:text-base">
+                    將典藏精品直接投影到您的空間中。調整牆面色彩、調整畫作尺寸大小，感受藝術融入生活、入駐企業辦公環境的最佳視角。
+                </p>
+            </div>
+
+            <!-- Virtual Simulator Board -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+                <!-- Wall Display Preview Panel -->
+                <div class="lg:col-span-8 glass p-6 rounded-2xl border border-neutral-900 flex flex-col min-h-[400px]">
+                    <div class="flex items-center justify-between pb-4 border-b border-neutral-900 mb-6">
+                        <span class="text-xs text-neutral-400 font-medium"><i class="fa-solid fa-hotel text-gold-500"></i> 當前模擬：現代奢華客廳</span>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="text-[10px] text-neutral-400 font-bold">1:1 Perspective Calibration</span>
+                        </div>
+                    </div>
+
+                    <!-- Wall Room Sandbox -->
+                    <div class="relative flex-1 w-full rounded-xl overflow-hidden shadow-inner border border-neutral-900 flex flex-col justify-between p-8 transition-colors duration-500" id="virtualWall" style="background-color: #262626;">
+                        <!-- Room decor overlay: Sofa and accessories -->
+                        <div class="absolute inset-0 pointer-events-none flex flex-col justify-between">
+                            <!-- Wall Shadow Overlay -->
+                            <div class="w-full h-32 bg-gradient-to-b from-black/50 to-transparent"></div>
+                            
+                            <!-- Bottom Living Room Furniture Mockup -->
+                            <div class="w-full h-1/2 flex flex-col justify-end">
+                                <!-- Modern Sofa Line Sketch SVG overlay -->
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" class="w-full h-auto drop-shadow-2xl opacity-90">
+                                    <!-- Couch back and pillows -->
+                                    <rect x="150" y="100" width="500" height="150" rx="20" fill="#171717" stroke="#404040" stroke-width="2" />
+                                    <!-- Left Arm -->
+                                    <rect x="100" y="140" width="70" height="110" rx="15" fill="#1e1e1e" stroke="#404040" stroke-width="2" />
+                                    <!-- Right Arm -->
+                                    <rect x="630" y="140" width="70" height="110" rx="15" fill="#1e1e1e" stroke="#404040" stroke-width="2" />
+                                    <!-- Seat cushions -->
+                                    <rect x="160" y="170" width="240" height="60" rx="10" fill="#262626" stroke="#404040" stroke-width="2" />
+                                    <rect x="400" y="170" width="240" height="60" rx="10" fill="#262626" stroke="#404040" stroke-width="2" />
+                                    <!-- Couch feet -->
+                                    <rect x="130" y="248" width="20" height="30" fill="#404040" />
+                                    <rect x="650" y="248" width="20" height="30" fill="#404040" />
+                                    <!-- A coffee table or ground line -->
+                                    <line x1="0" y1="265" x2="800" y2="265" stroke="#404040" stroke-width="3" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Hanging Artwork Frame on Wall -->
+                        <div class="relative z-10 m-auto flex flex-col items-center justify-center transition-all duration-300" id="hangingFrameContainer" style="width: 180px;">
+                            <!-- Accent Spotlight highlight behind frame -->
+                            <div class="absolute -inset-10 bg-white/10 rounded-full filter blur-3xl transition-opacity duration-300 opacity-60" id="spotlightOverlay"></div>
+                            
+                            <!-- Detailed Frame -->
+                            <div class="relative border-8 border-amber-900 shadow-2xl rounded p-1 bg-black transition-all duration-300 transform hover:scale-105" id="roomArtFrame">
+                                <div class="overflow-hidden aspect-[4/3] bg-neutral-900">
+                                    <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80" id="roomArtImg" alt="Room Hanging Artwork" class="w-full h-full object-cover">
+                                </div>
+                            </div>
+                            
+                            <!-- Interactive scale controls overlaid when hover -->
+                            <div class="absolute -bottom-10 bg-neutral-950/90 border border-neutral-800 text-neutral-400 rounded-full px-3 py-1 text-[10px] flex items-center gap-3 shadow-xl tracking-wider">
+                                <span id="currentFrameWidthText">1.2m</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Console Column -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="glass p-6 rounded-2xl border border-neutral-900 space-y-6 flex flex-col justify-between h-full">
+                        <div class="space-y-6">
+                            <h3 class="text-lg font-serif text-white tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-gold-500"></i> 展示室控制面板
+                            </h3>
+                            
+                            <!-- Target Artwork Dropdown Selector -->
+                            <div class="space-y-2">
+                                <label class="text-xs text-neutral-400 font-medium">切換展示畫作</label>
+                                <select id="roomArtSelector" onchange="changeRoomArtwork()" class="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                                    <!-- Options filled by JS -->
+                                </select>
+                            </div>
+
+                            <!-- Wall Paint Colors Preset -->
+                            <div class="space-y-2">
+                                <label class="text-xs text-neutral-400 font-medium">自訂牆壁背景色彩</label>
+                                <div class="grid grid-cols-5 gap-2" id="wallColorsPreset">
+                                    <button onclick="setWallColor('#262626')" class="w-full aspect-square rounded-full border-2 border-white bg-neutral-800" title="Neutral Charcoal"></button>
+                                    <button onclick="setWallColor('#1c2d37')" class="w-full aspect-square rounded-full border border-transparent bg-slate-800" title="Dark Slate"></button>
+                                    <button onclick="setWallColor('#3b2314')" class="w-full aspect-square rounded-full border border-transparent bg-amber-950" title="Classic Bronze"></button>
+                                    <button onclick="setWallColor('#1f291e')" class="w-full aspect-square rounded-full border border-transparent bg-emerald-950" title="Hunter Green"></button>
+                                    <button onclick="setWallColor('#403140')" class="w-full aspect-square rounded-full border border-transparent bg-indigo-950" title="Imperial Purple"></button>
+                                </div>
+                            </div>
+
+                            <!-- Scale Slider -->
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center text-xs text-neutral-400">
+                                    <span>尺寸縮放量級</span>
+                                    <span id="scalePercentage">100%</span>
+                                </div>
+                                <input type="range" id="frameScaler" min="100" max="250" value="150" oninput="adjustFrameScale()" class="w-full accent-gold-500 bg-neutral-800 h-1 rounded-lg appearance-none cursor-pointer">
+                                <div class="flex justify-between text-[10px] text-neutral-600 font-mono">
+                                    <span>0.8m 縮小版</span>
+                                    <span>2.0m 壁掛巨幅</span>
+                                </div>
+                            </div>
+
+                            <!-- Lighting Switch Toggle -->
+                            <div class="flex justify-between items-center py-2 border-b border-neutral-900">
+                                <span class="text-xs text-neutral-300 font-medium">舞台柔光射燈 (Spotlight)</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked onchange="toggleSpotlight()" class="sr-only peer" id="spotlightToggle">
+                                    <div class="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-300 after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gold-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Custom lease button for selected -->
+                        <div class="pt-6">
+                            <button onclick="addSelectedRoomArtToLease()" class="w-full bg-neutral-900 border border-neutral-800 hover:border-gold-500 text-white font-semibold py-4 rounded-xl text-xs tracking-wider transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-briefcase text-gold-500"></i> 將此藏品加入租賃規劃案
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+    <!-- Leasing Portfolio Side Drawer -->
+    <div class="fixed inset-y-0 right-0 max-w-md w-full bg-neutral-950 border-l border-neutral-900 z-50 transform translate-x-full transition-all duration-300 shadow-2xl flex flex-col" id="leasePlannerSidebar">
+        <!-- Drawer Header -->
+        <div class="p-6 border-b border-neutral-900 flex justify-between items-center bg-neutral-900/40">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-briefcase text-gold-500 text-lg"></i>
+                <h3 class="font-serif text-lg text-white">藝術租賃規劃案</h3>
+            </div>
+            <button onclick="toggleLeasePlanner()" class="p-2 text-neutral-400 hover:text-white transition-all rounded-full hover:bg-neutral-900">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable content items -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-4" id="plannerItemsList">
+            <!-- Filled dynamically by JS -->
+            <div class="text-center py-12 text-neutral-500 space-y-4">
+                <i class="fa-solid fa-folder-open text-3xl opacity-40"></i>
+                <p class="text-xs">您的租約規劃內尚無藝術品，<br>請在上方藏品庫點擊「加入規劃案」。</p>
+            </div>
+        </div>
+
+        <!-- Summary & Checkout Mock -->
+        <div class="p-6 border-t border-neutral-900 bg-neutral-900/20 space-y-4">
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-neutral-500">估算租賃數量</span>
+                    <span class="text-neutral-300 font-bold" id="sidebarCount">0 件</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-neutral-500">專屬運輸保險及配送估計</span>
+                    <span class="text-neutral-300 font-semibold" id="sidebarShip">NT$ 0 /次</span>
+                </div>
+                <div class="flex justify-between text-sm pt-2 border-t border-neutral-900">
+                    <span class="text-neutral-400">月租金總估價</span>
+                    <span class="text-gold-400 font-extrabold" id="sidebarTotalPrice">NT$ 0 /月</span>
+                </div>
+            </div>
+
+            <button onclick="openCheckoutInquiryModal()" class="w-full bg-gradient-to-r from-gold-600 to-amber-700 text-neutral-950 font-extrabold py-3.5 rounded-xl text-xs tracking-widest transition-all text-center">
+                向藝術顧問提交此方案
+            </button>
+            <p class="text-[9px] text-neutral-500 text-center">估價僅供初步預算參考，最終租約將由專業藝術顧問進行現場勘查後擬定。</p>
+        </div>
+    </div>
+
+    <!-- Backdrop overlay for drawer & modal -->
+    <div class="fixed inset-0 bg-black/60 z-40 hidden transition-opacity" id="appBackdrop" onclick="closeAllDrawersAndModals()"></div>
+
+    <!-- Detailed Artwork Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" id="artworkDetailModal">
+        <div class="glass max-w-3xl w-full rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl max-h-[90vh] flex flex-col">
+            <!-- Modal Body Wrapper (Scrollable if content overflow) -->
+            <div class="overflow-y-auto flex-1 p-6 md:p-8 space-y-6">
+                <!-- Header -->
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-wider text-gold-500 font-bold" id="modalArtCategory">繪畫類</span>
+                        <h3 class="text-2xl font-serif text-white tracking-wide" id="modalArtTitle">作品名稱</h3>
+                        <p class="text-xs text-neutral-400 mt-1">創作者：<span id="modalArtArtist" class="text-gold-400 font-semibold">藝術家</span></p>
+                    </div>
+                    <button onclick="closeArtworkDetailModal()" class="p-1.5 text-neutral-400 hover:text-white transition-all rounded-full hover:bg-neutral-900">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Content Columns -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                    <!-- Art showcase -->
+                    <div class="md:col-span-5 relative rounded-xl overflow-hidden border border-neutral-800 aspect-[4/3] bg-neutral-900">
+                        <img src="" id="modalArtImg" alt="Showcase" class="w-full h-full object-cover">
+                    </div>
+
+                    <!-- Meta and leasing specs -->
+                    <div class="md:col-span-7 space-y-4">
+                        <div class="bg-neutral-900/60 p-4 rounded-xl border border-neutral-900 space-y-2">
+                            <h4 class="text-xs uppercase text-neutral-500 tracking-wider">藏品數據與規格</h4>
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div><span class="text-neutral-500">實體尺寸:</span> <span id="modalArtSize" class="text-neutral-300">--</span></div>
+                                <div><span class="text-neutral-500">創作年份:</span> <span id="modalArtYear" class="text-neutral-300">--</span></div>
+                                <div class="col-span-2"><span class="text-neutral-500">藏品材質:</span> <span id="modalArtMedium" class="text-neutral-300">--</span></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="text-xs uppercase text-neutral-500 tracking-wider">策展人語</h4>
+                            <p class="text-xs text-neutral-400 leading-relaxed" id="modalArtStatement">
+                                作品描繪了現代數位浪潮下的人類精神載體。作者運用細膩的幾何架構與絢麗的色彩解讀，意圖在混亂的當代建立全新秩序。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-neutral-900">
+
+                <!-- Leasing Action Card -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gold-600/5 p-4 rounded-xl border border-gold-500/10">
+                    <div class="text-center sm:text-left">
+                        <div class="text-xs text-neutral-400">月租金報價估值</div>
+                        <div class="text-xl font-bold text-gold-400" id="modalArtPrice">NT$ 0,000 /月</div>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="modalLeaseBtn" onclick="toggleModalLeaseAction()" class="flex-1 sm:flex-initial bg-gradient-to-r from-gold-600 to-amber-700 text-neutral-950 font-bold px-6 py-3 rounded-xl text-xs tracking-wider transition-all">
+                            加入租賃規劃案
+                        </button>
+                        <button id="modalTransferBtn" onclick="jumpToStyleTransferPlaygroundFromModal()" class="p-3 bg-neutral-900 hover:bg-neutral-800 text-gold-400 hover:text-white rounded-xl border border-neutral-800 transition-all text-xs" title="以該作品為風格導向進行 AI 風格化">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 智能风格化
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inquiry Submission Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" id="checkoutModal">
+        <div class="glass max-w-md w-full rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl p-6 md:p-8 space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-serif text-white tracking-wide">提交諮詢方案</h3>
+                <button onclick="closeCheckoutModal()" class="p-1 text-neutral-400 hover:text-white transition-all rounded-full hover:bg-neutral-900">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitInquiryForm(event)" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="text-xs text-neutral-400 font-medium">您的聯絡姓名 *</label>
+                    <input type="text" required class="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs text-neutral-400 font-medium">電子郵件信箱 *</label>
+                    <input type="email" required class="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs text-neutral-400 font-medium">諮詢企業/單位名稱</label>
+                    <input type="text" class="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50" placeholder="例如：某某藝廊、私人住宅裝修">
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-xs text-neutral-400 font-medium">備註說明 (空間特殊性、偏好等)</label>
+                    <textarea class="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50 h-20 resize-none" placeholder="您可以敘述您希望安裝的牆面環境..."></textarea>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-gradient-to-r from-gold-600 to-amber-700 text-neutral-950 font-bold py-3.5 rounded-xl text-xs tracking-wider transition-all">
+                        確認發送，聯絡藝術經紀人
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <!-- Curatorial / Scientific Concept Section -->
+    <section id="about" class="relative py-24 px-4 z-10 border-t border-neutral-900 bg-neutral-950/40">
+        <div class="max-w-7xl mx-auto space-y-16">
+            <!-- Header -->
+            <div class="text-center space-y-4">
+                <span class="text-xs uppercase tracking-widest text-gold-500 font-semibold">Artbank 平台理念</span>
+                <h2 class="text-3xl sm:text-4xl font-serif tracking-wide text-white">科技與人文的藝術共享</h2>
+                <div class="h-1 w-20 bg-gradient-to-r from-gold-600 to-amber-500 mx-auto rounded-full"></div>
+            </div>
+
+            <!-- Conceptual Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="glass p-8 rounded-2xl border border-neutral-900 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-400 text-lg">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                    </div>
+                    <h3 class="text-lg font-serif text-white">藝術的去中心民主化</h3>
+                    <p class="text-xs text-neutral-400 leading-relaxed">
+                        「藝術不應是少數藏家的特權。」Artbank 借鏡澳洲與加拿大「國家藝術銀行」的共享機制，為公共空間、私密住宅與各大小企業提供低門檻的頂級當代藝術租約，將利潤百分之百反饋給在世的潛力青年藝術家。
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass p-8 rounded-2xl border border-neutral-900 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-400 text-lg">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <h3 class="text-lg font-serif text-white">隱式風格提示庫 (ISPB)</h3>
+                    <p class="text-xs text-neutral-400 leading-relaxed">
+                        源於 AAAI 2024 / KBS 2025 對生成式擴散模型的研究。我們將典藏藝術作品集（Artworks Archive）萃取為可學習的隱式參數提示，並在前端完成像素級的模擬重繪，極速完成逼真的風格轉化與結構保留。
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass p-8 rounded-2xl border border-neutral-900 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-400 text-lg">
+                        <i class="fa-solid fa-compass-drafting"></i>
+                    </div>
+                    <h3 class="text-lg font-serif text-white">無縫無礙的策展規劃</h3>
+                    <p class="text-xs text-neutral-400 leading-relaxed">
+                        借助互動式「View-In-Room」系統與智能 AR 預演，打破以往大眾因不確定擺設效果而對藝術品敬而遠之的藩籬。只需數次點擊與尺寸縮放，您就能親睹大作落戶空間的完美姿態。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Milestone Timeline -->
+            <div class="space-y-8 max-w-4xl mx-auto">
+                <h3 class="text-xl font-serif text-center text-white tracking-widest">典藏成長與科技融合里程碑</h3>
+                
+                <div class="relative pl-6 sm:pl-8 border-l border-neutral-800 space-y-8">
+                    <!-- Milestone 1 -->
+                    <div class="relative">
+                        <span class="absolute -left-[31px] sm:-left-[39px] top-1.5 bg-neutral-950 w-5 h-5 rounded-full border-2 border-gold-500 flex items-center justify-center">
+                            <span class="w-2 h-2 rounded-full bg-gold-500"></span>
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold text-gold-400">2026.03</span>
+                            <h4 class="text-sm font-semibold text-white mt-1">「Artbank Prize 2026」年度大賞閉幕</h4>
+                            <p class="text-xs text-neutral-500 mt-1">
+                                本屆評選由 Tony Albert 等著名策展人組委主理，新增 8 位卓越青年藝術家藏品，共創超一千萬價值的當代藝術數位產權認證。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Milestone 2 -->
+                    <div class="relative">
+                        <span class="absolute -left-[31px] sm:-left-[39px] top-1.5 bg-neutral-950 w-5 h-5 rounded-full border border-neutral-800 flex items-center justify-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-neutral-800"></span>
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold text-neutral-400">2025.07</span>
+                            <h4 class="text-sm font-semibold text-white mt-1">推出 DyArtbank (KBS 2025) 多重分流網絡</h4>
+                            <p class="text-xs text-neutral-500 mt-1">
+                                實現更多樣化的大師風格細化，有效抑制 AI 轉化中的噪點伪影，首次實現在 Web 終端對經典藝術流派（如富春山居、塞尚晚期）的高效復現。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Milestone 3 -->
+                    <div class="relative">
+                        <span class="absolute -left-[31px] sm:-left-[39px] top-1.5 bg-neutral-950 w-5 h-5 rounded-full border border-neutral-800 flex items-center justify-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-neutral-800"></span>
+                        </span>
+                        <div>
+                            <span class="text-xs font-bold text-neutral-400">2024.01</span>
+                            <h4 class="text-sm font-semibold text-white mt-1">核心算法「ArtBank」發表於 AAAI 2024</h4>
+                            <p class="text-xs text-neutral-500 mt-1">
+                                提出 implicit style prompt bank 隱式風格提示庫架構與 SSAM 自注意力模組，取得領先同行 25% 的高保真結構保護指標。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Contact Form Section -->
+    <section id="contact" class="relative py-24 px-4 z-10 border-t border-neutral-900 bg-neutral-900/10">
+        <div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <!-- Contact Info -->
+            <div class="lg:col-span-5 space-y-6">
+                <span class="text-xs uppercase tracking-widest text-gold-500 font-semibold">Get In Touch</span>
+                <h2 class="text-3xl sm:text-4xl font-serif tracking-wide text-white leading-tight">開啟您的高質感空間藝術旅程</h2>
+                <div class="h-1 w-20 bg-gradient-to-r from-gold-600 to-amber-500 rounded-full"></div>
+                <p class="text-neutral-400 text-sm leading-relaxed">
+                    不論您是私人藏家、裝飾設計師、亦或是希望利用藝術裝飾改善辦公環境及 morable 員工精神狀態的企業管理者，Artbank 專業藝術顧問團隊都將為您提供量身定制的一對一服務。
+                </p>
+                
+                <div class="space-y-4 pt-4 text-xs text-neutral-300">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-location-dot text-gold-500 w-5 text-center"></i>
+                        <span>台北市信義區藝術大道 101 號 8 樓</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-envelope text-gold-500 w-5 text-center"></i>
+                        <span>curator@artbank.ai</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-phone text-gold-500 w-5 text-center"></i>
+                        <span>+886 2 2777 5555 (分機 98)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <div class="lg:col-span-7 glass p-6 md:p-8 rounded-2xl border border-neutral-900">
+                <form onsubmit="submitGeneralContactForm(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-xs text-neutral-400 font-medium">聯絡人全名 *</label>
+                            <input type="text" required class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs text-neutral-400 font-medium">電話號碼</label>
+                            <input type="tel" class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-neutral-400 font-medium">電子郵件信箱 *</label>
+                        <input type="email" required class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-neutral-400 font-medium">您感興趣的範疇</label>
+                        <select class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50">
+                            <option>空間藝術品租賃及佈置諮詢</option>
+                            <option>大師智能風格化（ISPB）授權與合作</option>
+                            <option>青年藝術家藏品收錄申請</option>
+                            <option>其他一般性事務諮詢</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-neutral-400 font-medium">留言訊息 *</label>
+                        <textarea required class="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-xs text-neutral-200 focus:outline-none focus:border-gold-500/50 h-32 resize-none"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-gold-600 via-gold-500 to-amber-600 text-neutral-950 font-bold py-4 rounded-xl text-xs tracking-wider transition-all">
+                        發送諮詢留言
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black text-neutral-500 py-12 px-4 border-t border-neutral-900 z-10 relative">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex flex-col items-center md:items-start gap-2">
+                <span class="text-xl font-serif tracking-widest text-neutral-300 font-bold">ARTBANK</span>
+                <span class="text-xs text-neutral-600 text-center md:text-left">基於 AAAI 2024 / KBS 2025 學術與美學實踐平台</span>
+            </div>
+
+            <div class="flex items-center gap-6 text-xs">
+                <a href="#hero" class="hover:text-gold-400 transition-all">首頁</a>
+                <a href="#gallery" class="hover:text-gold-400 transition-all">數位典藏</a>
+                <a href="#playground" class="hover:text-gold-400 transition-all">智能實驗室</a>
+                <a href="#about" class="hover:text-gold-400 transition-all">策展理念</a>
+            </div>
+
+            <div class="text-xs text-neutral-600 text-center md:text-right">
+                <p>&copy; 2026 Artbank Technology Group. All rights reserved.</p>
+                <p class="mt-1 text-[10px]">Inspired by Jamie-Cheung/ArtBank and Institutional Art Leasing systems.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Main JS Application Logic -->
+    <script>
+        /* ---------------------------------------------------- */
+        /* Global State Variables                               */
+        /* ---------------------------------------------------- */
+        
+        // Master Artworks Database (Mock Archive of curated items)
+        const artworks = [
+            {
+                id: "art-1",
+                title: "星際迷航 (Interstellar Drift)",
+                artist: "陳瑞林 (Rui-Lin Chen)",
+                category: "digital",
+                year: "2025",
+                size: "120 x 90 cm",
+                medium: "生成式對抗網絡 (GAN) 數碼微噴、金屬烤漆框",
+                price: 1800,
+                image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80",
+                statement: "本作品探討了後人類世代在虛擬空間中的感官漂流。藝術家利用自定義的神經網絡生成結構，在多維色彩重疊中探索空間深度與精神載體的邊界。"
+            },
+            {
+                id: "art-2",
+                title: "金黃稻香 (Gilded Whispers)",
+                artist: "林慕華 (Mu-Hua Lin)",
+                category: "painting",
+                year: "2024",
+                size: "100 x 100 cm",
+                medium: "重彩礦物顏料、金箔、亞麻畫布、白木框",
+                price: 2400,
+                image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=600&q=80",
+                statement: "《金黃稻香》在現代抽象架構中融入了東方傳統的金箔工藝。當自然光線折射在礦物晶體表面，宛如秋收微風中的低聲吟唱。"
+            },
+            {
+                id: "art-3",
+                title: "消融城市 (Dissolving Skyline)",
+                artist: "張宇晴 (Yu-Ching Chang)",
+                category: "photography",
+                year: "2023",
+                size: "150 x 100 cm",
+                medium: "濕版火棉膠攝影、無酸紙藝術微噴、黑砂金屬框",
+                price: 1500,
+                image: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=600&q=80",
+                statement: "作者歷經兩年對亞洲主要大都會極致冷漠、高壓景致進行特寫，透過濕版火棉膠的化學不穩定性，將繁華建築斑駁消融，揭示城市物理形態的速朽。"
+            },
+            {
+                id: "art-4",
+                title: "永恆矩陣 (Eternal Continuum)",
+                artist: "何子聰 (Tsz-Chung Ho)",
+                category: "digital",
+                year: "2025",
+                size: "110 x 110 cm",
+                medium: "演算法代碼編程生成、3D 光柵透鏡面板、隱形懸掛框",
+                price: 2100,
+                image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=600&q=80",
+                statement: "基於康丁斯基點線面理論的代碼實踐，此作品動態計算像素分佈，使得觀賞者隨視角變換能看到圖案深淺流動，將靜態架上畫轉化為觀看者的時間遊戲。"
+            },
+            {
+                id: "art-5",
+                title: "晨曦之光 (Ethereal Dawn)",
+                artist: "李思穎 (Szu-Ying Li)",
+                category: "painting",
+                year: "2025",
+                size: "80 x 60 cm",
+                medium: "丙烯、綜合材料畫布、胡桃木極簡木框",
+                price: 1200,
+                image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=80",
+                statement: "《晨曦之光》運用薄塗與反復刮抹技法，在大氣透視般的柔霧效果中，尋求心靈深處那一抹初升光斑的救贖與寧靜。"
+            },
+            {
+                id: "art-6",
+                title: "失真現實 (Glitch Reality)",
+                artist: "K. Anderson",
+                category: "photography",
+                year: "2024",
+                size: "120 x 120 cm",
+                medium: "數位微單拍攝、高對比反轉曝光、亮面超白壓克力面板",
+                price: 1950,
+                image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
+                statement: "在失焦與光譜分離中，探索日常事物被電子媒介扭曲後的模樣，是一場介於光學純真與數位故障之間的視覺挑釁。"
+            }
+        ];
+
+        // Master Style Transfer Prompts Database (Simulated ISPB Prompt Bank)
+        const stylePrompts = [
+            {
+                id: "style-vangogh",
+                name: "梵谷大師 (Van Gogh - Swirl Impasto)",
+                painter: "文森·梵谷 (Vincent van Gogh)",
+                desc: "強烈的對比色、厚重油彩感，旋轉的動態筆觸。",
+                presetColors: ["#eab308", "#2563eb", "#1d4ed8", "#facc15"],
+                strength: "強烈"
+            },
+            {
+                id: "style-monet",
+                name: "莫內大師 (Monet - Pastel Impressionist)",
+                painter: "克勞德·莫內 (Claude Monet)",
+                desc: "柔和粉嫩色澤、光影交織，水波般的朦朧美感。",
+                presetColors: ["#ddd6fe", "#a7f3d0", "#fbcfe8", "#bae6fd"],
+                strength: "中等"
+            },
+            {
+                id: "style-picasso",
+                name: "畢卡索大師 (Picasso - Geometric Cubist)",
+                painter: "巴勃羅·畢卡索 (Pablo Picasso)",
+                desc: "多視角交錯幾何面、大塊純色彩、粗曠輪廓線線條。",
+                presetColors: ["#d97706", "#7c2d12", "#451a03", "#78716c"],
+                strength: "極強"
+            },
+            {
+                id: "style-hokusai",
+                name: "葛飾北齋 (Hokusai - Ukiyo-e Woodblock)",
+                painter: "葛飾北齋 (Katsushika Hokusai)",
+                desc: "浮世繪木刻線描、均勻漸層色塊、米黃宣紙基底質感。",
+                presetColors: ["#0284c7", "#1e3a8a", "#fef3c7", "#f59e0b"],
+                strength: "中等"
+            },
+            {
+                id: "style-cyberpunk",
+                name: "霓虹矩陣 (Vaporwave & Cyberpunk Neon)",
+                painter: "Artbank 智能生成小組",
+                desc: "故障偏色、高飽和靛藍紫與亮粉紅、強烈電子掃描線。",
+                presetColors: ["#db2777", "#9333ea", "#06b6d4", "#ec4899"],
+                strength: "極強"
+            }
+        ];
+
+        // System states
+        let selectedStylePromptId = "style-vangogh";
+        let activeSourcePresetIndex = 0;
+        let customUploadedImageSrc = null;
+        let leasePlannerCart = [];
+        let currentlySelectedArtworkId = null;
+        let ambientCanvasCtx = null;
+        let activeAnimationRequestId = null;
+
+        /* ---------------------------------------------------- */
+        /* Initialization                                       */
+        /* ---------------------------------------------------- */
+        window.onload = function() {
+            // 1. Initialize ambient generative background
+            initAmbientBackground();
+            
+            // 2. Load Gallery Cards
+            renderArtworkGallery();
+            
+            // 3. Load Style Prompts
+            renderStylePrompts();
+
+            // 4. Load View-In-Room selectors
+            initRoomSelector();
+
+            // 5. Initialize Hero Comparison slider & default state
+            initHeroComparisonSlider();
+
+            // 6. Draw Initial canvas on Playground
+            resetStyleTransferCanvas();
+        };
+
+        /* ---------------------------------------------------- */
+        /* UI Utilities: Mobile Menu, Toast & Drawer            */
+        /* ---------------------------------------------------- */
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const icon = document.getElementById('menuIcon');
+            if(menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                icon.className = 'fa-solid fa-xmark text-xl';
+            } else {
+                menu.classList.add('hidden');
+                icon.className = 'fa-solid fa-bars text-xl';
+            }
+        }
+
+        function showToast(title, message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            // Set styles based on toast type
+            const icons = {
+                success: '<i class="fa-solid fa-circle-check text-gold-400"></i>',
+                info: '<i class="fa-solid fa-circle-info text-sky-400"></i>',
+                warning: '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>',
+                error: '<i class="fa-solid fa-circle-exclamation text-rose-500"></i>'
+            };
+
+            toast.className = `glass p-4 rounded-xl flex items-start gap-3 shadow-xl transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto border border-neutral-800`;
+            toast.innerHTML = `
+                <div class="text-base pt-0.5">${icons[type]}</div>
+                <div class="flex-1 space-y-0.5">
+                    <h5 class="text-xs font-semibold text-white tracking-wide">${title}</h5>
+                    <p class="text-[10px] text-neutral-400">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-neutral-600 hover:text-white text-xs transition-colors"><i class="fa-solid fa-xmark"></i></button>
+            `;
+
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Auto dismiss after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 4000);
+        }
+
+        // Toggle Lease Planner Drawer
+        function toggleLeasePlanner() {
+            const drawer = document.getElementById('leasePlannerSidebar');
+            const backdrop = document.getElementById('appBackdrop');
+            if(drawer.classList.contains('translate-x-full')) {
+                drawer.classList.remove('translate-x-full');
+                backdrop.classList.remove('hidden');
+                // Render updated items
+                renderLeasePlannerSidebar();
+            } else {
+                drawer.classList.add('translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function closeAllDrawersAndModals() {
+            document.getElementById('leasePlannerSidebar').classList.add('translate-x-full');
+            document.getElementById('artworkDetailModal').classList.add('hidden');
+            document.getElementById('checkoutModal').classList.add('hidden');
+            document.getElementById('appBackdrop').classList.add('hidden');
+        }
+
+        /* ---------------------------------------------------- */
+        /* Ambient Background Generative Code                   */
+        /* ---------------------------------------------------- */
+        function initAmbientBackground() {
+            const canvas = document.getElementById('ambientBg');
+            ambientCanvasCtx = canvas.getContext('2d');
+            
+            // Resize handler
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Particle properties
+            const particles = [];
+            const particleCount = 25;
+            
+            for(let i=0; i<particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 80 + 40,
+                    dx: (Math.random() - 0.5) * 0.4,
+                    dy: (Math.random() - 0.5) * 0.4,
+                    color: i % 2 === 0 ? 'rgba(212, 155, 67, 0.04)' : 'rgba(147, 51, 234, 0.03)'
+                });
+            }
+
+            // Animation Loop
+            function animateParticles() {
+                ambientCanvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(p => {
+                    p.x += p.dx;
+                    p.y += p.dy;
+                    
+                    // Bounce walls
+                    if(p.x < -p.radius) p.x = canvas.width + p.radius;
+                    if(p.x > canvas.width + p.radius) p.x = -p.radius;
+                    if(p.y < -p.radius) p.y = canvas.height + p.radius;
+                    if(p.y > canvas.height + p.radius) p.y = -p.radius;
+                    
+                    // Draw glowing circles
+                    const gradient = ambientCanvasCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+                    gradient.addColorStop(0, p.color);
+                    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                    
+                    ambientCanvasCtx.fillStyle = gradient;
+                    ambientCanvasCtx.beginPath();
+                    ambientCanvasCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ambientCanvasCtx.fill();
+                });
+                
+                requestAnimationFrame(animateParticles);
+            }
+            animateParticles();
+        }
+
+        /* ---------------------------------------------------- */
+        /* Hero Interactive Slider Demonstration                */
+        /* ---------------------------------------------------- */
+        function initHeroComparisonSlider() {
+            // Set images to showcase real styling transformation
+            const beforeImg = document.getElementById('heroImgBefore');
+            const afterImg = document.getElementById('heroImgAfter');
+            
+            // Use nice Unsplash visual pairings for original and painted styles
+            beforeImg.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80";
+            afterImg.src = "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=600&q=80"; // Stylized look-alike with high dynamic blue-pink colors
+            document.getElementById('heroDemoTitle').innerText = "風景 A × 現代數位風格轉化";
+
+            // Add comparison dragging action
+            setupDragging('heroComparison', 'heroSliderBefore', 'heroSliderHandle');
+        }
+
+        function setupDragging(containerId, beforeId, handleId) {
+            const container = document.getElementById(containerId);
+            const before = document.getElementById(beforeId);
+            const handle = document.getElementById(handleId);
+            
+            let dragging = false;
+
+            function moveSlider(clientX) {
+                const rect = container.getBoundingClientRect();
+                let x = clientX - rect.left;
+                if(x < 0) x = 0;
+                if(x > rect.width) x = rect.width;
+                
+                const pct = (x / rect.width) * 100;
+                before.style.width = pct + '%';
+                handle.style.left = pct + '%';
+            }
+
+            // Mouse Events
+            handle.addEventListener('mousedown', () => dragging = true);
+            window.addEventListener('mouseup', () => dragging = false);
+            window.addEventListener('mousemove', (e) => {
+                if(!dragging) return;
+                moveSlider(e.clientX);
+            });
+
+            // Touch Events (Mobile responsiveness)
+            handle.addEventListener('touchstart', () => dragging = true);
+            window.addEventListener('touchend', () => dragging = false);
+            window.addEventListener('touchmove', (e) => {
+                if(!dragging) return;
+                moveSlider(e.touches[0].clientX);
+            });
+
+            // Trigger default split view
+            before.style.width = '50%';
+            handle.style.left = '50%';
+        }
+
+        /* ---------------------------------------------------- */
+        /* Gallery System: Search, Render, Details             */
+        /* ---------------------------------------------------- */
+        function renderArtworkGallery(filteredList = artworks) {
+            const grid = document.getElementById('artworkGrid');
+            grid.innerHTML = "";
+            
+            if(filteredList.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 text-center text-neutral-500 space-y-4">
+                        <i class="fa-solid fa-paintbrush text-4xl opacity-40 animate-pulse-slow"></i>
+                        <p class="text-sm">查無此關鍵字的典藏品...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredList.forEach(art => {
+                // Check if in Cart
+                const inCart = leasePlannerCart.some(item => item.id === art.id);
+                const cartBtnClass = inCart 
+                    ? "bg-neutral-800 text-gold-400 border border-gold-500/30" 
+                    : "bg-gold-600 hover:bg-gold-500 text-neutral-950";
+                const cartBtnText = inCart 
+                    ? '<i class="fa-solid fa-circle-check"></i> 已在規劃案中' 
+                    : '<i class="fa-solid fa-plus"></i> 加入規劃案';
+
+                const card = document.createElement('div');
+                card.className = "group relative glass rounded-2xl overflow-hidden border border-neutral-900 shadow-xl transition-all duration-300 hover:shadow-gold-500/5 hover:border-neutral-800 flex flex-col justify-between";
+                
+                card.innerHTML = `
+                    <div>
+                        <!-- Category overlay & visual image container -->
+                        <div class="relative overflow-hidden aspect-[4/3] bg-neutral-900 cursor-pointer" onclick="openArtworkDetailModal('${art.id}')">
+                            <img src="${art.image}" alt="${art.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <span class="absolute top-4 left-4 bg-neutral-950/80 backdrop-blur-md text-[9px] text-gold-400 border border-neutral-800 px-3 py-1 rounded-full uppercase tracking-widest font-semibold">
+                                ${art.category === 'painting' ? '架上繪畫' : art.category === 'digital' ? '數位代碼' : '影像寫實'}
+                            </span>
+                            
+                            <!-- Blur-in overlay prompt -->
+                            <div class="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <span class="bg-gold-500 text-neutral-950 text-xs px-4 py-2 rounded-xl font-bold tracking-wider shadow-lg"><i class="fa-solid fa-eye"></i> 檢視詳情 & 語意</span>
+                            </div>
+                        </div>
+
+                        <!-- Info section -->
+                        <div class="p-6 space-y-2">
+                            <div class="flex justify-between items-start gap-4">
+                                <h3 class="font-serif text-base text-white tracking-wide font-semibold hover:text-gold-400 transition-colors cursor-pointer" onclick="openArtworkDetailModal('${art.id}')">${art.title}</h3>
+                                <span class="text-[10px] text-neutral-500 font-mono mt-1">${art.year}</span>
+                            </div>
+                            <p class="text-xs text-neutral-400">藝術家：<span class="text-neutral-300">${art.artist}</span></p>
+                            <p class="text-xs text-neutral-500 truncate" title="${art.medium}">${art.medium}</p>
+                        </div>
+                    </div>
+
+                    <!-- Leasing prices and action buttons -->
+                    <div class="p-6 pt-0 border-t border-neutral-900/50 flex items-center justify-between mt-4">
+                        <div class="text-left">
+                            <span class="block text-[9px] text-neutral-500 uppercase tracking-widest">月租金預算</span>
+                            <span class="text-sm font-bold text-gold-400 font-serif">NT$ ${art.price.toLocaleString()}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="toggleLeaseCartItem('${art.id}')" class="px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wider transition-all ${cartBtnClass}">
+                                ${cartBtnText}
+                            </button>
+                            <button onclick="transferArtworkToPlayground('${art.id}')" class="p-2.5 bg-neutral-900 text-neutral-400 hover:text-gold-500 border border-neutral-800 hover:border-gold-500/30 rounded-xl transition-all" title="以此圖像和風格在實驗室處理">
+                                <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterGallery(category) {
+            // Highlight active button
+            const buttons = document.querySelectorAll('#galleryFilters button');
+            buttons.forEach(btn => {
+                if(btn.getAttribute('data-filter') === category) {
+                    btn.className = "gallery-tab-btn active px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all bg-gold-600 text-neutral-950";
+                } else {
+                    btn.className = "gallery-tab-btn px-4 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all text-neutral-400 hover:text-white";
+                }
+            });
+
+            // Filter
+            if(category === 'all') {
+                renderArtworkGallery(artworks);
+            } else {
+                const list = artworks.filter(a => a.category === category);
+                renderArtworkGallery(list);
+            }
+        }
+
+        function searchGallery() {
+            const val = document.getElementById('gallerySearch').value.toLowerCase();
+            const list = artworks.filter(a => 
+                a.title.toLowerCase().includes(val) || 
+                a.artist.toLowerCase().includes(val) || 
+                a.medium.toLowerCase().includes(val)
+            );
+            renderArtworkGallery(list);
+        }
+
+        /* ---------------------------------------------------- */
+        /* Artwork Detailed Modal Handlers                      */
+        /* ---------------------------------------------------- */
+        function openArtworkDetailModal(id) {
+            const art = artworks.find(a => a.id === id);
+            if(!art) return;
+
+            currentlySelectedArtworkId = id;
+
+            // Populate Modal Content
+            document.getElementById('modalArtCategory').innerText = art.category === 'painting' ? '架上繪畫' : art.category === 'digital' ? '數位代碼藝術' : '影像寫實寫真';
+            document.getElementById('modalArtTitle').innerText = art.title;
+            document.getElementById('modalArtArtist').innerText = art.artist;
+            document.getElementById('modalArtImg').src = art.image;
+            document.getElementById('modalArtSize').innerText = art.size;
+            document.getElementById('modalArtYear').innerText = art.year;
+            document.getElementById('modalArtMedium').innerText = art.medium;
+            document.getElementById('modalArtStatement').innerText = art.statement;
+            document.getElementById('modalArtPrice').innerText = `NT$ ${art.price.toLocaleString()} /月`;
+
+            // Adjust button based on Cart Status
+            const modalLeaseBtn = document.getElementById('modalLeaseBtn');
+            const inCart = leasePlannerCart.some(item => item.id === id);
+            if(inCart) {
+                modalLeaseBtn.innerText = "已在規劃案中 (點擊移除)";
+                modalLeaseBtn.className = "flex-1 sm:flex-initial bg-neutral-800 text-gold-400 border border-gold-500/30 font-bold px-6 py-3 rounded-xl text-xs tracking-wider transition-all";
+            } else {
+                modalLeaseBtn.innerText = "加入租賃規劃案";
+                modalLeaseBtn.className = "flex-1 sm:flex-initial bg-gradient-to-r from-gold-600 to-amber-700 text-neutral-950 font-bold px-6 py-3 rounded-xl text-xs tracking-wider transition-all";
+            }
+
+            // Show Modal and backdrop
+            document.getElementById('artworkDetailModal').classList.remove('hidden');
+            document.getElementById('appBackdrop').classList.remove('hidden');
+        }
+
+        function closeArtworkDetailModal() {
+            document.getElementById('artworkDetailModal').classList.add('hidden');
+            if(document.getElementById('leasePlannerSidebar').classList.contains('translate-x-full')) {
+                document.getElementById('appBackdrop').classList.add('hidden');
+            }
+        }
+
+        function toggleModalLeaseAction() {
+            if(!currentlySelectedArtworkId) return;
+            toggleLeaseCartItem(currentlySelectedArtworkId);
+            // Re-open detail modal to update button graphic state
+            openArtworkDetailModal(currentlySelectedArtworkId);
+        }
+
+        function jumpToStyleTransferPlaygroundFromModal() {
+            if(!currentlySelectedArtworkId) return;
+            transferArtworkToPlayground(currentlySelectedArtworkId);
+            closeArtworkDetailModal();
+        }
+
+        /* ---------------------------------------------------- */
+        /* Lease Planner State Management                       */
+        /* ---------------------------------------------------- */
+        function toggleLeaseCartItem(id) {
+            const art = artworks.find(a => a.id === id);
+            if(!art) return;
+
+            const existingIdx = leasePlannerCart.findIndex(item => item.id === id);
+            if(existingIdx > -1) {
+                leasePlannerCart.splice(existingIdx, 1);
+                showToast("已自規劃案中移除", `《${art.title}》已從您的租借清單中剔除。`, "info");
+            } else {
+                leasePlannerCart.push(art);
+                showToast("成功加入規劃案", `已成功將《${art.title}》加入您的藝術品租賃清單！`, "success");
+            }
+
+            // Update badge in Nav and redraw relevant elements
+            updateCartCounterBadge();
+            renderArtworkGallery();
+        }
+
+        function updateCartCounterBadge() {
+            const count = leasePlannerCart.length;
+            document.getElementById('plannerCount').innerText = count;
+            document.getElementById('sidebarCount').innerText = `${count} 件`;
+            
+            // Calculate total financial leases
+            let total = 0;
+            leasePlannerCart.forEach(item => total += item.price);
+            
+            // Transport fees logic
+            let shipFee = count > 0 ? 3000 + (count - 1) * 1000 : 0;
+            document.getElementById('sidebarShip').innerText = count > 0 ? `NT$ ${shipFee.toLocaleString()} /次` : "NT$ 0 /次";
+            document.getElementById('sidebarTotalPrice').innerText = `NT$ ${total.toLocaleString()} /月`;
+        }
+
+        function renderLeasePlannerSidebar() {
+            const listContainer = document.getElementById('plannerItemsList');
+            listContainer.innerHTML = "";
+            
+            if(leasePlannerCart.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 text-neutral-500 space-y-4">
+                        <i class="fa-solid fa-folder-open text-3xl opacity-40"></i>
+                        <p class="text-xs">您的租約規劃內尚無藝術品，<br>請在上方藏品庫點擊「加入規劃案」。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            leasePlannerCart.forEach(art => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between gap-4 glass p-3 rounded-xl border border-neutral-900";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <img src="${art.image}" alt="${art.title}" class="w-12 h-12 rounded object-cover">
+                        <div>
+                            <h4 class="text-xs font-semibold text-white truncate max-w-[150px]">${art.title}</h4>
+                            <p class="text-[10px] text-neutral-400">${art.artist}</p>
+                            <p class="text-[10px] text-gold-400 font-mono font-bold">NT$ ${art.price.toLocaleString()} /月</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleLeaseCartItem('${art.id}'); renderLeasePlannerSidebar();" class="p-2 text-neutral-500 hover:text-rose-500 transition-all rounded-full hover:bg-neutral-900/60" title="Remove">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function openCheckoutInquiryModal() {
+            if(leasePlannerCart.length === 0) {
+                showToast("規劃清單空空如也", "請先挑選藏品，隨後方可與藝術顧問取得聯絡！", "warning");
+                return;
+            }
+            // Close cart and trigger input dialog
+            document.getElementById('leasePlannerSidebar').classList.add('translate-x-full');
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+            document.getElementById('appBackdrop').classList.add('hidden');
+        }
+
+        function submitInquiryForm(event) {
+            event.preventDefault();
+            showToast("方案提交成功！", "藝術代表將在 24 小時內與您取得聯繫並製定詳細方案。", "success");
+            closeCheckoutModal();
+            // Clear cart
+            leasePlannerCart = [];
+            updateCartCounterBadge();
+        }
+
+        function submitGeneralContactForm(event) {
+            event.preventDefault();
+            showToast("訊息已成功投遞", "感謝您的寶貴諮詢，我們將指派對應範疇專家為您服務！", "success");
+            event.target.reset();
+        }
+
+        /* ---------------------------------------------------- */
+        /* View-In-Room Virtual Sandbox Core Logic              */
+        /* ---------------------------------------------------- */
+        function initRoomSelector() {
+            const selector = document.getElementById('roomArtSelector');
+            selector.innerHTML = "";
+            
+            artworks.forEach((art, idx) => {
+                const opt = document.createElement('option');
+                opt.value = art.id;
+                opt.innerText = `【${art.category === 'painting' ? '繪畫' : '數位'}】${art.title} — ${art.artist}`;
+                if(idx === 0) opt.selected = true;
+                selector.appendChild(opt);
+            });
+
+            // Trigger once to sync state
+            changeRoomArtwork();
+        }
+
+        function changeRoomArtwork() {
+            const id = document.getElementById('roomArtSelector').value;
+            const art = artworks.find(a => a.id === id);
+            if(!art) return;
+
+            document.getElementById('roomArtImg').src = art.image;
+        }
+
+        function setWallColor(color) {
+            const wall = document.getElementById('virtualWall');
+            wall.style.backgroundColor = color;
+            
+            // Outline highlighted active preset button
+            const buttons = document.querySelectorAll('#wallColorsPreset button');
+            buttons.forEach(btn => {
+                const rawStyle = btn.getAttribute('onclick');
+                if(rawStyle.includes(color)) {
+                    btn.classList.add('border-white');
+                    btn.classList.remove('border-transparent');
+                } else {
+                    btn.classList.remove('border-white');
+                    btn.classList.add('border-transparent');
+                }
+            });
+        }
+
+        function adjustFrameScale() {
+            const scale = document.getElementById('frameScaler').value;
+            const container = document.getElementById('hangingFrameContainer');
+            
+            // Adjust width based on scaler (100% maps to 120px on screen, etc)
+            container.style.width = `${scale}px`;
+            
+            // Format physical meters
+            const meters = (scale / 120).toFixed(1);
+            document.getElementById('currentFrameWidthText').innerText = `${meters}m (實物比例)`;
+            document.getElementById('scalePercentage').innerText = `${Math.round(scale/1.5)}%`;
+        }
+
+        function toggleSpotlight() {
+            const checked = document.getElementById('spotlightToggle').checked;
+            const overlay = document.getElementById('spotlightOverlay');
+            if(checked) {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-60');
+            } else {
+                overlay.classList.remove('opacity-60');
+                overlay.classList.add('opacity-0');
+            }
+        }
+
+        function addSelectedRoomArtToLease() {
+            const id = document.getElementById('roomArtSelector').value;
+            const alreadyIn = leasePlannerCart.some(item => item.id === id);
+            if(alreadyIn) {
+                showToast("已在此清單", "該藏品已在您的規劃案清單中！", "info");
+            } else {
+                toggleLeaseCartItem(id);
+            }
+        }
+
+        /* ---------------------------------------------------- */
+        /* Style Prompts List Generator                         */
+        /* ---------------------------------------------------- */
+        function renderStylePrompts() {
+            const list = document.getElementById('stylePromptsContainer');
+            list.innerHTML = "";
+
+            stylePrompts.forEach(p => {
+                const active = p.id === selectedStylePromptId;
+                const borderClass = active ? "border-gold-500 bg-gold-600/5" : "border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/20";
+                
+                const card = document.createElement('div');
+                card.id = `styleCard-${p.id}`;
+                card.className = `p-3 rounded-xl border-2 transition-all cursor-pointer flex gap-3 items-center ${borderClass}`;
+                card.onclick = () => selectStylePrompt(p.id);
+
+                // Palette bubbles HTML
+                let paletteHtml = "";
+                p.presetColors.forEach(c => {
+                    paletteHtml += `<span class="w-3 h-3 rounded-full border border-neutral-950/20" style="background-color: ${c}"></span>`;
+                });
+
+                card.innerHTML = `
+                    <div class="flex-1 space-y-1">
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-xs font-serif font-bold text-white">${p.name}</span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800 font-mono">${p.strength}強度</span>
+                        </div>
+                        <p class="text-[10px] text-neutral-400">${p.desc}</p>
+                    </div>
+                    <div class="flex flex-col gap-1 items-end shrink-0">
+                        <div class="flex gap-0.5">
+                            ${paletteHtml}
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function selectStylePrompt(id) {
+            // Update selected ID
+            selectedStylePromptId = id;
+            
+            // Redraw prompts cards
+            renderStylePrompts();
+            
+            // Notify User
+            const prompt = stylePrompts.find(s => s.id === id);
+            showToast("隱式提示庫已加載", `成功激活《${prompt.painter}》對應特徵隱變量分佈。`, "info");
+        }
+
+        /* ---------------------------------------------------- */
+        /* Playground Core: Selected Presets & Image Loader     */
+        /* ---------------------------------------------------- */
+        const sourcePresetUrls = [
+            "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
+            "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=600&q=80",
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80"
+        ];
+
+        function selectSourcePreset(idx) {
+            activeSourcePresetIndex = idx;
+            customUploadedImageSrc = null;
+
+            // Highlight border
+            for(let i=0; i<3; i++) {
+                const btn = document.getElementById(`sourcePreset${i}`);
+                if(i === idx) {
+                    btn.classList.add('border-gold-500');
+                    btn.classList.remove('border-neutral-800');
+                } else {
+                    btn.classList.remove('border-gold-500');
+                    btn.classList.add('border-neutral-800');
+                }
+            }
+
+            // Redraw base
+            resetStyleTransferCanvas();
+            showToast("源圖像已加載", `選取內建模擬景致 ${idx+1}`, "info");
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                customUploadedImageSrc = event.target.result;
+                activeSourcePresetIndex = -1;
+
+                // De-highlight all preset squares
+                for(let i=0; i<3; i++) {
+                    const btn = document.getElementById(`sourcePreset${i}`);
+                    btn.classList.remove('border-gold-500');
+                    btn.classList.add('border-neutral-800');
+                }
+
+                // Reset and draw custom base
+                resetStyleTransferCanvas();
+                showToast("照片上傳成功", "已完美載入您的個人素材圖像，等待轉化！", "success");
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function transferArtworkToPlayground(artworkId) {
+            const art = artworks.find(a => a.id === artworkId);
+            if(!art) return;
+
+            customUploadedImageSrc = art.image;
+            activeSourcePresetIndex = -1;
+
+            // De-highlight preset previews
+            for(let i=0; i<3; i++) {
+                const btn = document.getElementById(`sourcePreset${i}`);
+                btn.classList.remove('border-gold-500');
+                btn.classList.add('border-neutral-800');
+            }
+
+            // Sync rendering layout and jump to playground section smoothly
+            resetStyleTransferCanvas();
+            window.location.hash = "#playground";
+            showToast("典藏藏品已導入", `《${art.title}》已被成功載入風格化 Playground。`, "success");
+        }
+
+        /* ---------------------------------------------------- */
+        /* PLAYGROUND AI STYLE TRANSFER: Pixel-by-Pixel Engine  */
+        /* ---------------------------------------------------- */
+        function getActiveImageSource() {
+            if(customUploadedImageSrc) {
+                return customUploadedImageSrc;
+            }
+            return sourcePresetUrls[activeSourcePresetIndex];
+        }
+
+        function resetStyleTransferCanvas() {
+            // Cancel any current stylization rendering loop to prevent overlapping threads
+            if(activeAnimationRequestId) {
+                cancelAnimationFrame(activeAnimationRequestId);
+                activeAnimationRequestId = null;
+            }
+
+            const canvas = document.getElementById('playgroundCanvas');
+            const ctx = canvas.getContext('2d');
+            const sliderWidget = document.getElementById('comparisonWidget');
+            const sliderGuide = document.getElementById('sliderGuide');
+            const logsFeed = document.getElementById('neuralLogs');
+            
+            // Clean overlays
+            sliderWidget.classList.add('hidden');
+            sliderGuide.classList.add('hidden');
+            logsFeed.classList.add('hidden');
+
+            const imgSrc = getActiveImageSource();
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = imgSrc;
+            
+            img.onload = function() {
+                // Resize canvas keeping source aspect ratios
+                canvas.width = img.naturalWidth || 600;
+                canvas.height = img.naturalHeight || 600;
+                
+                // Clear canvas and draw pristine image
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                document.getElementById('renderingStatus').innerText = "原圖已加載。點擊「啟動風格繪製」開始。";
+            };
+            img.onerror = function() {
+                // Fallback inside canvas
+                canvas.width = 600;
+                canvas.height = 600;
+                ctx.fillStyle = "#171717";
+                ctx.fillRect(0,0,600,600);
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "14px Inter";
+                ctx.textAlign = "center";
+                ctx.fillText("載入圖片發生異常，請重試或上傳其他檔案。", 300, 300);
+            };
+        }
+
+        function startStyleTransfer() {
+            const canvas = document.getElementById('playgroundCanvas');
+            const ctx = canvas.getContext('2d');
+            const sourceUrl = getActiveImageSource();
+            const stylePrompt = stylePrompts.find(s => s.id === selectedStylePromptId);
+
+            if(!stylePrompt) {
+                showToast("錯誤", "無效的風格，請重新挑選。", "error");
+                return;
+            }
+
+            // Trigger log feeds
+            const logsFeed = document.getElementById('neuralLogs');
+            logsFeed.classList.remove('hidden');
+            logsFeed.innerHTML = `<div>[INFO] Initializing Artbank SSAM attention...</div>`;
+
+            // Prepare loading layers
+            const loader = document.getElementById('canvasLoader');
+            const lStage = document.getElementById('loaderStage');
+            const lProg = document.getElementById('loaderProgress');
+            const lSub = document.getElementById('loaderSubtext');
+            
+            loader.classList.remove('opacity-0', 'pointer-events-none');
+            lProg.style.width = '0%';
+            
+            // Phase logs
+            const stages = [
+                { title: "讀取隱式提示庫...", sub: "提取特徵矩陣和筆觸向量對比...", duration: 800 },
+                { title: "SSAM 自注意力分配...", sub: "計算高頻與低頻輪廓、排除噪點...", duration: 800 },
+                { title: "畫布紋理初始化...", sub: "映射色板、生成動態色調分佈...", duration: 600 }
+            ];
+
+            let stageIdx = 0;
+            
+            function runLoadingSequence() {
+                if(stageIdx < stages.length) {
+                    lStage.innerText = stages[stageIdx].title;
+                    lSub.innerText = stages[stageIdx].sub;
+                    lProg.style.width = `${((stageIdx + 1) / (stages.length + 1)) * 100}%`;
+                    
+                    const logLine = document.createElement('div');
+                    logLine.className = "text-amber-500";
+                    logLine.innerText = `[PROMPT BANK] Stage ${stageIdx + 1}: ${stages[stageIdx].title} — done.`;
+                    logsFeed.appendChild(logLine);
+                    logsFeed.scrollTop = logsFeed.scrollHeight;
+
+                    setTimeout(() => {
+                        stageIdx++;
+                        runLoadingSequence();
+                    }, stages[stageIdx].duration);
+                } else {
+                    // Start actual painting loop on Canvas!
+                    lStage.innerText = "智能畫筆實時繪製中...";
+                    lSub.innerText = "正在模擬大師動態筆觸和著色覆蓋...";
+                    lProg.style.width = '90%';
+                    
+                    setTimeout(() => {
+                        loader.classList.add('opacity-0', 'pointer-events-none');
+                        executePixelStylizeRenderer(sourceUrl, stylePrompt.id);
+                    }, 500);
+                }
+            }
+            
+            runLoadingSequence();
+        }
+
+        /* ---------------------------------------------------- */
+        /* Dynamic Canvas Painting Simulator Engine             */
+        /* ---------------------------------------------------- */
+        function executePixelStylizeRenderer(sourceImgUrl, styleId) {
+            const canvas = document.getElementById('playgroundCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const sourceImg = new Image();
+            sourceImg.crossOrigin = "anonymous";
+            sourceImg.src = sourceImgUrl;
+
+            sourceImg.onload = function() {
+                // Ensure matching dimensions
+                const width = sourceImg.naturalWidth || 600;
+                const height = sourceImg.naturalHeight || 600;
+                canvas.width = width;
+                canvas.height = height;
+
+                // Temporary off-screen canvas to sample original pixel data
+                const sampleCanvas = document.createElement('canvas');
+                sampleCanvas.width = width;
+                sampleCanvas.height = height;
+                const sampleCtx = sampleCanvas.getContext('2d');
+                sampleCtx.drawImage(sourceImg, 0, 0, width, height);
+                const imgData = sampleCtx.getImageData(0, 0, width, height);
+                const pixels = imgData.data;
+
+                // Draw solid base canvas tint (priming the canvas)
+                ctx.fillStyle = "#0c0c0c";
+                ctx.fillRect(0, 0, width, height);
+
+                // Styling Loop details
+                let totalFrames = 250;
+                let currentFrame = 0;
+                let strokeCountPerFrame = 120;
+                let maxRadius = Math.max(width, height) * 0.12; // Start with broad abstract strokes
+
+                const styleColors = stylePrompts.find(s => s.id === styleId).presetColors;
+
+                function paintStrokeFrame() {
+                    // As the painting progresses, brush strokes become smaller for finer details
+                    const strokeProgress = currentFrame / totalFrames;
+                    const strokeSize = maxRadius * (1 - strokeProgress * 0.95) + 2; 
+                    const alpha = 0.3 + strokeProgress * 0.4; // Slowly increase paint thickness (opacity)
+
+                    for(let i = 0; i < strokeCountPerFrame; i++) {
+                        // Pick random coordinates
+                        const rx = Math.floor(Math.random() * width);
+                        const ry = Math.floor(Math.random() * height);
+                        
+                        // Sample true original pixel color
+                        const pixelIdx = (ry * width + rx) * 4;
+                        const r = pixels[pixelIdx];
+                        const g = pixels[pixelIdx + 1];
+                        const b = pixels[pixelIdx + 2];
+
+                        // Master style mapping variations
+                        if(styleId === 'style-vangogh') {
+                            // Vincent van Gogh swirl impasto style
+                            // Shift colors slightly towards bright yellows or starry deep blues
+                            let finalR = r;
+                            let finalG = g;
+                            let finalB = b;
+                            
+                            // Yellows and blues booster
+                            if (r > 150 && g > 150) {
+                                finalR = Math.min(255, r * 1.2);
+                                finalG = Math.min(255, g * 1.15);
+                            } else {
+                                finalB = Math.min(255, b * 1.25);
+                            }
+
+                            ctx.strokeStyle = `rgba(${finalR}, ${finalG}, ${finalB}, ${alpha})`;
+                            ctx.lineWidth = strokeSize * 0.3;
+                            
+                            // Curved impasto swirls
+                            ctx.beginPath();
+                            ctx.moveTo(rx - strokeSize, ry);
+                            ctx.quadraticCurveTo(rx, ry + strokeSize * (Math.random() - 0.5), rx + strokeSize, ry);
+                            ctx.stroke();
+
+                        } else if(styleId === 'style-monet') {
+                            // Claude Monet soft pastel impressionist
+                            // Add glowing pastel mist
+                            const mixColor = styleColors[Math.floor(Math.random() * styleColors.length)];
+                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.6})`;
+                            
+                            // Translucent waterlilies reflection blobs
+                            ctx.beginPath();
+                            ctx.arc(rx, ry, strokeSize * 1.2, 0, Math.PI * 2);
+                            ctx.fill();
+
+                        } else if(styleId === 'style-picasso') {
+                            // Cubist geometry
+                            // Create polygon chunks and lines
+                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha * 0.8})`;
+                            ctx.strokeStyle = `rgba(0, 0, 0, 0.4)`;
+                            ctx.lineWidth = 1;
+
+                            ctx.beginPath();
+                            ctx.moveTo(rx, ry);
+                            ctx.lineTo(rx + strokeSize, ry + strokeSize * 0.5);
+                            ctx.lineTo(rx - strokeSize * 0.5, ry + strokeSize);
+                            ctx.closePath();
+                            ctx.fill();
+                            ctx.stroke();
+
+                        } else if(styleId === 'style-hokusai') {
+                            // Ukiyo-e woodblock Japanese style
+                            // Flat posterized coloring and fine black borders
+                            const gray = (r + g + b) / 3;
+                            let tintR = r, tintG = g, tintB = b;
+                            
+                            // Soften to cream background tints
+                            if(gray > 200) {
+                                tintR = 245; tintG = 232; tintB = 210;
+                            } else if(gray < 50) {
+                                tintR = 20; tintG = 30; tintB = 50;
+                            }
+                            
+                            ctx.fillStyle = `rgba(${tintR}, ${tintG}, ${tintB}, ${alpha * 0.9})`;
+                            ctx.fillRect(rx - strokeSize/2, ry - strokeSize/2, strokeSize, strokeSize);
+
+                            // Draw subtle wave contour lines occasionally
+                            if(Math.random() < 0.05) {
+                                ctx.strokeStyle = `rgba(20, 20, 30, 0.5)`;
+                                ctx.lineWidth = 1.5;
+                                ctx.beginPath();
+                                ctx.arc(rx, ry, strokeSize * 2, 0, Math.PI);
+                                ctx.stroke();
+                            }
+
+                        } else if(styleId === 'style-cyberpunk') {
+                            // Neon Vaporwave cyber digital glitches
+                            let neonR = r, neonG = g, neonB = b;
+                            
+                            if (r > 120) {
+                                neonR = 219; neonG = 39; neonB = 119; // Pink neon
+                            } else {
+                                neonR = 6; neonG = 182; neonB = 212; // Cyan neon
+                            }
+
+                            // Glitched horizontal rectangles
+                            ctx.fillStyle = `rgba(${neonR}, ${neonG}, ${neonB}, ${alpha})`;
+                            ctx.fillRect(rx - strokeSize, ry, strokeSize * 2, strokeSize * 0.2);
+                        }
+                    }
+
+                    currentFrame++;
+                    document.getElementById('renderingStatus').innerText = `正在重繪作品布面中... ${Math.round((currentFrame/totalFrames)*100)}%`;
+                    
+                    if (currentFrame < totalFrames) {
+                        activeAnimationRequestId = requestAnimationFrame(paintStrokeFrame);
+                    } else {
+                        // COMPLETED STYLE TRANSFER
+                        document.getElementById('renderingStatus').innerText = "風格化作品渲染成功！";
+                        
+                        const logLine = document.createElement('div');
+                        logLine.className = "text-emerald-400";
+                        logLine.innerText = `[SUCCESS] Render finished. Style Prompts fully compiled.`;
+                        logsFeed.appendChild(logLine);
+                        logsFeed.scrollTop = logsFeed.scrollHeight;
+
+                        // Activate before/after slider widget comparison
+                        activateComparisonWidget(canvas, sourceImgUrl);
+                    }
+                }
+
+                // Launch active anim frame
+                activeAnimationRequestId = requestAnimationFrame(paintStrokeFrame);
+            };
+        }
+
+        function activateComparisonWidget(styledCanvas, originalUrl) {
+            const widget = document.getElementById('comparisonWidget');
+            const styledImg = document.getElementById('comparisonImgStyled');
+            const originalImg = document.getElementById('comparisonImgOriginal');
+            const sliderGuide = document.getElementById('sliderGuide');
+
+            // Set images matching
+            styledImg.src = styledCanvas.toDataURL();
+            originalImg.src = originalUrl;
+
+            // Display layers
+            widget.classList.remove('hidden');
+            sliderGuide.classList.remove('hidden');
+
+            // Setup slider drag logic
+            setupDragging('comparisonWidget', 'comparisonSliderBefore', 'comparisonSliderHandle');
+        }
+
+        /* ---------------------------------------------------- */
+        /* Header Glassmorphism Scroll FX                       */
+        /* ---------------------------------------------------- */
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if(window.scrollY > 50) {
+                navbar.classList.add('py-1', 'glass');
+                navbar.classList.remove('py-2');
+            } else {
+                navbar.classList.remove('py-1');
+            }
+        });
+    </script>
+</body>
+</html>
