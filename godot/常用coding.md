@@ -7,6 +7,7 @@
 3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
 4.move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime) 3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
 5.death zone>worldboundary
+gripmap
 X0.UI>CanvasLayer>Label
 X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
 X2.gpuparticle>cpuparticle
