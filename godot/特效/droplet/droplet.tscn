@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://hqhqieph3un2"]
+
+[ext_resource type="Texture2D" uid="uid://dsqwvg05h5m8n" path="res://droplet/mi000031.png" id="1_vk5sd"]
+[ext_resource type="Script" uid="uid://jd3a6c2hriic" path="res://droplet/Drop.gd" id="2_wo8ch"]
+[ext_resource type="Shader" uid="uid://cobqhvvyxvjf5" path="res://droplet/drop.gdshader" id="3_udy5v"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_w3afw"]
+shader = ExtResource("3_udy5v")
+shader_parameter/threshold = 0.5
+shader_parameter/softness = 0.02
+shader_parameter/refraction_strength = 0.03
+shader_parameter/highlight_color = Color(1, 1, 1, 0.6)
+
+[node name="Main" type="Node2D" unique_id=269933128]
+
+[node name="MetaballSystem" type="SubViewportContainer" parent="." unique_id=1322837269]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 114.0
+offset_top = 82.0
+offset_right = 626.0
+offset_bottom = 594.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SubViewport" type="SubViewport" parent="MetaballSystem" unique_id=2079098189]
+transparent_bg = true
+
+[node name="WaterDrops" type="Node2D" parent="MetaballSystem/SubViewport" unique_id=1597462510]
+
+[node name="Drop1" type="Sprite2D" parent="MetaballSystem/SubViewport/WaterDrops" unique_id=983580422]
+position = Vector2(149, 216)
+scale = Vector2(0.01, 0.01)
+texture = ExtResource("1_vk5sd")
+script = ExtResource("2_wo8ch")
+
+[node name="Drop2" type="Sprite2D" parent="MetaballSystem/SubViewport/WaterDrops" unique_id=1413210300]
+position = Vector2(105, 94)
+scale = Vector2(0.01, 0.01)
+texture = ExtResource("1_vk5sd")
+script = ExtResource("2_wo8ch")
+
+[node name="RenderEffect" type="ColorRect" parent="MetaballSystem" unique_id=1749501313]
+material = SubResource("ShaderMaterial_w3afw")
+layout_mode = 2
