@@ -1,5 +1,7 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
-<br>
+<br>Apple 風格:變形（Morphing）技術，單位逐次登場
+
+
 每日
 1/3/7天角色: 5屬性tag 色彩 內在
 
