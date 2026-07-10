@@ -1,7 +1,7 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 <br>
 每日
-角色: 5屬性tag 色彩 內在
+1/3/7天角色: 5屬性tag 色彩 內在
 
 ```
 md/bili/圖
