@@ -28,8 +28,11 @@ https://github.com/pwhoae/artbank_private
 23. 字体识别网站：
 24. 字体网站：https://www.fonts.net.cn/
 25. https://nieobie.itch.io/free-icons
-26. https://unity.com/cn/blog/games/level-up-your-code-with-game-programming-patterns
-27. https://quaternius.itch.io/universal-animation-library/download/eyJpZCI6MzQwODAzNCwiZXhwaXJlcyI6MTc4MTUzMDQyN30%3d%2ea9%2bGjXyn%2bo0ydcDE%2fEREJdkicWY%3d
+26. 一键绑定模型骨骼：www.mixamo.com
+27. 风格统一的素材：www.kenney.nl
+28. ui图标：www.svgrepo.com
+29. 音乐音效：pixabay.com<br>https://unity.com/cn/blog/games/level-up-your-code-with-game-programming-patterns
+30. https://quaternius.itch.io/universal-animation-library/download/eyJpZCI6MzQwODAzNCwiZXhwaXJlcyI6MTc4MTUzMDQyN30%3d%2ea9%2bGjXyn%2bo0ydcDE%2fEREJdkicWY%3d
 https://lightpdf.com/tw/
 
 
