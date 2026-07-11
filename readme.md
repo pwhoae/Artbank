@@ -28,6 +28,7 @@ https://github.com/pwhoae/artbank_private
 23. 字体识别网站：
 24. 字体网站：https://www.fonts.net.cn/
 25. https://nieobie.itch.io/free-icons
+26. https://quaternius.itch.io/universal-animation-library/download/eyJpZCI6MzQwODAzNCwiZXhwaXJlcyI6MTc4MTUzMDQyN30%3d%2ea9%2bGjXyn%2bo0ydcDE%2fEREJdkicWY%3d
 https://lightpdf.com/tw/
 
 ### 音樂
