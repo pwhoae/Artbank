@@ -303,6 +303,11 @@ interface ItemFactory:
 場景互動小道具
 	地圖互動
 	看到門持key 配套
+<hr>
+UI:Ipad/iphone show setting
+	音效
+	粒子
+	字體
 ```
 https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
