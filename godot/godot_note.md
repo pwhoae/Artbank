@@ -43,6 +43,7 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 ```
 ### 0.0 基本
 ```
+### 避免硬編碼
 # export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
 # @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
 # enum [enum Phase { Fighting, Win, Resetting }]
