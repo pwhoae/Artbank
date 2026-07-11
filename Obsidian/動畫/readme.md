@@ -1,4 +1,7 @@
-
+tool:
+Powerpoint (PPT)<br>
+HTML:https://github.com/Unclecheng-li/AI_Animation<br>
+CSP<br>
   
 动画的12项基本法则》  
 ***\#\#\#\# 1\. 挤压与拉伸 (Squash and Stretch) —— (0:10)***  
