@@ -475,3 +475,6 @@ std::unique\_ptr
 | load() | 檔案讀取／資源管理 |
 | @export | public 成員（Godot 專屬） |
 | @onready | 建構後初始化（Godot 專屬） |
+<hr>
+boot機:台機>"delete"
+Linux:用tab 預測
