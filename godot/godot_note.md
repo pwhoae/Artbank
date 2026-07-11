@@ -1,5 +1,9 @@
 ### godot note (pck)
 滑板跑酷,streak連勝,草莓巴菲,掃雷
+### 遊戲經驗
+```
+沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
+```
 
 先建[玩法](#玩法) 再填[美術](#美術)<br><a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
 ```
