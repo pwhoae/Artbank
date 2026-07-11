@@ -27,6 +27,7 @@ https://github.com/pwhoae/artbank_private
 22. 纹理网站：
 23. 字体识别网站：
 24. 字体网站：https://www.fonts.net.cn/
+25. https://nieobie.itch.io/free-icons
 https://lightpdf.com/tw/
 
 ### 音樂
