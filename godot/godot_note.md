@@ -1,4 +1,6 @@
 ### godot note (pck)
+滑板跑酷,streak連勝,草莓巴菲,掃雷
+
 先建[玩法](#玩法) 再填[美術](#美術)<br><a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
 ```
 _工具箱
