@@ -297,7 +297,12 @@ interface ItemFactory:
 
 </details>
 <a id="美術"></a>
+
 ### 美術
+美術=為什麼喜歡這種東西>有梗
+場景互動小道具
+	地圖互動
+	看到門持key 配套
 ```
 https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
