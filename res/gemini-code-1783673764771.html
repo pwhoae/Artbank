@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vision Pro Spatial Photo Effect (Light Edition)</title>
+  <style>
+    /* 全局現代簡約亮色背景 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* 使用柔和的現代淺色漸層，襯托玻璃質感 */
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* 空間照片外層容器（提供 3D 視角深度） */
+    .spatial-container {
+      perspective: 1200px;
+    }
+
+    /* 照片卡片本體 */
+    .spatial-card {
+      position: relative;
+      width: 420px;
+      height: 560px;
+      border-radius: 32px;
+      /* 亮色系磨砂玻璃核心 */
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      
+      /* 極細的白色高光邊框與柔和的環境雙重陰影 */
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.04),
+        0 30px 60px rgba(31, 38, 135, 0.07);
+      
+      padding: 24px;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    /* 內部分層照片容器 */
+    .photo-vault {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      transform: translateZ(20px); /* 讓照片內容在 Z 軸向上浮起 */
+      background: #f0f3f8;
+    }
+
+    /* 視差層 1：背景層 (底圖) */
+    .layer-bg {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
+      /* 這裡可以換成你的風景或環境底圖 */
+      background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80') center/cover no-repeat;
+      transition: transform 0.1s ease-out;
+      transform: scale(1);
+    }
+
+    /* 視差層 2：前景層 (例如照片中的主角、人像、或突出的物件) */
+    .layer-fg {
+      position: absolute;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%) translateZ(40px); /* 賦予更強的向前立體感 */
+      width: 85%;
+      height: 70%;
+      /* 這裡建議使用去背的 PNG 人像或物件圖。暫以範例圖替代 */
+      background: url('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+      border-radius: 16px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      transition: transform 0.1s ease-out;
+    }
+
+    /* 動態高光折射層 (Glow Effect) */
+    .shine-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 32px;
+      pointer-events: none; /* 穿透點擊 */
+      mix-blend-mode: overlay; /* 讓高光與下方完美融合 */
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      /* 初始高光位置 */
+      background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 60%);
+      z-index: 10;
+    }
+
+    .spatial-card:hover .shine-overlay {
+      opacity: 1;
+    }
+
+    /* 資訊文案區（悬浮在最上层） */
+    .info-tag {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+      color: #1d1d1f;
+      text-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
+      transform: translateZ(50px); /* 浮在最頂層 */
+    }
+
+    .info-tag h3 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .info-tag p {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="spatial-container">
+    <div class="spatial-card" id="spatialCard">
+      <div class="shine-overlay" id="shineOverlay"></div>
+      
+      <div class="photo-vault">
+        <div class="layer-bg" id="layerBg"></div>
+        <div class="layer-fg" id="layerFg"></div>
+      </div>
+
+      <div class="info-tag">
+        <h3>Spatial Memory</h3>
+        <p>California Coastline · 2026</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const card = document.getElementById('spatialCard');
+    const shine = document.getElementById('shineOverlay');
+    const bg = document.getElementById('layerBg');
+    const fg = document.getElementById('layerFg');
+
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      
+      // 計算滑鼠在卡片內的相對座標 (-1 ~ 1)
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+      // 1. 卡片整體的 3D 傾斜角度控制 (Vision Pro 偏向細緻微調，不宜角度過大)
+      const maxRotate = 12; 
+      card.style.transform = `rotateX(${-y * maxRotate}deg) rotateY(${x * maxRotate}deg)`;
+
+      // 2. 動態高光跟隨 (滑鼠在哪裡，亮點就在哪裡)
+      const mouseXPercentage = (e.clientX - rect.left) / rect.width * 100;
+      const mouseYPercentage = (e.clientY - rect.top) / rect.height * 100;
+      shine.style.background = `radial-gradient(circle at ${mouseXPercentage}% ${mouseYPercentage}%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%)`;
+
+      // 3. 核心：前後景深視差位移 (深度復刻)
+      // 背景層移動方向與滑鼠相同（微幅移動）
+      bg.style.transform = `translateX(${x * -15}px) translateY(${y * -15}px) scale(1.05)`;
+      // 前景物件層移動方向與滑鼠相反，且幅度較大，拉開前後立體感
+      fg.style.transform = `translateX(calc(-50% + ${x * 25}px)) translateY(${y * 25}px) translateZ(40px)`;
+    });
+
+    // 當滑鼠離開時，優雅地還原初始狀態
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      bg.style.transform = 'translateX(0px) translateY(0px) scale(1)';
+      fg.style.transform = 'translateX(-50%) translateY(0px) translateZ(40px)';
+      card.style.transition = 'transform 0.5s ease, cubic-bezier(0.25, 1, 0.5, 1)';
+      bg.style.transition = 'transform 0.5s ease';
+      fg.style.transition = 'transform 0.5s ease';
+    });
+
+    card.addEventListener('mouseenter', () => {
+      // 進入時取消過渡動畫，確保滑鼠跟隨即時流暢
+      card.style.transition = 'none';
+      bg.style.transition = 'none';
+      fg.style.transition = 'none';
+    });
+  </script>
+</body>
+</html>

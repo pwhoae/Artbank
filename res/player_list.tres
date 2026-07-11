@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="PlayerListDatabase" format=3 uid="uid://qlkjtfxxlw8f"]
+
+[ext_resource type="Script" uid="uid://c3wqsi8rkfq80" path="res://Assets/res/player_list.gd" id="1_d0c0e"]
+[ext_resource type="Script" uid="uid://bgcgpbiqwgwum" path="res://Assets/res/player_list_database.gd" id="2_0vkax"]
+
+[sub_resource type="Resource" id="Resource_1f7v3"]
+script = ExtResource("1_d0c0e")
+metadata/_custom_type_script = "uid://c3wqsi8rkfq80"
+
+[resource]
+script = ExtResource("2_0vkax")
+player_list = Array[ExtResource("1_d0c0e")]([SubResource("Resource_1f7v3")])
