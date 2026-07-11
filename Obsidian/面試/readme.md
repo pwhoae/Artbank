@@ -25,6 +25,12 @@
 4. try catch  
 5. activity 是什麼
 ```
+@ 勞工處 https://www2.jobs.gov.hk/0/tc/jobseeker/jobsearch/joblist/hee/
+@ 公務員 (JRE) https://www.csb.gov.hk/tc_chi/recruit/7.html
+@ 招聘日 https://www.jobdailyhk.com/recruitmentday
+@ Talent Pool https://talentjobseeker.hkstp.org/zh-HK
+@ Jijs https://www.jijis.org.hk/
+@ LinkedIn https://www.linkedin.com/feed/
 
 
 ## **面試:STAR-T 原則**
