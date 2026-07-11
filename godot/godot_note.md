@@ -308,6 +308,9 @@ UI:Ipad/iphone show setting
 	音效
 	粒子
 	字體
+
+	shader 不考慮手寫 用ai寫
+	
 ```
 https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
