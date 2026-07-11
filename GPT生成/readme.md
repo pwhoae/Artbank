@@ -1,82 +1,34 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
-<br>Apple 風格:變形（Morphing）技術，單位逐次登場
-
-
-每日
-1/3/7天角色: 5屬性tag 色彩 內在
-
+1-2天法則
 ```
 md/bili/圖
-做遊戲:miss hit/鏡像密碼
-找开源demo
 ```
-空間場景照片 蘋果 怎麼存
-
-1-2天法則
 |||
 |------|---------|
-|設計|平設8<br>敘事性時尚海報<br>背景圖*10 artstation<br> bili片*10 appledesign<br>md youtube*10 game 設計<br>Camera跑一圈<br>去像素+賽璐璐畫風|
-|音樂|音樂7 https://suno.com/create?wid=default|
-|拍攝|拍攝7 gemini|
-|遊戲|遊戲7 Godot|
-
-
-一键绑定模型骨骼：www.mixamo.com<br>
-风格统一的素材：www.kenney.nl<br>
-ui图标：www.svgrepo.com<br>
-音乐音效：pixabay.com<br>
-
-HolopixAI 
-krene
+|設計(8)|敘事性時尚海報<br>去像素+賽璐璐畫風|
+|音樂(7)|https://suno.com/create?wid=default|
+|拍攝(7)|gemini|
+|遊戲(7)|Godot|
 <br>
-### 整活>過程要好玩快樂
-```
-卖什么→谁来卖→卖给谁→怎么卖
-钱怎么分→环境影响→行业怎么来的
-怎么赚钱→凭什么赢→未来能走多远
-```
-遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
-滑板跑酷,streak連勝,草莓巴菲,掃雷
 
+### 整活>過程要好玩快樂
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
 ```
+遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
 <hr>
 
 ### 平面設計 prompt html
+https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1
 ```
 畫面所有元素用矩形+矩形坐標框住並加中文描述
-```
-```
-[final html]平面設計 1920x1080 image 0.文案 ["config": { "main_title": "", "heading": "h1" ; "sub_title": "", "heading": "h2" ;  "sub_left_1": "", "heading": "h3" ;  "sub_left_2": "", "heading": "h4" ;  "sub_right_1": "", "heading": "h3" ;  "sub_right_2": "" , "heading": "h4" ; }] 信息集中在人物左右,底部不多 1.人物 [用陰影增加層次感] 2.背景 [打光, 金屬紋路, 提取角色颜色调整渐变叠加, 漸變, 雙邊框斜線飾條, 太極, 星座, 角色海報, 拍立得, 懸疑感:{報紙揭開,警戒線}] 3.主色調[人物取色塊] 4.文字 [人物名字加大放在人物背後, 文字顏色漸變, 對比強烈風格, 立體動漫文字, 英文字體加工首字母特別處理,其餘正楷, 書法風格, 幾何圓形風格] 5.人物元素[彈幕, 鼠標點, 4角星, 對話框, 圈, 復古風:{蒸汽波,舊式報紙,CRT大電視,街機,卡帶,唱片,磁帶}, 潮流風:{鐳射/金框卡牌,票根,街頭壁畫}, 可愛風:{小表情,音軌,貼紙}, 潮玩風:{浮雕谷子,扭蛋,透明亞克力,鍵帽,鐳射光}, 懸疑風:{人物藏文字}, 彈幕內嵌角色] 6.焦點 [結構暗示：整體排版構成形狀為拱形，暗示結構,重心集中在上半部分, 高斯模糊給前景感增加層次]
-優化成HTML+類似canvas move x,y to test template (html no dark mode+need to preview image) image+text button設計 grid setting>100*100為1格>支持show+hide 支持拖拽加輸入坐標move element element 1.文案 (input string) 固定"config": [position,heading,font size,風格(书法风格,几何圆形风格)] main_title:"box_2d": [134, 18, 514, 287], "heading": "h1", sub_title:"box_2d": [553, 27, 638, 313], "heading": "h2", sub_left_1:"box_2d": [662, 33, 768, 204], "heading": "h3", sub_left_2:"box_2d": [792, 33, 824, 120], "heading": "h4", sub_right_1: "box_2d": [551, 874, 712, 971], "heading": "h3", sub_right_2: "box_2d": [727, 753, 755, 971], "heading": "h4", 信息集中在人物左右,底部不多 support可以增加文案:with input ["name":position,heading,font size,風格(书法风格,几何圆形风格)] element 2.人物 (input image>use folder to store) "character1": "box_2d": [3, 290, 447, 735], "heading": null, [用陰影增加層次感] support可以增加character:with input ["character"] element 3.人物元素 (input image>use folder to store) [insert image with label>label 分類 such as 可愛風:{小表情,音軌}] output:preview image+prompt prompt template: [ 平面設計 1920x1080 image 1.文案=""; 2.人物=""; 3.人物元素=""; ] element 4.焦點 [(修改)_结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分]
-
-0.文案 ["config": { "main_title": "(修改)_改新主標題內容", "sub_title": "(修改)_改新副標題內容", "sub_left_1": "(修改)_改左側區塊一", "sub_left_2": "(修改)_改左側區塊二", "sub_right_1": "(修改)_改右側區塊一", "sub_right_2": "(修改)_改右側區塊二" }, { "main_title": { "box_2d": [134, 18, 514, 287], "heading": "h1" }, "sub_title": { "box_2d": [553, 27, 638, 313], "heading": "h2"}, "sub_left_1": { "box_2d": [662, 33, 768, 204], "heading": "h3"}, "sub_left_2": { "box_2d": [792, 33, 824, 120], "heading": "h4",}, "character": { "box_2d": [3, 290, 447, 735], "heading": null }, "sub_right_1": { "box_2d": [551, 874, 712, 971], "heading": "h3" }, "sub_right_2": { "box_2d": [727, 753, 755, 971], "heading": "h4" } }] 信息集中在人物左右,底部不多 1.人物 [用陰影增加層次感] 2.背景 [(修改)_打光,金屬紋路,提取角色颜色调整渐变叠加,	漸變,人物透明度,太極,星座,懸疑感:{報紙揭開,警戒線tape}] 雙邊框斜線飾條 , 3.主色調[人物取色塊] 4.文字 [(修改)_人物名字加大放在人物背後,文字顏色漸變,立體卡通動漫文字,英文字體加工首字母特別處理,其餘正楷,书法风格,几何圆形风格,流线型设计,对比强烈风格] 5.人物元素(左上右下) [(修改)_彈幕,鼠標點,4角星,對話框,圈,可愛風:{小表情,音軌},拉風:{鐳射光},懸疑風:{人物藏文字},彈幕內嵌角色] 6.焦點 [(修改)_结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分] 结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分 高斯模糊給予一定前景感增加層次 照片
-[反色蒙版]帮我生成一张平面构成海报，主题为角色介紹，部分构成要素用镂空排版，用 反色蒙版 遮住人物一部分，呈现出现代设计感，以给出参考图的场景人物为标准，配色以场景人物的主調色为主，场景人物的次調色为辅，要求有英文日文文字点缀，整体充满几何感
-[竖 竖版适配]：竖版，原排版需改变结构再分层次。左侧部分文案改变竖排，大小/字间距形成对比。右侧同理，部分文案简写并更换字体，平衡空间。 竖版总结：排版结构依然暗示拱形。前景元素距离比横板远，大小对比可更大点。曲线压暗，强化拱形暗示。润色调色。
-[直 基础搭建]：立绘为亮色，采取深紫色为底。 背景装饰：背景图形修饰采用 AI 生成万花筒。 风格化处理：使用划分叠加模式，形成风格化。效果不够明显多叠加 2 层。 光影调节：渐变使用颜色减淡/滤色叠加做光变化。叠加噪点纹理增加质感。 图形修饰：根据调性（雅），做弧形图形修饰。 金属质感：使用内发光/投影，渐变/叠加金属液态纹理做金属感。一层作为边框，共两层。轻微斜面浮雕/渐变/纹理叠加。 层次感：利用角色立绘，划分叠加模式增添变化。对角线呼应，图形修饰。 主体标题：体现调性，选取适合字体取角色名作主体题修饰（字体：Thaloria）。 顶部文案：顶部文案排版，字重较轻避免抢眼（字体：思源黑/Rosemartin）。 细节打磨：主体标题使用内发光/投影/渐变/纹理做质感变化。取角色颜色拉渐变形成颜色对比。 空间补足：左侧采取修饰字体对以补足空间（字体：Dazien）。 元素复用：做简单图形修饰，复用万花筒等纹理叠加做质感。角色元素提取作为图形。 文案细化：提取文案排版（字体：思源宋）。同理内发光/渐变/纹理叠加。英文文案竖排形成对比。 空间平衡：提取文案再排版，补足空间（字体：Cehua Free）。 层级区分：次级文案不再叠加紫渐变。更次级仅有颜色和内发光。 左侧组合：左侧文案组合排版（字体：Thaloria/Rosemartin/思源宋）。 排版优化：四字文案过长采取两行排版，同时需减字重。次级竖排文案修饰增加排版变化。 结构暗示：整体排版构成形状为拱形，暗示结构。重心集中在上半部分，底部重量减轻减少排版信息密度。 投影处理：角色增加层次，根据光角度做投影。 最后修饰：个人附加文案排版，补足空间。提取图形蝴蝶，作为前景修饰，滤色刷一层渐变体现光感。 对比呼应：左上角对角线呼应，稍作颜色变化对比。 氛围渲染：曲线压暗调色为拱形再暗示排版结构，及体现调性。做发光处理丰富画面。 
-```
-```
-文字設計:结构提炼>形态调整>装饰添加>整体优化
-[书法风格]手法：在黑体结构基础上，微调撇捺笔画，使笔触下延并向外扩展，增加笔画粗细对比，并加入曲线连接，营造出流动的书写感和“飞白”效果。
-创意艺术字体“纵有疾风起”，秀丽笔手写风格，整体文字横版排列，具有强烈视觉冲击力； 深度融合手写书法笔意，笔触带毛笔书写的粗犷洒脱，如挥毫泼墨的肆意劲道； 起收笔的飞白，顿挫，尽显促销的火爆张力，文字的形态打破规整，笔画的粗细变化； dutch angle，营造出动感冲刺的气势，字形呈奔放之势； 重心上扬如蓄势待发，笔画的伸展，穿插毫无拘束，似全力冲刺的劲道； 整体架构疏密交织，紧密处如促销热潮的汹涌，留白处似优惠间隙的呼吸感； 纯净黑色背景打底，完美契合热烈氛围，艺术字的形态与色彩酣畅传递。 
-[几何圆形风格]手法：将字体的下半部分简化为圆形设计，线条粗壮，结构稳重，结合顶部的装饰性笔画，体现出简洁的工业设计美感。 
-[流线型设计]手法：将笔画线条调细，横画加粗，日字部的竖画设计成流畅的曲线，横画首尾增加对称的衬角（Serif-like details）装饰，赋予字体优雅的曲线美。
-[对比强烈风格]手法：极致压缩线条宽度，增大撇捺与横画的粗细对比，笔画末端使用衬角装饰，并将中间的竖画进行“省笔”处理，呈现出极具现代感和艺术气息的视觉效果。
 ```
 <hr>
 
 ### 角色設計
 ```
 0.先設計人體線稿確立
-風格男士帽子款式女士帽子款式
-[復古風,潮流風,可愛風]
 1.衣服[從上往下]>臉型裝飾>召喚物>武器
-帽子:[男{復古風:(報童帽),潮流風:(棒球帽)},女:復古風:(貝雷帽),潮流風:(漁夫帽),可愛風:(畫家帽)]
-衣服:[]
-褲子:[]
-裙擺:[]
-鞋子:[]
 2.靈感要素(主要區分點)[设计重点：头/肩膀/胸/腰/手臂/大腿/小腿/膝盖/选择1-2个作为设计重点]
 和现实生活中客观存在的特征挂钩
 ```
@@ -85,17 +37,13 @@ krene
 ```
 第一张图为风格模板，第二张图为角色模板。第一张图决定“如何绘制”，第二张图决定“绘制谁”。以第一张图作为唯一的视觉表现参考，完整继承其Q版比例、线稿风格、上色方式、五官设计、表情设计、动作语言、构图排版、留白节奏与整体视觉语言。以第二张图作为角色参考，准确保留角色的发型、发色、瞳色、服装、饰品、配色、气质特征与整体辨识度。生成3×3九宫格角色表情包，共9个不同表情与动作。风格转换强度最高，使角色完全融入第一张图的绘画体系，呈现出统一、自然、专业的官方Q版角色表情包效果。白色背景，高一致性，高完成度，专业角色设定图品质。
 ```
-###  <a href="https://github.com/pwhoae/Artbank/blob/main/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88/%E6%BD%AE%E7%8E%A9%E8%A8%AD%E8%A8%88.readme.md">潮玩</a>
-
+### 表情差分
+```
+[3×3照片]生成3×3照片网格。 在所有面板中完整保留上传图像中的面部、发型和服装。制作一个角色设计表情风格指南的图像，风格要求： *  每个网格都是角色头像正视图 *  还原参考图的风格 *  所有图片中的服装、脸型和发型都相同 *  整个网格中的姿势和表情都不相同
+[25種表情]使用提供的參考圖作為角色唯一設計來源，生成「25種表情／特效差分（Expression Sheet）」完整角色差分表。 【核心要求】 - 角色外觀、髮型、服裝、配色、畫風、年齡感、五官比例必須與參考圖完全一致 - 不可改變角色身份與服裝設計 - 所有差分需保持同一角色模型與同一視角 - 採用「Galgame / VTuber / Live2D / 視覺小說角色差分表」形式 - 背景保持簡潔純色或透明感灰白背景 - 角色置中排列 - 每個表情獨立清晰 - 高解析度 - anime style, clean lineart, professional expression sheet, character emotion variations, consistent character design 【輸出形式】 生成完整「25表情差分總覽」 可採： - 多列網格排列 - Live2D 差分展示板 - Character Expression Reference Sheet - 角色設定集風格 【表情差分內容】 1. 通常顔 普通表情、自然嘴角、標準眼神 2. 怒り顔 皺眉、生氣、嘴角下壓 3. 困り顔 委屈、困擾、微弱八字眉 4. ジト目顔 側目鄙視、半睜眼、冷淡視線 5. 照れ 臉紅紅暈、害羞表情 (blush overlay effect) 6. 目のハイライトOFF 失去眼睛高光、空洞感 7. どんより 灰暗沮喪、陰沉氛圍 (gloom shadow overlay) 8. 涙 含淚、流淚效果 (animated tear effect feel)9. 白目 翻白眼、失神感 10. 黒目 縮瞳、純黑眼、驚嚇感 11. より目 鬥雞眼、聚焦錯亂 12. あせ 額頭流汗、尷尬汗滴 (sweat drop effect) 13. ハート目 愛心眼、戀愛狀態14. しいたけ目 星星眼 / 香菇眼、超期待感 (glittery excited eyes) 15. ガンギマリ 精神崩壞感、狂氣眼神、瞳孔異常 16. ＞＜目 ＞＜ 閉眼表情、用力表情 17. ボカシ目 失焦、微醺模糊感 18. なごみ目 瞇瞇眼、溫柔放鬆 19. ぐるぐる目 蚊香眼、暈眩狀態 (spiral eyes effect) 20. 読み込み中眼睛像 loading 圈圈、腦袋卡住感 (loading icon eyes) 21. 怒りマーク 頭上青筋符號、生氣特效 22. ぷんぷん煙エフェクト 冒煙、生氣蒸氣特效 (cartoon anger smoke) 23. ハートエフェクト 角色周圍漂浮愛心特效 24. キラキラエフェクト 閃亮亮粒子特效 (sparkle aura effect) 25. メガネ 配戴眼鏡版本 【風格要求】 - 日系動畫角色差分 - 專業遊戲角色設定集 - 高完成度 - 可直接用於 Live2D / VN / RPG / Galgame - 表情變化明確但角色一致性極高 - 柔和動漫光影 - 精緻眼睛繪製 - 高細節頭髮陰影 - emotion showcase sheet - expression reference board - transparent accessory layers feeling - professional anime production material
+```
 <hr>
-<details>
-<summary><h6>廢棄idea</h6></summary>
-沿虛線剪/冲破次元壁的/俯拍城景自拍
-	
-### 遊戲經驗
-```
-沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
-```
+<details><summary><h6>廢棄idea</h6></summary>
 
 ### 高達模型板件
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%887%E6%97%A5%20%E4%B8%8B%E5%8D%8802_43_56.png" width="100" height="100"></img>
@@ -158,8 +106,7 @@ IG
 </details>
 <hr> 
 
-### <a href="https://github.com/pwhoae/Artbank/tree/main/%E8%83%8C%E6%99%AF">背景</a>
-<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/ChatGPT%20Image%202026%E5%B9%B46%E6%9C%889%E6%97%A5%20%E4%B8%8A%E5%8D%8812_53_26.png" width="100" height="100"></img>
+### 背景</a>
 ```
 [doradora]请将此插图转换为{argument name="风格" default="以现代动漫/漫画影响为基础的波普艺术×街头艺术风格"}。以清晰干净的线条画和平涂阴影为主，色彩丰富。包含复杂几何图案等时尚氛围。使用本戴点画法添加渐变和纹理。{argument name="配色" default="以霓虹色为中心的鲜艳高对比配色"}，营造图形化且时尚的氛围。但不要添加文字。保持原插图的构图和角色。
 ```
@@ -171,11 +118,7 @@ IG
 ```
 # 圖像生成描述模板 (進階版) ## 1. 主體描述 [人物外觀、五官、髮型、表情] ## 2. 動作與視角 [姿勢、手部動作、視線、鏡頭距離與角度] ## 3. 環境與氛圍 [場景、時間、光影、色調] ## 4. 風格設定 [藝術風格，例如：cyberpunk / realism / anime] ## 5. 細節強化 [需要強調的畫面細節] ## 6. 畫質要求 高品質，8k解析度，cinematic lighting，ultra-detailed ## 7. 負面提示 [避免錯誤與瑕疵]
 ```
-### 表情差分
-```
-[3×3照片]生成3×3照片网格。 在所有面板中完整保留上传图像中的面部、发型和服装。制作一个角色设计表情风格指南的图像，风格要求： *  每个网格都是角色头像正视图 *  还原参考图的风格 *  所有图片中的服装、脸型和发型都相同 *  整个网格中的姿势和表情都不相同
-[25種表情]使用提供的參考圖作為角色唯一設計來源，生成「25種表情／特效差分（Expression Sheet）」完整角色差分表。 【核心要求】 - 角色外觀、髮型、服裝、配色、畫風、年齡感、五官比例必須與參考圖完全一致 - 不可改變角色身份與服裝設計 - 所有差分需保持同一角色模型與同一視角 - 採用「Galgame / VTuber / Live2D / 視覺小說角色差分表」形式 - 背景保持簡潔純色或透明感灰白背景 - 角色置中排列 - 每個表情獨立清晰 - 高解析度 - anime style, clean lineart, professional expression sheet, character emotion variations, consistent character design 【輸出形式】 生成完整「25表情差分總覽」 可採： - 多列網格排列 - Live2D 差分展示板 - Character Expression Reference Sheet - 角色設定集風格 【表情差分內容】 1. 通常顔 普通表情、自然嘴角、標準眼神 2. 怒り顔 皺眉、生氣、嘴角下壓 3. 困り顔 委屈、困擾、微弱八字眉 4. ジト目顔 側目鄙視、半睜眼、冷淡視線 5. 照れ 臉紅紅暈、害羞表情 (blush overlay effect) 6. 目のハイライトOFF 失去眼睛高光、空洞感 7. どんより 灰暗沮喪、陰沉氛圍 (gloom shadow overlay) 8. 涙 含淚、流淚效果 (animated tear effect feel)9. 白目 翻白眼、失神感 10. 黒目 縮瞳、純黑眼、驚嚇感 11. より目 鬥雞眼、聚焦錯亂 12. あせ 額頭流汗、尷尬汗滴 (sweat drop effect) 13. ハート目 愛心眼、戀愛狀態14. しいたけ目 星星眼 / 香菇眼、超期待感 (glittery excited eyes) 15. ガンギマリ 精神崩壞感、狂氣眼神、瞳孔異常 16. ＞＜目 ＞＜ 閉眼表情、用力表情 17. ボカシ目 失焦、微醺模糊感 18. なごみ目 瞇瞇眼、溫柔放鬆 19. ぐるぐる目 蚊香眼、暈眩狀態 (spiral eyes effect) 20. 読み込み中眼睛像 loading 圈圈、腦袋卡住感 (loading icon eyes) 21. 怒りマーク 頭上青筋符號、生氣特效 22. ぷんぷん煙エフェクト 冒煙、生氣蒸氣特效 (cartoon anger smoke) 23. ハートエフェクト 角色周圍漂浮愛心特效 24. キラキラエフェクト 閃亮亮粒子特效 (sparkle aura effect) 25. メガネ 配戴眼鏡版本 【風格要求】 - 日系動畫角色差分 - 專業遊戲角色設定集 - 高完成度 - 可直接用於 Live2D / VN / RPG / Galgame - 表情變化明確但角色一致性極高 - 柔和動漫光影 - 精緻眼睛繪製 - 高細節頭髮陰影 - emotion showcase sheet - expression reference board - transparent accessory layers feeling - professional anime production material
-```
+
 
 ***
 <a name="case-91"></a>
@@ -203,7 +146,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 ### 例 161：应用界面样机图
 
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case161.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case161.jpg" width="100" height="100"></img>
 ```
 {"type":"video game screenshot mockup","perspective":"third-person over-the-shoulder","character":{"description":"male protagonist seen from behind","clothing":"grey tank top with graphic '{argument name=\"shirt graphic\" default=\"LEONIDA MARINE CENTER\"}', camouflage cargo shorts"},"environment":{"setting":"tropical coastal town, dirt road, sunny daytime with scattered clouds","left_side":"wooden welcome sign reading 'Welcome to {argument name=\"location name\" default=\"LEONIDA KEYS\"} YOUR PARADISE', pink plastic flamingo, tropical foliage, distant water tower","center":"green building with 'FISH' sign and marlin graphic, sign reading 'BAIT TACKLE ICE BEER WINE', pedestrians walking","right_side":"two-story wooden building 'Brian's Boat Works & Marina', 'Brian's Bar' neon sign, parked pickup truck, jet skis on a trailer"},"ui_elements":{"count":5,"components":[{"position":"top-left","type":"mission objective","text":"{argument name=\"mission title\" default=\"MEET RAUL\"}\n{argument name=\"mission description\" default=\"Raul has some work for you at his boatyard\"}"},{"position":"top-right","type":"status HUD","text":"13:47\n$1,142","icon":"pink palm tree"},{"position":"bottom-left","type":"minimap","description":"circular map with purple border, white map icons including 'N' for north"},{"position":"bottom-left, right of minimap","type":"location text","text":"{argument name=\"location name\" default=\"LEONIDA KEYS\"}\nPALM ISLAND"},{"position":"bottom-right","type":"watermark","text":"{argument name=\"game title\" default=\"GTA VI\"}\nPRE-ALPHA FOOTAGE"}]}}
 ```
@@ -242,18 +185,6 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 ```
 
 ***
-
-<a name="case-261"></a>
-
-### 例 261：智能视频生成器暗黑界面设计
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case261.jpg"></img>
-```text
-[中文]渲染一个专业的IOS APP首页UI图，该主题为AI Video Generator,英文界面。专业级设计，专业风格，暗黑色主题。
-[English]Render a professional iOS APP homepage UI image, the theme is AI Video Generator, English interface. Professional-level design, professional style, dark theme.
-```
-
-***
 <a name="case-299"></a>
 
 ### 例 299：极简留白涂鸦手绘草图
@@ -266,13 +197,6 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 ```
 ***
 
-<a name="case-357"></a>
-
-### 例 357：鱼眼镜面复古咖啡馆人像
-
-```text
-A fish-eye lens close-up of [your photo as reference] sipping from a teal/turquoise coffee mug, leaning forward intimately toward camera. Shot through or near a round mirror. Retro café interior with glossy teal subway tiles, vintage appliances, pendant lights. Black t-shirt, yellow-tinted round glasses. Warm moody tones.
-```
 <a name="case-361"></a>
 
 ### 例 361：手机爆炸拆解图
@@ -294,18 +218,6 @@ Create a 3D Insane detailed exploded assembly drawing of [subject or object]
 Transform the uploaded logo into a hyper-realistic scene where the logo silhouette is formed by iron filings reacting to a magnetic field. The logo must keep its exact shape and proportions, appearing as if a magnet shaped like the logo (or hidden beneath the surface) is influencing the filings to align naturally into that recognizable formation. Material details: Fine iron filings with sharp, spiky, needle-like structures. Dense clustering along magnetic field lines forming the logo silhouette. Variation in density — thick near magnetic poles, thinner outward. Matte dark metallic texture with subtle reflections. Physics behavior: Iron filings must follow realistic magnetic field patterns — radial and curved lines forming spikes and ridges. Stronger attraction zones create thicker, raised clusters. Outer areas show softer, more dispersed alignment. Natural randomness and slight irregularity — no perfect edges. Some loose filings scattered beyond the main shape. Surface interaction: Flat surface such as a lab table, glass plate, or matte black tray. Filings resting on surface but visibly lifted in areas due to magnetic force (spiky texture). Subtle dust and micro particles around. Environment & human presence: Realistic classroom, science lab, or creative studio environment. A person partially visible — hands holding or moving a magnet beneath the surface or nearby. Possibly a child or adult observing or interacting (adds emotional curiosity). Other subtle elements: notebooks, tools, or lab items out of focus. Lighting: Directional overhead light creating shadows from raised filings. Subtle highlights on metallic edges. Balanced natural or indoor lighting. Atmosphere: Curiosity. Discovery. Educational yet visually satisfying. Quiet but engaging moment. Camera & composition: Top-down or slightly angled close-up view. Logo clearly visible through iron filing formation. Human hands or interaction slightly off-center for storytelling. Format: Aspect ratio: STRICT 4:5 vertical. No text overlays. Style: Hyper-real macro + environmental photography. Physically accurate magnetic behavior. Cinematic yet grounded realism.
 ```
 ***
-
-<a name="case-376"></a>
-
-### 例 376：泼洒抹茶街头手机照片
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case376.jpg" width="100" height="100"></img>
-```text
-A realistic vertical smartphone photo of a spilled green iced drink on outdoor stone pavement, a transparent disposable plastic cup lying on its side inside the green puddle, clear plastic lid nearby, scattered ice cubes floating in the drink, small foam bubbles on the surface, green liquid naturally spreading across rough square floor tiles, strong midday sunlight, harsh realistic shadows, a dark human shadow silhouette cast across the ground and partially over the spill, accidental street moment, urban documentary photography, handheld phone camera perspective, slightly top-down angle, natural colors, realistic pavement texture, raw unedited photo look, high detail, authentic everyday scene, 9:16 vertical composition
-
-Negative Prompt:
-cartoon, illustration, anime, CGI, 3D render, fantasy style, studio lighting, overly perfect composition, overly clean floor, fake liquid, unrealistic reflections, plastic-looking liquid, oversaturated green, blurry, low resolution, distorted cup, melted plastic, extra cups, duplicated objects, readable brand logo, messy text, watermark, poster design, dramatic artificial lighting, excessive sharpening, over-processed, unrealistic shadow, floating ice, deformed perspective
-```
 
 
 ```
