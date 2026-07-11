@@ -25,12 +25,21 @@
 4. try catch  
 5. activity 是什麼
 ```
-@ 勞工處 https://www2.jobs.gov.hk/0/tc/jobseeker/jobsearch/joblist/hee/
-@ 公務員 (JRE) https://www.csb.gov.hk/tc_chi/recruit/7.html
-@ 招聘日 https://www.jobdailyhk.com/recruitmentday
-@ Talent Pool https://talentjobseeker.hkstp.org/zh-HK
-@ Jijs https://www.jijis.org.hk/
-@ LinkedIn https://www.linkedin.com/feed/
+@ 勞工處 https://www2.jobs.gov.hk/0/tc/jobseeker/jobsearch/joblist/hee/ <br>
+@ 公務員 (JRE) https://www.csb.gov.hk/tc_chi/recruit/7.html<br>
+@ 招聘日 https://www.jobdailyhk.com/recruitmentday<br>
+@ Talent Pool https://talentjobseeker.hkstp.org/zh-HK<br>
+@ Jijs https://www.jijis.org.hk/<br>
+@ LinkedIn https://www.linkedin.com/feed/<br>
+
+市場JOB mobile：22k-28 <br>
+It trainee:20k <br>
+It support:14-15k<br>
+準備
+1頁寫CV
+強調強處
+突顯優勢
+<br>手把手带你写简历！HR最喜欢的简历套路有哪些？| 职场对谈01
 
 
 ## **面試:STAR-T 原則**
