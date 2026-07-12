@@ -317,10 +317,10 @@ UI:Ipad/iphone show setting
 	粒子
 	字體
 
-	shader 不考慮手寫 用ai寫
+	
 	
 ```
-https://godotshaders.com
+shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
 
