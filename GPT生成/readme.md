@@ -1,8 +1,11 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
-棄置:動畫/建模/角設
-```
+棄置:動畫/建模/角設<BR>
 md/bili/圖
+
+```
+世界（原型) X 扁型（外表,招牌特點) X 個性（內部)
+
 「由大到小、由遠及近、由整體到細節」 
 1. 核心風格與背景 (Core Style & Setting)
 藝術風格： 
