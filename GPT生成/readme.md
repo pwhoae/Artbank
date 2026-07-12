@@ -1,5 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
+棄置:動畫/建模/角設
 ```
 md/bili/圖
 「由大到小、由遠及近、由整體到細節」 
