@@ -318,7 +318,7 @@ UI:Ipad/iphone show setting
 	字體
 
 	
-tween
+tween:expo/elast/circ>easeout/easeoutin
 <img src="https://raw.githubusercontent.com/godotengine/godot-docs/master/img/tween_cheatsheet.webp" ></img>
 
 ```
