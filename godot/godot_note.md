@@ -318,7 +318,9 @@ UI:Ipad/iphone show setting
 	字體
 
 	
-	
+tween
+<img src="https://raw.githubusercontent.com/godotengine/godot-docs/master/img/tween_cheatsheet.webp" ></img>
+
 ```
 shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
