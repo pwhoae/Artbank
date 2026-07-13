@@ -1,6 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
-棄置:動畫/建模/角設<BR>
+棄置:漫畫》動畫/建模/角設<BR>
 md/bili/圖
 鈴打哈欠+伸懶腰/燈塔維 廣下雪
 
