@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://b6y7wi8g6ek02"]
+
+[ext_resource type="Script" uid="uid://cokouybum2t2w" path="res://工具箱 2.0/[UI類]/腳本/登入介面_Login_Interface.gd" id="1_f6a8p"]
+
+[node name="登入介面" type="Control" unique_id=830087235]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_f6a8p")

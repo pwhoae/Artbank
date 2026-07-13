@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://bgy6ps81ogy4b"]
+
+[ext_resource type="Script" uid="uid://ryeqfqxxugta" path="res://工具箱 2.0/[UI類]/腳本/畫廊_Gallery.gd" id="1_uui1f"]
+
+[node name="畫廊" type="Control" unique_id=400957777]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_uui1f")

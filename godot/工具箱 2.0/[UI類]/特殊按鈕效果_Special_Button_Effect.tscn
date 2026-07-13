@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cyivkwqqe4xgc"]
+
+[ext_resource type="Script" uid="uid://crr0jjxfb1f2o" path="res://工具箱 2.0/[UI類]/腳本/特殊按鈕效果_Special_Button_Effect.gd" id="1_v7ml0"]
+
+[node name="特殊按鈕效果_Special_Button_Effect" type="Button" unique_id=878469609]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -952.0
+offset_bottom = -548.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_v7ml0")
