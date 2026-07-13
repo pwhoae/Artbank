@@ -1,0 +1,74 @@
+---
+title: "i made a very \"serious\" game"
+source: "https://www.youtube.com/watch?v=u_IpWUKaSDM"
+author:
+  - "[[Jerbob]]"
+published: 2026-06-23
+created: 2026-07-13
+description: "For the @JuniperDev game jam I created a game that is \"very serious\"... or is it?Try out the game: https://jerbobyt.itch.io/alt-tabWishlist Vampy's Big Day on Steam: https://store.steampowered.com"
+tags:
+  - "clippings"
+---
+![](https://www.youtube.com/watch?v=u_IpWUKaSDM)
+
+For the @JuniperDev game jam I created a game that is "very serious"... or is it?  
+  
+Try out the game: https://jerbobyt.itch.io/alt-tab  
+  
+Wishlist Vampy's Big Day on Steam: https://store.steampowered.com/app/4287040/Vampys\_Big\_Day/  
+  
+Join the Discord: https://discord.gg/Y5Dy2H3
+
+## Transcript
+
+**0:00** · Who do you think would win in a fight?
+
+**0:01** · Joy and Whimsy or seriousness and corporate overlords? Answering that question is the quest of today's \[music\] video. Or more accurately, I saw that Juniper Dev was hosting a game jam with the title The Very Serious Juniper Dev Game Jam. Now, if you know anything about this channel, you know that silliness is \[music\] kind of my thing. I even hosted my own game jam just a few months ago called Jabob's Silly Jam. You may say, "Jabob, it sounds like this game jam is the antithesis to everything you stand for." You're right. And that's exactly why I had to emerge from my game jam hibernation and make a statement piece against being serious. Could I somehow hide joy and whimsy inside a serious game and not get caught? Let's find out.
+
+**0:36** · So, what is this game jam anyways? Let's take a look at the jam page. This is a highly serious game jam. You'll have 7 days to make a very serious game. If you think this is some whimsical and super casual game jam with low stakes, clearly \[music\] you are mistaken. All right, well, I think it's pretty clear that joy and whimsy would not be tolerated in this environment. Someone has to take a stand. But, what are the stakes? This is a very serious game jam, so there are obviously insanely high stakes. You can expect your life to begin fraying away before your very eyes should you fail.
+
+**1:01** · This is worse than I thought. The day finally came for the start of the jam.
+
+**1:03** · All game jams begin with an exciting theme reveal. And usually I'm at the edge of my seat watching the reveal video live, but \[music\] this game jam started a little bit different for me. I was sleeping. I slept through it. I totally forgot the game jam started on a Friday. I have to admit I'm a little bit rusty. I've done a bunch of game jams in the past, but for the last year and a half or so, I've been working on getting Vampy's Big Day Out on Steam. I decided to take a little break for the weekend and just make something new in this game \[music\] jam. So, even though the game jam's technically 7 days long, I'm aiming to finish the game in just about 48 hours. \[music\] I'm not in my prime, but I'm ready to kick some butt. Let's see what the theme is.
+
+**1:38** · \[music\] Spin to win. It was hiding before my eyes this entire time. How devious. So, with the theme revealed, I began brainstorming. First, I laid out all the variables. The theme is spin to win.
+
+**1:53** · This is also the very serious game jam, so that's an additional limitation I wanted to keep in mind. Beyond that, I wanted my game to be a statement piece about joy in a serious environment. With all those variables, I began the brainstorm. Most people would recommend writing down as many ideas as you can and then going through them to pick your favorite, or at least the most feasible one. But, I've realized I have a really bad habit with that. Let's see what I was thinking in the moment. So, the theme of this game jam is spin to win, \[music\] and I already have an idea. I realized today that my fatal flaw in game jams is always going with my first idea because I think it's perfect. So, this time I'm going to do that again. The thing is with this game jam, I'm not just trying to make something fun, \[music\] I'm trying to make a statement.
+
+**2:23** · Nothing is more serious than the corporate ladder, and therefore that's where my game will take place. The idea I have so far is you sit in a spinny chair and you have your computer open with two tabs. One of them is work, one of them is a fun, whimsical game. \[music\] In an In an almost kind of Five Nights at Freddy's-like gameplay, you have to spin around in your chair to look at different \[music\] sides of your cubicle to make sure that no one's approaching.
+
+**2:44** · If any one of your coworkers sees you slacking off playing a game and having fun, \[music\] experiencing whimsy and joy in the work environment, that's not good for you.
+
+**2:52** · Your goal is to beat all the levels on the game you're playing on your computer before the work day's over. I told myself at the start of this game jam I'd be doing something super simple that would be impossible not to finish, \[music\] but I just got really excited about this game idea and so I think I'm just going to do it. And that is my fatal flaw. I always think of one idea and just go with it because I get excited about it. Sometimes that works really well. I won the GMTK Game Jam in 2022 with that exact strategy, but it's very hit or miss. My original idea for the game was actually to have the player daydreaming and the mini game you play would take place in the little thought bubble. But, I realized the gameplay of switching tabs while your coworkers sneak up behind you and watch you would probably be more fun and more intuitive.
+
+**3:24** · Before I show you how I start working on my game, let me first explain what you probably should do. You should start with a simple prototype with no art to make sure the idea you have actually works. You should test lots of ideas to see which one is the most fun. You should build a strong foundation for your project. So, how did I start? I made this little spinny chair.
+
+**3:40** · Look at it go. That's right, I made all the art first. Again, I do this every time. To be fair, getting the visual look of the game down was important. I wanted to keep \[music\] the style really simple and use color carefully to convey the bleakness of corporate life and contrast that with the whimsy of playing a game. And it was kind of hard to get the spinny chair to look right, but after a little while I had the spinning working in game. Then I had to test my idea to make the camera shift based on which way you were looking. When the player is facing forward, you focus on the computer screen and the camera zooms in. And then if you spin away from the computer, you can look right, down, and left before returning to your original position and the camera will follow your gaze.
+
+**4:08** · That way later on you could watch your back to make sure none of your co-workers were watching you. And then I had the most interesting challenge so far. I needed to have two tabs on the computer screen that the player could switch between. I already knew how I wanted the working screen to be. To work, {quote} {unquote}, in this game you just spam the space bar and every time you do a new word appears on the screen. Each word comes from a bank of corporate jargon words like synergy, leverage, and vampy. Wait, how did that get in there? And then for the gameplay screen, I had to figure \[music\] out how to fit a whole game onto the tiny screen.
+
+**4:33** · At first I looked into maybe simulating the game somewhere off screen and then using a camera to show the gameplay on your computer monitor, but that ended up just being too complicated, so I literally just made a tiny game within the game. At first I was going to do a platformer, but I ended up changing my mind and going with a more intuitive game, Flappy Bird. I explain why in this video clip, so I'll just play it. It's been about two or three hours so far and I've already got a lot of the fundamental game working and I think it's really cool. I I've added a lot of like squashing and stretching and camera stuff and juice just \[music\] to make it feel nice, which usually is stuff that you're supposed to do at the end of making a game, but I'm I always do my game jams in reverse.
+
+**5:04** · I like to get the feel for the game first and I'm really liking \[music\] how it's turning out. The big element that's lacking right now is the Five Nights at Freddy's like looking around making sure that no one's coming towards you aspect. Currently there's no other employees, it's just you, but you can switch between tabs, you can play your game, and you can \[music\] work, {quote} {unquote}, which just means spamming the keyboard with random corporate jargon.
+
+**5:26** · So, so far it's coming along great. I'm \[music\] excited to see how it continues developing. The choice to do Flappy Bird was also interesting because I was initially going to do some sort of platformer, but it's really hard to fit the game screen inside that tiny space.
+
+**5:37** · That's been the biggest challenge so far. So, I just decided to pick one of the simplest mini games that everybody knows and loves, Flappy Bird. So, a stylistic choice I made is only including color in the mini game and in nothing else in real life because the corporate ladder is bleak and miserable, but Flappy Bird is is life. So, I hope to also reinforce that idea with sound effects and stuff like that. We'll see how it goes. With so much of the game done already and only a few hours in, I made sure to take some time to chill, eat lunch, and go on a walk. I've learned this is especially important to touch grass if you're a game developer.
+
+**6:03** · You got to take advantage of every opportunity you get. After that, I got back to work on the game to add your enemies, the co-workers. They look just like you, except they don't actually do any work. They just walk around and snoop on you. Luckily, I've been doing a ton of programming NPC behavior for Vampy's Big Day, so it didn't take me too long to figure out how to make these guys work. They just pathfind to different preset points around you. I added some office-looking walls to add some variation \[music\] between the levels. If co-workers have a line of sight to your monitor while you're playing a game, a little question mark pops up above their heads. And then after 3 seconds, if you're still playing, you got got. No slacking allowed in the workplace.
+
+**6:32** · A little quality-of-life thing I did is to make it so the camera will pan over to the co-worker if they see you. That way it's obvious when you've been spotted and you have time to switch tabs before it's too late. It's the classic test of reflexes switching between browser tabs. Reminds me of when I was in middle school watching Minecraft parody animations in the computer lab and the teacher would walk around and you had to switch back to your classwork. Good times. A final addition that I think tied it together nicely is this little clock on your desk. It gradually moves from 9:00 to 5:00 \[music\] and the time goes by faster on harder levels. Your goal is to beat the mini-game by getting a certain score before the workday is over.
+
+**6:58** · But when a co-worker's watching you, you can't play your game, so I made it so that when you work by spamming your keyboard with corporate jargon, time slows down. So, if there's someone behind you to avoid running out of time, you can keep spamming. With all those pieces, it was really starting to come together. I added some simple sound effects and some very simple menus, which obviously I was totally going to change later. I I didn't change them later. They're the same. I had my wife try it out later that night and I was pretty happy with it. The fact that I was able to get a simple version of my whole idea done in basically one day was super cool. I'm definitely getting faster and faster every game jam I do. On day two, I worked on the game for just a few hours.
+
+**7:29** · I added more sound effects, made a silly song for the mini-game with a free website I like called Beepbox. I added some text to explain the game during the tutorial, and I added a third level where you have no cubicle at all. I think adding the music and ambiance really made the game come together. When you're playing your game, all of the ambiance fades out and it's just you and your game.
+
+**7:47** · Then when you get spotted and switch tabs, it really feels like snapping back to reality as the office sounds fade back in. Huh?
+
+**7:55** · Now, I had a lot of ideas for the game still, like new types of co-workers and different mini-games you could play, but honestly, I'm happy with where this game is at for the time being. Okay, so it's Saturday, which means it's day two of the game jam and the game is pretty much done, actually. The game jam's actually seven days, but I kind of just wanted to take a little break from my current main project, Vampy's Big Day, and make something new. So, I'm pretty happy with how it's turned out already. I think I might just honestly call it here. I'm honestly not used to doing game jams with more than 48 hours, so I just have way too much time, which is a good problem to have, I guess.
+
+**8:24** · I could definitely expand the game, make more levels, make it a little bit more polished. I may make some tweaks to it over the coming days, \[music\] but I think I'm pretty happy with where it's at right now, for the most part.
+
+**8:33** · I'm having some people playtest it right now just to make sure it feels good and makes sense to people. Yeah, I'm pretty happy with how it turned out. It's very silly. It It's making a statement against corporations and against seriousness, kind of, I think. It's kind of a dumb game, but I think it's funny.
+
+**8:48** · So, yeah, it was refreshing to take a step back from my main project for a little while and work on a fun little game jam project. The only question that remains is, will it work? Will the theme of my game resonate with people who are tired of being so serious? Only time will tell. I'm actually making this video before the deadline of the jam is even happened because I'm just excited about this little idea and I wanted to talk about it. So, I'll leave a pinned comment letting you know how the game did once the jam wraps up. In all seriousness though, this was a very fun jam. Thank you to Junior ProDev for hosting, and I'm going to go keep working on Vampy. If you want to play the game that I made, I'll leave a link in the description. And if you enjoyed this video, make sure to check out my last Vampy devlog, and subscribe, please. Bye-bye.
