@@ -18,7 +18,7 @@ options_grid = NodePath("GridContainer")
 [node name="FlowContainer" type="FlowContainer" parent="." unique_id=2114360687]
 layout_mode = 0
 offset_right = 455.0
-offset_bottom = 130.0
+offset_bottom = 44.0
 
 [node name="top" type="GridContainer" parent="FlowContainer" unique_id=319094641]
 layout_mode = 2
@@ -33,10 +33,10 @@ anchors_preset = 14
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = 17.0
-offset_top = -271.0
-offset_right = 17.0
-offset_bottom = -263.0
+offset_left = 5.0
+offset_top = -178.0
+offset_right = 5.0
+offset_bottom = -170.0
 grow_horizontal = 2
 grow_vertical = 2
 columns = 3
