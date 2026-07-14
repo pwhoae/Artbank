@@ -307,6 +307,10 @@ interface ItemFactory:
 <a id="美術"></a>
 
 ### 美術
+```
+roughness=0
+toon
+```
 美術=為什麼喜歡這種東西>有梗
 場景互動小道具
 	地圖互動
