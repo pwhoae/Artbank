@@ -3,16 +3,12 @@
 棄置:漫畫》動畫/建模/角設<BR>
 md/bili/圖
 鈴打哈欠+伸懶腰/燈塔維 廣下雪
-https://gbf.huijiwiki.com/wiki/SSR人物
 ```
-卖什么→谁来卖→卖给谁→怎么卖
-钱怎么分→环境影响→行业怎么来的
-怎么赚钱→凭什么赢→未来能走多远
+卖什么→谁来卖→卖给谁→怎么卖>钱怎么分→环境影响→行业怎么来的>怎么赚钱→凭什么赢→未来能走多远
 ```
 
-|||
-|------|---------|
 |設計(8)|敘事性時尚海報<br>去像素+賽璐璐畫風|
+|------|---------|
 |音樂(7)|https://suno.com/create?wid=default|
 |拍攝(7)|gemini|
 |遊戲(7)|Godot|
@@ -25,11 +21,11 @@ https://gbf.huijiwiki.com/wiki/SSR人物
 遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
 <hr>
 
-### 平面設計 prompt html
-https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1
+### <a href="https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1">平面設計 prompt html</a>
 ```
 畫面所有元素用矩形+矩形坐標框住並加中文描述
 ```
+
 <hr>
 
 ### 角色設計
