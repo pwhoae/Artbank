@@ -1,7 +1,7 @@
 ### godot note (pck)
 ### 遊戲經驗
 ```
-沒有遊戲經驗不要動作遊戲 做遊戲ui 劇情 玩法 美術 bgm demo 玩法1個月 開發 (同時50%) >手遊 (次要)簡單化+同質化 >itch 宣發 (同時50%) >PV不要Logo
+沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
 ```
 
 先建[玩法](#玩法) 再填[美術](#美術)<br><a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
@@ -51,7 +51,7 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 ```
 ### 避免硬編碼
 # export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
-# @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
+# ctrl:@onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
 # enum [enum Phase { Fighting, Win, Resetting }]
 # 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
 # 显示系统对话框 OS.alert("message")
@@ -60,7 +60,6 @@ await get_tree().create_timer(2).timeout # 等待時間
 ### 輔助func
 clamp
 lerp/lerp_angle
-tween
 randi/randf
 position.direction_to(player.position)
 match type
@@ -76,7 +75,6 @@ assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#pu
 ```
 
 ### 0. signal
-用法
 ```
 |player.gd|another.gd|
 |1 signal start <br> 2 start.emit() #发射信号|@export player <br> 3 player.start.connect(func) #only start.emit()>turn on the func |
@@ -94,7 +92,6 @@ assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#pu
 ```
 ### 0. Input 53 input system
 inputeventmouse/mouse click gui
-
 ```
 # 键盘输入 [if Input.is_key_pressed(KEY_SPACE)]
 # 鼠标输入 [if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)]
@@ -149,14 +146,9 @@ file.close()
 ```
 <details><summary>次要</summary>
 
-### tilemap>terrain 
-```
-+地圖html
-```
+### tilemap>terrain:https://wareya.github.io/webtyler/
+
 ###  interactive
-```
-coin/box/spike
-```
 
 ### 0. OS
 ```
@@ -311,17 +303,9 @@ roughness=0
 toon
 seamless 無縫
 ```
-美術=為什麼喜歡這種東西>有梗
-場景互動小道具
-	地圖互動
-	看到門持key 配套
+美術=為什麼喜歡這種東西>有梗/場景互動小道具/地圖互動/看到門持key 配套
 <hr>
-UI:Ipad/iphone show setting
-	音效
-	粒子
-	字體
-
-	
+UI:Ipad/iphone show setting/音效/粒子/字體
 tween:https://github.com/pwhoae/Artbank/blob/main/godot/Tween/readme.md
 
 ```
