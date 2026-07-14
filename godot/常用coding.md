@@ -7,6 +7,7 @@
 3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
 4.move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime) 3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
 5.death zone>worldboundary
+
 gripmap
 camera飛過去地圖演示
 X0.UI>CanvasLayer>Label
@@ -14,11 +15,9 @@ X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3�
 X2.gpuparticle>cpuparticle
 XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 ```
-```
-運用 RayCast2D（射線偵測） 向左、向右發射隱形射線，當偵測到牆壁碰撞時，腳本會自動將移動方向（direction）乘以 -1，並切換 flip_h 水平翻轉精靈圖，達成自動無盡巡邏。
-```
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="500" height="500"></img>
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/editable.jpeg" width="500" height="500"></img>
+
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="100" height="100"></img>
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/editable.jpeg" width="100" height="100"></img>
 
 ### 次研究:粒子系统 【Godot进阶教学】做出你的第一个3D游戏：粒子系统的运用
 ```
@@ -26,6 +25,7 @@ process material/standard3d albedo/time amount spawn出生/direction sparation/a
 ```
 
 ### 2D Notes
+
 ```
 #帕斯卡 class_name [ClassName]  /signal [HitPlayer]
 #蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
@@ -35,6 +35,7 @@ await get_tree().create_timer(2).timeout # 等待時間
 clamp
 lerp
 tween
+RayCast2D
 
 ### 時間
 var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間
