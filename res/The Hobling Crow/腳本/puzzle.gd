@@ -1,8 +1,11 @@
 extends Control
 
-@onready var story_flow: FlowContainer = $MainLayout/RightPanel/StoryPaper/StoryFlow
-@onready var options_grid: GridContainer = $MainLayout/RightPanel/OptionsArea/OptionsGrid
-@onready var continue_button: Button = $MainLayout/RightPanel/BottomActions/ContinueButton
+@export var story_flow: FlowContainer
+@export var options_grid: GridContainer
+#@onready var story_flow: FlowContainer = $MainLayout/RightPanel/StoryPaper/StoryFlow
+#@onready var options_grid: GridContainer = $MainLayout/RightPanel/OptionsArea/OptionsGrid
+
+#@onready var continue_button: Button = $MainLayout/RightPanel/BottomActions/ContinueButton
 
 # 核心數據
 var segments = ["委託人自述：帶家中 ", " 散步時，發現其行為異常。偵探們現地調查，發現途經破損的 ", "。牠受 ", " 影響，感到不適。"]
@@ -77,7 +80,7 @@ func _on_word_clicked(word_idx: int) -> void:
 func _on_take_back_word(slot_idx: int) -> void:
 	player_slots[slot_idx] = -1
 	rebuild_ui()
-	continue_button.disabled = true
+	#continue_button.disabled = true
 
 # 答案校對
 func _check_answers() -> void:
@@ -90,7 +93,7 @@ func _check_answers() -> void:
 			correct = false
 			
 	if correct:
-		continue_button.disabled = false
+		#continue_button.disabled = false
 		print("真相大白！")
 	else:
 		print("答案有誤，偵探嘆氣！")
