@@ -310,6 +310,7 @@ interface ItemFactory:
 ```
 roughness=0
 toon
+seamless 無縫
 ```
 美術=為什麼喜歡這種東西>有梗
 場景互動小道具
