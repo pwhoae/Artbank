@@ -318,8 +318,7 @@ UI:Ipad/iphone show setting
 	字體
 
 	
-tween:expo/elast/circ>easeout/easeoutin
-<img src="https://raw.githubusercontent.com/godotengine/godot-docs/master/img/tween_cheatsheet.webp" ></img>
+tween:https://github.com/pwhoae/Artbank/blob/main/godot/Tween/readme.md
 
 ```
 shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
