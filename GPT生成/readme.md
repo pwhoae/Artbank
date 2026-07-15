@@ -1,5 +1,14 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
+2.真相 https://share.gemini.google/wy5j3uOwUBrV
+
+玩法
+1.拼圖 https://share.gemini.google/ac76sJCbDNhN
+
+
+shader
+1.粒子消散 https://share.gemini.google/HLWDFikIqnuw
+
 thomas brush
 brackeys
 棄置:漫畫》動畫/建模/角設<BR>
