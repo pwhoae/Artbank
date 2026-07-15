@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://d0uy3jubmc3xr"]
+
+[ext_resource type="Shader" uid="uid://m47q60rwwlyi" path="res://shader/消散效果_Dissolve (fail)/2D_Dissolve.gdshader" id="1_e75fk"]
+[ext_resource type="Texture2D" uid="uid://ccjmku2katg84" path="res://輔助/godot.png" id="2_o4xfw"]
+[ext_resource type="Script" uid="uid://dn1edhlpijvuk" path="res://shader/消散效果_Dissolve (fail)/2d_dissolve.gd" id="3_o4xfw"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_e75fk"]
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ackx3"]
+shader = ExtResource("1_e75fk")
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_e75fk")
+shader_parameter/dissolve_value = 0.0
+shader_parameter/burn_color = Color(1, 0.5, 0, 1)
+shader_parameter/burn_size = 0.05
+
+[node name="Sprite2D" type="Sprite2D" unique_id=938431879]
+material = SubResource("ShaderMaterial_ackx3")
+position = Vector2(255, 162)
+texture = ExtResource("2_o4xfw")
+script = ExtResource("3_o4xfw")
