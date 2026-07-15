@@ -2,21 +2,17 @@
 1-2天法則
 <details><summary><h6>放棄idea</h6></summary>
 商業化插圖
-shader:不會寫>要抄別人 (visual可視化<寫)
+shader/tween:不會寫>要抄別人 (visual可視化<寫)
                           
-<details>
+</details>
 
-2.真相 https://share.gemini.google/wy5j3uOwUBrV
 
 玩法
-1.拼圖 https://share.gemini.google/ac76sJCbDNhN
+2.真相 https://share.gemini.google/wy5j3uOwUBrV
 
 
-shader
-1.粒子消散 https://share.gemini.google/HLWDFikIqnuw
 
-thomas brush
-brackeys
+
 棄置:漫畫》動畫/建模/角設<BR>
 md/bili/圖
 鈴打哈欠+伸懶腰/燈塔維 廣下雪
