@@ -1,4 +1,5 @@
 世界（原型) X 扁型（外表,招牌特點) X 個性（內部)
+參考:https://gbf.huijiwiki.com/wiki/SSR%E4%BA%BA%E7%89%A9
 
 「由大到小、由遠及近、由整體到細節」 
 1. 核心風格與背景 (Core Style & Setting)
