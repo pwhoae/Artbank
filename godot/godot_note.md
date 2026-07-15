@@ -307,6 +307,7 @@ seamless 無縫
 <hr>
 UI:Ipad/iphone show setting/音效/粒子/字體
 tween:https://github.com/pwhoae/Artbank/blob/main/godot/Tween/readme.md
+https://github.com/pwhoae/Artbank/tree/main/godot/%E5%8B%95%E7%95%AB%E5%B9%80%20Spritesheet
 
 ```
 shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
