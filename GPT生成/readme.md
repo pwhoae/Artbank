@@ -1,6 +1,11 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
+<details><summary><h6>放棄idea</h6></summary>
 商業化插圖
+shader:不會寫>要抄別人 (visual可視化<寫)
+                          
+<details>
+
 2.真相 https://share.gemini.google/wy5j3uOwUBrV
 
 玩法
