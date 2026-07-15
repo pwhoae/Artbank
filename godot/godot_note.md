@@ -301,21 +301,16 @@ interface ItemFactory:
 ```
 roughness=0
 toon
-seamless 無縫
 ```
 美術=為什麼喜歡這種東西>有梗/場景互動小道具/地圖互動/看到門持key 配套
+
 <hr>
-【【Godot4】快速实现简易真实的3D水面】 https://www.bilibili.com/video/BV11b421e7xQ/?share_source=copy_web material seamless uv1 time*0.02
-Aurora shader effect:https://www.youtube.com/watch?v=cCu-TwZItUo
-像素化傳送門:https://godotshaders.com/shader/pixelated-portal/
-
-
 UI:Ipad/iphone show setting/音效/粒子/字體
 tween:https://github.com/pwhoae/Artbank/blob/main/godot/Tween/readme.md
 https://github.com/pwhoae/Artbank/tree/main/godot/%E5%8B%95%E7%95%AB%E5%B9%80%20Spritesheet
 
 ```
-shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
+shader 好麻煩 不考慮手寫 用ai寫
 <br>https://github.com/pwhoae/Artbank/blob/main/godot/shader/readme.md
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
