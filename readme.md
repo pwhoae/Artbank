@@ -1,6 +1,8 @@
 [回到底部](#readme)<a id="readme_begin"></a><br>https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md
 
 https://github.com/pwhoae/artbank_private
+音頻:[shock]/ [cat_meme]/ [meme]/ [綜藝]
+
 
 ### 美術
 1. SVG网站：https://www.svgrepo.com/
