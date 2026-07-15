@@ -1,3 +1,11 @@
+seamless 無縫
+
+【【Godot4】快速实现简易真实的3D水面】 https://www.bilibili.com/video/BV11b421e7xQ/?share_source=copy_web material seamless uv1 time*0.02
+Aurora shader effect:https://www.youtube.com/watch?v=cCu-TwZItUo
+像素化傳送門:https://godotshaders.com/shader/pixelated-portal/
+
+shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
+
 1. 像素化特效 (Pixel Art Shader)
 原理：將 UV 座標乘以設定的「像素解析度（Pixel Resolution）」，再透過 Floor 節點向下取整（例如將 10.9 轉為 10），最後再除以像素解析度。這會將 UV 座標切割成格狀塊狀。
 輸出：輸出處理後的 Vector 2 (UV)，作為後續節點的 UV 輸入。
