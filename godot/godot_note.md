@@ -311,6 +311,7 @@ https://github.com/pwhoae/Artbank/tree/main/godot/%E5%8B%95%E7%95%AB%E5%B9%80%20
 
 ```
 shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
+<br>https://github.com/pwhoae/Artbank/blob/main/godot/shader/readme.md
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
 
