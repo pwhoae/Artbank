@@ -10,6 +10,9 @@
 |  |  | \*run\* | \> | （傾斜） |
 | extra |  |  |  |  |
 | attack | jump | death |  |  |
+idle02》breath03〉attck04
+急停05
+疊加動畫08？
 
 棄置:漫畫》動畫/建模/角設<BR>
 md/bili/圖
