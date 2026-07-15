@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://ylcltdfvsew3"]
+
+[ext_resource type="Shader" uid="uid://c0uxpr3detfwj" path="res://shader/像素化消散/像素化消散.gdshader" id="1_qntj1"]
+[ext_resource type="Texture2D" uid="uid://ckc1wyhi3iy5c" path="res://icon.svg" id="2_dt23d"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ic5jn"]
+shader = ExtResource("1_qntj1")
+shader_parameter/progress = 0.0
+shader_parameter/block_size = 4.0
+shader_parameter/edge_color = Color(0, 0.7, 1, 1)
+shader_parameter/edge_width = 0.08
+
+[node name="Node2D" type="Node2D" unique_id=670552898]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1966389491]
+material = SubResource("ShaderMaterial_ic5jn")
+position = Vector2(330, 214)
+texture = ExtResource("2_dt23d")
