@@ -1,6 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
-
+https://share.gemini.google/wy5j3uOwUBrV > design
 
 棄置:漫畫》動畫/建模/角設<BR>
 md/bili/圖
