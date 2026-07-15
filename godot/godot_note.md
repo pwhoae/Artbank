@@ -306,6 +306,8 @@ seamless 無縫
 美術=為什麼喜歡這種東西>有梗/場景互動小道具/地圖互動/看到門持key 配套
 <hr>
 【【Godot4】快速实现简易真实的3D水面】 https://www.bilibili.com/video/BV11b421e7xQ/?share_source=copy_web material seamless uv1 time*0.02
+Aurora shader effect:https://www.youtube.com/watch?v=cCu-TwZItUo
+像素化傳送門:https://godotshaders.com/shader/pixelated-portal/
 
 
 UI:Ipad/iphone show setting/音效/粒子/字體
