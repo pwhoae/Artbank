@@ -22,6 +22,8 @@ XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="100" height="100"></img>
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/editable.jpeg" width="100" height="100"></img>
 
+AtlasTexture
+filedialog
 ### 次研究:粒子系统 【Godot进阶教学】做出你的第一个3D游戏：粒子系统的运用
 ```
 process material/standard3d albedo/time amount spawn出生/direction sparation/align y/accel +爆炸
