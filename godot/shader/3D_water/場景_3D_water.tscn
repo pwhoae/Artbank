@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://d4bjhgtmpkodo"]
+
+[ext_resource type="Shader" uid="uid://dpuhnpv5nj30k" path="res://shader/可用shader/3D_water/場景_3D_water.gdshader" id="1_865ie"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_rbkn3"]
+frequency = 0.05
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_cvjv3"]
+noise = SubResource("FastNoiseLite_rbkn3")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cvjv3"]
+render_priority = 0
+shader = ExtResource("1_865ie")
+shader_parameter/shallow_color = Color(0, 0.4, 0.55, 1)
+shader_parameter/deep_color = Color(0.02, 0.05, 0.1, 1)
+shader_parameter/color_height_scale = 1.0
+shader_parameter/wave_speed = 1.0
+shader_parameter/wave_amplitude_1 = 0.15
+shader_parameter/wave_frequency_1 = 1.5
+shader_parameter/wave_amplitude_2 = 0.05
+shader_parameter/wave_frequency_2 = 4.0
+shader_parameter/ripple_speed = 0.08
+shader_parameter/roughness = 0.05
+shader_parameter/metallic = 0.1
+shader_parameter/refraction_strength = 0.15
+shader_parameter/caustic_texture = SubResource("NoiseTexture2D_cvjv3")
+shader_parameter/caustic_scale = 1.5
+shader_parameter/caustic_speed = 0.06
+shader_parameter/caustic_strength = 1.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_2pe6t"]
+material = SubResource("ShaderMaterial_cvjv3")
+
+[node name="water" type="Node3D" unique_id=1676195076]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=383848290]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
+mesh = SubResource("BoxMesh_2pe6t")

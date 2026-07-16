@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://cg363y7bgniw4"]
+
+[ext_resource type="Shader" uid="uid://cbrlqieymlsfl" path="res://shader/可用shader/全息投影_Holographic_Projection/全息投影_Holographic_Projection.gdshader" id="1_1dai8"]
+[ext_resource type="Texture2D" uid="uid://ckc1wyhi3iy5c" path="res://icon.svg" id="2_7q2h7"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ec150"]
+shader = ExtResource("1_1dai8")
+shader_parameter/hologram_color = Color(0.3, 0.6, 1, 1)
+shader_parameter/scanline_speed = 1.0
+shader_parameter/scanline_density = 100.0
+shader_parameter/scanline_intensity = 0.35
+shader_parameter/flicker_speed = 20.0
+shader_parameter/flicker_intensity = 0.05
+shader_parameter/alpha = 0.7
+
+[node name="Node2D" type="Node2D" unique_id=815530417]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1277974445]
+material = SubResource("ShaderMaterial_ec150")
+texture = ExtResource("2_7q2h7")
