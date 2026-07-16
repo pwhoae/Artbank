@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業影片轉 GIF 線上工具 - 100% 在地端安全轉換</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font & Tailwind Configuration -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Gifshot Library for high-quality browser-side GIF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        /* Custom scrollbar styling for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        /* Dual-range slider visual guide styles */
+        .range-slider-container {
+            position: relative;
+            height: 8px;
+        }
+        .range-slider-track {
+            position: absolute;
+            height: 100%;
+            border-radius: 4px;
+            background: #4b5563;
+            width: 100%;
+            z-index: 1;
+        }
+        .range-slider-progress {
+            position: absolute;
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            z-index: 2;
+        }
+        .range-input {
+            position: absolute;
+            width: 100%;
+            background: none;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            top: 0;
+            z-index: 3;
+        }
+        .range-input::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #6366f1;
+            cursor: pointer;
+            pointer-events: auto;
+            -webkit-appearance: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            transition: transform 0.1s ease;
+        }
+        .range-input::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-full flex flex-col antialiased">
+
+    <!-- Header Section -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                        GIF Wizard
+                    </h1>
+                    <p class="text-xs text-slate-400">極速、安全、純地端影片轉 GIF</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-1.5 h-1.5 mr-1.5 bg-emerald-400 rounded-full animate-ping"></span>
+                    本機無上限處理
+                </span>
+                <a href="https://github.com" target="_blank" class="text-slate-400 hover:text-slate-100 transition-colors">
+                    <i class="fa-brands fa-github text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col justify-center">
+        
+        <!-- Drag & Drop Zone -->
+        <div id="drop-zone" class="group relative border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-900/40 hover:bg-slate-900/60 rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 shadow-inner flex flex-col items-center justify-center min-h-[350px]">
+            <input type="file" id="video-file-input" accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+            
+            <div class="p-5 bg-slate-800/50 group-hover:bg-indigo-950/40 rounded-2xl mb-4 text-indigo-400 group-hover:text-indigo-300 transition-colors shadow-lg duration-300">
+                <i class="fa-solid fa-cloud-arrow-up text-5xl animate-bounce"></i>
+            </div>
+            
+            <h3 class="text-xl font-semibold text-slate-200 mb-2">拖放影片檔案至此處，或點擊瀏覽</h3>
+            <p class="text-sm text-slate-400 max-w-md mb-6">支援 MP4, WebM, MOV, OGG 等常見格式。影片大小不限，轉換完全在您瀏覽器中進行，隱私絕對安全。</p>
+            
+            <div class="flex flex-wrap justify-center gap-3 text-xs text-slate-500">
+                <span class="px-3 py-1.5 bg-slate-800 rounded-lg"><i class="fa-regular fa-file-video mr-1"></i> 隱私安全</span>
+                <span class="px-3 py-1.5 bg-slate-800 rounded-lg"><i class="fa-solid fa-gauge-high mr-1"></i> GPU 加速效能</span>
+                <span class="px-3 py-1.5 bg-slate-800 rounded-lg"><i class="fa-solid fa-crop mr-1"></i> 自由調整裁剪</span>
+            </div>
+        </div>
+
+        <!-- Editor Workspace (Hidden until file is selected) -->
+        <div id="editor-container" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Side: Video Player & Timeline Selection -->
+            <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+                    <span class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                        <i class="fa-regular fa-circle-play text-indigo-400"></i>
+                        影片預覽與區段剪輯
+                    </span>
+                    <button id="btn-change-video" class="text-xs text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg border border-rose-500/20">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> 更換影片
+                    </button>
+                </div>
+                
+                <div class="relative bg-black flex justify-center items-center aspect-video max-h-[450px]">
+                    <video id="video-preview" class="w-full h-full max-h-[450px]" controls></video>
+                    <!-- Custom Watermark Grid (Simulated Crop bounds) -->
+                    <div id="aspect-overlay" class="absolute inset-0 pointer-events-none border-2 border-dashed border-indigo-500/0 transition-all"></div>
+                </div>
+
+                <!-- Custom Timeline Controls -->
+                <div class="p-6 space-y-6 bg-slate-900">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">選擇匯出區段 (建議不超過 15 秒)</span>
+                            <span class="text-sm text-indigo-300 font-mono font-medium" id="selection-duration-badge">0.0s - 5.0s (共 5.0s)</span>
+                        </div>
+                        
+                        <!-- Double Slider Component -->
+                        <div class="px-2 pt-2">
+                            <div class="range-slider-container">
+                                <div class="range-slider-track"></div>
+                                <div id="slider-progress" class="range-slider-progress"></div>
+                                <input type="range" id="slider-start" class="range-input" min="0" max="100" step="0.1" value="0">
+                                <input type="range" id="slider-end" class="range-input" min="0" max="100" step="0.1" value="50">
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline Tick Indicators -->
+                        <div class="flex justify-between text-[10px] text-slate-500 px-1 mt-3">
+                            <span>0s (起點)</span>
+                            <span id="slider-mid-label">影片中點</span>
+                            <span id="slider-total-duration">結束</span>
+                        </div>
+                    </div>
+
+                    <!-- Fine-tune inputs -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">起始秒數 (Start)</label>
+                            <div class="relative rounded-lg shadow-sm">
+                                <input type="number" id="input-start-time" step="0.1" min="0" value="0" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-500 text-xs">秒</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">結束秒數 (End)</label>
+                            <div class="relative rounded-lg shadow-sm">
+                                <input type="number" id="input-end-time" step="0.1" min="0.1" value="5" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-mono">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-500 text-xs">秒</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Conversion Settings -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Settings Card -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+                    <h2 class="text-md font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-indigo-400"></i>
+                        輸出設定參數
+                    </h2>
+
+                    <!-- Preset Options -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-2">快速範本預設</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="applyPreset(320, 10, 'medium')" class="preset-btn px-2.5 py-2 bg-slate-800 hover:bg-slate-700/80 rounded-xl text-xs text-center border border-slate-700 transition-all">
+                                <span class="block font-medium text-slate-200">輕量表情包</span>
+                                <span class="block text-[10px] text-slate-400 mt-0.5">320px | 10 FPS</span>
+                            </button>
+                            <button type="button" onclick="applyPreset(480, 15, 'high')" class="preset-btn px-2.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 rounded-xl text-xs text-center border border-indigo-500/30 transition-all ring-1 ring-indigo-500">
+                                <span class="block font-medium text-indigo-200">標準平衡</span>
+                                <span class="block text-[10px] text-indigo-400 mt-0.5">480px | 15 FPS</span>
+                            </button>
+                            <button type="button" onclick="applyPreset(720, 20, 'high')" class="preset-btn px-2.5 py-2 bg-slate-800 hover:bg-slate-700/80 rounded-xl text-xs text-center border border-slate-700 transition-all">
+                                <span class="block font-medium text-slate-200">高畫質流暢</span>
+                                <span class="block text-[10px] text-slate-400 mt-0.5">720px | 20 FPS</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Dimensions -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">目標寬度 (Width)</label>
+                            <select id="gif-width" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="240">240 px (迷你)</option>
+                                <option value="320">320 px (小)</option>
+                                <option value="480" selected>480 px (中 - 推薦)</option>
+                                <option value="640">640 px (大)</option>
+                                <option value="720">720 px (超大)</option>
+                                <option value="original">原始比例 (自適應)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">影格率 (FPS)</label>
+                            <select id="gif-fps" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="5">5 FPS (非常慢)</option>
+                                <option value="10">10 FPS (一般)</option>
+                                <option value="15" selected>15 FPS (順暢 - 推薦)</option>
+                                <option value="20">20 FPS (流暢)</option>
+                                <option value="24">24 FPS (極致高流暢)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Output quality & Loop properties -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">畫質渲染 (品質)</label>
+                            <select id="gif-quality" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="low">低畫質 (編譯最快)</option>
+                                <option value="medium">中等畫質</option>
+                                <option value="high" selected>高畫質 (推薦品質)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">循環模式</label>
+                            <select id="gif-loop" class="w-full bg-slate-950 border border-slate-800 text-slate-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="0" selected>無限循環</option>
+                                <option value="1">單次播放</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Aspect Ratio / Crop Options -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">畫面剪裁比例</label>
+                        <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                            <label class="border border-slate-800 bg-slate-950 hover:bg-slate-800 py-2 rounded-lg cursor-pointer transition-colors block">
+                                <input type="radio" name="aspect-ratio" value="original" checked class="hidden">
+                                <span class="block font-medium">原始比例</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 hover:bg-slate-800 py-2 rounded-lg cursor-pointer transition-colors block">
+                                <input type="radio" name="aspect-ratio" value="1-1" class="hidden">
+                                <span class="block font-medium">1:1 正方形</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 hover:bg-slate-800 py-2 rounded-lg cursor-pointer transition-colors block">
+                                <input type="radio" name="aspect-ratio" value="16-9" class="hidden">
+                                <span class="block font-medium">16:9 寬螢幕</span>
+                            </label>
+                            <label class="border border-slate-800 bg-slate-950 hover:bg-slate-800 py-2 rounded-lg cursor-pointer transition-colors block">
+                                <input type="radio" name="aspect-ratio" value="9-16" class="hidden">
+                                <span class="block font-medium">9:16 直式</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Convert Trigger Button -->
+                    <div class="pt-2">
+                        <button id="btn-convert" class="w-full py-4 px-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transform hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 text-lg">
+                            <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i>
+                            開始轉為 GIF 動圖
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Info Help Card -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400 space-y-2">
+                    <h4 class="font-semibold text-slate-300"><i class="fa-solid fa-lightbulb text-yellow-500 mr-1.5"></i>優化轉換效能小提醒：</h4>
+                    <p>• 擷取的時間區間越長、解析度越高，轉換時間便會隨之增加。推薦使用 480px / 15 FPS 設置，可在畫質與容量取得完美平衡。</p>
+                    <p>• 本工具為 100% 瀏覽器本地運算，轉換速度取決於您本機設備硬體效能。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing & Progress Overlay Container -->
+        <div id="processing-overlay" class="hidden max-w-2xl mx-auto w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-2xl space-y-6">
+            <div class="relative w-28 h-28 mx-auto flex items-center justify-center">
+                <!-- Spining animation -->
+                <div class="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <div class="text-3xl text-indigo-400"><i class="fa-solid fa-film"></i></div>
+            </div>
+            
+            <div class="space-y-2">
+                <h3 id="progress-status" class="text-xl font-bold text-slate-100">正在解析影片影格中...</h3>
+                <p id="progress-subtitle" class="text-xs text-slate-400">這可能需要幾十秒，請勿關閉或重新整理此頁面</p>
+            </div>
+
+            <!-- Custom Progress Bar -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between text-xs font-semibold px-1">
+                    <span id="progress-phase" class="text-slate-400">執行階段：影格擷取</span>
+                    <span id="progress-percentage" class="text-indigo-400 font-mono">0%</span>
+                </div>
+                <div class="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                    <div id="progress-bar-fill" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-150 w-0"></div>
+                </div>
+            </div>
+
+            <div class="text-[11px] text-slate-500 flex justify-center gap-4">
+                <span><i class="fa-solid fa-microchip mr-1"></i> 多核心解析</span>
+                <span><i class="fa-regular fa-image mr-1"></i> 降噪色域編碼</span>
+                <span><i class="fa-solid fa-server-slash mr-1"></i> 100% 純地端運算</span>
+            </div>
+        </div>
+
+        <!-- Final Output Preview & Download Panel -->
+        <div id="result-overlay" class="hidden max-w-3xl mx-auto w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
+            <div class="text-center border-b border-slate-800 pb-5">
+                <div class="inline-flex items-center justify-center p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl mb-3 border border-emerald-500/20">
+                    <i class="fa-solid fa-circle-check text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-100">GIF 轉換完成！</h2>
+                <p class="text-sm text-slate-400 mt-1">您可在下方預覽轉換成品，並一鍵點擊下載儲存。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <!-- Final GIF Output Frame -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden p-4 flex flex-col justify-center items-center aspect-square shadow-inner">
+                    <img id="gif-output" class="max-w-full max-h-[300px] rounded object-contain shadow-lg" src="" alt="產生的 GIF 預覽" />
+                </div>
+
+                <!-- Info and action buttons -->
+                <div class="space-y-6">
+                    <div class="space-y-4">
+                        <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-400">成品資訊</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60">
+                                <span class="block text-[10px] text-slate-500">解析度</span>
+                                <span id="out-dimension" class="text-sm font-semibold text-slate-200 font-mono">-</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60">
+                                <span class="block text-[10px] text-slate-500">預估容量</span>
+                                <span id="out-size" class="text-sm font-semibold text-slate-200 font-mono">-</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60">
+                                <span class="block text-[10px] text-slate-500">畫格數 (Frames)</span>
+                                <span id="out-frames" class="text-sm font-semibold text-slate-200 font-mono">-</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/60">
+                                <span class="block text-[10px] text-slate-500">運行影格</span>
+                                <span id="out-fps" class="text-sm font-semibold text-slate-200 font-mono">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-2">
+                        <!-- Action CTA Buttons -->
+                        <a id="btn-download-gif" download="magic-wizard-output.gif" class="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-download"></i>
+                            下載 GIF 動畫檔
+                        </a>
+                        <button id="btn-copy-gif" class="w-full py-3 px-6 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 hover:border-slate-600 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-regular fa-clipboard"></i>
+                            複製 GIF 到剪貼簿
+                        </button>
+                        <button id="btn-restart" class="w-full py-2 px-6 text-indigo-400 hover:text-indigo-300 font-medium text-xs text-center transition-colors">
+                            <i class="fa-solid fa-reply mr-1"></i> 返回設定或轉換其他影片
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Notification Message Box (Replaces alert) -->
+        <div id="toast-notification" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900 border border-slate-800 shadow-2xl p-4 rounded-xl flex items-center gap-3 max-w-sm">
+            <div id="toast-icon-bg" class="p-2 rounded-lg text-white">
+                <i id="toast-icon" class="fa-solid"></i>
+            </div>
+            <div>
+                <h5 id="toast-title" class="text-sm font-semibold text-slate-200">提示</h5>
+                <p id="toast-message" class="text-xs text-slate-400 mt-0.5">內容訊息</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950/40 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p>© 2026 GIF Wizard. 本專案程式碼皆於用戶瀏覽器端運行，絕不會上傳或儲存任何您的影像檔案。</p>
+        </div>
+    </footer>
+
+    <!-- Script Logic Block -->
+    <script>
+        // Core application state
+        const state = {
+            videoFile: null,
+            videoDuration: 0,
+            startTime: 0,
+            endTime: 5,
+            videoWidth: 0,
+            videoHeight: 0,
+            currentPreset: 'medium'
+        };
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('video-file-input');
+        const editorContainer = document.getElementById('editor-container');
+        const videoPreview = document.getElementById('video-preview');
+        const sliderStart = document.getElementById('slider-start');
+        const sliderEnd = document.getElementById('slider-end');
+        const sliderProgress = document.getElementById('slider-progress');
+        const selectionDurationBadge = document.getElementById('selection-duration-badge');
+        const inputStartTime = document.getElementById('input-start-time');
+        const inputEndTime = document.getElementById('input-end-time');
+        const sliderTotalDuration = document.getElementById('slider-total-duration');
+        const btnChangeVideo = document.getElementById('btn-change-video');
+        const btnConvert = document.getElementById('btn-convert');
+        const processingOverlay = document.getElementById('processing-overlay');
+        const resultOverlay = document.getElementById('result-overlay');
+        const gifOutput = document.getElementById('gif-output');
+        const btnDownloadGif = document.getElementById('btn-download-gif');
+        const btnCopyGif = document.getElementById('btn-copy-gif');
+        const btnRestart = document.getElementById('btn-restart');
+        const aspectOverlay = document.getElementById('aspect-overlay');
+
+        // Toast logic (Anti-alert fallback)
+        function showToast(title, message, type = 'info') {
+            const toast = document.getElementById('toast-notification');
+            const iconBg = document.getElementById('toast-icon-bg');
+            const icon = document.getElementById('toast-icon');
+            const titleEl = document.getElementById('toast-title');
+            const messageEl = document.getElementById('toast-message');
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            if (type === 'success') {
+                iconBg.className = 'p-2 rounded-lg bg-emerald-500/20 text-emerald-400';
+                icon.className = 'fa-solid fa-circle-check';
+            } else if (type === 'error') {
+                iconBg.className = 'p-2 rounded-lg bg-rose-500/20 text-rose-400';
+                icon.className = 'fa-solid fa-circle-exclamation';
+            } else {
+                iconBg.className = 'p-2 rounded-lg bg-indigo-500/20 text-indigo-400';
+                icon.className = 'fa-solid fa-circle-info';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 4000);
+        }
+
+        // Drag and Drop implementation
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-indigo-500', 'bg-slate-900/80');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-indigo-500', 'bg-slate-900/80');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleVideoFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleVideoFile(e.target.files[0]);
+            }
+        });
+
+        // Processing the selected video
+        function handleVideoFile(file) {
+            if (!file.type.startsWith('video/')) {
+                showToast('檔案格式錯誤', '請上傳合法的影片檔案類型。', 'error');
+                return;
+            }
+
+            state.videoFile = file;
+            const videoUrl = URL.createObjectURL(file);
+            videoPreview.src = videoUrl;
+            
+            videoPreview.onloadedmetadata = () => {
+                state.videoDuration = videoPreview.duration;
+                state.videoWidth = videoPreview.videoWidth;
+                state.videoHeight = videoPreview.videoHeight;
+                
+                // Initialize range sliders configuration
+                sliderStart.max = state.videoDuration;
+                sliderEnd.max = state.videoDuration;
+                sliderTotalDuration.textContent = state.videoDuration.toFixed(1) + 's';
+                
+                // Default segment selector settings: start at 0, end at min(5s, duration)
+                state.startTime = 0;
+                state.endTime = Math.min(5, state.videoDuration);
+                
+                sliderStart.value = state.startTime;
+                sliderEnd.value = state.endTime;
+                
+                inputStartTime.value = state.startTime.toFixed(1);
+                inputEndTime.value = state.endTime.toFixed(1);
+                
+                updateSliderUI();
+                
+                // Hide landing and display editor workspace
+                dropZone.classList.add('hidden');
+                editorContainer.classList.remove('hidden');
+                showToast('影片載入成功', `已成功解析影片：${file.name}`, 'success');
+            };
+
+            videoPreview.onerror = () => {
+                showToast('載入影片失敗', '瀏覽器無法解碼此影片格式。請嘗試其他格式（如 MP4）。', 'error');
+            };
+        }
+
+        // Dual Slider update and visual logic
+        function updateSliderUI() {
+            const startVal = parseFloat(sliderStart.value);
+            const endVal = parseFloat(sliderEnd.value);
+
+            if (startVal > endVal) {
+                // Keep values from overlapping
+                state.startTime = endVal;
+                state.endTime = startVal;
+            } else {
+                state.startTime = startVal;
+                state.endTime = endVal;
+            }
+
+            // Sync visual progress fill bar
+            const minPct = (state.startTime / state.videoDuration) * 100;
+            const maxPct = (state.endTime / state.videoDuration) * 100;
+            sliderProgress.style.left = minPct + '%';
+            sliderProgress.style.width = (maxPct - minPct) + '%';
+
+            // Sync fine-tune inputs
+            inputStartTime.value = state.startTime.toFixed(1);
+            inputEndTime.value = state.endTime.toFixed(1);
+
+            // Update badge info
+            const diff = state.endTime - state.startTime;
+            selectionDurationBadge.textContent = `${state.startTime.toFixed(1)}s - ${state.endTime.toFixed(1)}s (共 ${diff.toFixed(1)}s)`;
+            if (diff > 15) {
+                selectionDurationBadge.className = "text-sm text-amber-400 font-mono font-medium";
+                selectionDurationBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i> ${state.startTime.toFixed(1)}s - ${state.endTime.toFixed(1)}s (共 ${diff.toFixed(1)}s，時間過長容易導致當機)`;
+            } else {
+                selectionDurationBadge.className = "text-sm text-indigo-300 font-mono font-medium";
+            }
+        }
+
+        // Add event listeners to dual sliders
+        sliderStart.addEventListener('input', () => {
+            if (parseFloat(sliderStart.value) > parseFloat(sliderEnd.value)) {
+                sliderStart.value = sliderEnd.value;
+            }
+            updateSliderUI();
+            videoPreview.currentTime = parseFloat(sliderStart.value);
+        });
+
+        sliderEnd.addEventListener('input', () => {
+            if (parseFloat(sliderEnd.value) < parseFloat(sliderStart.value)) {
+                sliderEnd.value = sliderStart.value;
+            }
+            updateSliderUI();
+            videoPreview.currentTime = parseFloat(sliderEnd.value);
+        });
+
+        // Add event listeners to input fields
+        inputStartTime.addEventListener('change', () => {
+            let val = parseFloat(inputStartTime.value);
+            if (isNaN(val) || val < 0) val = 0;
+            if (val > state.endTime) val = state.endTime;
+            sliderStart.value = val;
+            updateSliderUI();
+            videoPreview.currentTime = val;
+        });
+
+        inputEndTime.addEventListener('change', () => {
+            let val = parseFloat(inputEndTime.value);
+            if (isNaN(val) || val > state.videoDuration) val = state.videoDuration;
+            if (val < state.startTime) val = state.startTime;
+            sliderEnd.value = val;
+            updateSliderUI();
+            videoPreview.currentTime = val;
+        });
+
+        // Apply templates quick configurations
+        function applyPreset(width, fps, quality) {
+            document.getElementById('gif-width').value = width;
+            document.getElementById('gif-fps').value = fps;
+            document.getElementById('gif-quality').value = quality;
+            
+            // Adjust visual selected buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600/20', 'border-indigo-500/30', 'ring-1', 'ring-indigo-500');
+                btn.classList.add('bg-slate-800', 'border-slate-700');
+            });
+            event.currentTarget.classList.add('bg-indigo-600/20', 'border-indigo-500/30', 'ring-1', 'ring-indigo-500');
+            event.currentTarget.classList.remove('bg-slate-800', 'border-slate-700');
+
+            showToast('已套用範本', `已更改至寬度 ${width}px，FPS: ${fps} 規格`, 'info');
+        }
+
+        // Change aspect overlay representation
+        document.querySelectorAll('input[name="aspect-ratio"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const ratio = e.target.value;
+                aspectOverlay.className = "absolute inset-0 pointer-events-none border-2 border-dashed border-indigo-500/0 transition-all";
+                
+                if (ratio === '1-1') {
+                    aspectOverlay.classList.add('border-indigo-500/60', 'mx-auto', 'aspect-square', 'h-full', 'w-auto');
+                } else if (ratio === '16-9') {
+                    aspectOverlay.classList.add('border-indigo-500/60', 'my-auto', 'aspect-video', 'w-full', 'h-auto');
+                } else if (ratio === '9-16') {
+                    aspectOverlay.classList.add('border-indigo-500/60', 'mx-auto', 'aspect-[9/16]', 'h-full', 'w-auto');
+                }
+            });
+        });
+
+        btnChangeVideo.addEventListener('click', () => {
+            fileInput.value = '';
+            editorContainer.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+            resultOverlay.classList.add('hidden');
+        });
+
+        btnRestart.addEventListener('click', () => {
+            resultOverlay.classList.add('hidden');
+            editorContainer.classList.remove('hidden');
+        });
+
+        // Conversion logic (Canvas Frame Extractor + Gifshot)
+        btnConvert.addEventListener('click', async () => {
+            // Validate selections
+            const duration = state.endTime - state.startTime;
+            if (duration <= 0) {
+                showToast('區間錯誤', '轉換時間長度必須大於 0 秒！', 'error');
+                return;
+            }
+
+            // High volume performance safety warnings
+            if (duration > 15) {
+                const proceed = confirm('影片擷取長度超過 15 秒可能導致瀏覽器卡死或記憶體不足，是否仍要繼續？');
+                if (!proceed) return;
+            }
+
+            editorContainer.classList.add('hidden');
+            processingOverlay.classList.remove('hidden');
+
+            const widthVal = document.getElementById('gif-width').value;
+            const fpsVal = parseInt(document.getElementById('gif-fps').value);
+            const qualityPreset = document.getElementById('gif-quality').value;
+            const loopVal = parseInt(document.getElementById('gif-loop').value);
+            const ratioVal = document.querySelector('input[name="aspect-ratio"]:checked').value;
+
+            // Target dimensions calculations
+            let targetWidth = state.videoWidth;
+            let targetHeight = state.videoHeight;
+            
+            if (widthVal !== 'original') {
+                targetWidth = parseInt(widthVal);
+                const originalRatio = state.videoWidth / state.videoHeight;
+                targetHeight = Math.round(targetWidth / originalRatio);
+            }
+
+            // Setup temporary hidden canvas for drawing frame and resizing
+            const hiddenCanvas = document.createElement('canvas');
+            const ctx = hiddenCanvas.getContext('2d');
+            
+            // Adjust canvas with bounding sizes based on selected aspect ratios
+            let clipWidth = state.videoWidth;
+            let clipHeight = state.videoHeight;
+            let clipX = 0;
+            let clipY = 0;
+
+            if (ratioVal === '1-1') {
+                const minSide = Math.min(state.videoWidth, state.videoHeight);
+                clipWidth = minSide;
+                clipHeight = minSide;
+                clipX = (state.videoWidth - minSide) / 2;
+                clipY = (state.videoHeight - minSide) / 2;
+                targetHeight = targetWidth; // Force square target
+            } else if (ratioVal === '16-9') {
+                const targetRatio = 16 / 9;
+                if (state.videoWidth / state.videoHeight > targetRatio) {
+                    clipWidth = state.videoHeight * targetRatio;
+                    clipHeight = state.videoHeight;
+                    clipX = (state.videoWidth - clipWidth) / 2;
+                    clipY = 0;
+                } else {
+                    clipWidth = state.videoWidth;
+                    clipHeight = state.videoWidth / targetRatio;
+                    clipX = 0;
+                    clipY = (state.videoHeight - clipHeight) / 2;
+                }
+                targetHeight = Math.round(targetWidth / targetRatio);
+            } else if (ratioVal === '9-16') {
+                const targetRatio = 9 / 16;
+                if (state.videoWidth / state.videoHeight > targetRatio) {
+                    clipWidth = state.videoHeight * targetRatio;
+                    clipHeight = state.videoHeight;
+                    clipX = (state.videoWidth - clipWidth) / 2;
+                    clipY = 0;
+                } else {
+                    clipWidth = state.videoWidth;
+                    clipHeight = state.videoWidth / targetRatio;
+                    clipX = 0;
+                    clipY = (state.videoHeight - clipHeight) / 2;
+                }
+                targetHeight = Math.round(targetWidth / targetRatio);
+            }
+
+            hiddenCanvas.width = targetWidth;
+            hiddenCanvas.height = targetHeight;
+
+            // Frame gathering configs
+            const interval = 1 / fpsVal; // capture every 0.X sec
+            const numFrames = Math.ceil(duration / interval);
+            const frames = [];
+
+            const pBarFill = document.getElementById('progress-bar-fill');
+            const pPct = document.getElementById('progress-percentage');
+            const pPhase = document.getElementById('progress-phase');
+            const pStatus = document.getElementById('progress-status');
+
+            pStatus.textContent = '正在解析影片影格...';
+            pPhase.textContent = '執行階段：影格擷取';
+            pBarFill.style.width = '0%';
+            pPct.textContent = '0%';
+
+            // Temporary pause the preview loop and seek elements manually
+            videoPreview.pause();
+
+            try {
+                // Sequentially seek and extract canvas screenshot
+                for (let i = 0; i < numFrames; i++) {
+                    const seekTime = state.startTime + (i * interval);
+                    if (seekTime > state.endTime) break;
+
+                    // Seek and wait for rendering
+                    await seekToTime(videoPreview, seekTime);
+                    
+                    // Draw source (or cropped sub-rectangle) onto the output canvas sizes
+                    ctx.drawImage(
+                        videoPreview, 
+                        clipX, clipY, clipWidth, clipHeight, 
+                        0, 0, targetWidth, targetHeight
+                    );
+
+                    // Grab frame raw URI
+                    frames.push(hiddenCanvas.toDataURL('image/jpeg', 0.85));
+
+                    // Update extraction progress visually
+                    const pct = Math.round(((i + 1) / numFrames) * 50); // Frame capture counts as first 50%
+                    pBarFill.style.width = pct + '%';
+                    pPct.textContent = pct + '%';
+                }
+
+                // Hand over captured frames to Gifshot library encoder
+                pStatus.textContent = '正在進行優化渲染編碼...';
+                pPhase.textContent = '執行階段：GIF 降噪色域編碼中';
+
+                // Quality sampling mapping
+                let sampleVal = 10; // default medium
+                if (qualityPreset === 'high') sampleVal = 5; // higher fidelity
+                if (qualityPreset === 'low') sampleVal = 20; // super fast
+
+                gifshot.createGIF({
+                    images: frames,
+                    gifWidth: targetWidth,
+                    gifHeight: targetHeight,
+                    interval: interval,
+                    numFrames: frames.length,
+                    gifLoop: loopVal,
+                    sampleInterval: sampleVal,
+                    numWorkers: 4 // Enable multi-threaded workers
+                }, function (obj) {
+                    if (!obj.error) {
+                        const finalGifBase64 = obj.image;
+                        
+                        // Populate results display UI
+                        gifOutput.src = finalGifBase64;
+                        btnDownloadGif.href = finalGifBase64;
+                        
+                        // Estimate metadata stats
+                        document.getElementById('out-dimension').textContent = `${targetWidth} x ${targetHeight} px`;
+                        document.getElementById('out-frames').textContent = frames.length;
+                        document.getElementById('out-fps').textContent = `${fpsVal} FPS`;
+                        
+                        // Calculate mock size from Base64 length
+                        const byteLength = Math.round((finalGifBase64.length * 3) / 4);
+                        const mbSize = (byteLength / (1024 * 1024)).toFixed(2);
+                        document.getElementById('out-size').textContent = mbSize + ' MB';
+
+                        // Copy configuration payload handler
+                        btnCopyGif.onclick = async () => {
+                            try {
+                                const response = await fetch(finalGifBase64);
+                                const blob = await response.blob();
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({
+                                        [blob.type]: blob
+                                    })
+                                ]);
+                                showToast('複製成功', 'GIF 已成功複製到您的剪貼簿！', 'success');
+                            } catch (err) {
+                                // Fallback selection copy
+                                showToast('複製失敗', '瀏覽器不支援直接複製圖片，請使用滑鼠右鍵或長按另存新檔。', 'error');
+                            }
+                        };
+
+                        // Switch Views
+                        processingOverlay.classList.add('hidden');
+                        resultOverlay.classList.remove('hidden');
+                        showToast('匯出完成！', '順利完成 GIF 編碼。', 'success');
+                    } else {
+                        throw new Error(obj.errorMsg);
+                    }
+                });
+
+            } catch (error) {
+                console.error(error);
+                processingOverlay.classList.add('hidden');
+                editorContainer.classList.remove('hidden');
+                showToast('轉換失敗', '在解析或編碼時發生錯誤：' + error.message, 'error');
+            }
+        });
+
+        // Promise helper to seek HTML5 video frame by frame cleanly
+        function seekToTime(video, time) {
+            return new Promise((resolve) => {
+                const onSeeked = () => {
+                    video.removeEventListener('seeked', onSeeked);
+                    resolve();
+                };
+                video.addEventListener('seeked', onSeeked);
+                video.currentTime = time;
+            });
+        }
+    </script>
+</body>
+</html>
