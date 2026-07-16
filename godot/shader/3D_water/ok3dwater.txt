@@ -1,0 +1,70 @@
+shader_type spatial;
+render_mode blend_mix,depth_draw_always, diffuse_lambert, specular_schlick_ggx;
+
+// --- 1. 定義可調整的參數 (Uniforms) ---
+group_uniforms WaterColor;
+uniform vec4 shallow_color : source_color = vec4(0.0, 0.4, 0.55, 1.0); // 淺水區顏色（較亮）
+uniform vec4 deep_color : source_color = vec4(0.02, 0.05, 0.1, 1.0);  // 深水區顏色（對應 water.jpg 的深暗色調）
+uniform float color_height_scale : hint_range(0.1, 3.0) = 1.0;          // 顏色隨高度變化的過渡敏感度
+
+group_uniforms Waves;
+uniform float wave_speed : hint_range(0.05, 5.0) = 1.0;                 // 波浪流動速度
+uniform float wave_amplitude_1 : hint_range(0.0, 1.0) = 0.15;           // 大波浪高度
+uniform float wave_frequency_1 : hint_range(0.1, 10.0) = 1.5;           // 大波浪密集度
+uniform float wave_amplitude_2 : hint_range(0.0, 1.0) = 0.05;           // 小波浪高度
+uniform float wave_frequency_2 : hint_range(0.1, 20.0) = 4.0;           // 小波浪密集度
+
+group_uniforms SurfaceRipples;
+uniform sampler2D noise_texture : filter_linear_mipmap, repeat_enable; // 雜訊貼圖（用來製造水面細微反光波紋）
+uniform float ripple_speed : hint_range(0.01, 1.0) = 0.08;             // 細微波紋滾動速度
+uniform float roughness : hint_range(0.0, 1.0) = 0.05;                  // 粗糙度（越低水面反光越強烈）
+uniform float metallic : hint_range(0.0, 1.0) = 0.1;                    // 金屬度
+
+// 傳遞給 fragment 的變數（用於將頂點高度傳給片段著色器進行混色）
+varying float vertex_height;
+
+// --- 2. 頂點著色器：負責波浪起伏 ---
+void vertex() {
+	// 混合兩個不同方向與頻率的正弦/餘弦波，創造更自然的有機波動
+	float w1 = sin(VERTEX.x * wave_frequency_1 + TIME * wave_speed) * cos(VERTEX.z * wave_frequency_1 + TIME * wave_speed);
+	float w2 = cos(VERTEX.x * wave_frequency_2 - TIME * wave_speed * 1.5) * sin(VERTEX.z * wave_frequency_2 + TIME * wave_speed * 1.2);
+	
+	// 計算最終高度位移並套用至頂點的 Y 軸
+	float displacement = (w1 * wave_amplitude_1) + (w2 * wave_amplitude_2);
+	VERTEX.y += displacement;
+	
+	// 將高度資訊傳遞給片段著色器
+	vertex_height = displacement;
+}
+
+// --- 3. 片段著色器：負責顏色、波光與物理表面性質 ---
+void fragment() {
+	// A. 基於頂點高度的顏色插值（波峰處較亮、波谷處呈現類似 "water.jpg" 的深邃暗色）
+	// 將高度轉換為 0.0 到 1.0 之間的權重值
+	float max_possible_height = wave_amplitude_1 + wave_amplitude_2;
+	float height_factor = (vertex_height + max_possible_height) / (max_possible_height * 2.0);
+	height_factor = clamp(height_factor * color_height_scale, 0.0, 1.0);
+	
+	vec4 water_base_color = mix(deep_color, shallow_color, height_factor);
+	
+	// B. 透過雙重雜訊貼圖滾動，模擬水波的細微法線 (Normal Map) 波動
+	vec2 speed_offset = vec2(TIME * ripple_speed);
+	vec2 uv_scroll1 = UV * 4.0 + speed_offset * 0.1;
+	vec2 uv_scroll2 = UV * 4.0 - speed_offset * 0.15;
+	
+	vec3 ripple_normal1 = texture(noise_texture, uv_scroll1).rgb * 2.0 - 1.0;
+	vec3 ripple_normal2 = texture(noise_texture, uv_scroll2).rgb * 2.0 - 1.0;
+	
+	// 混合兩張滾動法線
+	vec3 blended_normal = normalize(ripple_normal1 + ripple_normal2);
+	
+	// C. 寫入 PBR 材質屬性
+	ALBEDO = water_base_color.rgb;
+	NORMAL_MAP = blended_normal;          // 讓光線照在水面上時有細微的反光抖動
+	NORMAL_MAP_DEPTH = 0.25;             // 微調法線起伏強度（數值越高反光顆粒越明顯）
+	
+	METALLIC = metallic;
+	ROUGHNESS = roughness;
+	SPECULAR = 0.9;                      // 高反射率
+	ALPHA = water_base_color.a;          // 若需要透明度，可在此調整
+}

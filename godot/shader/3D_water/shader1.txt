@@ -1,0 +1,121 @@
+
+shader_type canvas_item;
+
+// Color Configuration
+uniform vec4 primary_color : source_color = vec4(0.18, 0.35, 0.95, 1.0);
+uniform vec4 secondary_color : source_color = vec4(0.65, 0.15, 0.90, 1.0);
+uniform vec4 glow_color : source_color = vec4(0.30, 0.75, 1.0, 1.0);
+
+// Core Animation Speeds
+uniform float vortex_speed : hint_range(-5.0, 5.0) = 1.5;
+uniform float rotation_speed : hint_range(-5.0, 5.0) = -0.8;
+
+// Shape Parameters
+uniform float swirl_intensity : hint_range(-10.0, 10.0) = 4.0;
+uniform float ring_radius : hint_range(0.1, 0.5) = 0.38;
+uniform float ring_thickness : hint_range(0.01, 0.2) = 0.04;
+uniform float center_vacuum : hint_range(0.0, 1.0) = 0.3;
+
+// Procedural Noise controls
+uniform float noise_scale : hint_range(1.0, 30.0) = 12.0;
+uniform float noise_turbulence : hint_range(0.1, 5.0) = 1.5;
+
+// Runes/Notches configuration
+uniform float rune_count : hint_range(0.0, 64.0) = 24.0;
+uniform float glow_intensity : hint_range(0.1, 4.0) = 1.8;
+
+/* STREAMING_CHUNK:Implementing procedural noise generation algorithms... */
+// Hash function for random generation
+float hash(vec2 p) {
+p = fract(p * vec2(123.34, 456.21));
+p += dot(p, p + 45.32);
+return fract(p.x * p.y);
+}
+
+// 2D Value Noise
+float noise(vec2 p) {
+vec2 i = floor(p);
+vec2 f = fract(p);
+float a = hash(i);
+float b = hash(i + vec2(1.0, 0.0));
+float c = hash(i + vec2(0.0, 1.0));
+float d = hash(i + vec2(1.0, 1.0));
+vec2 u = f * f * (3.0 - 2.0 * f);
+return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+// Fractal Brownian Motion (FBM) for complex turbulence
+float fbm(vec2 p) {
+float v = 0.0;
+float a = 0.5;
+vec2 shift = vec2(100.0);
+// Rotating noise octaves to eliminate directional artifact grids
+mat2 rot = mat2(vec2(cos(0.5), sin(0.5)), vec2(-sin(0.5), cos(0.5)));
+for (int i = 0; i < 4; ++i) {
+v += a * noise(p);
+p = rot * p * 2.0 + shift;
+a *= 0.5;
+}
+return v;
+}
+
+/* STREAMING_CHUNK:Calculating polar coordinates and magical vortex warping... */
+void fragment() {
+// Center UV coordinates around (0.5, 0.5)
+vec2 uv = UV - vec2(0.5);
+
+// Calculate polar coordinates
+float radius = length(uv);
+float angle = atan(uv.y, uv.x);
+
+// Discard rendering outside the magical circular boundary
+if (radius > 0.5) {
+    discard;
+}
+
+// Swirl warp effect: twist polar coordinates based on radius
+float swirl = radius * swirl_intensity;
+float twisted_angle = angle + swirl + (TIME * rotation_speed);
+
+// Create dual-directional noise scrolling coordinates
+vec2 noise_uv = vec2(radius * noise_scale - (TIME * vortex_speed), twisted_angle * 3.0 / 6.28318);
+float wave_noise = fbm(noise_uv * noise_turbulence);
+
+/* STREAMING_CHUNK:Rendering spell circle runes and glowing shields... */
+// 1. Center Vacuum Core (Black Hole in the center of the magic circle)
+float core_mask = smoothstep(center_vacuum * 0.4, center_vacuum, radius);
+
+// 2. Main Swirling Vortex Layer
+float vortex = smoothstep(0.5, center_vacuum, radius);
+vortex *= wave_noise;
+
+// 3. Magical Rune Ring
+// Generate tick marks (runes) along the circular perimeter
+float rune_notches = step(0.65, sin(angle * rune_count - (TIME * rotation_speed * 1.5)));
+float ring_dist = abs(radius - ring_radius);
+float outer_ring = smoothstep(ring_thickness, 0.0, ring_dist);
+float magic_ring = outer_ring * mix(0.4, 1.0, rune_notches);
+
+// 4. Energy Pulses and Radiating Flares
+float pulse = sin(radius * 25.0 - TIME * 6.0 + wave_noise * 2.0) * 0.5 + 0.5;
+float inner_flares = smoothstep(0.4, 0.1, radius) * pulse * wave_noise;
+
+// Outer shield edge fading to blend smoothly
+float edge_fade = smoothstep(0.5, 0.4, radius);
+
+// Combine all components into final intensity weights
+vec3 base_energy = mix(primary_color.rgb, secondary_color.rgb, wave_noise);
+vec3 vortex_colored = base_energy * (vortex * 1.4 + inner_flares);
+vec3 ring_colored = glow_color.rgb * magic_ring * 2.0;
+
+// Composite final color together
+vec3 final_rgb = (vortex_colored + ring_colored) * glow_intensity;
+
+// Calculate alpha blending based on density and fades
+float final_alpha = (vortex + magic_ring * 1.5 + inner_flares * 0.5) * edge_fade * core_mask;
+
+// Apply final color
+COLOR = vec4(final_rgb, clamp(final_alpha, 0.0, 1.0));
+
+
+}
