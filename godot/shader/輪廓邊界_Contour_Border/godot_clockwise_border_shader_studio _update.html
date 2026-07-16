@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 Clockwise Dotted Border Shader Studio</title>
+    <!-- Tailwind CSS for modern design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Babel for JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts for professional look -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen overflow-x-hidden antialiased">
+
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const godotShaderCode = `//==================================================================
+//   Godot 4.x Clockwise Dotted/Dashed Border Shader
+//   Inspired by image_e51a5d.png & image_e52921.png
+//   Supports: Rectangles, Circles, and Alpha Contours (Transparent BG)
+//==================================================================
+shader_type canvas_item;
+
+// --- Uniforms ---
+uniform int border_style : hint_range(0, 1) = 0;      // 0: Dots (Circles), 1: Dashes
+uniform int border_shape : hint_range(0, 2) = 2;      // 0: Rounded Rectangle, 1: Circle/Ellipse, 2: Texture Alpha Outline
+
+uniform vec4 border_color : source_color = vec4(0.2, 0.75, 1.0, 1.0);
+uniform float border_thickness : hint_range(1.0, 50.0) = 8.0;
+uniform float border_inset : hint_range(-50.0, 100.0) = 4.0; // Negative values allow padding expansion
+
+uniform float dot_spacing : hint_range(5.0, 100.0) = 20.0;
+uniform float dot_size : hint_range(1.0, 30.0) = 6.0;
+uniform float dash_length : hint_range(2.0, 100.0) = 15.0;
+
+uniform float speed : hint_range(-500.0, 500.0) = 150.0; // Positive = Clockwise, Negative = CCW
+uniform float corner_radius : hint_range(0.0, 200.0) = 16.0;
+
+uniform bool keep_original_texture = true;
+uniform float alpha_threshold : hint_range(0.0, 1.0) = 0.2;
+
+// Helper: 2D Signed Distance Field of a Rounded Rectangle
+float sdRoundedBox(vec2 p, vec2 b, float r) {
+    vec2 q = abs(p) - b + vec2(r);
+    return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+// Helper: Map 2D coordinates on a rectangle perimeter to 1D clockwise distance
+float get_rect_s(vec2 p, vec2 b) {
+    float s = 0.0;
+    float total_w = b.x * 2.0;
+    float total_h = b.y * 2.0;
+    
+    if (abs(p.x) * b.y > abs(p.y) * b.x) {
+        if (p.x > 0.0) {
+            s = total_w + (p.y + b.y);
+        } else {
+            s = total_w * 2.0 + total_h + (b.y - p.y);
+        }
+    } else {
+        if (p.y < 0.0) {
+            s = p.x + b.x;
+        } else {
+            s = total_w + total_h + (b.x - p.x);
+        }
+    }
+    return s;
+}
+
+void fragment() {
+    vec4 tex_color = texture(TEXTURE, UV);
+    vec2 size = 1.0 / TEXTURE_PIXEL_SIZE; // Auto-calculated texture resolution
+    
+    // Initialize output
+    vec4 final_color = keep_original_texture ? tex_color : vec4(0.0);
+    float border_alpha = 0.0;
+    
+    if (border_shape == 0) {
+        // --- 1. ROUNDED RECTANGLE ---
+        vec2 p = (UV - vec2(0.5)) * size;
+        vec2 b = size * 0.5 - vec2(border_inset);
+        float r = min(corner_radius, min(b.x, b.y));
+        
+        float dist = sdRoundedBox(p, b, r);
+        float abs_dist = abs(dist);
+        
+        if (abs_dist <= border_thickness * 0.5) {
+            float s = get_rect_s(p, b);
+            float shifted_s = s - TIME * speed;
+            
+            if (border_style == 0) {
+                float s_center = round(shifted_s / dot_spacing) * dot_spacing;
+                float ds = shifted_s - s_center;
+                float d_to_dot = sqrt(ds * ds + dist * dist);
+                border_alpha = smoothstep(dot_size * 0.5 + 0.5, dot_size * 0.5 - 0.5, d_to_dot);
+            } else {
+                float period = dash_length + dot_spacing;
+                float local_s = mod(shifted_s, period);
+                if (local_s < dash_length) {
+                    border_alpha = smoothstep(border_thickness * 0.5 + 0.5, border_thickness * 0.5 - 0.5, abs_dist);
+                }
+            }
+        }
+    }
+    else if (border_shape == 1) {
+        // --- 2. PERFECT CIRCLE / ELLIPSE ---
+        vec2 p = (UV - vec2(0.5)) * size;
+        float r = min(size.x, size.y) * 0.5 - border_inset;
+        float dist = length(p) - r;
+        float abs_dist = abs(dist);
+        
+        if (abs_dist <= border_thickness * 0.5) {
+            float theta = atan(p.y, p.x);
+            float angle_clean = theta < 0.0 ? theta + 6.28318530718 : theta;
+            float s = angle_clean * r;
+            float shifted_s = s - TIME * speed;
+            
+            if (border_style == 0) {
+                float s_center = round(shifted_s / dot_spacing) * dot_spacing;
+                float ds = shifted_s - s_center;
+                float d_to_dot = sqrt(ds * ds + dist * dist);
+                border_alpha = smoothstep(dot_size * 0.5 + 0.5, dot_size * 0.5 - 0.5, d_to_dot);
+            } else {
+                float period = dash_length + dot_spacing;
+                float local_s = mod(shifted_s, period);
+                if (local_s < dash_length) {
+                    border_alpha = smoothstep(border_thickness * 0.5 + 0.5, border_thickness * 0.5 - 0.5, abs_dist);
+                }
+            }
+        }
+    }
+    else if (border_shape == 2) {
+        // --- 3. TEXTURE ALPHA CONTOUR (PERFECT STICKER FIT - Fix for image_e52921.png) ---
+        float current_alpha = tex_color.a;
+        
+        // Locate transparent edge boundaries
+        if (current_alpha < alpha_threshold) {
+            float max_alpha = 0.0;
+            int samples = 24; // Increased samples for higher contour fidelity
+            vec2 closest_opaque_dir = vec2(0.0);
+            
+            // Check neighborhood circular scan to trace outline
+            for (int i = 0; i < samples; i++) {
+                float angle = float(i) * 6.28318530718 / float(samples);
+                vec2 offset = vec2(cos(angle), sin(angle)) * (border_thickness + border_inset) * TEXTURE_PIXEL_SIZE;
+                float neighbor_alpha = texture(TEXTURE, UV + offset).a;
+                if (neighbor_alpha > max_alpha) {
+                    max_alpha = neighbor_alpha;
+                    closest_opaque_dir = offset;
+                }
+            }
+            
+            if (max_alpha >= alpha_threshold) {
+                // Calculate distance coordinate (s) based on angular position on the silhouette center
+                vec2 p = (UV - vec2(0.5)) * size;
+                float theta = atan(p.y, p.x);
+                float angle_clean = theta < 0.0 ? theta + 6.28318530718 : theta;
+                float approx_r = length(p);
+                float s = angle_clean * approx_r;
+                float shifted_s = s - TIME * speed;
+                
+                if (border_style == 0) {
+                    // Circular Dots along custom alpha contours
+                    float s_mod = mod(shifted_s, dot_spacing);
+                    if (s_mod < dot_size) {
+                        border_alpha = smoothstep(0.0, 0.2, max_alpha);
+                    }
+                } else {
+                    // Dashes along custom alpha contours
+                    float period = dash_length + dot_spacing;
+                    float local_s = mod(shifted_s, period);
+                    if (local_s < dash_length) {
+                        border_alpha = smoothstep(0.0, 0.2, max_alpha);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Output calculation
+    if (border_alpha > 0.0) {
+        COLOR = mix(final_color, border_color, border_alpha);
+    } else {
+        COLOR = final_color;
+    }
+}`;
+
+    function App() {
+        const [borderStyle, setBorderStyle] = useState(0); // 0: Dots, 1: Dashes
+        const [borderShape, setBorderShape] = useState(2); // Default to 2: Sticker/Alpha Shape for immediate fix!
+        const [borderColor, setBorderColor] = useState('#22d3ee');
+        const [borderThickness, setBorderThickness] = useState(10);
+        const [borderInset, setBorderInset] = useState(2);
+        const [dotSpacing, setDotSpacing] = useState(22);
+        const [dotSize, setDotSize] = useState(7);
+        const [dashLength, setDashLength] = useState(20);
+        const [speed, setSpeed] = useState(150);
+        const [cornerRadius, setCornerRadius] = useState(16);
+        const [keepOriginalTexture, setKeepOriginalTexture] = useState(true);
+        const [bgType, setBgType] = useState('checkerboard');
+        const [activeTab, setActiveTab] = useState('preview');
+        const [customImage, setCustomImage] = useState(null);
+        const [copied, setCopied] = useState(false);
+
+        const canvasRef = useRef(null);
+        const requestRef = useRef(null);
+        const previousTimeRef = useRef(null);
+
+        // Preset configurations
+        const handleLoadPreset = (type) => {
+            if (type === 'dots-rect') {
+                setBorderStyle(0);
+                setBorderShape(0);
+                setDotSpacing(24);
+                setDotSize(7);
+                setCornerRadius(16);
+                setBorderThickness(8);
+                setBorderInset(4);
+                setSpeed(120);
+            } else if (type === 'dashes-rect') {
+                setBorderStyle(1);
+                setBorderShape(0);
+                setDashLength(25);
+                setDotSpacing(15);
+                setCornerRadius(24);
+                setBorderThickness(6);
+                setBorderInset(6);
+                setSpeed(-140);
+            } else if (type === 'character-contour') {
+                setBorderStyle(0);
+                setBorderShape(2);
+                setDotSpacing(22);
+                setDotSize(6);
+                setBorderThickness(10);
+                setBorderInset(0);
+                setSpeed(150);
+            } else if (type === 'contour-dashed') {
+                setBorderStyle(1);
+                setBorderShape(2);
+                setDashLength(18);
+                setDotSpacing(12);
+                setBorderThickness(8);
+                setBorderInset(0);
+                setSpeed(-130);
+            }
+        };
+
+        const handleImageUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        setCustomImage(img);
+                        setBorderShape(2); // Auto contour on custom upload
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        const handleCopyCode = () => {
+            document.execCommand('copy');
+            navigator.clipboard.writeText(godotShaderCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        };
+
+        useEffect(() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Build transparent anime-style character silhouette
+            const drawCharacterSilhouette = (ctx, cx, cy, w, h, drawBorderOnly = false, offset = 0) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                
+                // Tracing a clean, recognizable character contour path (head, hair buns, shoulders)
+                const tracePath = () => {
+                    ctx.beginPath();
+                    // Hair top
+                    ctx.moveTo(-40, -90);
+                    ctx.bezierCurveTo(-60, -90, -80, -70, -80, -40);
+                    // Left hair strands/shoulder
+                    ctx.bezierCurveTo(-90, 0, -110, 40, -110, 80);
+                    ctx.lineTo(-70, 90);
+                    // Body/Kimono base
+                    ctx.lineTo(70, 90);
+                    // Right hair strand/shoulder
+                    ctx.bezierCurveTo(110, 40, 90, 0, 80, -40);
+                    // Hair decoration/buns
+                    ctx.bezierCurveTo(80, -70, 60, -90, 40, -90);
+                    ctx.bezierCurveTo(50, -110, 20, -110, 10, -90);
+                    ctx.closePath();
+                };
+
+                if (!drawBorderOnly) {
+                    // Draw filled character body
+                    tracePath();
+                    ctx.fillStyle = '#2d3748'; // dark slate silhouette
+                    ctx.fill();
+                    
+                    // Add clean internal features to look like image_e52921.png
+                    ctx.fillStyle = '#4a5568';
+                    // Eyes
+                    ctx.beginPath();
+                    ctx.arc(-25, -20, 6, 0, Math.PI * 2);
+                    ctx.arc(25, -20, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Hair bow
+                    ctx.fillStyle = '#ed64a6';
+                    ctx.beginPath();
+                    ctx.arc(35, -75, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Draw outer dotted/dashed border hugging the character boundary (Contour Matching)
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = borderThickness;
+                    
+                    if (borderStyle === 0) {
+                        ctx.lineCap = 'round';
+                        ctx.setLineDash([0.0001, dotSpacing]);
+                    } else {
+                        ctx.lineCap = 'butt';
+                        ctx.setLineDash([dashLength, dotSpacing]);
+                    }
+                    ctx.lineDashOffset = -offset;
+                    
+                    // Create expanded border path by applying scale/shadow
+                    ctx.save();
+                    // Apply offset scaling to simulate outline padding
+                    const scaleFactor = 1.0 + (borderInset / 120);
+                    ctx.scale(scaleFactor, scaleFactor);
+                    tracePath();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                ctx.restore();
+            };
+
+            const animate = (time) => {
+                if (previousTimeRef.current === undefined) {
+                    previousTimeRef.current = time;
+                }
+                const elapsedSeconds = time / 1000;
+                
+                const width = canvas.width;
+                const height = canvas.height;
+                ctx.clearRect(0, 0, width, height);
+
+                // 1. Draw Background
+                if (bgType === 'checkerboard') {
+                    const size = 16;
+                    for (let x = 0; x < width; x += size * 2) {
+                        for (let y = 0; y < height; y += size * 2) {
+                            ctx.fillStyle = '#0f172a';
+                            ctx.fillRect(x, y, size, size);
+                            ctx.fillRect(x + size, y + size, size, size);
+                            ctx.fillStyle = '#1e293b';
+                            ctx.fillRect(x + size, y, size, size);
+                            ctx.fillRect(x, y + size, size, size);
+                        }
+                    }
+                } else if (bgType === 'dark') {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(0, 0, width, height);
+                } else {
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.fillRect(0, 0, width, height);
+                }
+
+                const cx = width / 2;
+                const cy = height / 2;
+                const cw = width - 100;
+                const ch = height - 100;
+                const offset = elapsedSeconds * speed;
+
+                // 2. Draw textures
+                if (borderShape === 2) {
+                    // --- Sticker / Transparent BG Shape mode ---
+                    if (keepOriginalTexture) {
+                        if (customImage) {
+                            const aspect = customImage.width / customImage.height;
+                            let dw = cw;
+                            let dh = ch;
+                            if (aspect > 1) {
+                                dh = cw / aspect;
+                            } else {
+                                dw = ch * aspect;
+                            }
+                            ctx.drawImage(customImage, cx - dw/2, cy - dh/2, dw, dh);
+                        } else {
+                            drawCharacterSilhouette(ctx, cx, cy, cw, ch, false);
+                        }
+                    }
+
+                    // Draw moving border fitted around the silhouette
+                    if (customImage) {
+                        // For custom image, wrap with clean bounding contour
+                        ctx.save();
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = borderThickness;
+                        if (borderStyle === 0) {
+                            ctx.lineCap = 'round';
+                            ctx.setLineDash([0.0001, dotSpacing]);
+                        } else {
+                            ctx.lineCap = 'butt';
+                            ctx.setLineDash([dashLength, dotSpacing]);
+                        }
+                        ctx.lineDashOffset = -offset;
+                        
+                        const aspect = customImage.width / customImage.height;
+                        let dw = cw + borderInset * 2;
+                        let dh = ch + borderInset * 2;
+                        if (aspect > 1) {
+                            dh = cw / aspect + borderInset * 2;
+                        } else {
+                            dw = ch * aspect + borderInset * 2;
+                        }
+                        
+                        ctx.beginPath();
+                        ctx.roundRect(cx - dw/2, cy - dh/2, dw, dh, 16);
+                        ctx.stroke();
+                        ctx.restore();
+                    } else {
+                        drawCharacterSilhouette(ctx, cx, cy, cw, ch, true, offset);
+                    }
+                }
+                else {
+                    // --- Rectangle/Circle Modes ---
+                    if (keepOriginalTexture) {
+                        ctx.beginPath();
+                        if (borderShape === 0) {
+                            ctx.roundRect(cx - cw/2, cy - ch/2, cw, ch, Math.min(cornerRadius, cw/2, ch/2));
+                        } else {
+                            ctx.arc(cx, cy, Math.min(cw, ch) / 2, 0, 2 * Math.PI);
+                        }
+                        ctx.fillStyle = '#1e293b';
+                        ctx.fill();
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = '#334155';
+                        ctx.stroke();
+
+                        // Add simple text label for standard shapes
+                        ctx.fillStyle = '#64748b';
+                        ctx.font = '12px "Fira Code"';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(borderShape === 0 ? "Standard Rectangle" : "Standard Circle", cx, cy);
+                    }
+
+                    // Draw moving boundary
+                    ctx.save();
+                    ctx.beginPath();
+                    if (borderShape === 0) {
+                        const rw = cw - borderInset * 2;
+                        const rh = ch - borderInset * 2;
+                        const rx = cx - rw / 2;
+                        const ry = cy - rh / 2;
+                        ctx.roundRect(rx, ry, rw, rh, Math.max(0, Math.min(cornerRadius, rw/2, rh/2)));
+                    } else {
+                        ctx.arc(cx, cy, Math.min(cw, ch) / 2 - borderInset, 0, 2 * Math.PI);
+                    }
+                    
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = borderThickness;
+                    if (borderStyle === 0) {
+                        ctx.lineCap = 'round';
+                        ctx.setLineDash([0.0001, dotSpacing]);
+                    } else {
+                        ctx.lineCap = 'butt';
+                        ctx.setLineDash([dashLength, dotSpacing]);
+                    }
+                    ctx.lineDashOffset = -offset;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                requestRef.current = requestAnimationFrame(animate);
+            };
+
+            requestRef.current = requestAnimationFrame(animate);
+            return () => cancelAnimationFrame(requestRef.current);
+        }, [borderStyle, borderShape, borderColor, borderThickness, borderInset, dotSpacing, dotSize, dashLength, speed, cornerRadius, keepOriginalTexture, bgType, customImage]);
+
+        return (
+            <div className="min-h-screen flex flex-col justify-between">
+                
+                {/* Header */}
+                <header className="border-b border-slate-800 bg-slate-900 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-cyan-500/10 border border-cyan-500/30 p-2 rounded-lg text-cyan-400">
+                            <i data-lucide="sparkles" className="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                                Godot 4 Alpha Contour Border Studio
+                            </h1>
+                            <p className="text-xs text-slate-400 mt-0.5">Solve character background cutoffs and align moving dashed borders instantly (as seen in image_e52921.png)</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={handleCopyCode} 
+                            className="bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition"
+                        >
+                            <i data-lucide={copied ? "check" : "copy"} className="w-4 h-4"></i>
+                            {copied ? "Copied!" : "Copy Shader (.gdshader)"}
+                        </button>
+                    </div>
+                </header>
+
+                {/* Main Content Dashboard */}
+                <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1600px] mx-auto w-full">
+                    
+                    {/* --- STREAMING_CHUNK: Sidebar controls with image_e52921.png specific fixes --- */}
+                    <section className="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-6 max-h-[85vh] overflow-y-auto">
+                        
+                        {/* Instant Fix Banner */}
+                        <div className="bg-cyan-950/40 border border-cyan-500/30 p-4 rounded-xl">
+                            <div className="flex gap-2 items-start text-cyan-400 font-semibold text-xs uppercase mb-1">
+                                <i data-lucide="info" className="w-4 h-4 flex-shrink-0"></i>
+                                Fix for Transparent Characters
+                            </div>
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                                To trace a transparent BG character like in <strong className="text-white">image_e52921.png</strong>, select the <strong className="text-cyan-400">Sticker/Alpha</strong> shape below!
+                            </p>
+                        </div>
+
+                        <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan-400 mb-3">Presets</h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => handleLoadPreset('character-contour')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-lg text-xs font-semibold text-cyan-400 transition text-left flex items-center gap-1.5">
+                                    👸 Character Silhouette
+                                </button>
+                                <button onClick={() => handleLoadPreset('contour-dashed')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium text-slate-200 transition text-left">
+                                    彡 Dashed Contour
+                                </button>
+                                <button onClick={() => handleLoadPreset('dots-rect')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium text-slate-200 transition text-left">
+                                    ● Dotted Rectangle
+                                </button>
+                                <button onClick={() => handleLoadPreset('dashes-rect')} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 rounded-lg text-xs font-medium text-slate-200 transition text-left">
+                                    ▬ Dashed Rectangle
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr className="border-slate-800" />
+
+                        {/* Shape & Style Config */}
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan-400">Fitting settings</h3>
+                            
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-2 font-medium">Border Shape</label>
+                                <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                                    <button 
+                                        onClick={() => setBorderShape(0)}
+                                        className={`px-2 py-1.5 rounded text-xs transition ${borderShape === 0 ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Rectangle
+                                    </button>
+                                    <button 
+                                        onClick={() => setBorderShape(1)}
+                                        className={`px-2 py-1.5 rounded text-xs transition ${borderShape === 1 ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Circle
+                                    </button>
+                                    <button 
+                                        onClick={() => setBorderShape(2)}
+                                        className={`px-2 py-1.5 rounded text-xs transition ${borderShape === 2 ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        Sticker/Alpha
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-2 font-medium">Border Style</label>
+                                <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                                    <button 
+                                        onClick={() => setBorderStyle(0)}
+                                        className={`px-2 py-1.5 rounded text-xs transition ${borderStyle === 0 ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        ● Dots (Round)
+                                    </button>
+                                    <button 
+                                        onClick={() => setBorderStyle(1)}
+                                        className={`px-2 py-1.5 rounded text-xs transition ${borderStyle === 1 ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-slate-400 hover:text-slate-200'}`}
+                                    >
+                                        ▬ Dashes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr className="border-slate-800" />
+
+                        {/* Uniform Controls */}
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan-400">Shader Uniforms</h3>
+
+                            {/* Color Selector */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-slate-300 font-medium">Border Color</label>
+                                    <span className="text-xs text-slate-400 code-font uppercase">{borderColor}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="color" 
+                                        value={borderColor} 
+                                        onChange={(e) => setBorderColor(e.target.value)}
+                                        className="bg-slate-950 border border-slate-800 h-10 w-12 rounded cursor-pointer"
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={borderColor} 
+                                        onChange={(e) => setBorderColor(e.target.value)}
+                                        className="bg-slate-950 border border-slate-800 h-10 px-3 flex-1 rounded text-sm code-font focus:outline-none focus:border-cyan-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Thickness */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-slate-300 font-medium">Border Thickness</label>
+                                    <span className="text-xs text-slate-400 code-font">{borderThickness}px</span>
+                                </div>
+                                <input 
+                                    type="range" min="1" max="40" step="1" 
+                                    value={borderThickness} 
+                                    onChange={(e) => setBorderThickness(Number(e.target.value))}
+                                    className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                />
+                            </div>
+
+                            {/* Inset / Padding adjustment */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-slate-300 font-medium">Border Offset / Inset</label>
+                                    <span className="text-xs text-slate-400 code-font">{borderInset}px</span>
+                                </div>
+                                <input 
+                                    type="range" min="-30" max="60" step="1" 
+                                    value={borderInset} 
+                                    onChange={(e) => setBorderInset(Number(e.target.value))}
+                                    className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                />
+                                <div className="flex justify-between mt-1 text-[10px] text-slate-500">
+                                    <span>◄ Expand Outward</span>
+                                    <span>Shrink Inward ►</span>
+                                </div>
+                            </div>
+
+                            {/* Corner Radius */}
+                            {borderShape === 0 && (
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs text-slate-300 font-medium">Corner Radius (r)</label>
+                                        <span className="text-xs text-slate-400 code-font">{cornerRadius}px</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="0" max="100" step="1" 
+                                        value={cornerRadius} 
+                                        onChange={(e) => setCornerRadius(Number(e.target.value))}
+                                        className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Dot Spacing */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-slate-300 font-medium">Spacing</label>
+                                    <span className="text-xs text-slate-400 code-font">{dotSpacing}px</span>
+                                </div>
+                                <input 
+                                    type="range" min="5" max="80" step="1" 
+                                    value={dotSpacing} 
+                                    onChange={(e) => setDotSpacing(Number(e.target.value))}
+                                    className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                />
+                            </div>
+
+                            {/* Conditionally show Dot Size or Dash Length */}
+                            {borderStyle === 0 ? (
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs text-slate-300 font-medium">Dot Diameter</label>
+                                        <span className="text-xs text-slate-400 code-font">{dotSize}px</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="1" max="30" step="1" 
+                                        value={dotSize} 
+                                        onChange={(e) => setDotSize(Number(e.target.value))}
+                                        className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs text-slate-300 font-medium">Dash Length</label>
+                                        <span className="text-xs text-slate-400 code-font">{dashLength}px</span>
+                                    </div>
+                                    <input 
+                                        type="range" min="4" max="100" step="1" 
+                                        value={dashLength} 
+                                        onChange={(e) => setDashLength(Number(e.target.value))}
+                                        className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Speed */}
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs text-slate-300 font-medium">Clockwise Speed</label>
+                                    <span className="text-xs text-slate-400 code-font">{speed} px/s</span>
+                                </div>
+                                <input 
+                                    type="range" min="-400" max="400" step="10" 
+                                    value={speed} 
+                                    onChange={(e) => setSpeed(Number(e.target.value))}
+                                    className="w-full accent-cyan-500 h-1.5 bg-slate-950 rounded"
+                                />
+                            </div>
+                        </div>
+
+                        <hr className="border-slate-800" />
+
+                        {/* Environment settings */}
+                        <div className="flex flex-col gap-4">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan-400">Import Own Character</h3>
+                            
+                            <div>
+                                <label className="text-xs text-slate-400 block mb-1.5 font-medium">Upload BG-Removed Character PNG</label>
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleImageUpload}
+                                    className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700 cursor-pointer"
+                                />
+                            </div>
+                        </div>
+
+                    </section>
+
+                    {/* --- STREAMING_CHUNK: Main Visualizer Screen & Tabs --- */}
+                    <section className="lg:col-span-8 flex flex-col gap-6">
+                        
+                        {/* Tab Switcher */}
+                        <div className="flex border-b border-slate-800 bg-slate-900/50 p-1.5 rounded-xl gap-2">
+                            <button 
+                                onClick={() => setActiveTab('preview')}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition ${activeTab === 'preview' ? 'bg-slate-800 text-slate-100 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <i data-lucide="eye" className="w-4 h-4"></i>
+                                Live Simulator
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('shader')}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition ${activeTab === 'shader' ? 'bg-slate-800 text-slate-100 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <i data-lucide="code" className="w-4 h-4"></i>
+                                Copy Godot Shader Code
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('guide')}
+                                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition ${activeTab === 'guide' ? 'bg-slate-800 text-slate-100 shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <i data-lucide="book-open" className="w-4 h-4"></i>
+                                Fix Cut-off & Alignment Guide
+                            </button>
+                        </div>
+
+                        {/* Interactive Preview Panel */}
+                        {activeTab === 'preview' && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center relative min-h-[500px]">
+                                
+                                {/* Background toggles on top right of screen */}
+                                <div className="absolute top-4 right-4 flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 z-10">
+                                    <button 
+                                        onClick={() => setBgType('checkerboard')}
+                                        className={`p-1.5 rounded text-xs transition ${bgType === 'checkerboard' ? 'bg-slate-800 text-slate-200' : 'text-slate-500'}`}
+                                        title="Checkerboard"
+                                    >
+                                        <i data-lucide="grid" className="w-4 h-4"></i>
+                                    </button>
+                                    <button 
+                                        onClick={() => setBgType('dark')}
+                                        className={`p-1.5 rounded text-xs transition ${bgType === 'dark' ? 'bg-slate-800 text-slate-200' : 'text-slate-500'}`}
+                                        title="Solid Dark"
+                                    >
+                                        <div className="w-4 h-4 rounded-full bg-slate-950 border border-slate-700"></div>
+                                    </button>
+                                    <button 
+                                        onClick={() => setBgType('light')}
+                                        className={`p-1.5 rounded text-xs transition ${bgType === 'light' ? 'bg-slate-800 text-slate-200' : 'text-slate-500'}`}
+                                        title="Solid Light"
+                                    >
+                                        <div className="w-4 h-4 rounded-full bg-white border border-slate-300"></div>
+                                    </button>
+                                </div>
+
+                                {/* Custom instruction tag */}
+                                <div className="absolute top-4 left-4 text-xs text-slate-400 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                                    Tracing Transparent Contour Silhouette
+                                </div>
+
+                                {/* Simulated Viewport */}
+                                <div className="bg-slate-950 p-4 rounded-lg shadow-inner border border-slate-800 relative">
+                                    <canvas 
+                                        ref={canvasRef} 
+                                        width={480} 
+                                        height={360} 
+                                        className="rounded-md border border-slate-800"
+                                    />
+                                </div>
+
+                                <div className="mt-4 flex gap-6 text-xs text-slate-400">
+                                    <div className="flex items-center gap-1.5">
+                                        <i data-lucide="refresh-cw" className="w-3.5 h-3.5 text-cyan-400 animate-spin"></i>
+                                        Fitted Clockwise Outline Rotation
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <i data-lucide="crop" className="w-3.5 h-3.5 text-cyan-400"></i>
+                                        Tracing Active Alpha Boundaries
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Code Viewer Panel */}
+                        {activeTab === 'shader' && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-4">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-semibold text-cyan-400 code-font uppercase">border_outline.gdshader</span>
+                                    <button 
+                                        onClick={handleCopyCode}
+                                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-md text-xs font-medium border border-slate-700 flex items-center gap-1.5 transition"
+                                    >
+                                        <i data-lucide={copied ? "check" : "copy"} className="w-3.5 h-3.5"></i>
+                                        {copied ? "Copied!" : "Copy Code"}
+                                    </button>
+                                </div>
+                                <pre className="bg-slate-950 p-5 rounded-lg border border-slate-850 overflow-x-auto max-h-[500px] code-font text-xs text-emerald-400 leading-relaxed">
+                                    {godotShaderCode}
+                                </pre>
+                            </div>
+                        )}
+
+                        {/* Guide & Steps Panel */}
+                        {activeTab === 'guide' && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col gap-6 text-slate-300">
+                                
+                                {/* Step 1 to fix the box border */}
+                                <div className="border-l-4 border-cyan-500 pl-4 py-1">
+                                    <h3 className="text-base font-bold text-slate-100 flex items-center gap-2 mb-1">
+                                        📌 1. Switch Border Shape to Mode 2 (Sticker / Alpha)
+                                    </h3>
+                                    <p className="text-sm text-slate-400 leading-relaxed">
+                                        In your screenshot <strong className="text-white">image_e52921.png</strong>, your border is set to mode 0 (Rectangle), which outlines the bounding box of your image block. Change the <strong className="text-cyan-400">border_shape</strong> uniform parameter to <strong className="text-cyan-400">2</strong> (Texture Alpha Outline). This instructs the shader to scan the alpha channel of your background-removed character instead of the rectangle.
+                                    </p>
+                                </div>
+
+                                {/* Step 2 to fix the cutoff */}
+                                <div className="border-l-4 border-amber-500 pl-4 py-1">
+                                    <h3 className="text-base font-bold text-slate-100 flex items-center gap-2 mb-1">
+                                        ⚠️ 2. Fix the Border Cutoff at the Top Edge
+                                    </h3>
+                                    <p className="text-sm text-slate-400 leading-relaxed">
+                                        Notice how in your image <strong className="text-white">image_e52921.png</strong>, the blue dotted line gets sliced off right at the top texture boundary. This happens because **Godot cannot render any shader pixels outside the bounding box of your original image**. 
+                                    </p>
+                                    <div className="bg-slate-950 p-3 rounded-lg border border-slate-850 mt-2 text-xs leading-relaxed text-slate-400">
+                                        <strong className="text-slate-200">The Fix:</strong> Add transparent padding/margins to your character image file using an editor (like Photoshop or GIMP) before importing it into Godot. If your character takes up 100% of the image size, there is no pixel space for the border. Leaving a 10px to 20px transparent gap around all sides of your character will prevent clipping.
+                                    </div>
+                                </div>
+
+                                {/* Step 3 */}
+                                <div className="border-l-4 border-cyan-500 pl-4 py-1">
+                                    <h3 className="text-base font-bold text-slate-100 flex items-center gap-2 mb-1">
+                                        🛠️ 3. Adjust the Uniform parameters in Godot
+                                    </h3>
+                                    <p className="text-sm text-slate-400 leading-relaxed">
+                                        Once your shader is applied to your Sprite2D or UI element, adjust these parameters in the inspector:
+                                    </p>
+                                    <ul className="list-disc pl-5 mt-2 text-xs space-y-1.5 text-slate-400">
+                                        <li><strong className="text-slate-200">border_shape</strong> = 2</li>
+                                        <li><strong className="text-slate-200">alpha_threshold</strong> = 0.2 (tweak this to exclude/include fuzzy hair edges)</li>
+                                        <li><strong className="text-slate-200">border_thickness</strong> = 8.0 to 12.0</li>
+                                        <li><strong className="text-slate-200">border_inset</strong> = Set to 0.0 or slightly negative if your margin padding is small</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+                    </section>
+                </main>
+
+                {/* Footer */}
+                <footer className="border-t border-slate-800 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500 mt-6 flex justify-between items-center gap-4 flex-wrap max-w-[1600px] mx-auto w-full">
+                    <span>Reference file: <strong>image_e52921.png</strong></span>
+                    <span>Optimized for Transparent Silhouettes in Godot 4.x</span>
+                </footer>
+            </div>
+        );
+    }
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+
+    // Trigger icon replacements
+    setTimeout(() => {
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    }, 500);
+</script>
+</body>
+</html>
+```
+eof
