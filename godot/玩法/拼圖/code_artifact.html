@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>極致互動拼圖挑戰 | Creative Jigsaw</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+        }
+        
+        /* 拼圖板塊流暢拖動與選取特效 */
+        .puzzle-piece {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* 防止行動裝置滑動干擾 */
+        }
+        
+        .puzzle-piece:active {
+            cursor: grabbing;
+        }
+
+        .puzzle-piece.selected {
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.8) !important;
+            border: 3px solid #6366f1 !important;
+            z-index: 10;
+        }
+
+        .puzzle-piece.drag-over {
+            filter: brightness(1.2);
+            border: 2px dashed #38bdf8 !important;
+        }
+
+        /* 滾動條樣式優化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-full text-slate-100 flex flex-col justify-between overflow-x-hidden">
+
+    <!-- 頂部導航與標題 -->
+    <header class="w-full py-5 px-6 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-indigo-500 to-sky-400 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-puzzle-piece text-2xl text-white animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">極致拼圖挑戰</h1>
+                    <p class="text-xs text-slate-400">上傳自訂照片，調整行列，解鎖極致視覺樂趣</p>
+                </div>
+            </div>
+            
+            <!-- 遊戲數據儀表板 -->
+            <div class="flex items-center gap-6 bg-slate-800/50 px-5 py-2 rounded-2xl border border-slate-700/50">
+                <div class="text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400">步數</span>
+                    <span id="moveCount" class="text-xl font-bold text-indigo-400">0</span>
+                </div>
+                <div class="h-8 w-[1px] bg-slate-700"></div>
+                <div class="text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400">時間</span>
+                    <span id="timer" class="text-xl font-bold text-sky-400">00:00</span>
+                </div>
+                <div class="h-8 w-[1px] bg-slate-700"></div>
+                <div class="text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400">進度</span>
+                    <span id="progressPercent" class="text-xl font-bold text-emerald-400">0%</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-8 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- 左側控制面板 (3 Cols) -->
+        <div class="lg:col-span-4 bg-slate-900/40 p-6 rounded-2xl border border-slate-800/80 flex flex-col gap-6">
+            
+            <!-- 1. 圖片來源區 -->
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-indigo-300 mb-3 flex items-center gap-2">
+                    <i class="fa-regular fa-image"></i> 1. 選擇拼圖來源
+                </h3>
+                
+                <!-- 上傳自定義圖片 -->
+                <div class="group relative border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 transition-all bg-slate-850 cursor-pointer text-center" id="dropzone">
+                    <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <div class="space-y-2">
+                        <div class="mx-auto h-12 w-12 text-slate-400 group-hover:text-indigo-400 transition-colors flex items-center justify-content-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl mx-auto"></i>
+                        </div>
+                        <div class="text-xs text-slate-300">
+                            <span class="font-semibold text-indigo-400">點擊上傳</span> 或拖放您的照片
+                        </div>
+                        <p class="text-[10px] text-slate-500">支援 PNG, JPG, GIF</p>
+                    </div>
+                </div>
+
+                <!-- 預設精美圖片選擇 -->
+                <div class="mt-4">
+                    <p class="text-xs text-slate-400 mb-2">或選擇熱門推薦圖片：</p>
+                    <div class="grid grid-cols-3 gap-2" id="presetImagesContainer">
+                        <!-- 動態插入預設圖片 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 設定行列難度 -->
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-indigo-300 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> 2. 調整難度參數
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="rowCountInput" class="block text-xs text-slate-400 mb-1">列數 (Rows):</label>
+                        <div class="flex items-center bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
+                            <button onclick="adjustParam('row', -1)" class="px-3 py-2 hover:bg-slate-700 transition text-slate-300"><i class="fa-solid fa-minus text-xs"></i></button>
+                            <input type="number" id="rowCountInput" min="2" max="8" value="3" class="w-full bg-transparent text-center focus:outline-none text-sm font-semibold" readonly>
+                            <button onclick="adjustParam('row', 1)" class="px-3 py-2 hover:bg-slate-700 transition text-slate-300"><i class="fa-solid fa-plus text-xs"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="colCountInput" class="block text-xs text-slate-400 mb-1">行數 (Columns):</label>
+                        <div class="flex items-center bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
+                            <button onclick="adjustParam('col', -1)" class="px-3 py-2 hover:bg-slate-700 transition text-slate-300"><i class="fa-solid fa-minus text-xs"></i></button>
+                            <input type="number" id="colCountInput" min="2" max="8" value="3" class="w-full bg-transparent text-center focus:outline-none text-sm font-semibold" readonly>
+                            <button onclick="adjustParam('col', 1)" class="px-3 py-2 hover:bg-slate-700 transition text-slate-300"><i class="fa-solid fa-plus text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 預設難度快捷鍵 -->
+                <div class="flex flex-wrap gap-2 mt-3 justify-between">
+                    <button onclick="setDifficulty(3,3)" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700/60 transition flex-1">簡單 (3x3)</button>
+                    <button onclick="setDifficulty(4,4)" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700/60 transition flex-1">一般 (4x4)</button>
+                    <button onclick="setDifficulty(5,5)" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700/60 transition flex-1">大師 (5x5)</button>
+                </div>
+            </div>
+
+            <!-- 3. 功能指令區 -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-slate-800/80">
+                <button id="startGameBtn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl font-semibold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-gamepad"></i> 重新打亂 & 開始
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="togglePreviewBtn" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700/80 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-regular fa-eye-slash"></i> 顯示/隱藏原圖
+                    </button>
+                    <button id="toggleBorderBtn" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700/80 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-border-all"></i> 網格邊框: 啟動
+                    </button>
+                </div>
+            </div>
+
+            <!-- 原圖預覽視窗 -->
+            <div id="previewCard" class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <div class="text-xs text-slate-400 mb-2 flex justify-between items-center">
+                    <span>原圖參考基準：</span>
+                    <span id="imageDimensions" class="text-[10px] text-slate-500"></span>
+                </div>
+                <div class="relative overflow-hidden rounded-lg aspect-video bg-slate-800">
+                    <img id="imagePreview" src="" class="w-full h-full object-cover" alt="拼圖預覽">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 右側拼圖主面板 (8 Cols) -->
+        <div class="lg:col-span-8 flex flex-col items-center">
+            
+            <!-- 拼圖容器框架：適應大小 -->
+            <div class="w-full max-w-2xl bg-slate-950/80 p-5 md:p-8 rounded-3xl border border-slate-800/80 shadow-2xl flex flex-col items-center justify-center relative min-h-[400px]">
+                
+                <!-- 動態提示 -->
+                <div id="gameInstruction" class="mb-4 text-xs bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full text-indigo-300 text-center flex items-center gap-2 max-w-md">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>點擊任兩個板塊可以互相交換，也可直接拖動（支援手機觸控）</span>
+                </div>
+
+                <!-- 遊戲成功畫面 (絕對定位覆蓋) -->
+                <div id="successOverlay" class="absolute inset-0 bg-slate-950/95 rounded-3xl flex flex-col items-center justify-center p-8 z-30 transition-all opacity-0 pointer-events-none scale-95 duration-500">
+                    <div class="text-center space-y-6 max-w-md">
+                        <div class="inline-flex p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-5xl mb-2 animate-bounce">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">恭喜完成拼圖！</h2>
+                        <p class="text-slate-300">您展現了絕佳的空間思維，完美將圖片還原。</p>
+                        
+                        <!-- 結算成績 -->
+                        <div class="grid grid-cols-2 gap-4 bg-slate-900/80 p-4 rounded-xl border border-slate-850 text-center">
+                            <div>
+                                <span class="block text-xs text-slate-500">總耗時</span>
+                                <span id="finalTime" class="text-lg font-bold text-slate-200">00:00</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-slate-500">總步數</span>
+                                <span id="finalMoves" class="text-lg font-bold text-slate-200">0 步</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button onclick="restartWithCurrentSettings()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
+                                再玩一次
+                            </button>
+                            <button onclick="shareResult()" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-700/50">
+                                <i class="fa-solid fa-share-nodes"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 拼圖真實網格 (外圍約束防止高寬比例失真) -->
+                <div class="w-full flex justify-center items-center">
+                    <div id="puzzleBoard" class="relative w-full aspect-square max-w-[500px] border-4 border-slate-800/80 rounded-2xl overflow-hidden bg-slate-900/60 shadow-inner grid">
+                        <!-- JavaScript 會在此動態生成拼圖拼板 -->
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- 底部版權 & 操作按鈕 -->
+            <div class="mt-4 flex gap-4 text-xs text-slate-500 justify-between w-full max-w-2xl px-2">
+                <span>提示: 當拼圖卡在角落時，嘗試使用「顯示/隱藏原圖」查看結構。</span>
+                <span>Version 2.0</span>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 底部版權 -->
+    <footer class="w-full py-6 text-center border-t border-slate-900 bg-slate-950/40 text-xs text-slate-500 mt-8">
+        <p>© 2026 拼圖樂園. 全球玩家智力大挑戰。本平台不收集您的任何相片隱私。</p>
+    </footer>
+
+    <!-- Canvas用於慶祝特效 -->
+    <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+    <script>
+        // --- 1. Web Audio API 音效模組 ---
+        const AudioFX = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playClick() {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            },
+            playSwap() {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            },
+            playWin() {
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.4);
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.4);
+                });
+            }
+        };
+
+        // --- 2. 預設精美圖片配置 ---
+        const PRESET_IMAGES = [
+            { id: 'preset_nature', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80', desc: '幽谷山川' },
+            { id: 'preset_flower', url: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80', desc: '典雅抽象' },
+            { id: 'preset_lake', url: 'https://images.unsplash.com/photo-1472214222541-d510753a4907?w=800&auto=format&fit=crop&q=80', desc: '湖光山色' }
+        ];
+
+        // --- 3. 遊戲狀態變數 ---
+        let currentImageSrc = PRESET_IMAGES[0].url; // 預設使用第一張圖
+        let rows = 3;
+        let cols = 3;
+        let pieces = []; // 存放所有板塊的狀態：{ id: index, correctId: index, currentId: index }
+        let moveCount = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let isGameStarted = false;
+        let isSolved = false;
+        let selectedPiece = null; // 用於點擊交換模式的暫存變數
+        let gridLinesEnabled = true;
+
+        // DOM 元素引用
+        const imageInput = document.getElementById('imageInput');
+        const dropzone = document.getElementById('dropzone');
+        const presetImagesContainer = document.getElementById('presetImagesContainer');
+        const rowCountInput = document.getElementById('rowCountInput');
+        const colCountInput = document.getElementById('colCountInput');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const togglePreviewBtn = document.getElementById('togglePreviewBtn');
+        const toggleBorderBtn = document.getElementById('toggleBorderBtn');
+        const imagePreview = document.getElementById('imagePreview');
+        const imageDimensions = document.getElementById('imageDimensions');
+        const previewCard = document.getElementById('previewCard');
+        const puzzleBoard = document.getElementById('puzzleBoard');
+        const moveCountEl = document.getElementById('moveCount');
+        const timerEl = document.getElementById('timer');
+        const progressPercentEl = document.getElementById('progressPercent');
+        const successOverlay = document.getElementById('successOverlay');
+        const finalTimeEl = document.getElementById('finalTime');
+        const finalMovesEl = document.getElementById('finalMoves');
+
+        // 初始化預設圖片
+        function initPresets() {
+            presetImagesContainer.innerHTML = '';
+            PRESET_IMAGES.forEach((img, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${idx === 0 ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-slate-800'}`;
+                btn.innerHTML = `<img src="${img.url}" class="w-full h-full object-cover" alt="${img.desc}" title="${img.desc}">`;
+                btn.onclick = () => {
+                    // 更新選擇狀態的外觀
+                    Array.from(presetImagesContainer.children).forEach(child => child.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500/30'));
+                    Array.from(presetImagesContainer.children).forEach(child => child.classList.add('border-slate-800'));
+                    btn.classList.remove('border-slate-800');
+                    btn.classList.add('border-indigo-500', 'ring-2', 'ring-indigo-500/30');
+                    
+                    loadImageSource(img.url);
+                };
+                presetImagesContainer.appendChild(btn);
+            });
+        }
+
+        // 載入拼圖來源圖片 (不管是預設還是上傳)
+        function loadImageSource(src) {
+            currentImageSrc = src;
+            imagePreview.src = src;
+            
+            imagePreview.onload = () => {
+                imageDimensions.innerText = `${imagePreview.naturalWidth} x ${imagePreview.naturalHeight}`;
+                resetGame();
+            };
+        }
+
+        // 調整參數 (row/col)
+        window.adjustParam = function(type, delta) {
+            AudioFX.playClick();
+            if (type === 'row') {
+                let val = parseInt(rowCountInput.value) + delta;
+                if (val >= 2 && val <= 8) {
+                    rowCountInput.value = val;
+                    rows = val;
+                }
+            } else if (type === 'col') {
+                let val = parseInt(colCountInput.value) + delta;
+                if (val >= 2 && val <= 8) {
+                    colCountInput.value = val;
+                    cols = val;
+                }
+            }
+            resetGame();
+        };
+
+        // 設定特定難度
+        window.setDifficulty = function(r, c) {
+            AudioFX.playClick();
+            rows = r;
+            cols = c;
+            rowCountInput.value = r;
+            colCountInput.value = c;
+            resetGame();
+        };
+
+        // 檔案上傳事件偵聽
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    // 清除預設圖片中的選中框
+                    Array.from(presetImagesContainer.children).forEach(child => {
+                        child.classList.remove('border-indigo-500', 'ring-2', 'ring-indigo-500/30');
+                        child.classList.add('border-slate-800');
+                    });
+                    loadImageSource(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 拖曳上傳支援
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.add('border-indigo-500', 'bg-indigo-500/5');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-indigo-500', 'bg-indigo-500/5');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    loadImageSource(event.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 4. 拼圖核心引擎與生成邏輯 ---
+
+        function initTimer() {
+            clearInterval(timerInterval);
+            startTime = Date.now();
+            timerEl.innerText = "00:00";
+            timerInterval = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+                const seconds = String(elapsedSeconds % 60).padStart(2, '0');
+                timerEl.innerText = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            timerEl.innerText = "00:00";
+            moveCount = 0;
+            moveCountEl.innerText = "0";
+            progressPercentEl.innerText = "0%";
+            isGameStarted = false;
+            isSolved = false;
+            selectedPiece = null;
+            successOverlay.classList.remove('opacity-100', 'scale-100');
+            successOverlay.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+            
+            buildBoard(false); // 建立未打亂的拼圖 (原始圖展示)
+        }
+
+        // 打亂拼圖並啟動
+        function startGame() {
+            AudioFX.playClick();
+            moveCount = 0;
+            moveCountEl.innerText = "0";
+            isSolved = false;
+            selectedPiece = null;
+            successOverlay.classList.remove('opacity-100', 'scale-100');
+            successOverlay.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+
+            buildBoard(true); // 建立打亂後的拼圖板
+            initTimer();
+            isGameStarted = true;
+            updateProgressPercent();
+        }
+
+        // 核心：建立拼圖看板
+        function buildBoard(shuffle = false) {
+            puzzleBoard.innerHTML = '';
+            
+            // 設定 CSS Grid
+            puzzleBoard.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            puzzleBoard.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+            const totalPieces = rows * cols;
+            pieces = [];
+
+            // 建立拼圖板塊的原始清單
+            for (let i = 0; i < totalPieces; i++) {
+                pieces.push({
+                    correctId: i,
+                    currentId: i
+                });
+            }
+
+            if (shuffle) {
+                // 使用 Fisher-Yates 洗牌算法
+                // 注意：本遊戲是「自由互換模式」(任意板塊皆可與其他板塊交換)，所以不存在拼圖不可解的情況，可任意隨機！
+                let solved = true;
+                while (solved) {
+                    for (let i = pieces.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [pieces[i].currentId, pieces[j].currentId] = [pieces[j].currentId, pieces[i].currentId];
+                    }
+                    // 確保洗出來的不是已經完美的拼圖
+                    solved = pieces.every(p => p.correctId === p.currentId);
+                }
+            }
+
+            // 繪製所有的拼圖方格板塊
+            for (let index = 0; index < totalPieces; index++) {
+                // 找到對應在當前格子(index)上的圖片切片資訊
+                const pieceData = pieces.find(p => p.currentId === index);
+                const correctId = pieceData.correctId;
+                const cr = Math.floor(correctId / cols);
+                const cc = correctId % cols;
+
+                const pieceEl = document.createElement('div');
+                pieceEl.classList.add('puzzle-piece', 'relative', 'w-full', 'h-full');
+                
+                // 網格線選項
+                if (gridLinesEnabled) {
+                    pieceEl.classList.add('border', 'border-slate-800/60');
+                } else {
+                    pieceEl.classList.add('border', 'border-transparent');
+                }
+
+                // 綁定特徵資料
+                pieceEl.dataset.currentId = index; // 當前在網格中的位置
+                pieceEl.dataset.correctId = correctId; // 原本正確的位置
+                
+                // 設定切片的背景圖 (CSS background math)
+                pieceEl.style.backgroundImage = `url(${currentImageSrc})`;
+                pieceEl.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
+                
+                const percentX = cols > 1 ? (cc / (cols - 1)) * 100 : 0;
+                const percentY = rows > 1 ? (cr / (rows - 1)) * 100 : 0;
+                pieceEl.style.backgroundPosition = `${percentX}% ${percentY}%`;
+
+                // 啟用 HTML5 拖曳功能
+                pieceEl.setAttribute('draggable', shuffle ? 'true' : 'false');
+
+                // 註冊桌上型電腦拖曳事件
+                if (shuffle) {
+                    setupDragAndDropEvents(pieceEl);
+                    // 註冊行動裝置/滑鼠點擊交換事件
+                    setupClickSwapEvents(pieceEl);
+                }
+
+                puzzleBoard.appendChild(pieceEl);
+            }
+        }
+
+        // 設定桌機 Drag & Drop
+        function setupDragAndDropEvents(el) {
+            el.addEventListener('dragstart', (e) => {
+                if (isSolved) return;
+                el.classList.add('selected');
+                e.dataTransfer.setData('text/plain', el.dataset.currentId);
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('selected');
+                // 移除所有板塊的 drag-over 樣式
+                document.querySelectorAll('.puzzle-piece').forEach(p => p.classList.remove('drag-over'));
+            });
+
+            el.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            el.addEventListener('dragenter', () => {
+                if (isSolved) return;
+                el.classList.add('drag-over');
+            });
+
+            el.addEventListener('dragleave', () => {
+                el.classList.remove('drag-over');
+            });
+
+            el.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (isSolved) return;
+                
+                const sourceCurrentId = parseInt(e.dataTransfer.getData('text/plain'));
+                const targetCurrentId = parseInt(el.dataset.currentId);
+                
+                if (sourceCurrentId !== targetCurrentId) {
+                    swapPieces(sourceCurrentId, targetCurrentId);
+                }
+            });
+        }
+
+        // 設定點擊與觸控交換事件 (Click/Touch to Swap)
+        function setupClickSwapEvents(el) {
+            el.addEventListener('click', () => {
+                if (isSolved || !isGameStarted) return;
+
+                AudioFX.playClick();
+
+                if (selectedPiece === null) {
+                    // 點擊選取第一個板塊
+                    selectedPiece = el;
+                    el.classList.add('selected');
+                } else {
+                    // 點擊第二個板塊以進行交換
+                    const sourceCurrentId = parseInt(selectedPiece.dataset.currentId);
+                    const targetCurrentId = parseInt(el.dataset.currentId);
+
+                    if (sourceCurrentId !== targetCurrentId) {
+                        swapPieces(sourceCurrentId, targetCurrentId);
+                    }
+                    
+                    // 清除選取狀態
+                    selectedPiece.classList.remove('selected');
+                    selectedPiece = null;
+                }
+            });
+        }
+
+        // --- 5. 核心邏輯：拼塊交換與完成偵測 ---
+
+        function swapPieces(srcIndex, destIndex) {
+            // 在數據層進行交換
+            const srcPiece = pieces.find(p => p.currentId === srcIndex);
+            const destPiece = pieces.find(p => p.currentId === destIndex);
+
+            if (srcPiece && destPiece) {
+                // 交換 currentId
+                const temp = srcPiece.currentId;
+                srcPiece.currentId = destPiece.currentId;
+                destPiece.currentId = temp;
+
+                // 播放移動音效
+                AudioFX.playSwap();
+
+                // 遞增步數
+                moveCount++;
+                moveCountEl.innerText = moveCount;
+
+                // 局部更新渲染 (重構整個棋盤是最精準安全的方式，且能保證背景精準度，現代瀏覽器能瞬時無感渲染)
+                reRenderBoardPositions();
+                
+                // 更新目前拼對的進度條
+                updateProgressPercent();
+
+                // 檢查是否成功
+                checkVictory();
+            }
+        }
+
+        // 重新繪製板塊，不改動 correctId，僅依照新的 currentId 放置
+        function reRenderBoardPositions() {
+            // 由於使用的是 CSS Grid，我們可以直接把板塊重新依照 currentId 從大到小/小到大排序並附加到 Board 中
+            const elements = Array.from(puzzleBoard.children);
+            
+            // 重新排列 DOM 元素
+            elements.forEach(el => {
+                const correctId = parseInt(el.dataset.correctId);
+                const currentPieceData = pieces.find(p => p.correctId === correctId);
+                el.dataset.currentId = currentPieceData.currentId;
+                el.style.order = currentPieceData.currentId; // 運用 CSS Flex/Grid order 屬性極速調整視覺排版
+            });
+        }
+
+        // 更新進度顯示
+        function updateProgressPercent() {
+            const correctCount = pieces.filter(p => p.correctId === p.currentId).length;
+            const percentage = Math.round((correctCount / pieces.length) * 100);
+            progressPercentEl.innerText = `${percentage}%`;
+        }
+
+        // 檢查拼圖勝利條件
+        function checkVictory() {
+            // 如果所有 pieces 的 correctId 皆與其 currentId 吻合
+            const win = pieces.every(p => p.correctId === p.currentId);
+            
+            if (win) {
+                isSolved = true;
+                clearInterval(timerInterval);
+                AudioFX.playWin();
+                
+                // 延遲展現，給予拼圖完成的動畫時間
+                setTimeout(() => {
+                    showSuccessOverlay();
+                    startConfetti();
+                }, 400);
+            }
+        }
+
+        // 顯示成功過關彈窗
+        function showSuccessOverlay() {
+            finalTimeEl.innerText = timerEl.innerText;
+            finalMovesEl.innerText = `${moveCount} 步`;
+            
+            successOverlay.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            successOverlay.classList.add('opacity-100', 'scale-100');
+        }
+
+        // --- 6. 五彩紙屑 (Confetti) 絢麗慶祝動畫特效 ---
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const ctx = confettiCanvas.getContext('2d');
+        let confettiArray = [];
+        let animationFrameId = null;
+
+        function resizeConfettiCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', () => {
+            if (isSolved) resizeConfettiCanvas();
+        });
+
+        class Confetti {
+            constructor() {
+                this.x = Math.random() * confettiCanvas.width;
+                this.y = Math.random() * confettiCanvas.height - confettiCanvas.height;
+                this.size = Math.random() * 8 + 6;
+                this.color = `hsl(${Math.random() * 360}, 90%, 60%)`;
+                this.speedX = Math.random() * 4 - 2;
+                this.speedY = Math.random() * 5 + 3;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 10 - 5;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+                if (this.y > confettiCanvas.height) {
+                    this.y = -20;
+                    this.x = Math.random() * confettiCanvas.width;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function startConfetti() {
+            resizeConfettiCanvas();
+            confettiArray = [];
+            for (let i = 0; i < 150; i++) {
+                confettiArray.push(new Confetti());
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiArray.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            if (isSolved) {
+                animationFrameId = requestAnimationFrame(animateConfetti);
+            } else {
+                ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            }
+        }
+
+        function stopConfetti() {
+            cancelAnimationFrame(animationFrameId);
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+
+        // --- 7. 事件與按鈕操作綁定 ---
+
+        // 開始按鈕綁定
+        startGameBtn.addEventListener('click', startGame);
+
+        // 原圖預覽開關
+        togglePreviewBtn.addEventListener('click', () => {
+            AudioFX.playClick();
+            if (previewCard.classList.contains('hidden')) {
+                previewCard.classList.remove('hidden');
+                togglePreviewBtn.innerHTML = `<i class="fa-regular fa-eye-slash"></i> 隱藏原圖`;
+            } else {
+                previewCard.classList.add('hidden');
+                togglePreviewBtn.innerHTML = `<i class="fa-regular fa-eye"></i> 顯示原圖`;
+            }
+        });
+
+        // 網格線開關
+        toggleBorderBtn.addEventListener('click', () => {
+            AudioFX.playClick();
+            gridLinesEnabled = !gridLinesEnabled;
+            
+            if (gridLinesEnabled) {
+                toggleBorderBtn.innerHTML = `<i class="fa-solid fa-border-all"></i> 網格邊框: 啟動`;
+                toggleBorderBtn.classList.add('bg-slate-800');
+                toggleBorderBtn.classList.remove('bg-indigo-900/30');
+            } else {
+                toggleBorderBtn.innerHTML = `<i class="fa-solid fa-border-none"></i> 網格邊框: 關閉`;
+                toggleBorderBtn.classList.remove('bg-slate-800');
+                toggleBorderBtn.classList.add('bg-indigo-900/30');
+            }
+            
+            // 重新切換實體邊框
+            document.querySelectorAll('.puzzle-piece').forEach(el => {
+                if (gridLinesEnabled) {
+                    el.classList.add('border-slate-800/60');
+                    el.classList.remove('border-transparent');
+                } else {
+                    el.classList.remove('border-slate-800/60');
+                    el.classList.add('border-transparent');
+                }
+            });
+        });
+
+        // 當前設定重玩
+        window.restartWithCurrentSettings = function() {
+            AudioFX.playClick();
+            stopConfetti();
+            startGame();
+        };
+
+        // 分享/複製戰績功能
+        window.shareResult = function() {
+            AudioFX.playClick();
+            const text = `🏆 我剛剛在【極致拼圖挑戰】中，以 ${moveCount} 步完成了 ${rows}x${cols} 的拼圖，用時 ${timerEl.innerText}！快來跟我挑戰吧！🔥`;
+            
+            // 複製到剪貼板 (相容 iframe 限制使用 execCommand 做法)
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            // 成功提示
+            const btn = document.querySelector('#successOverlay button:last-child');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> 已複製`;
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        };
+
+        // --- 8. 頁面加載初始化 ---
+        window.onload = function() {
+            initPresets();
+            loadImageSource(PRESET_IMAGES[0].url); // 載入第一張為初始拼圖
+        };
+    </script>
+</body>
+</html>
