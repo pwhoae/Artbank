@@ -1,9 +1,10 @@
 shader demo
 1. 像素化消散
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/%E5%83%8F%E7%B4%A0%E5%8C%96%E6%B6%88%E6%95%A3.gif" width="200" height="200"></img>
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%83%8F%E7%B4%A0%E5%8C%96%E6%B6%88%E6%95%A3.gif" width="200" height="200"></img>
 2. 全息投影_Holographic_Projection
-
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%85%A8%E6%81%AF%E6%8A%95%E5%BD%B1.PNG" width="200" height="200"></img>
 3. 輪廓邊界
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E8%BC%AA%E5%BB%93%E9%82%8A%E7%95%8C.PNG" width="200" height="200"></img>
 
 4.   
 5.
