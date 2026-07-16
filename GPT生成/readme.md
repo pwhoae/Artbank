@@ -4,7 +4,9 @@
 
 <details><summary><h6>放棄idea</h6></summary>
 商業化插圖
-shader/tween:不會寫>要抄別人 (visual可視化<寫)
+shader/tween:不會寫>要抄別人 (visual可視化<寫) 
+<br>
+遊戲動畫研究
                           
 </details>
 
