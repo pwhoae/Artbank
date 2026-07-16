@@ -1,0 +1,78 @@
+[gd_scene format=3 uid="uid://f4q7i1xwo2q5"]
+
+[ext_resource type="Script" uid="uid://dapqheecwtbni" path="res://工具箱 2.0/[棄置]/拼圖/腳本/game.gd" id="1_pdtuq"]
+[ext_resource type="Texture2D" uid="uid://cumrebwbxngo1" path="res://icon.svg" id="2_alsq2"]
+[ext_resource type="Shader" uid="uid://uden2eemqfyb" path="res://工具箱 2.0/[Shaders]/特效_像素化消散.gdshader" id="3_alsq2"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_igc5g"]
+shader = ExtResource("3_alsq2")
+shader_parameter/progress = 0.0
+shader_parameter/block_size = 4.0
+shader_parameter/edge_color = Color(0, 0.7, 1, 1)
+shader_parameter/edge_width = 0.08
+
+[node name="Game" type="Control" unique_id=893841991]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pdtuq")
+original_image = ExtResource("2_alsq2")
+
+[node name="user" type="Control" parent="." unique_id=40797514]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="row" type="LineEdit" parent="user" unique_id=756871457]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 31.0
+offset_right = 165.0
+offset_bottom = 76.0
+text = "3"
+
+[node name="col" type="LineEdit" parent="user" unique_id=2033350067]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 88.0
+offset_right = 165.0
+offset_bottom = 133.0
+text = "3"
+
+[node name="FileDialog" type="FileDialog" parent="user" unique_id=690889753]
+oversampling_override = 1.0
+position = Vector2i(0, 36)
+filters = PackedStringArray("\".jpg\", \".jpeg\", \".png\", \".gif\", \".webp\"")
+
+[node name="Button" type="Button" parent="user" unique_id=711175789]
+layout_mode = 0
+offset_left = 219.0
+offset_top = 61.0
+offset_right = 269.0
+offset_bottom = 92.0
+text = "Enter
+"
+
+[node name="TextureRect" type="TextureRect" parent="user" unique_id=303468031]
+material = SubResource("ShaderMaterial_igc5g")
+layout_mode = 0
+offset_left = 52.0
+offset_top = 202.0
+offset_right = 185.0
+offset_bottom = 334.0
+expand_mode = 3
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=2010341202]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[connection signal="pressed" from="user/Button" to="." method="_on_button_pressed"]

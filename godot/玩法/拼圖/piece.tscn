@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cdlrpjabg0de5"]
+
+[ext_resource type="Script" uid="uid://3xmu0wlpg7gt" path="res://工具箱 2.0/[棄置]/拼圖/腳本/piece.gd" id="1_ucvso"]
+
+[node name="Piece" type="TextureButton" unique_id=1290902148]
+script = ExtResource("1_ucvso")
