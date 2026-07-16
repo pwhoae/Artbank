@@ -1,5 +1,7 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
+商業化插圖
+
 <details><summary><h6>放棄idea</h6></summary>
 商業化插圖
 shader/tween:不會寫>要抄別人 (visual可視化<寫)
