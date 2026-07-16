@@ -1,10 +1,19 @@
 shader demo
 1. 像素化消散
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/%E5%83%8F%E7%B4%A0%E5%8C%96%E6%B6%88%E6%95%A3.gif" width="200" height="200"></img>
+2. 全息投影_Holographic_Projection
 
-3. 
+3. 輪廓邊界
 
-4. 
+4.   
+5.
+
+6. 
+
+
+3D
+1. 場景_3D_water
+2. 
 
 <h1>shader code不要研究</h1>
 有可視化設定 但碼code直接點
