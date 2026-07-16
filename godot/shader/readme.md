@@ -5,7 +5,8 @@ shader demo
 3. 
 
 4. 
-5. 
+
+<h1>shader code不要研究</h1>
 有可視化設定 但碼code直接點
 vertex
 uv
