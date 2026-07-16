@@ -6,7 +6,11 @@ shader demo
 
 4. 
 5. 
-
+有可視化設定 但碼code直接點
+vertex
+uv
+shader庫
+shader找簡單的
 seamless 無縫
 
 【【Godot4】快速实现简易真实的3D水面】 https://www.bilibili.com/video/BV11b421e7xQ/?share_source=copy_web material seamless uv1 time*0.02
