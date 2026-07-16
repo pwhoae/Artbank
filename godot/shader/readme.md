@@ -9,12 +9,14 @@ shader demo
 4.   
 5.
 
-6. 
-
 
 3D
 1. 場景_3D_water
-2. 
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%A0%B4%E6%99%AF_3D_water.gif"></img>
+
+3.   tt
+
+4.    
 
 <h1>shader code不要研究</h1>
 有可視化設定 但碼code直接點
