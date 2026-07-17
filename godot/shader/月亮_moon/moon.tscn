@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://7301cpfqufej"]
+
+[ext_resource type="Shader" uid="uid://tl1cxpll8su3" path="res://月亮_moon/月亮_moon.gdshader" id="1_aqwqv"]
+[ext_resource type="Texture2D" uid="uid://benqrxhcgey7y" path="res://月亮_moon/moon.png" id="2_s8rnf"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pr20s"]
+render_priority = 0
+shader = ExtResource("1_aqwqv")
+shader_parameter/moon_albedo = ExtResource("2_s8rnf")
+shader_parameter/rotation_speed = 0.02
+shader_parameter/bump_strength = 0.05
+shader_parameter/roughness = 0.95
+shader_parameter/metallic = 0.0
+shader_parameter/retroreflection_strength = 0.8
+shader_parameter/minnaert_roughness = 1.2
+shader_parameter/rim_color = Color(0.8, 0.85, 1, 1)
+shader_parameter/rim_intensity = 0.4
+shader_parameter/rim_power = 3.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_c32ve"]
+material = SubResource("ShaderMaterial_pr20s")
+
+[node name="Node3D" type="Node3D" unique_id=1172243880]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2119892629]
+mesh = SubResource("SphereMesh_c32ve")
