@@ -1,16 +1,11 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
-冲破次元壁的
+https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader
 
-商業化插圖
+冲破次元壁的/商業化插圖
 Make Blood Pool :https://share.gemini.google/CXvLauNdd5Wl / https://www.youtube.com/watch?v=Ly2yb5v9eDE 
 <details><summary><h6>放棄idea</h6></summary>
-商業化插圖
-shader/tween:不會寫>要抄別人 (visual可視化<寫) <br>
-分析热扭曲 godot shader code:https://share.gemini.google/Y6d8CuN0ijp5 
-<br>
-遊戲動畫研究
-                          
+遊戲動畫研究                        
 </details>
 
 
