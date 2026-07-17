@@ -4,6 +4,8 @@
 收藏 property (position,rotation,scale,shape) Collision3D常用
 CollisionShape3D 子节点：形状采用 CapsuleShape3D（高度设定为较矮的 1.7 米），并增加安全边距（Margin）至 0.3 米以防止穿墙。
 核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
+Camera3D 子节点：将其 Y 轴高度设为 1.5 米，并勾选 Current 使其激活。
+
  
 1.場景光照+環境光
 2.Player+camera (springarm)
