@@ -5,18 +5,25 @@ shader demo
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%85%A8%E6%81%AF%E6%8A%95%E5%BD%B1.PNG" width="200" height="200"></img>
 3. 輪廓邊界 https://gemini.google.com/share/5a18ce72893b?skid=67ebcd64-9a6e-4bc5-b5e1-34aebb8bcfcf
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E8%BC%AA%E5%BB%93%E9%82%8A%E7%95%8C.PNG" width="200" height="200"></img>
-
-4.   
-5.
-
+4. 
+5.   
+6.
 
 3D
 1. 場景_3D_water
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%A0%B4%E6%99%AF_3D_water.gif"></img>
+2. 黑洞
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/blackhole.PNG" width="200" height="200"></img>
+5.
+6.
+7.
 
-3.   tt
 
-4.    
+
+
+8.   tt
+
+9.    
 
 <h1>shader code不要研究</h1>
 有可視化設定 但碼code直接點
