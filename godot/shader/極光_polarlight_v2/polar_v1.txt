@@ -1,0 +1,105 @@
+shader_type sky;
+
+/* STREAMING_CHUNK:Defining shader uniforms for customization */
+uniform vec4 sky_color : source_color = vec4(0.005, 0.008, 0.02, 1.0); // 深邃的夜空背景色
+uniform vec4 aurora_color_green : source_color = vec4(0.1, 0.95, 0.4, 1.0); // 極光底部經典的霓虹綠（對比 image_2b9e2b.jpg）
+uniform vec4 aurora_color_purple : source_color = vec4(0.5, 0.15, 0.8, 1.0); // 極光頂部淡淡的紫紅色
+
+uniform float aurora_speed : hint_range(0.0, 1.0) = 0.12; // 極光流動與波動的速度
+uniform float aurora_amplitude : hint_range(0.0, 5.0) = 1.8; // 極光的整體亮度與強度
+uniform float aurora_scale : hint_range(0.1, 5.0) = 1.2; // 極光的縮放比例
+uniform float aurora_thickness : hint_range(0.05, 0.8) = 0.28; // 極光帷幕的粗細/集中度
+
+uniform float star_density : hint_range(0.0, 1.0) = 0.45; // 星星的密度（重現照片中的繁星夜空）
+uniform float star_brightness : hint_range(0.0, 2.0) = 0.8; // 星星的亮度
+
+/* STREAMING_CHUNK:Implementing procedural noise helper functions */
+// 基礎隨機噪聲生成器
+float hash(vec2 p) {
+p = fract(p * vec2(123.4, 234.5));
+p += dot(p, p + 45.32);
+return fract(p.x * p.y);
+}
+
+// 二維線性插值噪聲 (Value Noise)
+float noise(vec2 p) {
+vec2 i = floor(p);
+vec2 f = fract(p);
+vec2 u = f * f * (3.0 - 2.0 * f);
+return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+// 分形布朗運動 (FBM) 用於模擬平滑且隨機的雲霧/極光流動感
+float fbm(vec2 p) {
+float v = 0.0;
+float a = 0.5;
+vec2 shift = vec2(100.0);
+// 旋轉矩陣以減少軸向偽影，讓流動更加自然
+mat2 rot = mat2(vec2(cos(0.5), sin(0.5)), vec2(-sin(0.5), cos(0.5)));
+for (int i = 0; i < 5; ++i) {
+v += a * noise(p);
+p = rot * p * 2.1 + shift;
+a *= 0.48;
+}
+return v;
+}
+
+/* STREAMING_CHUNK:Generating the sky and starfield backgrounds */
+void sky() {
+vec3 dir = EYEDIR;
+vec3 final_color = sky_color.rgb;
+
+// 1. 生成繁星背景（模擬 image_2b9e2b.jpg 中的星斗效果）
+if (dir.y > 0.0) {
+    // 利用視線方向在高頻空間採樣生成繁星
+    float star_noise = hash(floor(dir.xz * 1200.0 + dir.y * 800.0));
+    if (star_noise > 1.0 - (0.012 * star_density)) {
+        // 星星隨時間閃爍
+        float flicker = sin(TIME * 2.5 + star_noise * 120.0) * 0.35 + 0.65;
+        final_color += vec3(flicker * star_brightness * star_noise);
+    }
+}
+
+/* STREAMING_CHUNK:Calculating the dynamic aurora curtains */
+// 2. 生成極光（主要出現在地平線上方較高的夜空中）
+if (dir.y > 0.01) {
+    // 將 3D 視向投影到一個平坦的電離層平面 (穹頂投影)
+    // 加上 0.08 可以防止靠近地平線時極光被無限拉伸
+    vec2 uv = dir.xz / (dir.y + 0.08) * aurora_scale;
+
+    // 設定流動動畫的偏移向量
+    vec2 motion = vec2(TIME * aurora_speed * 0.15, TIME * aurora_speed * 0.08);
+
+    // 使用扭曲 FBM 模擬極光的有機波動（Domain Warping 域扭曲技術）
+    float warp_x = fbm(uv * 0.6 + motion);
+    float warp_y = fbm(uv * 0.8 - motion + vec2(warp_x * 1.2));
+    
+    // 構建極光獨特的豎直條紋（簾狀效果）
+    // 通過在 X 軸上大幅拉伸噪聲坐標，就能產生極光那種直立的垂直刷痕
+    float ray_noise = fbm(vec2(uv.x * 6.5 + warp_y * 2.5, uv.y * 0.4 - TIME * aurora_speed * 0.5));
+
+    // 計算兩組交織的極光帶（使極光層次感更豐富）
+    float band1 = smoothstep(aurora_thickness, 0.0, abs(warp_y - 0.42));
+    float band2 = smoothstep(aurora_thickness * 1.4, 0.0, abs(warp_y - 0.62));
+
+    // 將極光帶與垂直條紋噪聲相乘，調配出像 `image_2b9e2b.jpg` 那樣的發光簾幕
+    float aurora_intensity = (band1 * 0.75 + band2 * 0.35) * (0.25 + 0.75 * ray_noise);
+
+    // 極光的高度漸變淡化：防止其在地平線生硬截止，同時在高空逐漸消散
+    float vertical_fade = smoothstep(0.01, 0.18, dir.y) * smoothstep(1.0, 0.45, dir.y);
+    aurora_intensity *= vertical_fade * aurora_amplitude;
+
+    // 3. 極光色彩插值（從底部強烈綠光，逐漸過渡到中高空虛無的紫色）
+    // ray_noise 恰好可以用來作高度/強度的微擾，讓顏色分佈更有動態感
+    float color_blend = clamp((uv.y * 0.15) + ray_noise * 0.6, 0.0, 1.0);
+    vec3 aurora_glow = mix(aurora_color_green.rgb, aurora_color_purple.rgb, color_blend);
+
+    // 將極光發光疊加到背景星空上
+    final_color += aurora_glow * aurora_intensity;
+}
+
+COLOR = final_color;
+
+
+}
