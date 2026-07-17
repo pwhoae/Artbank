@@ -1,5 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 https://share.gemini.google/kNlah6M5GNPn <br>
+https://share.gemini.google/y1ntErUPVBdH<br>
 1-2天法則
 Shiny Text/
 Curved Loop/
