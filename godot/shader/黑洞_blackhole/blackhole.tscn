@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://dpsh0it052c0p"]
+
+[ext_resource type="Shader" uid="uid://cu3ls8t8y5ta" path="res://shader/可用shader/黑洞_blackhole/黑洞_blackhole.gdshader" id="1_ly8uw"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5dbrt"]
+render_priority = 0
+shader = ExtResource("1_ly8uw")
+shader_parameter/core_color = Color(0.02, 0, 0.05, 1)
+shader_parameter/core_radius = 0.45
+shader_parameter/core_softness = 0.04
+shader_parameter/inner_glow_color = Color(0.9, 0, 0.6, 1)
+shader_parameter/outer_glow_color = Color(0.1, 0.3, 1, 1)
+shader_parameter/glow_thickness = 0.25
+shader_parameter/glow_power = 3.0
+shader_parameter/distortion_strength = 0.25
+shader_parameter/distortion_speed = 1.5
+shader_parameter/noise_scale = 1.5
+shader_parameter/noise_strength = 0.3
+
+[sub_resource type="SphereMesh" id="SphereMesh_g8wj4"]
+material = SubResource("ShaderMaterial_5dbrt")
+
+[node name="Node3D" type="Node3D" unique_id=749494866]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1461279784]
+mesh = SubResource("SphereMesh_g8wj4")
