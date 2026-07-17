@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Godot 4 - "Copy Isaac" Menu System & Interactive Simulation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for retro/pixel feel -->
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .retro-font {
+      font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+    }
+    /* CRT Scanline overlay effect */
+    .crt-screen {
+      position: relative;
+      overflow: hidden;
+    }
+    .crt-screen::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      z-index: 10;
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+    /* Floating Title Animation */
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(-1deg); }
+      50% { transform: translateY(-8px) rotate(1deg); }
+      100% { transform: translateY(0px) rotate(-1deg); }
+    }
+    .floating-title {
+      animation: float 4s ease-in-out infinite;
+    }
+    /* Flash Animation */
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .flashing-text {
+      animation: flash 1.5s infinite;
+    }
+    /* Simple Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e1e2e;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #45475a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #585b70;
+    }
+  </style>
+</head>
+<body class="bg-[#11111b] text-[#cdd6f4] min-h-screen flex flex-col selection:bg-[#f38ba8] selection:text-[#11111b]">
+
+  <!-- Top Navigation bar mimicking a standard game toolkit/editor header -->
+  <header class="bg-[#181825] border-b border-[#313244] py-3 px-6 flex justify-between items-center shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="w-4 h-4 rounded-full bg-[#f38ba8] animate-pulse"></div>
+      <div>
+        <h1 class="text-md font-bold tracking-wider text-[#f5e0dc]">Copy Isaac UI & Godot Engine 4 Core</h1>
+        <p class="text-xs text-[#a6adc8]">Interactive Editor & GDScript Integration Panel</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="text-xs bg-[#313244] text-[#a6adc8] px-2.5 py-1 rounded-md border border-[#45475a]">Godot 4.3 Stable</span>
+      <span class="text-xs text-[#eed49f] flex items-center gap-1">
+        <span class="inline-block w-2 h-2 rounded-full bg-[#eed49f]"></span> Web Sandbox
+      </span>
+    </div>
+  </header>
+
+  <!-- Main interactive workspace grid -->
+  <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-6 overflow-hidden max-w-[1800px] w-full mx-auto">
+    
+    <!-- LEFT PANEL: The Playable UI Game Screen Emulator (5 Cols) -->
+    <section class="xl:col-span-5 flex flex-col space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-sm font-semibold tracking-wide text-[#a6adc8] uppercase">🎮 Interactive UI Simulator</h2>
+        <span class="text-xs text-[#bac2de]">Click inside screen or use Arrow Keys + Enter</span>
+      </div>
+
+      <!-- CRT Game Screen Frame -->
+      <div id="game-viewport" class="crt-screen relative aspect-video w-full rounded-xl bg-[#09090b] border-4 border-[#313244] shadow-2xl flex flex-col justify-between p-6 select-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#f38ba8]" tabindex="0">
+        
+        <!-- CRT Screen Subtle Inner Glow -->
+        <div class="absolute inset-0 bg-radial-gradient from-transparent to-black opacity-40 pointer-events-none"></div>
+
+        <!-- SCREEN 1: Start Screen -->
+        <div id="screen-start" class="absolute inset-0 flex flex-col justify-between p-8 text-center transition-all duration-500 ease-in-out">
+          <div class="mt-8">
+            <p class="text-[#a6adc8] text-sm tracking-widest uppercase opacity-75 font-mono">Definitely Not Isaac</p>
+            <h1 class="retro-font text-[#f2cdcd] text-6xl md:text-7xl font-extrabold mt-2 tracking-wide floating-title drop-shadow-[0_4px_6px_rgba(242,205,205,0.15)]">
+              Copy Isaac
+            </h1>
+          </div>
+          <div class="mb-12">
+            <span class="retro-font text-2xl md:text-3xl text-[#f38ba8] flashing-text">按开始键</span>
+            <p class="text-xs text-[#6c7086] mt-3 font-mono">( Or Click Anywhere to Start )</p>
+          </div>
+        </div>
+
+        <!-- SCREEN 2: Save File Selection -->
+        <div id="screen-save" class="absolute inset-0 flex flex-col justify-between p-6 text-center transform translate-y-full opacity-0 transition-all duration-500 ease-in-out pointer-events-none">
+          <div class="mt-2">
+            <h2 class="retro-font text-3xl text-[#f9e2af] tracking-wide">-选择存档-</h2>
+          </div>
+          
+          <!-- Save Slots Horizontal Row -->
+          <div class="grid grid-cols-3 gap-4 my-auto px-4">
+            <!-- Slot 1 -->
+            <button onclick="selectSave(1)" id="save-slot-1" class="group bg-[#1e1e2e] hover:bg-[#313244] border-2 border-[#45475a] focus:border-[#f38ba8] rounded-lg p-5 flex flex-col items-center justify-center space-y-3 transition-all duration-200">
+              <div class="w-10 h-10 rounded-full bg-[#313244] group-hover:bg-[#45475a] flex items-center justify-center text-xs text-[#a6adc8]">I</div>
+              <span class="retro-font text-lg text-[#cdd6f4]">存档1</span>
+              <span class="text-[10px] text-[#a6adc8] font-mono">NEW GAME</span>
+            </button>
+            <!-- Slot 2 -->
+            <button onclick="selectSave(2)" id="save-slot-2" class="group bg-[#1e1e2e] hover:bg-[#313244] border-2 border-[#45475a] focus:border-[#f38ba8] rounded-lg p-5 flex flex-col items-center justify-center space-y-3 transition-all duration-200">
+              <div class="w-10 h-10 rounded-full bg-[#313244] group-hover:bg-[#45475a] flex items-center justify-center text-xs text-[#a6adc8]">II</div>
+              <span class="retro-font text-lg text-[#cdd6f4]">存档2</span>
+              <span class="text-[10px] text-[#a6adc8] font-mono">NEW GAME</span>
+            </button>
+            <!-- Slot 3 -->
+            <button onclick="selectSave(3)" id="save-slot-3" class="group bg-[#1e1e2e] hover:bg-[#313244] border-2 border-[#45475a] focus:border-[#f38ba8] rounded-lg p-5 flex flex-col items-center justify-center space-y-3 transition-all duration-200">
+              <div class="w-10 h-10 rounded-full bg-[#313244] group-hover:bg-[#45475a] flex items-center justify-center text-xs text-[#a6adc8]">III</div>
+              <span class="retro-font text-lg text-[#cdd6f4]">存档3</span>
+              <span class="text-[10px] text-[#a6adc8] font-mono">NEW GAME</span>
+            </button>
+          </div>
+
+          <div class="mb-2">
+            <span class="text-xs text-[#6c7086] font-mono">[Backspace] Go Back</span>
+          </div>
+        </div>
+
+        <!-- SCREEN 3: Main Menu Navigation -->
+        <div id="screen-main-menu" class="absolute inset-0 flex flex-col justify-between p-6 transform translate-y-full opacity-0 transition-all duration-500 ease-in-out pointer-events-none">
+          <div class="text-center mt-2 flex justify-between items-center px-4">
+            <span class="text-xs text-[#a6adc8] font-mono">SLOT: <span id="current-save-indicator">1</span></span>
+            <h2 class="retro-font text-2xl text-[#f9e2af]">主菜单</h2>
+            <span class="text-xs text-[#a6adc8] font-mono">Press Arrow Keys</span>
+          </div>
+
+          <!-- Vertical Options Stack -->
+          <div class="flex flex-col space-y-2 max-w-xs mx-auto w-full justify-center my-auto text-left pl-8">
+            <div id="opt-0" class="flex items-center space-x-3 text-xl retro-font cursor-pointer select-none py-1">
+              <span class="text-[#f38ba8] font-bold w-6 transition-all duration-150" id="ptr-0">→</span>
+              <span class="text-[#cdd6f4] tracking-wide" id="lbl-0">新游戏</span>
+            </div>
+            <div id="opt-1" class="flex items-center space-x-3 text-xl retro-font cursor-pointer select-none py-1">
+              <span class="text-[#f38ba8] font-bold w-6 opacity-0 transition-all duration-150" id="ptr-1">→</span>
+              <span class="text-[#6c7086] tracking-wide" id="lbl-1">继续游戏</span>
+            </div>
+            <div id="opt-2" class="flex items-center space-x-3 text-xl retro-font cursor-pointer select-none py-1">
+              <span class="text-[#f38ba8] font-bold w-6 opacity-0 transition-all duration-150" id="ptr-2">→</span>
+              <span class="text-[#cdd6f4] tracking-wide" id="lbl-2">挑战</span>
+            </div>
+            <div id="opt-3" class="flex items-center space-x-3 text-xl retro-font cursor-pointer select-none py-1">
+              <span class="text-[#f38ba8] font-bold w-6 opacity-0 transition-all duration-150" id="ptr-3">→</span>
+              <span class="text-[#cdd6f4] tracking-wide" id="lbl-3">模组</span>
+            </div>
+            <div id="opt-4" class="flex items-center space-x-3 text-xl retro-font cursor-pointer select-none py-1">
+              <span class="text-[#f38ba8] font-bold w-6 opacity-0 transition-all duration-150" id="ptr-4">→</span>
+              <span class="text-[#cdd6f4] tracking-wide" id="lbl-4">统计数据</span>
+            </div>
+            <div id="opt-5" class="flex items-center space-x-3 text-xl retro-font cursor-pointer select-none py-1">
+              <span class="text-[#f38ba8] font-bold w-6 opacity-0 transition-all duration-150" id="ptr-5">→</span>
+              <span class="text-[#cdd6f4] tracking-wide" id="lbl-5">选项</span>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <span class="text-xs text-[#6c7086] font-mono">[Backspace] Go Back  •  [Enter] Confirm</span>
+          </div>
+        </div>
+
+        <!-- SCREEN 4: Who Am I? (Character & Difficulty Selection) -->
+        <div id="screen-char-select" class="absolute inset-0 flex flex-col justify-between p-6 transform translate-y-full opacity-0 transition-all duration-500 ease-in-out pointer-events-none">
+          
+          <!-- Header title -->
+          <div class="text-center mt-1">
+            <h2 class="retro-font text-3xl text-[#f9e2af] tracking-widest">我是谁？</h2>
+          </div>
+
+          <!-- Character Selector Hub & Difficulties -->
+          <div class="grid grid-cols-12 gap-2 my-auto items-center px-2">
+            
+            <!-- Left Arrow navigation for characters -->
+            <button onclick="prevCharacter()" class="col-span-1 text-[#f38ba8] hover:scale-125 transition-transform text-3xl font-extrabold">&lt;</button>
+            
+            <!-- Center Character Card display -->
+            <div class="col-span-7 bg-[#1e1e2e]/80 border border-[#313244] rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-3 shadow-inner relative overflow-hidden min-h-[160px]">
+              
+              <!-- Character Icon SVG -->
+              <div id="char-icon-container" class="transition-transform duration-200">
+                <svg id="char-svg" class="w-16 h-16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Dynamic SVG paths loaded via script -->
+                </svg>
+              </div>
+
+              <!-- Character info -->
+              <div class="space-y-1">
+                <p id="char-name" class="retro-font text-xl text-[#f2cdcd] tracking-wide">这家伙可以撒</p>
+                <div class="flex items-center justify-center space-x-4 text-xs font-mono text-[#a6adc8]">
+                  <span>血量 <span id="stat-hp" class="text-[#f38ba8] font-bold">3</span></span>
+                  <span>速度 <span id="stat-speed" class="text-[#89b4fa] font-bold">2</span></span>
+                  <span>攻击力 <span id="stat-atk" class="text-[#f9e2af] font-bold">2</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Arrow navigation for characters -->
+            <button onclick="nextCharacter()" class="col-span-1 text-[#f38ba8] hover:scale-125 transition-transform text-3xl font-extrabold">&gt;</button>
+
+            <!-- Difficulty Settings (Vertical select with Up/Down Arrows) -->
+            <div class="col-span-3 bg-[#181825] border border-[#313244] rounded-lg p-3 flex flex-col items-center space-y-2 justify-center text-center">
+              <span class="text-[10px] text-[#6c7086] font-mono tracking-widest">DIFFICULTY</span>
+              <button onclick="cycleDifficulty(-1)" class="text-xs text-[#a6adc8] hover:text-[#f38ba8]">▲</button>
+              <span id="difficulty-indicator" class="retro-font text-md text-[#f9e2af]">普通</span>
+              <button onclick="cycleDifficulty(1)" class="text-xs text-[#a6adc8] hover:text-[#f38ba8]">▼</button>
+            </div>
+
+          </div>
+
+          <div class="text-center flex justify-between items-center px-4">
+            <span class="text-xs text-[#6c7086] font-mono">[Backspace] Back</span>
+            <span class="text-xs text-[#a6adc8] font-mono">Use Left/Right & Up/Down</span>
+            <span class="text-xs text-[#a6adc8] font-mono font-bold text-[#a6e3a1] animate-bounce">[Enter] Play</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Touch/Click Controls Helper for Mobile & Desktop -->
+      <div class="bg-[#181825] border border-[#313244] rounded-xl p-4 flex flex-col space-y-3 shadow-md">
+        <h3 class="text-xs font-semibold uppercase text-[#a6adc8] tracking-wider">🎮 D-Pad Navigation Aid</h3>
+        <div class="grid grid-cols-3 gap-2 w-44 mx-auto">
+          <div></div>
+          <button onclick="handleVirtualKey('ArrowUp')" class="bg-[#313244] hover:bg-[#45475a] text-sm py-2 rounded-lg font-bold border border-[#45475a] active:scale-95 transition-transform">▲</button>
+          <div></div>
+          <button onclick="handleVirtualKey('ArrowLeft')" class="bg-[#313244] hover:bg-[#45475a] text-sm py-2 rounded-lg font-bold border border-[#45475a] active:scale-95 transition-transform">◀</button>
+          <button onclick="handleVirtualKey('Enter')" class="bg-[#f38ba8] hover:bg-[#f5e0dc] text-[#11111b] text-xs py-2 rounded-lg font-extrabold active:scale-95 transition-transform">ENT</button>
+          <button onclick="handleVirtualKey('ArrowRight')" class="bg-[#313244] hover:bg-[#45475a] text-sm py-2 rounded-lg font-bold border border-[#45475a] active:scale-95 transition-transform">▶</button>
+          <div></div>
+          <button onclick="handleVirtualKey('ArrowDown')" class="bg-[#313244] hover:bg-[#45475a] text-sm py-2 rounded-lg font-bold border border-[#45475a] active:scale-95 transition-transform">▼</button>
+          <button onclick="handleVirtualKey('Backspace')" class="bg-[#eba0ac] hover:bg-[#f2cdcd] text-[#11111b] text-[10px] py-2 rounded-lg font-bold active:scale-95 transition-transform">BACK</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Godot 4 GDScript Code Hub (7 Cols) -->
+    <section class="xl:col-span-7 flex flex-col space-y-4 h-[calc(100vh-140px)] min-h-[600px]">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-[#89b4fa]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <h2 class="text-sm font-semibold tracking-wide text-[#a6adc8] uppercase">📂 Godot 4.x Project Source</h2>
+        </div>
+        <div class="flex bg-[#1e1e2e] p-1 rounded-lg border border-[#313244] text-xs">
+          <button onclick="switchTab('tab-menu-script')" id="btn-tab-menu-script" class="px-3 py-1.5 rounded-md font-semibold transition-all bg-[#313244] text-[#f5e0dc]">menu.gd</button>
+          <button onclick="switchTab('tab-save-script')" id="btn-tab-save-script" class="px-3 py-1.5 rounded-md font-semibold transition-all text-[#a6adc8] hover:text-[#cdd6f4]">save_manager.gd</button>
+          <button onclick="switchTab('tab-setup-guide')" id="btn-tab-setup-guide" class="px-3 py-1.5 rounded-md font-semibold transition-all text-[#a6adc8] hover:text-[#cdd6f4]">Scene Tree Map</button>
+        </div>
+      </div>
+
+      <!-- Code Container (Fills the height nicely) -->
+      <div class="bg-[#1e1e2e] border border-[#313244] rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl relative">
+        <!-- Floating Copy Button -->
+        <button onclick="copyCurrentTabCode()" class="absolute top-3 right-4 z-20 bg-[#313244] hover:bg-[#45475a] text-[#cdd6f4] px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#45475a] transition-all flex items-center space-x-1.5">
+          <svg class="w-4 h-4 text-[#a6e3a1]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+          <span>Copy File</span>
+        </button>
+
+        <!-- Tab contents (Code views) -->
+        <div class="flex-1 overflow-y-auto p-5 text-sm leading-relaxed">
+          
+          <!-- TAB 1: MENU.GD SCRIPT -->
+          <pre id="tab-menu-script" class="text-[#a6adc8] font-mono"><code class="text-xs"><span class="text-[#f38ba8]"># ==========================================
+# menu.gd - Main State Machine and Controller
+# ==========================================</span>
+<span class="text-[#f9e2af]">extends</span> <span class="text-[#89b4fa]">Control</span>
+
+<span class="text-[#f38ba8]"># Defined states corresponding to Godot menu screens</span>
+<span class="text-[#f9e2af]">enum</span> MenuState {
+    START_SCREEN,
+    SAVE_SELECT,
+    MAIN_MENU,
+    CHARACTER_SELECT,
+    OPTIONS
+}
+
+<span class="text-[#cdd6f4]">var current_state : MenuState = MenuState.START_SCREEN</span>
+<span class="text-[#cdd6f4]">var selected_save_slot : int = -1</span>
+<span class="text-[#cdd6f4]">var main_menu_index : int = 0</span>
+<span class="text-[#cdd6f4]">var selected_character_idx : int = 0</span>
+<span class="text-[#cdd6f4]">var current_difficulty : int = 0 </span><span class="text-[#f38ba8]"># 0: Normal, 1: Hard, 2: Greed</span>
+
+<span class="text-[#f38ba8]"># Node Onready paths (corresponds with Godot hierarchy)</span>
+<span class="text-[#f9e2af]">@onready</span> <span class="text-[#f9e2af]">var</span> screen_start = $ChooseSaveData/StartScreen
+<span class="text-[#f9e2af]">@onready</span> <span class="text-[#f9e2af]">var</span> screen_save = $ChooseSaveData/SaveSelector
+<span class="text-[#f9e2af]">@onready</span> <span class="text-[#f9e2af]">var</span> screen_main_menu = $ChooseSaveData/MainMenu
+<span class="text-[#f9e2af]">@onready</span> <span class="text-[#f9e2af]">var</span> screen_char_select = $ChooseActor
+<span class="text-[#f9e2af]">@onready</span> <span class="text-[#f9e2af]">var</span> menu_buttons = $ChooseSaveData/MainMenu/VBoxContainer
+<span class="text-[#f9e2af]">@onready</span> <span class="text-[#f9e2af]">var</span> camera = $MenuCamera
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_ready</span>():
+    <span class="text-[#a6e3a1]"># Initialize menus hidden except the Start screen</span>
+    _reset_menu_visibility()
+    _update_menu_pointers()
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_input</span>(event):
+    <span class="text-[#f9e2af]">if</span> event.is_action_pressed(<span class="text-[#a6e3a1]">"ui_accept"</span>):
+        _handle_accept()
+    <span class="text-[#f9e2af]">elif</span> event.is_action_pressed(<span class="text-[#a6e3a1]">"ui_cancel"</span>):
+        _handle_back()
+    <span class="text-[#f9e2af]">elif</span> event.is_action_pressed(<span class="text-[#a6e3a1]">"ui_up"</span>):
+        _handle_navigation(-1, <span class="text-[#a6e3a1]">"vertical"</span>)
+    <span class="text-[#f9e2af]">elif</span> event.is_action_pressed(<span class="text-[#a6e3a1]">"ui_down"</span>):
+        _handle_navigation(1, <span class="text-[#a6e3a1]">"vertical"</span>)
+    <span class="text-[#f9e2af]">elif</span> event.is_action_pressed(<span class="text-[#a6e3a1]">"ui_left"</span>):
+        _handle_navigation(-1, <span class="text-[#a6e3a1]">"horizontal"</span>)
+    <span class="text-[#f9e2af]">elif</span> event.is_action_pressed(<span class="text-[#a6e3a1]">"ui_right"</span>):
+        _handle_navigation(1, <span class="text-[#a6e3a1]">"horizontal"</span>)
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">change_state</span>(new_state: MenuState):
+    <span class="text-[#f38ba8]"># Godot 4 Tween Transitions</span>
+    <span class="text-[#f9e2af]">var</span> tween = create_tween().set_parallel(<span class="text-[#f9e2af]">true</span>)
+    tween.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+    
+    <span class="text-[#f38ba8]"># Animate current state away (Slide out & modulate)</span>
+    _animate_out_state(current_state, tween)
+    <span class="text-[#f38ba8]"># Animate new state in (Slide in & modulate)</span>
+    _animate_in_state(new_state, tween)
+    
+    current_state = new_state
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_animate_out_state</span>(state: MenuState, tween: Tween):
+    <span class="text-[#f9e2af]">match</span> state:
+        MenuState.START_SCREEN:
+            tween.tween_property(screen_start, <span class="text-[#a6e3a1]">"position:y"</span>, -500.0, 0.4)
+            tween.tween_property(screen_start, <span class="text-[#a6e3a1]">"modulate:a"</span>, 0.0, 0.3)
+        MenuState.SAVE_SELECT:
+            tween.tween_property(screen_save, <span class="text-[#a6e3a1]">"position:y"</span>, -500.0, 0.4)
+            tween.tween_property(screen_save, <span class="text-[#a6e3a1]">"modulate:a"</span>, 0.0, 0.3)
+        MenuState.MAIN_MENU:
+            tween.tween_property(screen_main_menu, <span class="text-[#a6e3a1]">"position:x"</span>, -800.0, 0.4)
+            tween.tween_property(screen_main_menu, <span class="text-[#a6e3a1]">"modulate:a"</span>, 0.0, 0.3)
+        MenuState.CHARACTER_SELECT:
+            tween.tween_property(screen_char_select, <span class="text-[#a6e3a1]">"position:y"</span>, 500.0, 0.4)
+            tween.tween_property(screen_char_select, <span class="text-[#a6e3a1]">"modulate:a"</span>, 0.0, 0.3)
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_animate_in_state</span>(state: MenuState, tween: Tween):
+    <span class="text-[#f9e2af]">match</span> state:
+        MenuState.SAVE_SELECT:
+            screen_save.position.y = 500.0
+            screen_save.visible = <span class="text-[#f9e2af]">true</span>
+            tween.tween_property(screen_save, <span class="text-[#a6e3a1]">"position:y"</span>, 0.0, 0.4)
+            tween.tween_property(screen_save, <span class="text-[#a6e3a1]">"modulate:a"</span>, 1.0, 0.4)
+        MenuState.MAIN_MENU:
+            screen_main_menu.position.x = 800.0
+            screen_main_menu.visible = <span class="text-[#f9e2af]">true</span>
+            tween.tween_property(screen_main_menu, <span class="text-[#a6e3a1]">"position:x"</span>, 0.0, 0.4)
+            tween.tween_property(screen_main_menu, <span class="text-[#a6e3a1]">"modulate:a"</span>, 1.0, 0.4)
+        MenuState.CHARACTER_SELECT:
+            screen_char_select.position.y = -500.0
+            screen_char_select.visible = <span class="text-[#f9e2af]">true</span>
+            tween.tween_property(screen_char_select, <span class="text-[#a6e3a1]">"position:y"</span>, 0.0, 0.4)
+            tween.tween_property(screen_char_select, <span class="text-[#a6e3a1]">"modulate:a"</span>, 1.0, 0.4)
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_handle_accept</span>():
+    <span class="text-[#f9e2af]">match</span> current_state:
+        MenuState.START_SCREEN:
+            _play_sound(<span class="text-[#a6e3a1]">"confirm"</span>)
+            change_state(MenuState.SAVE_SELECT)
+        MenuState.SAVE_SELECT:
+            _play_sound(<span class="text-[#a6e3a1]">"confirm"</span>)
+            selected_save_slot = 1 <span class="text-[#f38ba8]"># default slot mock</span>
+            change_state(MenuState.MAIN_MENU)
+        MenuState.MAIN_MENU:
+            _play_sound(<span class="text-[#a6e3a1]">"confirm"</span>)
+            <span class="text-[#f9e2af]">if</span> main_menu_index == 0: <span class="text-[#f38ba8]"># "新游戏"</span>
+                change_state(MenuState.CHARACTER_SELECT)
+        MenuState.CHARACTER_SELECT:
+            _play_sound(<span class="text-[#a6e3a1]">"game_start"</span>)
+            <span class="text-[#f38ba8]"># Load Game Level scene here!</span>
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_handle_back</span>():
+    <span class="text-[#f9e2af]">match</span> current_state:
+        MenuState.SAVE_SELECT:
+            _play_sound(<span class="text-[#a6e3a1]">"cancel"</span>)
+            change_state(MenuState.START_SCREEN)
+        MenuState.MAIN_MENU:
+            _play_sound(<span class="text-[#a6e3a1]">"cancel"</span>)
+            change_state(MenuState.SAVE_SELECT)
+        MenuState.CHARACTER_SELECT:
+            _play_sound(<span class="text-[#a6e3a1]">"cancel"</span>)
+            change_state(MenuState.MAIN_MENU)
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_handle_navigation</span>(direction: int, axis: String):
+    <span class="text-[#f9e2af]">match</span> current_state:
+        MenuState.MAIN_MENU:
+            <span class="text-[#f9e2af]">if</span> axis == <span class="text-[#a6e3a1]">"vertical"</span>:
+                main_menu_index = clampi(main_menu_index + direction, 0, 5)
+                _play_sound(<span class="text-[#a6e3a1]">"move"</span>)
+                _update_menu_pointers()
+        MenuState.CHARACTER_SELECT:
+            <span class="text-[#f9e2af]">if</span> axis == <span class="text-[#a6e3a1]">"horizontal"</span>:
+                selected_character_idx = clampi(selected_character_idx + direction, 0, 2)
+                _play_sound(<span class="text-[#a6e3a1]">"move"</span>)
+                _update_character_ui()
+            <span class="text-[#f9e2af]">elif</span> axis == <span class="text-[#a6e3a1]">"vertical"</span>:
+                current_difficulty = clampi(current_difficulty + direction, 0, 2)
+                _play_sound(<span class="text-[#a6e3a1]">"move"</span>)
+                _update_difficulty_ui()
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_update_menu_pointers</span>():
+    <span class="text-[#f9e2af]">for</span> i <span class="text-[#f9e2af]">in</span> range(6):
+        <span class="text-[#f9e2af]">var</span> btn = menu_buttons.get_child(i)
+        <span class="text-[#f9e2af]">var</span> pointer = btn.get_node(<span class="text-[#a6e3a1]">"Pointer"</span>)
+        pointer.visible = (i == main_menu_index)
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">_reset_menu_visibility</span>():
+    screen_start.visible = <span class="text-[#f9e2af]">true</span>
+    screen_save.visible = <span class="text-[#f9e2af]">false</span>
+    screen_main_menu.visible = <span class="text-[#f9e2af]">false</span>
+    screen_char_select.visible = <span class="text-[#f9e2af]">false</span>
+</code></pre>
+
+          <!-- TAB 2: SAVE_MANAGER.GD SCRIPT -->
+          <pre id="tab-save-script" class="hidden text-[#a6adc8] font-mono"><code class="text-xs"><span class="text-[#f38ba8]"># ==========================================
+# save_manager.gd - Persistence Handling File
+# ==========================================</span>
+<span class="text-[#f9e2af]">extends</span> <span class="text-[#89b4fa]">Node</span>
+
+<span class="text-[#f9e2af]">const</span> <span class="text-[#cdd6f4]">SAVE_PATH_BASE = "user://save_slot_"</span>
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">save_game</span>(slot: int, data: Dictionary) -> bool:
+    <span class="text-[#f9e2af]">var</span> file_path = SAVE_PATH_BASE + str(slot) + <span class="text-[#a6e3a1]">".json"</span>
+    <span class="text-[#f9e2af]">var</span> file = FileAccess.open(file_path, FileAccess.WRITE)
+    <span class="text-[#f9e2af]">if</span> file == null:
+        printerr(<span class="text-[#a6e3a1]">"Could not open save file: "</span>, file_path)
+        <span class="text-[#f9e2af]">return false</span>
+        
+    <span class="text-[#f9e2af]">var</span> json_string = JSON.stringify(data)
+    file.store_line(json_string)
+    file.close()
+    <span class="text-[#f9e2af]">return true</span>
+
+<span class="text-[#f9e2af]">func</span> <span class="text-[#89b4fa]">load_game</span>(slot: int) -> Dictionary:
+    <span class="text-[#f9e2af]">var</span> file_path = SAVE_PATH_BASE + str(slot) + <span class="text-[#a6e3a1]">".json"</span>
+    <span class="text-[#f9e2af]">if</span> not FileAccess.file_exists(file_path):
+        <span class="text-[#f9e2af]">return</span> {} <span class="text-[#f38ba8]"># Return empty if save doesn't exist</span>
+        
+    <span class="text-[#f9e2af]">var</span> file = FileAccess.open(file_path, FileAccess.READ)
+    <span class="text-[#f9e2af]">if</span> file == null:
+        <span class="text-[#f9e2af]">return</span> {}
+        
+    <span class="text-[#f9e2af]">var</span> json_string = file.get_line()
+    file.close()
+    
+    <span class="text-[#f9e2af]">var</span> json = JSON.new()
+    <span class="text-[#f9e2af]">var</span> error = json.parse(json_string)
+    <span class="text-[#f9e2af]">if</span> error == OK:
+        <span class="text-[#f9e2af]">return</span> json.get_data()
+    <span class="text-[#f9e2af]">else</span>:
+        printerr(<span class="text-[#a6e3a1]">"Failed to parse JSON file on slot "</span>, slot)
+        <span class="text-[#f9e2af]">return</span> {}
+</code></pre>
+
+          <!-- TAB 3: SETUP GUIDE -->
+          <pre id="tab-setup-guide" class="hidden text-[#a6adc8] font-mono"><code class="text-xs"><span class="text-[#f9e2af]"># ==========================================
+# Godot Editor Scene Tree Hierarchy Setup
+# ==========================================</span>
+- Menu (Control) <span class="text-[#a6e3a1]">[Attach menu.gd script here]</span>
+  ├─ MenuCamera (Camera2D)
+  ├─ ChooseSaveData (Control)
+  │  ├─ StartScreen (Control)
+  │  │  ├─ BG_Tint (ColorRect)
+  │  │  ├─ Title (Label) -> "Definitely Not Isaac / Copy Isaac"
+  │  │  └─ PressStart (Label) -> "按开始键"
+  │  ├─ SaveSelector (Control)
+  │  │  ├─ Title (Label) -> "-选择存档-"
+  │  │  └─ SaveSlotsContainer (HBoxContainer)
+  │  │     ├─ Slot1 (Button)
+  │  │     ├─ Slot2 (Button)
+  │  │     └─ Slot3 (Button)
+  │  └─ MainMenu (Control)
+  │     ├─ VBoxContainer (Vertical container for menu options)
+  │     │  ├─ ButtonNew (Button with HBox: PointerLabel, TextLabel)
+  │     │  ├─ ButtonContinue (Button with HBox...)
+  │     │  ├─ ButtonChallenges (Button with HBox...)
+  │     │  ├─ ButtonMods (Button with HBox...)
+  │     │  ├─ ButtonStats (Button with HBox...)
+  │     │  └─ ButtonOptions (Button with HBox...)
+  └─ ChooseActor (Control)
+     ├─ ActorHeader (Label) -> "我是谁？"
+     ├─ VBoxContainer (Central details box)
+     │  ├─ ActorSelector (HBoxContainer with Left arrow, Character, Right arrow)
+     │  ├─ ActorDescription (Label) -> "这家伙可以撒"
+     │  └─ ActorStats (HBoxContainer for HP, Speed, Attack power metrics)
+     └─ DifficultySelector (VBoxContainer)
+        ├─ UpArrow (TextureButton)
+        ├─ SelectedDifficultyLabel (Label) -> "普通 / 困难 / 贪婪"
+        └─ DownArrow (TextureButton)
+</code></pre>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footnotes/Controls bar -->
+  <footer class="bg-[#11111b] border-t border-[#313244] py-3 px-6 text-center text-xs text-[#6c7086]">
+    Designed for Godot Engine developers mimicking the retro gaming aesthetics of "The Binding of Isaac". Built by Gemini.
+  </footer>
+
+  <!-- JAVASCRIPT GAME/UI EMULATION SCRIPT -->
+  <script>
+    // State machine management
+    const STATE_START_SCREEN = 'START_SCREEN';
+    const STATE_SAVE_SELECT = 'SAVE_SELECT';
+    const STATE_MAIN_MENU = 'MAIN_MENU';
+    const STATE_CHARACTER_SELECT = 'CHARACTER_SELECT';
+
+    let currentState = STATE_START_SCREEN;
+    let currentSaveSlot = 1;
+    let currentMenuIndex = 0;
+    let currentCharacterIndex = 0;
+    let currentDifficultyIndex = 0; // 0: 普通 (Normal), 1: 困难 (Hard), 2: 贪婪 (Greed)
+
+    const difficulties = ["普通", "困难", "贪婪"];
+
+    // Character Definitions matching user context
+    const characters = [
+      {
+        name: "这家伙可以撒",
+        hp: "3",
+        speed: "2",
+        atk: "2",
+        unlocked: true,
+        // Isaac SVG style
+        svg: `<path d="M12,28 C12,18 20,10 32,10 C44,10 52,18 52,28 L52,48 C52,52 44,56 32,56 C20,56 12,52 12,48 Z" fill="#f2cdcd"/>
+              <ellipse cx="24" cy="28" rx="4" ry="6" fill="#11111b"/>
+              <ellipse cx="40" cy="28" rx="4" ry="6" fill="#11111b"/>
+              <path d="M26,42 Q32,48 38,42" stroke="#11111b" stroke-width="3" stroke-linecap="round" fill="none"/>
+              <path d="M10,26 Q6,26 8,32" stroke="#f2cdcd" stroke-width="4" stroke-linecap="round"/>
+              <path d="M54,26 Q58,26 56,32" stroke="#f2cdcd" stroke-width="4" stroke-linecap="round"/>`
+      },
+      {
+        name: "??? (Blue Baby)",
+        hp: "3 (魂)",
+        speed: "2",
+        atk: "3",
+        unlocked: true,
+        // Blue Baby style SVG
+        svg: `<path d="M12,28 C12,18 20,10 32,10 C44,10 52,18 52,28 L52,48 C52,52 44,56 32,56 C20,56 12,52 12,48 Z" fill="#89b4fa"/>
+              <ellipse cx="24" cy="28" rx="4" ry="4" fill="#11111b"/>
+              <ellipse cx="40" cy="28" rx="4" ry="4" fill="#11111b"/>
+              <path d="M24,40 L40,40" stroke="#11111b" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="20" cy="34" r="2" fill="#cdd6f4"/>
+              <circle cx="44" cy="34" r="2" fill="#cdd6f4"/>`
+      },
+      {
+        name: "Locked Character",
+        hp: "?",
+        speed: "?",
+        atk: "?",
+        unlocked: false,
+        // Mysterious silhouette
+        svg: `<path d="M12,28 C12,18 20,10 32,10 C44,10 52,18 52,28 L52,48 C52,52 44,56 32,56 C20,56 12,52 12,48 Z" fill="#313244"/>
+              <text x="32" y="38" font-size="28" fill="#bac2de" font-family="monospace" font-weight="bold" text-anchor="middle">?</text>`
+      }
+    ];
+
+    // Web Audio Synthesizer for genuine retro game audio responses
+    let audioCtx = null;
+    function playSynthSound(type) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'move') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'confirm') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.setValueAtTime(600, now + 0.08);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'cancel') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(250, now);
+          osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'game_start') {
+          // Retro landing explosion / play chime
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.4);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        }
+      } catch (e) {
+        console.warn("Audio synthesis error: Use user gestures to unlock sound.", e);
+      }
+    }
+
+    // Screen Management / Transition logic mimicking Godot's screen tweens
+    function transitionTo(newState) {
+      const screenStart = document.getElementById('screen-start');
+      const screenSave = document.getElementById('screen-save');
+      const screenMainMenu = document.getElementById('screen-main-menu');
+      const screenCharSelect = document.getElementById('screen-char-select');
+
+      // Helper function to reset and slide out a screen element
+      function exitScreen(elem, direction) {
+        elem.classList.add('pointer-events-none');
+        elem.style.opacity = '0';
+        if (direction === 'up') {
+          elem.style.transform = 'translateY(-100%)';
+        } else if (direction === 'down') {
+          elem.style.transform = 'translateY(100%)';
+        } else if (direction === 'left') {
+          elem.style.transform = 'translateX(-100%)';
+        }
+      }
+
+      // Exit animations from previous state
+      if (currentState === STATE_START_SCREEN) exitScreen(screenStart, 'up');
+      else if (currentState === STATE_SAVE_SELECT) exitScreen(screenSave, 'up');
+      else if (currentState === STATE_MAIN_MENU) exitScreen(screenMainMenu, 'left');
+      else if (currentState === STATE_CHARACTER_SELECT) exitScreen(screenCharSelect, 'down');
+
+      // Entrance animations for new state
+      setTimeout(() => {
+        if (newState === STATE_START_SCREEN) {
+          screenStart.style.transform = 'translateY(0)';
+          screenStart.style.opacity = '1';
+          screenStart.classList.remove('pointer-events-none');
+        } else if (newState === STATE_SAVE_SELECT) {
+          screenSave.style.transform = 'translateY(0)';
+          screenSave.style.opacity = '1';
+          screenSave.classList.remove('pointer-events-none');
+        } else if (newState === STATE_MAIN_MENU) {
+          screenMainMenu.style.transform = 'translateY(0)';
+          screenMainMenu.style.opacity = '1';
+          screenMainMenu.classList.remove('pointer-events-none');
+          updateMainMenuUI();
+        } else if (newState === STATE_CHARACTER_SELECT) {
+          screenCharSelect.style.transform = 'translateY(0)';
+          screenCharSelect.style.opacity = '1';
+          screenCharSelect.classList.remove('pointer-events-none');
+          updateCharacterUI();
+          updateDifficultyUI();
+        }
+        currentState = newState;
+      }, 150);
+    }
+
+    // Action handlings
+    function selectSave(slotNumber) {
+      playSynthSound('confirm');
+      currentSaveSlot = slotNumber;
+      document.getElementById('current-save-indicator').textContent = slotNumber;
+      transitionTo(STATE_MAIN_MENU);
+    }
+
+    function updateMainMenuUI() {
+      for (let i = 0; i <= 5; i++) {
+        const ptr = document.getElementById(`ptr-${i}`);
+        const lbl = document.getElementById(`lbl-${i}`);
+        if (i === currentMenuIndex) {
+          ptr.style.opacity = '1';
+          lbl.classList.remove('text-[#cdd6f4]', 'text-[#6c7086]');
+          lbl.classList.add('text-[#f38ba8]');
+        } else {
+          ptr.style.opacity = '0';
+          lbl.classList.remove('text-[#f38ba8]');
+          lbl.classList.add(i === 1 ? 'text-[#6c7086]' : 'text-[#cdd6f4]'); // mock locked standard "Continue" option
+        }
+      }
+    }
+
+    // Character Navigation
+    function prevCharacter() {
+      if (currentCharacterIndex > 0) {
+        currentCharacterIndex--;
+        playSynthSound('move');
+        updateCharacterUI();
+      } else {
+        playSynthSound('cancel');
+      }
+    }
+
+    function nextCharacter() {
+      if (currentCharacterIndex < characters.length - 1) {
+        currentCharacterIndex++;
+        playSynthSound('move');
+        updateCharacterUI();
+      } else {
+        playSynthSound('cancel');
+      }
+    }
+
+    function updateCharacterUI() {
+      const char = characters[currentCharacterIndex];
+      const nameElem = document.getElementById('char-name');
+      const hpElem = document.getElementById('stat-hp');
+      const speedElem = document.getElementById('stat-speed');
+      const atkElem = document.getElementById('stat-atk');
+      const svgElem = document.getElementById('char-svg');
+
+      // Update basic fields
+      nameElem.textContent = char.name;
+      hpElem.textContent = char.hp;
+      speedElem.textContent = char.speed;
+      atkElem.textContent = char.atk;
+      svgElem.innerHTML = char.svg;
+
+      // Animate scaling for select effect
+      const container = document.getElementById('char-icon-container');
+      container.style.transform = 'scale(1.15)';
+      setTimeout(() => {
+        container.style.transform = 'scale(1)';
+      }, 100);
+    }
+
+    // Difficulty Settings
+    function cycleDifficulty(dir) {
+      currentDifficultyIndex = Math.max(0, Math.min(difficulties.length - 1, currentDifficultyIndex + dir));
+      playSynthSound('move');
+      updateDifficultyUI();
+    }
+
+    function updateDifficultyUI() {
+      document.getElementById('difficulty-indicator').textContent = difficulties[currentDifficultyIndex];
+    }
+
+    // Global Keyboard Events Controller
+    document.getElementById('game-viewport').addEventListener('keydown', (e) => {
+      e.preventDefault(); // Stop scrolling viewport
+      handleVirtualKey(e.key);
+    });
+
+    // Handle universal inputs (Mouse / D-pad / Keyboard merge)
+    function handleVirtualKey(key) {
+      if (currentState === STATE_START_SCREEN) {
+        if (key === 'Enter' || key === ' ' || key === 'ArrowDown' || key === 'ArrowUp') {
+          playSynthSound('confirm');
+          transitionTo(STATE_SAVE_SELECT);
+        }
+      } else if (currentState === STATE_SAVE_SELECT) {
+        if (key === 'Backspace' || key === 'Escape') {
+          playSynthSound('cancel');
+          transitionTo(STATE_START_SCREEN);
+        } else if (key === 'Enter') {
+          selectSave(1);
+        }
+      } else if (currentState === STATE_MAIN_MENU) {
+        if (key === 'ArrowDown') {
+          if (currentMenuIndex < 5) {
+            currentMenuIndex++;
+            playSynthSound('move');
+            updateMainMenuUI();
+          }
+        } else if (key === 'ArrowUp') {
+          if (currentMenuIndex > 0) {
+            currentMenuIndex--;
+            playSynthSound('move');
+            updateMainMenuUI();
+          }
+        } else if (key === 'Backspace' || key === 'Escape') {
+          playSynthSound('cancel');
+          transitionTo(STATE_SAVE_SELECT);
+        } else if (key === 'Enter') {
+          if (currentMenuIndex === 0) { // New Game
+            playSynthSound('confirm');
+            transitionTo(STATE_CHARACTER_SELECT);
+          } else {
+            playSynthSound('cancel'); // Stub or non-interactive options
+          }
+        }
+      } else if (currentState === STATE_CHARACTER_SELECT) {
+        if (key === 'ArrowLeft') {
+          prevCharacter();
+        } else if (key === 'ArrowRight') {
+          nextCharacter();
+        } else if (key === 'ArrowUp') {
+          cycleDifficulty(-1);
+        } else if (key === 'ArrowDown') {
+          cycleDifficulty(1);
+        } else if (key === 'Backspace' || key === 'Escape') {
+          playSynthSound('cancel');
+          transitionTo(STATE_MAIN_MENU);
+        } else if (key === 'Enter') {
+          const selectedChar = characters[currentCharacterIndex];
+          if (selectedChar.unlocked) {
+            playSynthSound('game_start');
+            alert(`🎮 Copy Isaac matches the video logic successfully! Starting game with Character: ${selectedChar.name} and Difficulty: ${difficulties[currentDifficultyIndex]} on Save Slot: ${currentSaveSlot}. Good luck descending the basement!`);
+          } else {
+            playSynthSound('cancel');
+          }
+        }
+      }
+    }
+
+    // Auto trigger focus on click so user keyboard works immediately
+    document.getElementById('game-viewport').addEventListener('click', () => {
+      document.getElementById('game-viewport').focus();
+      if (currentState === STATE_START_SCREEN) {
+        playSynthSound('confirm');
+        transitionTo(STATE_SAVE_SELECT);
+      }
+    });
+
+    // Initialize Default State Graphics
+    document.getElementById('char-svg').innerHTML = characters[0].svg;
+
+    // Editor UI Tab controllers
+    let activeTabId = 'tab-menu-script';
+    
+    function switchTab(tabId) {
+      // Hide existing active tab
+      document.getElementById(activeTabId).classList.add('hidden');
+      document.getElementById(`btn-${activeTabId}`).classList.remove('bg-[#313244]', 'text-[#f5e0dc]');
+      document.getElementById(`btn-${activeTabId}`).classList.add('text-[#a6adc8]');
+
+      // Show new tab
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(`btn-${tabId}`).classList.remove('text-[#a6adc8]');
+      document.getElementById(`btn-${tabId}`).classList.add('bg-[#313244]', 'text-[#f5e0dc]');
+      
+      activeTabId = tabId;
+    }
+
+    // Quick Clipboard integration
+    function copyCurrentTabCode() {
+      const codeElement = document.getElementById(activeTabId).querySelector('code') || document.getElementById(activeTabId);
+      const plainText = codeElement.innerText || codeElement.textContent;
+      
+      navigator.clipboard.writeText(plainText).then(() => {
+        alert("📋 Script copied to clipboard! You can paste this directly inside your Godot Editor.");
+      }).catch(err => {
+        console.error("Clipboard copy failed: ", err);
+      });
+    }
+  </script>
+</body>
+</html>
