@@ -35,10 +35,8 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 <a id="玩法"></a>先建玩法
 ### 線性公式
 ```
-## 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖
-## 被動遊戲 vs 主動遊戲
-## 遠路+直接
-## 找开源demo>做遊戲:miss hit/鏡像密碼
+## 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖 ## 被動遊戲 vs 主動遊戲
+## 遠路+直接 ## 找开源demo>做遊戲:miss hit/鏡像密碼
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%8F%90%E7%A4%BA%E6%89%8B%E6%B3%95%E7%8D%8E%E5%8B%B5.jpeg" width="300" height="300"></img>
 ## Tsun gd用蛇形
@@ -148,8 +146,6 @@ file.close()
 
 ### tilemap>terrain:https://wareya.github.io/webtyler/
 
-###  interactive
-
 ### 0. OS
 ```
 # "Windows" [OS.get_name()]
@@ -157,7 +153,6 @@ file.close()
 # 用户数据目录 print(OS.get_user_data_dir())  
 ??? # 复制到剪贴板 OS.set_clipboard("copy text")  
 # 请求权限（移动） OS.request_permission("camera")  
-
 ```
 ### 0. ResourceLoader
 ```
@@ -220,8 +215,7 @@ material.set_shader_parameter("roughness", 0.5)
 ```
 ```
 镜子魔术
-经典的“双子房间”：由于镜子在实时渲染中极其消耗资源，游戏采用了一个古老但有效的技巧（类似于《超级马里奥64》）：所谓的镜子其实是一扇透明的窗户，窗户后面是一间一模一样的镜像房间。
-镜子里玩家看到的是 V 的克隆体和另一个杰克，而当杰克把手搭在 V 肩上时，杰克实际上在瞬间从“镜像房间”传送回了“现实房间”。
+经典的“双子房间”：由于镜子在实时渲染中极其消耗资源，游戏采用了一个古老但有效的技巧（类似于《超级马里奥64》）：所谓的镜子其实是一扇透明的窗户，窗户后面是一间一模一样的镜像房间。镜子里玩家看到的是 V 的克隆体和另一个杰克，而当杰克把手搭在 V 肩上时，杰克实际上在瞬间从“镜像房间”传送回了“现实房间”。
 ```
 
 </details>
@@ -299,19 +293,13 @@ interface ItemFactory:
 
 ### 美術
 ```
-roughness=0
-toon
+roughness=0,toon
 ```
-
 美術=為什麼喜歡這種東西>有梗/場景互動小道具/地圖互動/看到門持key 配套
 
 <hr>
-UI:Ipad/iphone show setting/音效/粒子/字體
-tween:https://github.com/pwhoae/Artbank/blob/main/godot/Tween/readme.md<br>
-https://github.com/pwhoae/Artbank/tree/main/godot/%E5%8B%95%E7%95%AB%E5%B9%80%20Spritesheet<br>
-```
-shader 好麻煩 不考慮手寫 用ai寫
-<br>https://github.com/pwhoae/Artbank/blob/main/godot/shader/readme.md
+UI:Ipad/iphone show setting/音效/粒子/字體<br>
+tween/shader>好麻煩 不考慮手寫 用ai寫<br>
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
-```
+
 
