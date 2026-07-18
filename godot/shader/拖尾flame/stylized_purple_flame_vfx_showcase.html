@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔幻紫色火焰 VFX 交互展示</title>
+    <!-- 引入 Tailwind CSS 进行现代化 UI 布局 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Three.js 核心库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls 用于 3D 相机旋转/缩放/平移 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Canvas 样式定制 -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0713;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* 美化滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #110c1f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b285c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5d3f93;
+        }
+        /* 炫酷渐变边框效果 */
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(90deg, #9219ff, #d13bf0, #3a22c3);
+            padding: 1px;
+            border-radius: 0.75rem;
+        }
+        .gradient-border-inner {
+            background: #130d24;
+            border-radius: 0.7rem;
+        }
+    </style>
+</head>
+<body class="text-slate-100 overflow-x-hidden min-h-screen flex flex-col">
+
+    <!-- 头部导航栏 -->
+    <header class="border-b border-purple-950/40 bg-purple-950/10 backdrop-blur-md px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-purple-300 via-pink-400 to-indigo-300 bg-clip-text text-transparent">
+                    Stylized Purple Flame VFX Showcase
+                </h1>
+                <p class="text-xs text-purple-400/80">
+                    基于 Godot 4.x 渲染架构与着色器开发 • 参考自文件 "image_d51dfb.png"
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 text-xs bg-purple-950/40 border border-purple-800/40 px-3 py-1.5 rounded-full text-purple-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            WebGL GPU 实时粒子渲染
+        </div>
+    </header>
+
+    <!-- 主要展示内容区 -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 md:p-6 max-w-[1800px] w-full mx-auto">
+        
+        <!-- 左侧 3D 渲染视口 (7 cols on desktop) -->
+        <section class="lg:col-span-7 flex flex-col gap-4 min-h-[500px] lg:min-h-0">
+            <div class="relative flex-1 bg-gradient-to-b from-[#110925] to-[#070410] border border-purple-950/60 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                <!-- 3D 渲染画布容器 -->
+                <div id="canvas-container" class="w-full flex-1 relative cursor-grab active:cursor-grabbing">
+                    <!-- 加载遮罩 -->
+                    <div id="loading-overlay" class="absolute inset-0 bg-[#0c0819] flex flex-col items-center justify-center z-10 transition-opacity duration-500">
+                        <div class="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p class="text-purple-300 text-sm font-medium animate-pulse">正在生成 GPU 过程噪声与着色器编译...</p>
+                    </div>
+                </div>
+
+                <!-- 浮动在渲染视图上的操作按钮 -->
+                <div class="absolute top-4 left-4 flex flex-col gap-2">
+                    <div class="bg-[#130c27]/80 backdrop-blur-md border border-purple-800/30 p-1.5 rounded-lg flex gap-1 shadow-lg">
+                        <button id="btn-mesh-plane" class="mesh-selector-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-purple-600 text-white transition-all">平面丝带</button>
+                        <button id="btn-mesh-cylinder" class="mesh-selector-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-purple-950/50 text-purple-400 hover:bg-purple-900/30 transition-all">能量光柱</button>
+                        <button id="btn-mesh-ribbon" class="mesh-selector-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-purple-950/50 text-purple-400 hover:bg-purple-900/30 transition-all">弯曲斩击</button>
+                    </div>
+                </div>
+
+                <div class="absolute top-4 right-4 flex gap-2">
+                    <button id="btn-toggle-grid" class="bg-[#130c27]/80 backdrop-blur-md border border-purple-800/30 p-2 rounded-lg text-purple-300 hover:text-white hover:bg-purple-900/40 transition-all title="显示/隐藏参考网格">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                    </button>
+                    <button id="btn-reset-cam" class="bg-[#130c27]/80 backdrop-blur-md border border-purple-800/30 p-2 rounded-lg text-purple-300 hover:text-white hover:bg-purple-900/40 transition-all" title="重置视角">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- 场景操作提示 -->
+                <div class="absolute bottom-4 left-4 text-xs text-purple-400 bg-purple-950/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-purple-900/30 pointer-events-none">
+                    🖱️ 拖拽旋转 • 滚轮缩放 • 右键平移
+                </div>
+            </div>
+
+            <!-- 2D 噪声动态贴图视窗，重现参考图 image_d51dfb.png 底部的设计 -->
+            <div class="bg-[#0f0a1f] border border-purple-950/60 rounded-2xl p-4 flex flex-col gap-3 shadow-xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-purple-300 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                        动态过程噪声分析图 (Noise Engine)
+                    </h3>
+                    <span class="text-2xs text-purple-500 uppercase tracking-widest">Procedural Maps</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div class="bg-[#0b0717] p-2.5 rounded-xl border border-purple-900/20">
+                        <p class="text-2xs text-purple-400 mb-1.5 font-medium flex justify-between">
+                            <span>1. 基础火焰图 (Flame Noise)</span>
+                            <span class="text-purple-600" id="info-noise-type">Simplex</span>
+                        </p>
+                        <canvas id="noise-preview-1" class="w-full h-24 rounded-lg bg-black border border-purple-950/80 shadow-inner"></canvas>
+                    </div>
+                    <div class="bg-[#0b0717] p-2.5 rounded-xl border border-purple-900/20">
+                        <p class="text-2xs text-purple-400 mb-1.5 font-medium flex justify-between">
+                            <span>2. 侵蚀扰动图 (Erosion Map)</span>
+                            <span class="text-purple-600" id="info-erosion-type">Cellular</span>
+                        </p>
+                        <canvas id="noise-preview-2" class="w-full h-24 rounded-lg bg-black border border-purple-950/80 shadow-inner"></canvas>
+                    </div>
+                    <div class="col-span-2 sm:col-span-1 bg-[#0b0717] p-3 rounded-xl border border-purple-900/20 flex flex-col justify-between">
+                        <div class="text-2xs text-purple-400 font-medium">
+                            <span class="text-pink-400">🔥 物理混合原理:</span>
+                            <p class="mt-1 leading-relaxed text-purple-300">
+                                利用「侵蚀图」的梯度对「基础火焰图」进行 UV 向量偏移，从而产生火苗飞溅与烟雾撕裂效果。
+                            </p>
+                        </div>
+                        <div class="text-3xs text-purple-500 text-right mt-2">
+                            符合 image_d51dfb.png 底部生成方案
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧交互调参控制台 (5 cols on desktop) -->
+        <section class="lg:col-span-5 flex flex-col gap-6 overflow-y-auto max-h-[calc(100vh-120px)] pr-1">
+            
+            <!-- 样式预设卡片 -->
+            <div class="bg-[#0f0a1f] border border-purple-950/60 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-sm font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                    </svg>
+                    选择火焰预设样式 (对照 image_d51dfb.png)
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    <!-- 预设 1 -->
+                    <button class="preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-purple-900/30 bg-[#140d27] hover:border-purple-600 hover:bg-[#191033] transition-all group relative overflow-hidden" data-preset="0">
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 absolute top-2 right-2"></div>
+                        <span class="text-lg font-bold text-slate-300 group-hover:scale-110 transition-transform">1</span>
+                        <span class="text-3xs text-purple-400 mt-1 whitespace-nowrap">羽碎火焰</span>
+                    </button>
+                    <!-- 预设 2 -->
+                    <button class="preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-purple-900/30 bg-[#140d27] hover:border-purple-600 hover:bg-[#191033] transition-all group relative overflow-hidden" data-preset="1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-purple-500 absolute top-2 right-2"></div>
+                        <span class="text-lg font-bold text-slate-300 group-hover:scale-110 transition-transform">2</span>
+                        <span class="text-3xs text-purple-400 mt-1 whitespace-nowrap">滚滚浓烟</span>
+                    </button>
+                    <!-- 预设 3 -->
+                    <button class="preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-purple-900/30 bg-[#140d27] hover:border-purple-600 hover:bg-[#191033] transition-all group relative overflow-hidden" data-preset="2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-fuchsia-500 absolute top-2 right-2"></div>
+                        <span class="text-lg font-bold text-slate-300 group-hover:scale-110 transition-transform">3</span>
+                        <span class="text-3xs text-purple-400 mt-1 whitespace-nowrap">螺旋回路</span>
+                    </button>
+                    <!-- 预设 4 -->
+                    <button class="preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-purple-900/30 bg-[#140d27] hover:border-purple-600 hover:bg-[#191033] transition-all group relative overflow-hidden" data-preset="3">
+                        <div class="w-1.5 h-1.5 rounded-full bg-pink-500 absolute top-2 right-2"></div>
+                        <span class="text-lg font-bold text-slate-300 group-hover:scale-110 transition-transform">4</span>
+                        <span class="text-3xs text-purple-400 mt-1 whitespace-nowrap">碎裂等离子</span>
+                    </button>
+                    <!-- 预设 5 -->
+                    <button class="preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-purple-900/30 bg-[#140d27] hover:border-purple-600 hover:bg-[#191033] transition-all group relative overflow-hidden" data-preset="4">
+                        <div class="w-1.5 h-1.5 rounded-full bg-pink-400 absolute top-2 right-2"></div>
+                        <span class="text-lg font-bold text-slate-300 group-hover:scale-110 transition-transform">5</span>
+                        <span class="text-3xs text-purple-400 mt-1 whitespace-nowrap">优雅流弧</span>
+                    </button>
+                </div>
+                <div class="mt-3 text-xs text-purple-400/90 bg-[#130d24] border border-purple-950 px-3 py-2.5 rounded-xl leading-relaxed">
+                    <span class="font-semibold text-pink-400">当前风格特色：</span>
+                    <span id="preset-description">加载中...</span>
+                </div>
+            </div>
+
+            <!-- 着色器材质微调面板 -->
+            <div class="bg-[#0f0a1f] border border-purple-950/60 rounded-2xl p-5 shadow-xl flex flex-col gap-5">
+                <h2 class="text-sm font-semibold text-purple-300 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    实时材质属性参数 (Real-time Shader Uniforms)
+                </h2>
+
+                <!-- 颜色调配 -->
+                <div class="border-b border-purple-950/40 pb-4">
+                    <h3 class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-1.5">
+                        <span class="w-1 h-3 bg-indigo-500 rounded-full"></span> 渐变配色方案
+                    </h3>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-3xs text-purple-400">1. 白热核心 (Core)</label>
+                            <div class="flex items-center gap-2 bg-[#140d27] border border-purple-900/30 p-1.5 rounded-lg">
+                                <input type="color" id="col-core" value="#ffffff" class="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer">
+                                <span class="text-3xs font-mono" id="val-col-core">#FFFFFF</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-3xs text-purple-400">2. 璀璨光弧 (Mid)</label>
+                            <div class="flex items-center gap-2 bg-[#140d27] border border-purple-900/30 p-1.5 rounded-lg">
+                                <input type="color" id="col-mid" value="#ea40fa" class="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer">
+                                <span class="text-3xs font-mono" id="val-col-mid">#EA40FA</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-3xs text-purple-400">3. 幽暗幽羽 (Edge)</label>
+                            <div class="flex items-center gap-2 bg-[#140d27] border border-purple-900/30 p-1.5 rounded-lg">
+                                <input type="color" id="col-edge" value="#610dd1" class="w-8 h-8 rounded-md bg-transparent border-none cursor-pointer">
+                                <span class="text-3xs font-mono" id="val-col-edge">#610DD1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 噪声参数控制 -->
+                <div class="border-b border-purple-950/40 pb-4 flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                        <span class="w-1 h-3 bg-purple-500 rounded-full"></span> 噪声形变控制
+                    </h3>
+                    
+                    <!-- 侵蚀阈值 -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between text-2xs">
+                            <span class="text-purple-300">溶解侵蚀度 (Erosion Threshold)</span>
+                            <span class="font-mono text-pink-400 font-semibold" id="val-erosion">0.05</span>
+                        </div>
+                        <input type="range" id="slider-erosion" min="-0.6" max="0.8" step="0.01" value="0.05" class="w-full h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <span class="text-3xs text-purple-500">模拟火焰随高度消融、解离。值越大，溶解得越零碎。</span>
+                    </div>
+
+                    <!-- 侵蚀平滑度 -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between text-2xs">
+                            <span class="text-purple-300">边缘羽化平滑度 (Erosion Smoothness)</span>
+                            <span class="font-mono text-purple-400" id="val-smoothness">0.08</span>
+                        </div>
+                        <input type="range" id="slider-smoothness" min="0.01" max="0.4" step="0.01" value="0.08" class="w-full h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+
+                    <!-- UV扭曲强度 -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between text-2xs">
+                            <span class="text-purple-300">UV 扰动形变强度 (Distortion Strength)</span>
+                            <span class="font-mono text-purple-400" id="val-distortion">0.15</span>
+                        </div>
+                        <input type="range" id="slider-distortion" min="0.0" max="0.5" step="0.01" value="0.15" class="w-full h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <span class="text-3xs text-purple-500">通过侵蚀图扭曲火焰图的采样UV，数值越高，火焰形态越卷曲多变。</span>
+                    </div>
+                </div>
+
+                <!-- 动力学与特效控制 -->
+                <div class="flex flex-col gap-4">
+                    <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                        <span class="w-1 h-3 bg-pink-500 rounded-full"></span> 粒子动态与菲涅尔发光
+                    </h3>
+
+                    <!-- 火焰向上流速 -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-2xs text-purple-300">火焰流速 Y 轴 (Flame Speed Y)</label>
+                            <input type="range" id="slider-flame-speed-y" min="-2.0" max="0.0" step="0.05" value="-0.6" class="w-full h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-2xs text-purple-300">侵蚀流速 Y 轴 (Erosion Speed Y)</label>
+                            <input type="range" id="slider-erosion-speed-y" min="-2.0" max="0.0" step="0.05" value="-0.85" class="w-full h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                        </div>
+                    </div>
+
+                    <!-- 菲涅尔强度 -->
+                    <div class="flex flex-col gap-1.5">
+                        <div class="flex justify-between text-2xs">
+                            <span class="text-purple-300">菲涅尔边缘发光指数 (Rim Glow Exponent)</span>
+                            <span class="font-mono text-purple-400" id="val-rim">1.8</span>
+                        </div>
+                        <input type="range" id="slider-rim" min="0.1" max="5.0" step="0.1" value="1.8" class="w-full h-1 bg-purple-950 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                        <span class="text-3xs text-purple-500">控制两侧弧度面与视角的菲涅尔强度。数值越小，两侧透明荧光越亮。</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godot 4.x 参数同步导出面板 -->
+            <div class="gradient-border shadow-2xl">
+                <div class="gradient-border-inner p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-purple-300 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Godot 4.x 参数脚本导出器
+                        </h2>
+                        <button id="btn-copy-code" class="text-3xs bg-purple-950 border border-purple-800 hover:bg-purple-900 text-purple-300 hover:text-white px-2.5 py-1.5 rounded-md font-medium transition-all flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            复制配置代码
+                        </button>
+                    </div>
+                    <p class="text-3xs text-purple-400">
+                        以下配置会随着您的上方滑块动态修改。可直接放入 Godot `_update_preset_parameters()` 内部或材质设置中：
+                    </p>
+                    <div class="bg-[#0b0717] rounded-xl p-3 border border-purple-950/80">
+                        <pre class="text-3xs code-font text-emerald-300 overflow-x-auto leading-relaxed max-h-40" id="godot-code-block"># 动态渲染参数生成中...</pre>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- 底部状态栏 -->
+    <footer class="border-t border-purple-950/40 bg-purple-950/20 px-6 py-4 mt-auto flex flex-wrap items-center justify-between text-xs text-purple-500">
+        <div>
+            魔幻火焰粒子模拟器 v1.2 • Three.js WebGL & GLSL 实现
+        </div>
+        <div class="flex gap-4">
+            <span>参考资源：image_d51dfb.png</span>
+            <span>Godot 兼容性等级：Forward+ / Mobile</span>
+        </div>
+    </footer>
+
+    <!-- 内嵌 Shader 定义与 WebGL 逻辑 -->
+    <script>
+        // 定义过程式三维噪声函数，确保网页无需任何图片贴图即可百分百还原 Godot 噪声生成效果。
+        const NOISE_GLSL_FUNCTIONS = `
+            // Simplex 2D noise
+            vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+            float snoise(vec2 v){
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                        -0.577350269189626, 0.024390243902439);
+                vec2 i  = floor(v + dot(v, C.yy) );
+                vec2 x0 = v -   i + dot(i, C.xx);
+                vec2 i1;
+                i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                vec4 x12 = x0.xyxy + C.xxzz;
+                x12.xy -= i1;
+                i = mod(i, 289.0);
+                vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0) )
+                + i.x + vec3(0.0, i1.x, 1.0) );
+                vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
+                dot(x12.zw,x12.zw)), 0.0);
+                m = m*m ;
+                m = m*m ;
+                vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                vec3 h = abs(x) - 0.5;
+                vec3 a0 = x - floor(x + 0.5);
+                vec3 attic = m * ( 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h ) );
+                vec3 g;
+                g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                return 130.0 * dot(attic, g);
+            }
+
+            // Cellular noise (Worley / Voronoi)
+            float cellular(vec2 P) {
+                vec2 Pi = floor(P);
+                vec2 Pf = fract(P);
+                float minDist = 1.0;
+                for (int j = -1; j <= 1; j++) {
+                    for (int i = -1; i <= 1; i++) {
+                        vec2 g = vec2(float(i), float(j));
+                        // Procedural pseudo-random hash
+                        vec2 o = fract(sin(vec2(dot(Pi + g, vec2(127.1, 311.7)), dot(Pi + g, vec2(269.5, 183.3)))) * 43758.5453);
+                        vec2 r = g - Pf + o;
+                        float d = dot(r, r);
+                        if (d < minDist) {
+                            minDist = d;
+                        }
+                    }
+                }
+                return sqrt(minDist);
+            }
+
+            // Fractal Brownian Motion (FBM) for dense billowy fire
+            float fbm(vec2 p) {
+                float v = 0.0;
+                float a = 0.5;
+                vec2 shift = vec2(100.0);
+                // Rotate to reduce axial bias
+                mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+                for (int i = 0; i < 4; ++i) {
+                    v += a * snoise(p);
+                    p = rot * p * 2.0 + shift;
+                    a *= 0.5;
+                }
+                return v * 0.5 + 0.5;
+            }
+        `;
+
+        // WebGL Vertex Shader
+        const VERTEX_SHADER = `
+            varying vec3 vWorldPosition;
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewDir;
+
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                
+                // Get view direction for Fresnel
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                vViewDir = normalize(-mvPosition.xyz);
+                
+                vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+
+        // WebGL Fragment Shader (recreates Godot's dual scrolling erosion)
+        const FRAGMENT_SHADER = `
+            varying vec3 vWorldPosition;
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewDir;
+
+            uniform float u_time;
+            uniform vec3 u_color_core;
+            uniform vec3 u_color_mid;
+            uniform vec3 u_color_edge;
+            
+            uniform float u_erosion;
+            uniform float u_smoothness;
+            uniform float u_distortion;
+            uniform float u_rim_glow;
+
+            uniform vec2 u_scroll_noise;
+            uniform vec2 u_scroll_erosion;
+
+            // 0: Simplex, 1: Cellular, 2: FBM
+            uniform int u_noise_type;
+            uniform int u_erosion_type;
+
+            uniform float u_noise_freq;
+            uniform float u_erosion_freq;
+
+            ${NOISE_GLSL_FUNCTIONS}
+
+            float getNoiseVal(int type, vec2 uv) {
+                if (type == 0) {
+                    return snoise(uv) * 0.5 + 0.5;
+                } else if (type == 1) {
+                    return 1.0 - cellular(uv);
+                } else {
+                    return fbm(uv);
+                }
+            }
+
+            void main() {
+                // Erosion scrolling
+                vec2 scrolled_erosion_uv = vUv * u_erosion_freq + (u_scroll_erosion * u_time);
+                float erosion_val = getNoiseVal(u_erosion_type, scrolled_erosion_uv);
+
+                // Distort flame coordinates
+                vec2 distorted_uv = (vUv * u_noise_freq) + (u_scroll_noise * u_time) + (vec2(erosion_val) * u_distortion);
+                float noise_val = getNoiseVal(u_noise_type, distorted_uv);
+
+                // Combined organic shapes
+                float combined_noise = noise_val * (1.2 - erosion_val * 0.4);
+
+                // Vertical masks to fade top and bottom out elegantly
+                float fade_bottom = smoothstep(0.0, 0.08, vUv.y);
+                float fade_top = smoothstep(1.0, 0.88, vUv.y);
+                float vertical_mask = fade_bottom * fade_top;
+
+                float final_energy = combined_noise * vertical_mask;
+
+                // Color steps mapping
+                float edge_mask = smoothstep(0.1, 0.35, final_energy);
+                float mid_mask = smoothstep(0.35, 0.7, final_energy);
+                float core_mask = smoothstep(0.7, 1.0, final_energy);
+
+                // Dynamic mixing
+                vec3 base_color = mix(u_color_edge * 0.2, u_color_edge, edge_mask);
+                base_color = mix(base_color, u_color_mid, mid_mask);
+                base_color = mix(base_color, u_color_core, core_mask);
+
+                // Fresnel Edge Translucent Magic Glow
+                float fresnel = pow(1.0 - clamp(dot(vNormal, vViewDir), 0.0, 1.0), u_rim_glow);
+                vec3 glow_color = u_color_edge * fresnel * 1.5;
+
+                // Alpha Dissolve erosion channel
+                float alpha_channel = smoothstep(u_erosion, u_erosion + u_smoothness, final_energy);
+
+                vec3 final_color = base_color + glow_color;
+                
+                // Discard pixels under cutoff for sharp stylized edge
+                if (alpha_channel < 0.02) {
+                    discard;
+                }
+
+                gl_FragColor = vec4(final_color, alpha_channel);
+            }
+        `;
+    </script>
+
+    <script>
+        // 全局 Three.js 上下文
+        let scene, camera, renderer, controls;
+        let flameMaterial, flameMesh;
+        let currentGeometryType = 'plane'; // plane, cylinder, ribbon
+        let gridHelper;
+
+        // 五种与 Godot 脚本及图片 "image_d51dfb.png" 对应的预设样式参数
+        const PRESETS = [
+            {
+                name: "羽碎火焰 (Frayed Flame)",
+                desc: "Style 1: 火焰像羽毛一样向四周碎裂。使用 Simplex 噪声和 Cellular 进行复合侵蚀，高频扭曲，产生尖锐不规则的撕裂火苗。",
+                noiseType: 0, // Simplex
+                noiseFreq: 6.0,
+                scrollNoise: [-0.05, -1.2],
+                erosionType: 1, // Cellular
+                erosionFreq: 8.0,
+                scrollErosion: [0.05, -1.7],
+                erosion: 0.04,
+                smoothness: 0.08,
+                distortion: 0.22,
+                rimGlow: 1.8,
+                coreColor: "#ffffff",
+                midColor: "#ea40fa",
+                edgeColor: "#610dd1"
+            },
+            {
+                name: "滚滚浓烟 (Billowy Smoke)",
+                desc: "Style 2: 饱满、重叠翻滚的浓重魔能迷雾。使用 Fractal (FBM) 产生云朵状形体，扭曲度低，边缘过渡极为圆润。",
+                noiseType: 2, // FBM
+                noiseFreq: 4.5,
+                scrollNoise: [0.0, -0.6],
+                erosionType: 0, // Simplex
+                erosionFreq: 5.0,
+                scrollErosion: [-0.02, -0.9],
+                erosion: -0.05,
+                smoothness: 0.16,
+                distortion: 0.08,
+                rimGlow: 1.2,
+                coreColor: "#f7d0ff",
+                midColor: "#cf2beb",
+                edgeColor: "#450280"
+            },
+            {
+                name: "螺旋回路 (Helix Loop)",
+                desc: "Style 3: 完美的中轴对称螺旋体。两侧均匀带有细胞状网孔，具有很强的侵蚀力度，属于科幻等离子特效。",
+                noiseType: 1, // Cellular
+                noiseFreq: 5.0,
+                scrollNoise: [0.1, -1.0],
+                erosionType: 1, // Cellular
+                erosionFreq: 5.0,
+                scrollErosion: [-0.1, -1.3],
+                erosion: 0.12,
+                smoothness: 0.05,
+                distortion: 0.28,
+                rimGlow: 2.5,
+                coreColor: "#fde6ff",
+                midColor: "#e511ef",
+                edgeColor: "#5702bd"
+            },
+            {
+                name: "碎裂等离子 (Fragmented Fire)",
+                desc: "Style 4: 带有高度扭曲、破损严重的星际等离子。形体破碎度最高，流动速度飞快，展现极不稳定的奥术能量。",
+                noiseType: 0, // Simplex
+                noiseFreq: 8.0,
+                scrollNoise: [-0.2, -1.8],
+                erosionType: 1, // Cellular
+                erosionFreq: 12.0,
+                scrollErosion: [0.15, -2.5],
+                erosion: 0.18,
+                smoothness: 0.06,
+                distortion: 0.35,
+                rimGlow: 1.5,
+                coreColor: "#ffffff",
+                midColor: "#e036ff",
+                edgeColor: "#800ae8"
+            },
+            {
+                name: "优雅流弧 (Smooth Swoop)",
+                desc: "Style 5: 极为流畅柔美、适合作为刀光或光翼的丝带。整体形状完整，几乎无杂乱破损，如水流般延绵丝滑。",
+                noiseType: 0, // Simplex
+                noiseFreq: 3.0,
+                scrollNoise: [0.0, -0.4],
+                erosionType: 0, // Simplex
+                erosionFreq: 3.0,
+                scrollErosion: [0.0, -0.6],
+                erosion: -0.15,
+                smoothness: 0.12,
+                distortion: 0.04,
+                rimGlow: 3.0,
+                coreColor: "#ffffff",
+                midColor: "#ff7efa",
+                edgeColor: "#52009e"
+            }
+        ];
+
+        let activePresetIndex = 0;
+
+        // 初始化 Three.js
+        window.onload = function() {
+            init3D();
+            setupEvents();
+            applyPreset(0);
+            animate();
+            
+            // 隐藏加载遮罩
+            document.getElementById('loading-overlay').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }, 500);
+        }
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            // 场景
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0b0713, 0.015);
+
+            // 相机
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 2.5, 6);
+
+            // 渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0x070410, 1);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            // 控制器
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 1.8; // 限制镜头不能低过地面
+            controls.minDistance = 2;
+            controls.maxDistance = 15;
+            controls.target.set(0, 1.5, 0);
+
+            // 参考格栅 (模仿 Godot 视口与 reference 图片中的背景格)
+            gridHelper = new THREE.GridHelper(20, 20, 0x5a2fa1, 0x1f143c);
+            gridHelper.position.y = -0.01;
+            scene.add(gridHelper);
+
+            // 环境弱光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+            scene.add(ambientLight);
+
+            // 编译 ShaderMaterial
+            flameMaterial = new THREE.ShaderMaterial({
+                vertexShader: VERTEX_SHADER,
+                fragmentShader: FRAGMENT_SHADER,
+                uniforms: {
+                    u_time: { value: 0.0 },
+                    u_color_core: { value: new THREE.Color('#ffffff') },
+                    u_color_mid: { value: new THREE.Color('#ea40fa') },
+                    u_color_edge: { value: new THREE.Color('#610dd1') },
+                    u_erosion: { value: 0.05 },
+                    u_smoothness: { value: 0.08 },
+                    u_distortion: { value: 0.15 },
+                    u_rim_glow: { value: 1.8 },
+                    u_scroll_noise: { value: new THREE.Vector2(-0.05, -0.6) },
+                    u_scroll_erosion: { value: new THREE.Vector2(0.03, -0.85) },
+                    u_noise_type: { value: 0 },
+                    u_erosion_type: { value: 1 },
+                    u_noise_freq: { value: 5.0 },
+                    u_erosion_freq: { value: 6.0 }
+                },
+                transparent: true,
+                depthWrite: false, // 保证透明度混合不遮挡
+                blending: THREE.NormalBlending,
+                side: THREE.DoubleSide
+            });
+
+            // 初始生成网格
+            updateMesh();
+        }
+
+        // 生成不同 3D 网格模型，以便观察刀光/拖尾或火焰状态
+        function updateMesh() {
+            if (flameMesh) {
+                scene.remove(flameMesh);
+            }
+
+            let geometry;
+
+            if (currentGeometryType === 'plane') {
+                // 经典垂直平面 (Quad)
+                geometry = new THREE.PlaneGeometry(1.8, 3.6, 32, 64);
+                // 向上平移，使锚点在底部，如同 Godot 火焰喷射原点
+                geometry.translate(0, 1.8, 0);
+            } else if (currentGeometryType === 'cylinder') {
+                // 圆柱体 (魔法光柱)
+                geometry = new THREE.CylinderGeometry(0.8, 0.8, 3.6, 32, 32, true);
+                geometry.translate(0, 1.8, 0);
+            } else if (currentGeometryType === 'ribbon') {
+                // 弯曲丝带 (剑气、旋转刀光)
+                geometry = new THREE.TorusGeometry(1.8, 0.25, 16, 100, Math.PI * 1.2);
+                geometry.rotateX(Math.PI / 2.2);
+                geometry.translate(0, 0.5, 0);
+            }
+
+            flameMesh = new THREE.Mesh(geometry, flameMaterial);
+            scene.add(flameMesh);
+        }
+
+        // 在屏幕下方的 Canvas 里渲染当前所用的噪声贴图预览，实现 image_d51dfb.png 底部的视窗
+        function renderNoisePreview(canvasId, isErosion) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width = 128;
+            const height = canvas.height = 128;
+            const imgData = ctx.createImageData(width, height);
+
+            const preset = PRESETS[activePresetIndex];
+            const type = isErosion ? preset.erosionType : preset.noiseType;
+            const freq = isErosion ? preset.erosionFreq : preset.noiseFreq;
+
+            // 简单轻量级的 JS 噪声发生器，用于生成和 GLSL 完美对称的静态/缓动分析图
+            function noiseGen(x, y) {
+                // Simplex 降维伪算法模拟
+                if (type === 1) { // Cellular
+                    // 模拟 Voronoi
+                    let px = (x * freq) / width;
+                    let py = (y * freq) / height;
+                    let minDist = 1.0;
+                    for (let j = -1; j <= 1; j++) {
+                        for (let i = -1; i <= 1; i++) {
+                            let cx = Math.floor(px) + i;
+                            let cy = Math.floor(py) + j;
+                            // 随机散列
+                            let rx = Math.sin(cx * 127.1 + cy * 311.7) * 43758.5453;
+                            let ry = Math.sin(cx * 269.5 + cy * 183.3) * 43758.5453;
+                            let ox = rx - Math.floor(rx);
+                            let oy = ry - Math.floor(ry);
+                            let dx = cx + ox - px;
+                            let dy = cy + oy - py;
+                            let dist = dx*dx + dy*dy;
+                            if (dist < minDist) minDist = dist;
+                        }
+                    }
+                    return 1.0 - Math.sqrt(minDist);
+                } else if (type === 2) { // FBM
+                    let val = 0;
+                    let amp = 0.5;
+                    let f = freq;
+                    for (let o = 0; o < 3; o++) {
+                        val += Math.sin((x*f)/width + (y*f)/height) * amp;
+                        f *= 2;
+                        amp *= 0.5;
+                    }
+                    return val * 0.5 + 0.5;
+                } else { // Simplex
+                    return (Math.sin((x * freq) / width * 2) * Math.cos((y * freq) / height * 2) * 0.5 + 0.5);
+                }
+            }
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const val = Math.floor(Math.max(0, Math.min(1, noiseGen(x, y))) * 255);
+                    
+                    if (isErosion) {
+                        // 侵蚀图用带淡紫的灰度着色
+                        imgData.data[idx] = Math.floor(val * 0.85);
+                        imgData.data[idx+1] = Math.floor(val * 0.8);
+                        imgData.data[idx+2] = val;
+                    } else {
+                        // 火焰噪声图带高亮亮粉
+                        imgData.data[idx] = val;
+                        imgData.data[idx+1] = Math.floor(val * 0.4);
+                        imgData.data[idx+2] = val;
+                    }
+                    imgData.data[idx+3] = 255;
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // 应用预设样式
+        function applyPreset(index) {
+            activePresetIndex = index;
+            const p = PRESETS[index];
+
+            // 更新控制面板的值
+            document.getElementById('col-core').value = p.coreColor;
+            document.getElementById('col-mid').value = p.midColor;
+            document.getElementById('col-edge').value = p.edgeColor;
+            
+            document.getElementById('slider-erosion').value = p.erosion;
+            document.getElementById('slider-smoothness').value = p.smoothness;
+            document.getElementById('slider-distortion').value = p.distortion;
+            document.getElementById('slider-rim').value = p.rimGlow;
+            
+            document.getElementById('slider-flame-speed-y').value = p.scrollNoise[1];
+            document.getElementById('slider-erosion-speed-y').value = p.scrollErosion[1];
+
+            // 更新 Uniforms
+            flameMaterial.uniforms.u_color_core.value.set(p.coreColor);
+            flameMaterial.uniforms.u_color_mid.value.set(p.midColor);
+            flameMaterial.uniforms.u_color_edge.value.set(p.edgeColor);
+            flameMaterial.uniforms.u_erosion.value = p.erosion;
+            flameMaterial.uniforms.u_smoothness.value = p.smoothness;
+            flameMaterial.uniforms.u_distortion.value = p.distortion;
+            flameMaterial.uniforms.u_rim_glow.value = p.rimGlow;
+
+            flameMaterial.uniforms.u_noise_type.value = p.noiseType;
+            flameMaterial.uniforms.u_noise_freq.value = p.noiseFreq;
+            flameMaterial.uniforms.u_scroll_noise.value.set(p.scrollNoise[0], p.scrollNoise[1]);
+
+            flameMaterial.uniforms.u_erosion_type.value = p.erosionType;
+            flameMaterial.uniforms.u_erosion_freq.value = p.erosionFreq;
+            flameMaterial.uniforms.u_scroll_erosion.value.set(p.scrollErosion[0], p.scrollErosion[1]);
+
+            // 更新文本
+            document.getElementById('preset-description').innerText = p.desc;
+            document.getElementById('info-noise-type').innerText = p.noiseType === 0 ? "Simplex" : p.noiseType === 1 ? "Cellular" : "FBM";
+            document.getElementById('info-erosion-type').innerText = p.erosionType === 0 ? "Simplex" : p.erosionType === 1 ? "Cellular" : "FBM";
+
+            // 重新刷新下方的噪声预览图
+            renderNoisePreview('noise-preview-1', false);
+            renderNoisePreview('noise-preview-2', true);
+
+            // 更新激活按钮样式
+            document.querySelectorAll('.preset-btn').forEach((btn, idx) => {
+                if (idx === index) {
+                    btn.classList.add('border-purple-500', 'bg-purple-950/60', 'scale-105', 'shadow-lg', 'shadow-purple-500/10');
+                } else {
+                    btn.classList.remove('border-purple-500', 'bg-purple-950/60', 'scale-105', 'shadow-lg', 'shadow-purple-500/10');
+                }
+            });
+
+            // 同步更新数值标签
+            updateValueLabels();
+            generateGodotCode();
+        }
+
+        // 更新滑块边上的数字指示器
+        function updateValueLabels() {
+            document.getElementById('val-col-core').innerText = document.getElementById('col-core').value.toUpperCase();
+            document.getElementById('val-col-mid').innerText = document.getElementById('col-mid').value.toUpperCase();
+            document.getElementById('val-col-edge').innerText = document.getElementById('col-edge').value.toUpperCase();
+
+            document.getElementById('val-erosion').innerText = Number(document.getElementById('slider-erosion').value).toFixed(2);
+            document.getElementById('val-smoothness').innerText = Number(document.getElementById('slider-smoothness').value).toFixed(2);
+            document.getElementById('val-distortion').innerText = Number(document.getElementById('slider-distortion').value).toFixed(2);
+            document.getElementById('val-rim').innerText = Number(document.getElementById('slider-rim').value).toFixed(1);
+        }
+
+        // 根据当前的滑块生成可导出的 Godot 4.x 参数脚本代码，方便在 stylize_purple_flame.gd 挂载使用
+        function generateGodotCode() {
+            const p = PRESETS[activePresetIndex];
+            
+            // 颜色向量
+            const cCore = document.getElementById('col-core').value;
+            const cMid = document.getElementById('col-mid').value;
+            const cEdge = document.getElementById('col-edge').value;
+
+            // 转换为 Godot Color 格式 Color(r, g, b, a)
+            const gCore = hexToGodotColor(cCore);
+            const gMid = hexToGodotColor(cMid);
+            const gEdge = hexToGodotColor(cEdge);
+
+            const erosion = Number(document.getElementById('slider-erosion').value).toFixed(2);
+            const smoothness = Number(document.getElementById('slider-smoothness').value).toFixed(2);
+            const distortion = Number(document.getElementById('slider-distortion').value).toFixed(2);
+            const rim = Number(document.getElementById('slider-rim').value).toFixed(1);
+            
+            const noiseSpeedY = Number(document.getElementById('slider-flame-speed-y').value).toFixed(2);
+            const erosionSpeedY = Number(document.getElementById('slider-erosion-speed-y').value).toFixed(2);
+
+            const noiseTypeStr = p.noiseType === 0 ? "FastNoiseLite.TYPE_SIMPLEX_SMOOTH" : p.noiseType === 1 ? "FastNoiseLite.TYPE_CELLULAR" : "FastNoiseLite.TYPE_SIMPLEX";
+            const erosionTypeStr = p.erosionType === 0 ? "FastNoiseLite.TYPE_SIMPLEX_SMOOTH" : p.erosionType === 1 ? "FastNoiseLite.TYPE_CELLULAR" : "FastNoiseLite.TYPE_SIMPLEX";
+
+            const code = `# [VFX] Godot 4.x 渲染参数配置
+# 匹配当前预览风格: ${p.name}
+var mat = material_override as ShaderMaterial
+if mat != null:
+    # 设置基础渐变色 (对应 image_d51dfb.png 调色盘)
+    mat.set_shader_parameter("color_core", ${gCore})
+    mat.set_shader_parameter("color_mid", ${gMid})
+    mat.set_shader_parameter("color_edge", ${gEdge})
+    
+    # 设置形状参数
+    mat.set_shader_parameter("erosion_threshold", ${erosion})
+    mat.set_shader_parameter("erosion_smoothness", ${smoothness})
+    mat.set_shader_parameter("distortion_strength", ${distortion})
+    mat.set_shader_parameter("rim_glow_exponent", ${rim})
+
+    # 动态流速
+    mat.set_shader_parameter("scroll_speed_noise", Vector2(0.00, ${noiseSpeedY}))
+    mat.set_shader_parameter("scroll_speed_erosion", Vector2(0.00, ${erosionSpeedY}))
+
+    # 噪声生成生成器 (Procedural Noise matching image_d51dfb.png)
+    var tex_noise = _generate_noise_texture(${noiseTypeStr}, ${ (1 / p.noiseFreq).toFixed(4) }, 3, 2.0)
+    var tex_erosion = _generate_noise_texture(${erosionTypeStr}, ${ (1 / p.erosionFreq).toFixed(4) }, 3, 2.0)
+    mat.set_shader_parameter("noise_tex", tex_noise)
+    mat.set_shader_parameter("erosion_tex", tex_erosion)`;
+
+            document.getElementById('godot-code-block').innerText = code;
+        }
+
+        // Helper: HEX 转 Godot Color 格式
+        function hexToGodotColor(hex) {
+            const r = parseInt(hex.slice(1, 3), 16) / 255;
+            const g = parseInt(hex.slice(3, 5), 16) / 255;
+            const b = parseInt(hex.slice(5, 7), 16) / 255;
+            return `Color(${r.toFixed(3)}, ${g.toFixed(3)}, ${b.toFixed(3)}, 1.0)`;
+        }
+
+        // 事件监听
+        function setupEvents() {
+            // 预设点击切换
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-preset'));
+                    applyPreset(idx);
+                });
+            });
+
+            // 监听颜色改变
+            ['col-core', 'col-mid', 'col-edge'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    const colorVal = document.getElementById(id).value;
+                    if (id === 'col-core') flameMaterial.uniforms.u_color_core.value.set(colorVal);
+                    if (id === 'col-mid') flameMaterial.uniforms.u_color_mid.value.set(colorVal);
+                    if (id === 'col-edge') flameMaterial.uniforms.u_color_edge.value.set(colorVal);
+                    updateValueLabels();
+                    generateGodotCode();
+                });
+            });
+
+            // 监听滑块修改并更新 Uniform
+            document.getElementById('slider-erosion').addEventListener('input', (e) => {
+                flameMaterial.uniforms.u_erosion.value = parseFloat(e.target.value);
+                updateValueLabels();
+                generateGodotCode();
+            });
+
+            document.getElementById('slider-smoothness').addEventListener('input', (e) => {
+                flameMaterial.uniforms.u_smoothness.value = parseFloat(e.target.value);
+                updateValueLabels();
+                generateGodotCode();
+            });
+
+            document.getElementById('slider-distortion').addEventListener('input', (e) => {
+                flameMaterial.uniforms.u_distortion.value = parseFloat(e.target.value);
+                updateValueLabels();
+                generateGodotCode();
+            });
+
+            document.getElementById('slider-rim').addEventListener('input', (e) => {
+                flameMaterial.uniforms.u_rim_glow.value = parseFloat(e.target.value);
+                updateValueLabels();
+                generateGodotCode();
+            });
+
+            document.getElementById('slider-flame-speed-y').addEventListener('input', (e) => {
+                flameMaterial.uniforms.u_scroll_noise.value.y = parseFloat(e.target.value);
+                generateGodotCode();
+            });
+
+            document.getElementById('slider-erosion-speed-y').addEventListener('input', (e) => {
+                flameMaterial.uniforms.u_scroll_erosion.value.y = parseFloat(e.target.value);
+                generateGodotCode();
+            });
+
+            // 网格类型选择
+            document.getElementById('btn-mesh-plane').addEventListener('click', (e) => {
+                currentGeometryType = 'plane';
+                switchActiveMeshBtn(e.target);
+                updateMesh();
+            });
+            document.getElementById('btn-mesh-cylinder').addEventListener('click', (e) => {
+                currentGeometryType = 'cylinder';
+                switchActiveMeshBtn(e.target);
+                updateMesh();
+            });
+            document.getElementById('btn-mesh-ribbon').addEventListener('click', (e) => {
+                currentGeometryType = 'ribbon';
+                switchActiveMeshBtn(e.target);
+                updateMesh();
+            });
+
+            function switchActiveMeshBtn(activeBtn) {
+                document.querySelectorAll('.mesh-selector-btn').forEach(btn => {
+                    btn.classList.remove('bg-purple-600', 'text-white');
+                    btn.classList.add('bg-purple-950/50', 'text-purple-400', 'hover:bg-purple-900/30');
+                });
+                activeBtn.classList.remove('bg-purple-950/50', 'text-purple-400', 'hover:bg-purple-900/30');
+                activeBtn.classList.add('bg-purple-600', 'text-white');
+            }
+
+            // 开关格栅
+            document.getElementById('btn-toggle-grid').addEventListener('click', () => {
+                gridHelper.visible = !gridHelper.visible;
+            });
+
+            // 重置相机
+            document.getElementById('btn-reset-cam').addEventListener('click', () => {
+                controls.reset();
+                camera.position.set(0, 2.5, 6);
+                controls.target.set(0, 1.5, 0);
+            });
+
+            // 窗口缩放适配
+            window.addEventListener('resize', onWindowResize);
+
+            // 复制代码到剪切板
+            document.getElementById('btn-copy-code').addEventListener('click', () => {
+                const codeText = document.getElementById('godot-code-block').innerText;
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = codeText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    
+                    // 按钮提示已复制
+                    const btn = document.getElementById('btn-copy-code');
+                    const originHtml = btn.innerHTML;
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>复制成功！</span>
+                    `;
+                    btn.classList.add('border-emerald-500', 'text-emerald-300');
+                    setTimeout(() => {
+                        btn.innerHTML = originHtml;
+                        btn.classList.remove('border-emerald-500', 'text-emerald-300');
+                    }, 2000);
+                } catch (err) {
+                    console.error('复制出错', err);
+                }
+                document.body.removeChild(tempTextArea);
+            });
+        }
+
+        // 视图尺寸改变
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // 主动渲染与更新帧
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const elapsed = clock.getElapsedTime();
+
+            // 更新材质时间 uniform，使火焰开始飘动
+            if (flameMaterial) {
+                flameMaterial.uniforms.u_time.value = elapsed;
+            }
+
+            // 网格自转（可选，在丝带模式下加强视角立体度）
+            if (flameMesh && currentGeometryType === 'ribbon') {
+                flameMesh.rotation.y = elapsed * 0.15;
+            } else if (flameMesh) {
+                flameMesh.rotation.y = Math.sin(elapsed * 0.1) * 0.15; // 稍微左右摆动
+            }
+
+            // 控制器插值渲染
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

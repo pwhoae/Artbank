@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 VFX - 3D Ribbon Trail Generator & Shader</title>
+    <!-- Tailwind CSS for modern design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Viewport Simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e2e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #313244;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #45475a;
+        }
+    </style>
+</head>
+<body class="bg-[#11111b] text-[#cdd6f4] overflow-hidden h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-[#181825] border-b border-[#313244] px-6 py-4 flex items-center justify-between flex-shrink-0 z-10">
+        <div class="flex items-center space-x-3">
+            <div class="bg-[#cba6f7] text-[#11111b] p-2 rounded-lg font-bold flex items-center justify-center">
+                <i data-lucide="zap" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                    Godot 4 拖尾纹理效果生成器 <span class="text-xs bg-[#45475a] text-[#cba6f7] px-2 py-0.5 rounded-full font-mono">VFX Tool</span>
+                </h1>
+                <p class="text-xs text-[#a6adc8]">Interactive preview & copy-paste ready code inspired by image_df16cb.png</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3 text-sm">
+            <span class="text-[#a6adc8]">Referenced Texture:</span>
+            <span class="bg-[#313244] px-3 py-1.5 rounded text-[#f5c2e7] font-mono text-xs border border-[#45475a]">image_df16cb.png</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Column: Controls & Code Panel -->
+        <div class="w-1/2 flex flex-col border-r border-[#313244] bg-[#181825] overflow-y-auto">
+            <!-- Tab Controls -->
+            <div class="flex border-b border-[#313244] sticky top-0 bg-[#181825] z-10">
+                <button onclick="switchTab('shader')" id="tab-shader" class="flex-1 py-3 px-4 text-sm font-medium border-b-2 border-[#cba6f7] text-white transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="code-2" class="w-4 h-4 text-[#cba6f7]"></i>
+                    Godot 4 材质着色器 (.gdshader)
+                </button>
+                <button onclick="switchTab('gdscript')" id="tab-gdscript" class="flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent text-[#a6adc8] hover:text-white hover:bg-[#1e1e2e] transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="scroll" class="w-4 h-4 text-[#a6adc8]"></i>
+                    Godot 4 动态拖尾脚本 (GDScript)
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="flex-1 p-6 space-y-6">
+                <!-- Shader Tab -->
+                <div id="content-shader" class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-semibold text-[#cba6f7]">高级三维空间拖尾着色器 (Spatial Shader)</h3>
+                            <p class="text-xs text-[#a6adc8]">支持噪声扭曲、UV流动与渐变贴图（完全契合 image_df16cb.png 底图设计）</p>
+                        </div>
+                        <button onclick="copyCode('shader-code')" class="bg-[#313244] hover:bg-[#45475a] text-white text-xs font-semibold py-1.5 px-3 rounded flex items-center gap-1.5 transition-all">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> 复制代码
+                        </button>
+                    </div>
+                    <div class="relative rounded-lg overflow-hidden border border-[#313244]">
+                        <pre class="bg-[#11111b] p-4 text-xs code-font text-[#a6adc8] overflow-x-auto max-h-[500px]"><code id="shader-code">shader_type spatial;
+render_mode blend_add, depth_draw_opaque, cull_disabled, unshaded;
+
+/* 
+ * Godot 4 拖尾纹理扭曲着色器 (VFX Trail Shader)
+ * 完美还原 image_df16cb.png 的多重流动、高光晕边缘与溶解效果
+ */
+
+uniform sampler2D main_texture : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D noise_texture : filter_linear_mipmap, repeat_enable;
+
+group_uniforms Trail_Styling;
+uniform vec4 trail_color : source_color = vec4(0.55, 0.15, 0.95, 1.0); // 核心紫色
+uniform vec4 glow_color : source_color = vec4(0.9, 0.4, 1.0, 1.0);     // 边缘发光色
+uniform float emission_intensity : hint_range(1.0, 8.0) = 4.0;          // 发光强度
+
+group_uniforms Motion;
+uniform float scroll_speed = 2.0;               // 纹理沿拖尾流动的速度
+uniform float distortion_strength = 0.18;       // 噪声扭曲强度 (像火焰/风一样肆虐)
+uniform float distortion_speed = 1.5;           // 扭曲扰动频率
+
+group_uniforms Mask;
+uniform float fade_power : hint_range(0.5, 4.0) = 1.5; // 控制首尾自然淡入淡出的指数
+
+void vertex() {
+    // 拖尾网格在动态生成时会传入顶点色
+    // COLOR.a 一般代表拖尾的生存寿命衰减 (0 = 消失, 1 = 刚生成)
+}
+
+void fragment() {
+    // 1. 噪声扭曲计算
+    vec2 noise_uv = UV * 1.5 + vec2(-TIME * distortion_speed * 0.5, TIME * distortion_speed * 0.2);
+    vec4 noise_val = texture(noise_texture, noise_uv);
+    
+    // 使用噪声的红绿通道作为UV偏移向量，让流动产生弯曲和破裂感
+    vec2 distorted_uv = UV;
+    distorted_uv.x -= TIME * scroll_speed;
+    distorted_uv += (noise_val.rg - vec2(0.5)) * distortion_strength;
+
+    // 2. 采样基础拖尾纹理 (即 image_df16cb.png 底部展示的黑白灰度遮罩)
+    vec4 tex_color = texture(main_texture, distorted_uv);
+    
+    // 3. 计算拖尾边缘羽化与渐变 (UV.x 控制长度, UV.y 控制宽度)
+    // 侧边羽化，使拖尾在边缘两端自然渐隐
+    float edge_fade = smoothstep(0.0, 0.15, UV.y) * smoothstep(1.0, 0.85, UV.y);
+    // 尾部寿命衰变，配合顶点颜色Alpha
+    float life_fade = pow(UV.x, fade_power) * COLOR.a;
+    
+    float final_alpha = tex_color.r * edge_fade * life_fade;
+    
+    // 4. 色彩映射与发光
+    // 融合主色调与高亮发光色，高浓度区呈现白色核心，低浓度区呈现饱满紫色
+    vec3 base_rgb = mix(trail_color.rgb, glow_color.rgb, tex_color.r * 0.7);
+    vec3 final_color = base_rgb * emission_intensity;
+    
+    // 5. 渲染输出
+    ALBEDO = final_color;
+    ALPHA = clamp(final_alpha, 0.0, 1.0);
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- GDScript Tab -->
+                <div id="content-gdscript" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-semibold text-[#cba6f7]">动态拖尾网格生成脚本 (DynamicTrail3D)</h3>
+                            <p class="text-xs text-[#a6adc8]">挂载于 MeshInstance3D 节点，实时检测移动轨迹并计算生成高精度的 Ribbon Mesh</p>
+                        </div>
+                        <button onclick="copyCode('gdscript-code')" class="bg-[#313244] hover:bg-[#45475a] text-white text-xs font-semibold py-1.5 px-3 rounded flex items-center gap-1.5 transition-all">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i> 复制代码
+                        </button>
+                    </div>
+                    <div class="relative rounded-lg overflow-hidden border border-[#313244]">
+                        <pre class="bg-[#11111b] p-4 text-xs code-font text-[#a6adc8] overflow-x-auto max-h-[500px]"><code id="gdscript-code">#=========================================================
+# DynamicTrail3D.gd
+# 挂载到一个空的 MeshInstance3D 节点上，实现酷炫的刀光或飞弹拖尾。
+#=========================================================
+extends MeshInstance3D
+class_name DynamicTrail3D
+
+@export var target_node: Node3D        # 要跟踪的物体 (例如：剑尖)
+@export var offset_vector: Vector3 = Vector3(0, -1.2, 0) # 刀刃宽度的偏移向量
+@export var trail_lifetime: float = 0.4 # 拖尾段持续时间 (秒)
+@export var max_points: int = 60        # 最大样点数量
+@export var min_distance: float = 0.05  # 生成新段所需的最小位移
+
+struct TrailPoint:
+	var top: Vector3
+	var bottom: Vector3
+	var time: float
+	var alpha: float
+
+var points: Array[TrailPoint] = []
+var immediate_mesh: ImmediateMesh
+
+func _ready() -> void:
+	# 实例化 Godot 4 ImmediateMesh 用于动态渲染
+	immediate_mesh = ImmediateMesh.new()
+	self.mesh = immediate_mesh
+	
+	if not target_node:
+		# 若未指定，则默认跟踪父级
+		target_node = get_parent() as Node3D
+
+func _process(delta: float) -> void:
+	if not target_node:
+		return
+		
+	# 1. 移去超时样点
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var i = 0
+	while i < points.size():
+		var age = current_time - points[i].time
+		if age > trail_lifetime:
+			points.remove_at(i)
+		else:
+			# 计算插值Alpha，让旧段平滑消散
+			points[i].alpha = 1.0 - (age / trail_lifetime)
+			i += 1
+			
+	# 2. 采样当前骨骼/物体的物理坐标并判定是否加入新样点
+	var current_top = target_node.global_position
+	var current_bottom = target_node.global_global_transform().basis * offset_vector + current_top
+	
+	var should_add = true
+	if points.size() > 0:
+		var last_point = points[points.size() - 1]
+		var dist = last_point.top.distance_to(current_top)
+		if dist < min_distance:
+			should_add = false
+			
+	if should_add:
+		var new_point = TrailPoint.new()
+		new_point.top = to_local(current_top)
+		new_point.bottom = to_local(current_bottom)
+		new_point.time = current_time
+		new_point.alpha = 1.0
+		points.append(new_point)
+		
+		# 限制最大网格面数
+		if points.size() > max_points:
+			points.remove_at(0)
+			
+	# 3. 动态重构三角面片 (Ribbon Mesh)
+	_rebuild_trail_mesh()
+
+func _rebuild_trail_mesh() -> void:
+	immediate_mesh.clear_surfaces()
+	
+	if points.size() < 2:
+		return
+		
+	immediate_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
+	
+	for idx in range(points.size()):
+		var pt = points[idx]
+		# 将索引转化为沿着整个拖尾的横向 UV 坐标 (0.0 表示尾端, 1.0 表示尖端)
+		var u = float(idx) / float(points.size() - 1)
+		
+		# 写入上边缘顶点 (UV: [U, 1.0])
+		immediate_mesh.surface_set_color(Color(1.0, 1.0, 1.0, pt.alpha))
+		immediate_mesh.surface_set_uv(Vector2(u, 1.0))
+		immediate_mesh.surface_add_vertex(pt.top)
+		
+		# 写入下边缘顶点 (UV: [U, 0.0])
+		immediate_mesh.surface_set_color(Color(1.0, 1.0, 1.0, pt.alpha))
+		immediate_mesh.surface_set_uv(Vector2(u, 0.0))
+		immediate_mesh.surface_add_vertex(pt.bottom)
+		
+	immediate_mesh.surface_end()</code></pre>
+                    </div>
+                </div>
+
+                <!-- Helpful Tip Card -->
+                <div class="bg-[#1e1e2e] border border-[#313244] rounded-lg p-4 space-y-2">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-4 h-4 text-[#f9e2af]"></i> 贴图使用指南 (Texture Settings)
+                    </h4>
+                    <p class="text-xs leading-relaxed text-[#a6adc8]">
+                        根据图示 <span class="text-[#f5c2e7] font-semibold">image_df16cb.png</span>，你可以将下方的黑白灰度噪波/流体贴图作为着色器的 
+                        <code class="bg-[#11111b] px-1 py-0.5 rounded text-[#fab387] text-[10px]">main_texture</code>。
+                        导入 Godot 4 后，请确保在导入面板(Import Panel)将贴图的 <b>Wrap Mode</b> 设置为 <b>Repeat</b>，否则 UV 滚动会无法循环。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Interactive 3D WebGL Preview -->
+        <div class="w-1/2 flex flex-col bg-[#11111b] relative">
+            <!-- Viewport Overlay Info -->
+            <div class="absolute top-4 left-4 z-10 pointer-events-none bg-[#181825]/95 backdrop-blur-md border border-[#313244] rounded-lg p-4 shadow-xl max-w-sm">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="flex h-2.5 w-2.5 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
+                    <h2 class="text-xs font-bold text-white uppercase tracking-widest">3D 实时渲染预览 (Three.js WebGL)</h2>
+                </div>
+                <p class="text-[11px] text-[#a6adc8]">
+                    模拟一柄发光的飞刀划出的刀光拖尾。拖动鼠标旋转镜头，调整下方滑块可以改变流动、噪声及颜色属性。
+                </p>
+            </div>
+
+            <!-- Viewport Canvas Container -->
+            <div id="canvas-container" class="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing"></div>
+
+            <!-- Controls Overlay (Bottom) -->
+            <div class="bg-[#181825] border-t border-[#313244] p-6 space-y-4 flex-shrink-0 z-10">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="sliders" class="w-4 h-4 text-[#cba6f7]"></i> 参数动态调整 (Real-time Shader Uniforms)
+                    </h3>
+                    <button onclick="resetParams()" class="text-[11px] text-[#a6adc8] hover:text-[#cba6f7] flex items-center gap-1 transition-all">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> 重置默认
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <!-- Flow Speed -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-[#a6adc8]">流速 (Scroll Speed)</span>
+                            <span id="val-scroll-speed" class="text-[#cba6f7] font-mono">2.0</span>
+                        </div>
+                        <input type="range" id="param-scroll-speed" min="0" max="5" step="0.1" value="2.0" class="w-full h-1 bg-[#313244] rounded-lg appearance-none cursor-pointer accent-[#cba6f7]">
+                    </div>
+
+                    <!-- Distortion Strength -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-[#a6adc8]">噪声扭曲度 (Distortion)</span>
+                            <span id="val-distortion" class="text-[#cba6f7] font-mono">0.18</span>
+                        </div>
+                        <input type="range" id="param-distortion" min="0" max="0.5" step="0.01" value="0.18" class="w-full h-1 bg-[#313244] rounded-lg appearance-none cursor-pointer accent-[#cba6f7]">
+                    </div>
+
+                    <!-- Glow Intensity -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-[#a6adc8]">发光强度 (Emission Glow)</span>
+                            <span id="val-emission" class="text-[#cba6f7] font-mono">4.0</span>
+                        </div>
+                        <input type="range" id="param-emission" min="1" max="8" step="0.1" value="4.0" class="w-full h-1 bg-[#313244] rounded-lg appearance-none cursor-pointer accent-[#cba6f7]">
+                    </div>
+
+                    <!-- Trail Color Selector -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-[#a6adc8]">拖尾主色 (Trail Hue)</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="color" id="param-color" value="#8e2de2" class="w-8 h-6 bg-transparent border-none cursor-pointer rounded">
+                            <span id="val-color" class="text-[11px] font-mono text-[#a6adc8]">#8e2de2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            const tabs = ['shader', 'gdscript'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const content = document.getElementById(`content-${t}`);
+                if (t === tabId) {
+                    btn.classList.add('border-[#cba6f7]', 'text-white');
+                    btn.classList.remove('border-transparent', 'text-[#a6adc8]');
+                    content.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-[#cba6f7]', 'text-white');
+                    btn.classList.add('border-transparent', 'text-[#a6adc8]');
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        // Copying Code function
+        function copyCode(elementId) {
+            const codeText = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const button = event.currentTarget;
+                const originalHtml = button.innerHTML;
+                button.innerHTML = `<i class="w-3.5 h-3.5 text-green-400" data-lucide="check"></i> <span class="text-green-400">已复制!</span>`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    button.innerHTML = originalHtml;
+                    lucide.createIcons();
+                }, 1500);
+            });
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // ==========================================
+        // Three.js Interactive VFX Simulation Engine
+        // ==========================================
+        
+        let scene, camera, renderer;
+        let trailMesh, swordMesh;
+        let clock = new THREE.Clock();
+        
+        // Dynamic settings
+        const settings = {
+            scrollSpeed: 2.0,
+            distortion: 0.18,
+            emission: 4.0,
+            color: new THREE.Color('#8e2de2'),
+            animRadius: 4.5,
+            animSpeed: 2.5
+        };
+
+        const container = document.getElementById('canvas-container');
+
+        // Uniforms for shaders
+        const uniforms = {
+            u_time: { value: 0.0 },
+            u_scrollSpeed: { value: settings.scrollSpeed },
+            u_distortion: { value: settings.distortion },
+            u_emission: { value: settings.emission },
+            u_color: { value: settings.color },
+            u_glowColor: { value: new THREE.Color('#ee0979') }
+        };
+
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2('#11111b', 0.05);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 5, 10);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight('#11111b', 1.0);
+            scene.add(ambientLight);
+
+            const gridHelper = new THREE.GridHelper(20, 20, '#313244', '#1e1e2e');
+            gridHelper.position.y = -2;
+            scene.add(gridHelper);
+
+            // Procedural Custom Shader Material (to mimic image_df16cb.png trail shading)
+            const vertexShader = `
+                varying vec2 vUv;
+                varying float vAlpha;
+                void main() {
+                    vUv = uv;
+                    // Mimicking vertex alpha decay over time
+                    vAlpha = color.r;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+
+            // Procedural Simplex Noise inside GLSL to avoid raw texture dependencies
+            const fragmentShader = `
+                uniform float u_time;
+                uniform float u_scrollSpeed;
+                uniform float u_distortion;
+                uniform float u_emission;
+                uniform vec3 u_color;
+                uniform vec3 u_glowColor;
+                varying vec2 vUv;
+                varying float vAlpha;
+
+                // Procedural Sine-wave Noise for 2D distortion
+                float noise(vec2 p) {
+                    return sin(p.x * 2.0 + sin(p.y * 3.0 + u_time * 2.0)) * 0.5 + 0.5;
+                }
+
+                void main() {
+                    // 1. Distortion calculation using procedural noise
+                    float n1 = noise(vUv * 3.0 + vec2(u_time * 0.5, -u_time * 0.2));
+                    float n2 = noise(vUv * 5.0 - vec2(u_time * 0.8, u_time * 0.4));
+                    vec2 distort = vec2(n1, n2) * u_distortion;
+
+                    // 2. Main Ribbon Texture (simulating the bottom shapes in image_df16cb.png)
+                    vec2 scrolledUv = vUv + distort;
+                    scrolledUv.x -= u_time * u_scrollSpeed;
+
+                    // Compute complex swirly patterns
+                    float core = sin(scrolledUv.x * 6.28) * sin(scrolledUv.y * 3.14);
+                    core = abs(core);
+                    core = pow(core, 1.5);
+
+                    // Multi-band waves reminiscent of sword swings
+                    float edgeWave = smoothstep(0.0, 0.2, vUv.y) * smoothstep(1.0, 0.8, vUv.y);
+                    
+                    // Falloff towards the tail (left side of trail has lower U)
+                    float lengthFade = pow(vUv.x, 1.5);
+
+                    float finalIntensity = core * edgeWave * lengthFade;
+
+                    // 3. Coloring mapping
+                    vec3 finalColor = mix(u_color, u_glowColor, core * 0.7) * u_emission;
+
+                    gl_FragColor = vec4(finalColor, finalIntensity * vAlpha);
+                }
+            `;
+
+            // Mesh generation
+            const trailLength = 30; // Mesh segments
+            const trailGeometry = new THREE.BufferGeometry();
+            
+            const positions = new Float32Array(trailLength * 2 * 3);
+            const uvs = new Float32Array(trailLength * 2 * 2);
+            const colors = new Float32Array(trailLength * 2 * 3);
+            const indices = [];
+
+            // Setup index buffer for Triangle Strip logic
+            for (let i = 0; i < trailLength - 1; i++) {
+                indices.push(i * 2, i * 2 + 1, (i + 1) * 2);
+                indices.push(i * 2 + 1, (i + 1) * 2 + 1, (i + 1) * 2);
+            }
+
+            trailGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            trailGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+            trailGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            trailGeometry.setIndex(indices);
+
+            const trailMaterial = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                uniforms: uniforms,
+                transparent: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending,
+                vertexColors: true
+            });
+
+            trailMesh = new THREE.Mesh(trailGeometry, trailMaterial);
+            scene.add(trailMesh);
+
+            // Add simple Sword / Emitter visual representation
+            const swordGeo = new THREE.ConeGeometry(0.15, 1.5, 8);
+            swordGeo.rotateX(Math.PI / 2);
+            const swordMat = new THREE.MeshBasicMaterial({ color: '#ffffff' });
+            swordMesh = new THREE.Mesh(swordGeo, swordMat);
+            scene.add(swordMesh);
+
+            // Initialize dynamic point queue representing physics history
+            trailHistory = [];
+            for (let i = 0; i < trailLength; i++) {
+                trailHistory.push({
+                    top: new THREE.Vector3(0, 0, 0),
+                    bottom: new THREE.Vector3(0, 0, 0)
+                });
+            }
+
+            // Window resize handler
+            window.addEventListener('resize', onWindowResize);
+            setupInteractivity();
+        }
+
+        let trailHistory = [];
+        let angle = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+            uniforms.u_time.value = time;
+
+            // Animate sword in an orbital swing pattern mimicking sword strikes
+            angle += delta * settings.animSpeed;
+            const radius = settings.animRadius;
+            const x = Math.cos(angle) * radius;
+            const z = Math.sin(angle) * radius;
+            // Wave height slightly
+            const y = Math.sin(angle * 2) * 1.5;
+
+            swordMesh.position.set(x, y, z);
+            
+            // Orient sword along its movement path
+            const tangent = new THREE.Vector3(
+                -Math.sin(angle) * radius,
+                Math.cos(angle * 2) * 3.0,
+                Math.cos(angle) * radius
+            ).normalize();
+            
+            // Sword direction vector aligning to forward movement
+            swordMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent);
+
+            // Capture top (tip) and bottom (hilt) of the blade
+            const topOffset = new THREE.Vector3(0, 0.8, 0).applyQuaternion(swordMesh.quaternion);
+            const bottomOffset = new THREE.Vector3(0, -0.8, 0).applyQuaternion(swordMesh.quaternion);
+
+            const currentTop = swordMesh.position.clone().add(topOffset);
+            const currentBottom = swordMesh.position.clone().add(bottomOffset);
+
+            // Shift history trail buffer
+            trailHistory.shift();
+            trailHistory.push({ top: currentTop, bottom: currentBottom });
+
+            // Rebuild buffers
+            const positions = trailMesh.geometry.attributes.position.array;
+            const uvs = trailMesh.geometry.attributes.uv.array;
+            const colors = trailMesh.geometry.attributes.color.array;
+
+            const total = trailHistory.length;
+            for (let i = 0; i < total; i++) {
+                const pt = trailHistory[i];
+                const u = i / (total - 1); // 0 at tail, 1 at sword edge
+
+                // Upper edge
+                positions[i * 6] = pt.top.x;
+                positions[i * 6 + 1] = pt.top.y;
+                positions[i * 6 + 2] = pt.top.z;
+
+                // Lower edge
+                positions[i * 6 + 3] = pt.bottom.x;
+                positions[i * 6 + 4] = pt.bottom.y;
+                positions[i * 6 + 5] = pt.bottom.z;
+
+                // UVs
+                uvs[i * 4] = u;
+                uvs[i * 4 + 1] = 1.0;
+
+                uvs[i * 4 + 2] = u;
+                uvs[i * 4 + 3] = 0.0;
+
+                // Vertex Colors representing Alpha
+                colors[i * 6] = u; // Fade based on position in trail history
+                colors[i * 6 + 1] = u;
+                colors[i * 6 + 2] = u;
+
+                colors[i * 6 + 3] = u;
+                colors[i * 6 + 4] = u;
+                colors[i * 6 + 5] = u;
+            }
+
+            trailMesh.geometry.attributes.position.needsUpdate = true;
+            trailMesh.geometry.attributes.uv.needsUpdate = true;
+            trailMesh.geometry.attributes.color.needsUpdate = true;
+
+            // Camera slow orbit orbit
+            camera.position.x = Math.sin(time * 0.1) * 11;
+            camera.position.z = Math.cos(time * 0.1) * 11;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Set UI Control Panel Event Listeners
+        function setupInteractivity() {
+            const rangeScroll = document.getElementById('param-scroll-speed');
+            rangeScroll.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-scroll-speed').innerText = val.toFixed(1);
+                uniforms.u_scrollSpeed.value = val;
+            });
+
+            const rangeDistortion = document.getElementById('param-distortion');
+            rangeDistortion.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-distortion').innerText = val.toFixed(2);
+                uniforms.u_distortion.value = val;
+            });
+
+            const rangeEmission = document.getElementById('param-emission');
+            rangeEmission.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-emission').innerText = val.toFixed(1);
+                uniforms.u_emission.value = val;
+            });
+
+            const colorPicker = document.getElementById('param-color');
+            colorPicker.addEventListener('input', (e) => {
+                const hex = e.target.value;
+                document.getElementById('val-color').innerText = hex;
+                uniforms.u_color.value.set(hex);
+            });
+        }
+
+        // Reset Parameters
+        function resetParams() {
+            document.getElementById('param-scroll-speed').value = 2.0;
+            document.getElementById('val-scroll-speed').innerText = "2.0";
+            uniforms.u_scrollSpeed.value = 2.0;
+
+            document.getElementById('param-distortion').value = 0.18;
+            document.getElementById('val-distortion').innerText = "0.18";
+            uniforms.u_distortion.value = 0.18;
+
+            document.getElementById('param-emission').value = 4.0;
+            document.getElementById('val-emission').innerText = "4.0";
+            uniforms.u_emission.value = 4.0;
+
+            document.getElementById('param-color').value = "#8e2de2";
+            document.getElementById('val-color').innerText = "#8e2de2";
+            uniforms.u_color.value.set("#8e2de2");
+        }
+
+        // Run the 3D pipeline on page load
+        window.onload = () => {
+            init3D();
+            animate();
+        };
+    </script>
+</body>
+</html>
