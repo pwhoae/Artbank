@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每周靈感 UI 設計圖產生器 (Reference: magic-wizard-output.jpg)</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for exquisite typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+TC:wght@400;500;700;900&family=Cinzel:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- HTML2Canvas for flawless graphic exporting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #0f0f13;
+        }
+        
+        /* Custom scrollbar for control panel */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        /* Interactive pulse for editable fields */
+        .editable-field:hover {
+            outline: 2px dashed #f472b6;
+            outline-offset: 4px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .editable-field:focus {
+            outline: 2px solid #ec4899;
+            outline-offset: 4px;
+            background-color: rgba(236, 72, 153, 0.05);
+            border-radius: 4px;
+        }
+
+        /* Mockup Glassmorphism arch */
+        .stone-arch-frame {
+            border-top-left-radius: 120px;
+            border-top-right-radius: 120px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7),
+                        inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="text-zinc-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center text-white font-black shadow-lg shadow-pink-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg tracking-tight flex items-center gap-2">
+                    Weekly UI Template Generator 
+                    <span class="text-xs bg-pink-500/10 text-pink-400 font-normal px-2 py-0.5 rounded-full border border-pink-500/20">v1.2 Live</span>
+                </h1>
+                <p class="text-xs text-zinc-400">基於 magic-wizard-output.jpg 靈感圖設計的可視化編輯產生器</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="applyPreset('desert')" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium px-3 py-1.5 rounded-lg border border-zinc-700 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-rotate-left"></i> 重設為預設 (沙漠)
+            </button>
+            <button onclick="exportBanner()" class="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-md shadow-pink-500/10 flex items-center gap-2">
+                <i class="fa-solid fa-download"></i> 導出高清 PNG 圖片
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CREATIVE INTERFACE -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden h-[calc(100vh-73px)]">
+        
+        <!-- LEFT CONTROL PANEL (SaaS Inspired) -->
+        <section class="lg:col-span-4 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full overflow-y-auto">
+            
+            <!-- Quick Tips Notice -->
+            <div class="bg-zinc-900/60 p-4 border-b border-zinc-800 text-xs text-zinc-400 flex items-start gap-2.5">
+                <i class="fa-solid fa-circle-info text-pink-400 mt-0.5"></i>
+                <p><strong>編輯小技巧：</strong> 您可以直接點擊右側預覽畫面中的「任何文字」進行即時修改，或者使用左側的控制台面板進行精細調校。</p>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex border-b border-zinc-800 text-xs">
+                <button onclick="switchTab('tab-left-bar')" id="btn-tab-left-bar" class="flex-1 py-3 px-4 font-semibold text-pink-400 border-b-2 border-pink-500 bg-zinc-900/30 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-columns"></i> 左側靈感欄
+                </button>
+                <button onclick="switchTab('tab-mockup')" id="btn-tab-mockup" class="flex-1 py-3 px-4 font-semibold text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-window-maximize"></i> 網頁 Mockup
+                </button>
+                <button onclick="switchTab('tab-style')" id="btn-tab-style" class="flex-1 py-3 px-4 font-semibold text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-palette"></i> 佈景與預設
+                </button>
+            </div>
+
+            <!-- TAB 1: Left Bar Customizer -->
+            <div id="tab-left-bar" class="p-5 space-y-6">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 靈感欄文字
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">主標題 (中文)</label>
+                            <input type="text" id="input-left-title-zh" oninput="updateText('left-title-zh', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-pink-500" value="每周">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">副標題 (中文)</label>
+                            <input type="text" id="input-left-sub-zh" oninput="updateText('left-sub-zh', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-pink-500" value="灵感">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">英文小標</label>
+                            <input type="text" id="input-left-eng-1" oninput="updateText('left-eng-1', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-pink-500" value="WEEKLY UI">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">英文子標</label>
+                            <input type="text" id="input-left-eng-2" oninput="updateText('left-eng-2', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-pink-500" value="INTERACTIONS">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">期刊期數編號</label>
+                            <input type="text" id="input-left-issue" oninput="updateText('left-issue', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-pink-500" value="#01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-zinc-800 pt-5">
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 品牌與 LOGO 設置
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">LOGO 圓底色</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="input-left-logo-bg" oninput="updateColor('left-logo-bg', this.value, 'background')" class="h-9 w-12 bg-transparent border-0 rounded cursor-pointer" value="#df1c44">
+                                <input type="text" id="input-left-logo-bg-hex" oninput="updateColor('left-logo-bg', this.value, 'background')" class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs" value="#df1c44">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5">LOGO 字母</label>
+                                <input type="text" id="input-left-logo-text" oninput="updateText('left-logo-text', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none" value="U">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5">品牌中文名稱</label>
+                                <input type="text" id="input-left-brand-name" oninput="updateText('left-brand-name', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none" value="UI/UX研究">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Mockup Customizer -->
+            <div id="tab-mockup" class="p-5 space-y-6 hidden">
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 網頁 Mockup 核心文字
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">迷你分類文字 (頂部)</label>
+                            <input type="text" id="input-mock-category" oninput="updateText('mock-category', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100" value="EXPLORE VOYAGE">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">主標題第一行</label>
+                            <input type="text" id="input-mock-title-1" oninput="updateText('mock-title-1', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" value="Discover">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">主標題第二行</label>
+                            <input type="text" id="input-mock-title-2" oninput="updateText('mock-title-2', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" value="New Places">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">右側敘述內文</label>
+                            <textarea id="input-mock-desc" oninput="updateText('mock-desc', this.value)" rows="3" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-xs text-zinc-300 resize-none">The path of design is full of wonders. Find inspiration from the desert to the cyber streets, crafting memorable pixel experiences.</textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5">按鈕文字</label>
+                                <input type="text" id="input-mock-btn" oninput="updateText('mock-btn', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" value="LEARN MORE">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-zinc-400 mb-1.5">頁數指標 (左下)</label>
+                                <input type="text" id="input-mock-pages" oninput="updateText('mock-pages', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" value="01 / 06">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-zinc-800 pt-5">
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 標誌與導覽列
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">Mockup 標誌 (P.)</label>
+                            <input type="text" id="input-mock-logo" oninput="updateText('mock-logo', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" value="p.">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">右上聯絡文字</label>
+                            <input type="text" id="input-mock-contact" oninput="updateText('mock-contact', this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm" value="Get In Touch">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Style Customizer & Presets -->
+            <div id="tab-style" class="p-5 space-y-6 hidden">
+                <!-- Preset Packages -->
+                <div>
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 快速套用視覺風格
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="applyPreset('desert')" class="flex flex-col items-start p-2.5 bg-zinc-900 border border-zinc-700 hover:border-pink-500 rounded-xl transition text-left group">
+                            <span class="w-full h-12 bg-gradient-to-r from-amber-600 to-rose-900 rounded-lg mb-1.5 overflow-hidden flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                                DESERT
+                            </span>
+                            <span class="text-xs font-semibold text-zinc-300 group-hover:text-pink-400 transition">金秋大漠 (預設)</span>
+                        </button>
+                        <button onclick="applyPreset('cyberpunk')" class="flex flex-col items-start p-2.5 bg-zinc-900 border border-zinc-700 hover:border-pink-500 rounded-xl transition text-left group">
+                            <span class="w-full h-12 bg-gradient-to-r from-fuchsia-800 to-indigo-950 rounded-lg mb-1.5 overflow-hidden flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                                CYBER
+                            </span>
+                            <span class="text-xs font-semibold text-zinc-300 group-hover:text-pink-400 transition">霓虹賽博</span>
+                        </button>
+                        <button onclick="applyPreset('forest')" class="flex flex-col items-start p-2.5 bg-zinc-900 border border-zinc-700 hover:border-pink-500 rounded-xl transition text-left group">
+                            <span class="w-full h-12 bg-gradient-to-r from-teal-900 to-emerald-800 rounded-lg mb-1.5 overflow-hidden flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                                FOREST
+                            </span>
+                            <span class="text-xs font-semibold text-zinc-300 group-hover:text-pink-400 transition">森境迷霧</span>
+                        </button>
+                        <button onclick="applyPreset('dune')" class="flex flex-col items-start p-2.5 bg-zinc-900 border border-zinc-700 hover:border-pink-500 rounded-xl transition text-left group">
+                            <span class="w-full h-12 bg-gradient-to-r from-zinc-700 to-slate-900 rounded-lg mb-1.5 overflow-hidden flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                                MINIMAL
+                            </span>
+                            <span class="text-xs font-semibold text-zinc-300 group-hover:text-pink-400 transition">極簡曜石</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Color Controls -->
+                <div class="border-t border-zinc-800 pt-5">
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 手動微調色盤
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">左側靈感背底色</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="input-left-bg-color" oninput="updateColor('left-bg-panel', this.value, 'background')" class="h-9 w-12 bg-transparent border-0 rounded cursor-pointer" value="#fdd2d9">
+                                <input type="text" id="input-left-bg-hex" oninput="updateColor('left-bg-panel', this.value, 'background')" class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200" value="#fdd2d9">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">左欄大文字顏色</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="input-left-text-color" oninput="updateColor('left-title-zh', this.value, 'text')" class="h-9 w-12 bg-transparent border-0 rounded cursor-pointer" value="#1c1917">
+                                <input type="text" id="input-left-text-hex" oninput="updateColor('left-title-zh', this.value, 'text')" class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200" value="#1c1917">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">Mockup 主按鈕顏色</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="input-btn-color" oninput="updateColor('mock-btn-element', this.value, 'background')" class="h-9 w-12 bg-transparent border-0 rounded cursor-pointer" value="#fbbf24">
+                                <input type="text" id="input-btn-hex" oninput="updateColor('mock-btn-element', this.value, 'background')" class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-200" value="#fbbf24">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Background Options -->
+                <div class="border-t border-zinc-800 pt-5">
+                    <h3 class="text-sm font-bold text-zinc-200 mb-4 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 網頁背景圖片來源
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">貼上自訂圖片網址</label>
+                            <input type="text" id="input-bg-url" onchange="changeBackground(this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300" placeholder="https://images.unsplash.com/...">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-1.5">或 上傳自訂本機背景</label>
+                            <div class="flex items-center justify-center w-full">
+                                <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-zinc-800 border-dashed rounded-xl cursor-pointer hover:bg-zinc-900 hover:border-zinc-700 transition">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <i class="fa-solid fa-cloud-arrow-up text-zinc-500 mb-1"></i>
+                                        <p class="text-xs text-zinc-400">點擊選擇本機圖片檔案</p>
+                                    </div>
+                                    <input type="file" id="upload-image" accept="image/*" onchange="handleImageUpload(event)" class="hidden" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Central Frame Customizer -->
+                <div class="border-t border-zinc-800 pt-5">
+                    <h3 class="text-sm font-bold text-zinc-200 mb-3 flex items-center gap-1.5">
+                        <span class="w-1.5 h-3 bg-pink-500 rounded-full"></span> 網頁視覺主拱門/框架
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-2">主框架樣式</label>
+                            <select id="select-frame-style" onchange="toggleFrame(this.value)" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs">
+                                <option value="stone-arch">經典石雕拱門 (推薦)</option>
+                                <option value="portal-arch">微透明極簡拱門</option>
+                                <option value="circle">唯美圓框鏡中景</option>
+                                <option value="none">完全不顯示中央框架 (全景模式)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-zinc-400 mb-1.5">
+                                <span>框架不透明度</span>
+                                <span id="frame-opacity-val">85%</span>
+                            </div>
+                            <input type="range" min="0" max="100" value="85" oninput="adjustFrameOpacity(this.value)" class="w-full accent-pink-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT WORKSPACE / LIVE PREVIEW -->
+        <section class="lg:col-span-8 bg-zinc-900 p-6 flex items-center justify-center overflow-auto">
+            <div class="relative w-full max-w-5xl">
+                
+                <!-- TOP CANVAS TOOLBAR -->
+                <div class="flex items-center justify-between mb-3 text-xs text-zinc-400 px-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>畫布尺寸：1920 x 1080 (HD高畫質 16:9 完美匯出比例)</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="bg-zinc-800 px-2 py-0.5 rounded text-zinc-400">
+                            <i class="fa-solid fa-arrows-to-eye"></i> 滑鼠點擊文字即可秒速直改
+                        </span>
+                    </div>
+                </div>
+
+                <!-- CORE BANNER EXPORT CONTAINER (Aspect 16:9 scaled) -->
+                <!-- Note: The relative ID here is captured precisely by HTML2Canvas -->
+                <div id="capture-container" class="w-full aspect-[16/9] shadow-2xl rounded-2xl overflow-hidden flex bg-[#C5C7C7] relative">
+                    
+                    <!-- LEFT PINK SIDEBAR PANEL -->
+                    <div id="left-bg-panel" class="w-[28%] bg-[#fdd2d9] transition-colors duration-300 p-[4%] flex flex-col justify-between select-none shrink-0 relative overflow-hidden">
+                        
+                        <!-- Top Text Section of Left Bar -->
+                        <div class="space-y-1 md:space-y-3 mt-4">
+                            <!-- Main Chinese Text (Editable directly on click) -->
+                            <h2 id="left-title-zh" contenteditable="true" onblur="syncInputText('input-left-title-zh', this.innerText)" class="editable-field text-[3vw] leading-[1.1] font-black text-[#1c1917] tracking-wider block focus:outline-none">
+                                每周
+                            </h2>
+                            <h2 id="left-sub-zh" contenteditable="true" onblur="syncInputText('input-left-sub-zh', this.innerText)" class="editable-field text-[3vw] leading-[1.1] font-black text-[#1c1917] tracking-wider block focus:outline-none">
+                                灵感
+                            </h2>
+                            
+                            <!-- Spacing and English details -->
+                            <div class="pt-2 md:pt-4 border-t border-[#1c1917]/20">
+                                <span id="left-eng-1" contenteditable="true" onblur="syncInputText('input-left-eng-1', this.innerText)" class="editable-field text-[0.85vw] font-bold tracking-widest text-[#1c1917]/80 block focus:outline-none">
+                                    WEEKLY UI
+                                </span>
+                                <span id="left-eng-2" contenteditable="true" onblur="syncInputText('input-left-eng-2', this.innerText)" class="editable-field text-[0.85vw] font-bold tracking-widest text-[#1c1917]/80 block focus:outline-none">
+                                    INTERACTIONS
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Central Issue Number -->
+                        <div class="my-auto py-2">
+                            <h1 id="left-issue" contenteditable="true" onblur="syncInputText('input-left-issue', this.innerText)" class="editable-field font-extrabold text-[2.8vw] tracking-tighter text-[#1c1917] leading-none focus:outline-none">
+                                #01
+                            </h1>
+                        </div>
+
+                        <!-- Brand Logo Area at Bottom Left -->
+                        <div class="flex items-center gap-[6%] mb-2">
+                            <div id="left-logo-bg" class="w-[1.8vw] h-[1.8vw] min-w-[20px] min-h-[20px] rounded-full bg-[#df1c44] flex items-center justify-center shadow-md">
+                                <span id="left-logo-text" contenteditable="true" onblur="syncInputText('input-left-logo-text', this.innerText)" class="editable-field text-white font-black text-[0.8vw] uppercase focus:outline-none">U</span>
+                            </div>
+                            <span id="left-brand-name" contenteditable="true" onblur="syncInputText('input-left-brand-name', this.innerText)" class="editable-field font-bold text-[0.9vw] text-[#1c1917]/80 uppercase tracking-wider focus:outline-none">
+                                UI/UX研究
+                            </span>
+                        </div>
+
+                        <!-- Elegant structural grid subtle line elements -->
+                        <div class="absolute bottom-0 left-0 w-full h-[3px] bg-[#1c1917]/10"></div>
+                    </div>
+
+                    <!-- RIGHT WEBSITE MOCKUP CANVAS DISPLAY -->
+                    <div class="flex-1 p-[4%] flex items-center justify-center relative">
+                        
+                        <!-- Floating Glassmorphic Webpage Card -->
+                        <!-- Matches magic-wizard-output.jpg layout with 16:9 card floating -->
+                        <div class="w-full aspect-[16/9.5] rounded-xl overflow-hidden relative shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] flex flex-col justify-between bg-zinc-950 text-white">
+                            
+                            <!-- Dynamic Background behind Mockup web template -->
+                            <div id="mock-bg-image" class="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out" style="background-image: url('https://images.unsplash.com/photo-1509316975850-ff9c5edd0cd9?auto=format&fit=crop&w=1200&q=80');">
+                                <!-- Dark overlay layers mimicking rich cinematic tone of reference -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/55"></div>
+                                <div class="absolute inset-0 bg-radial-gradient from-transparent via-black/40 to-black/80"></div>
+                            </div>
+
+                            <!-- STONE ARCH / VISUAL OVERLAY CONTAINER -->
+                            <!-- Recreates the incredible depth of the rock/stone portal arch from magic-wizard-output.jpg -->
+                            <div id="arch-frame-wrapper" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                <div id="center-frame-element" class="stone-arch-frame w-[34%] h-[82%] relative top-[9%] border-[4px] border-amber-900/40 opacity-85 transition-all duration-300 overflow-hidden">
+                                    <!-- Embedded dynamic inner background for depth refraction effect -->
+                                    <div id="arch-depth-bg" class="absolute inset-[-15px] bg-cover bg-center scale-110 blur-[1px] brightness-125 contrast-110 saturate-[1.15]" style="background-image: url('https://images.unsplash.com/photo-1509316975850-ff9c5edd0cd9?auto=format&fit=crop&w=1200&q=80');"></div>
+                                    <!-- Elegant Inner Border Glassmorphism Shadow -->
+                                    <div class="absolute inset-0 shadow-[inset_0_20px_40px_rgba(0,0,0,0.8)] border border-white/20"></div>
+                                </div>
+                            </div>
+
+                            <!-- MOCKUP HEADER NAVIGATION -->
+                            <header class="relative z-20 px-[5%] pt-[3%] flex items-center justify-between select-none">
+                                <span id="mock-logo" contenteditable="true" onblur="syncInputText('input-mock-logo', this.innerText)" class="editable-field text-[1.4vw] font-bold text-white uppercase tracking-tight focus:outline-none">
+                                    p.
+                                </span>
+                                <nav class="hidden md:flex items-center gap-[2vw] text-[0.65vw] tracking-widest font-semibold uppercase text-zinc-300">
+                                    <span class="hover:text-white cursor-pointer transition">Destinations</span>
+                                    <span class="hover:text-white cursor-pointer transition">About</span>
+                                    <span class="hover:text-white cursor-pointer transition">Features</span>
+                                </nav>
+                                <span id="mock-contact" contenteditable="true" onblur="syncInputText('input-mock-contact', this.innerText)" class="editable-field text-[0.65vw] tracking-wider text-zinc-300 hover:text-white cursor-pointer uppercase font-bold border-b border-white/40 pb-0.5 focus:outline-none">
+                                    Get In Touch
+                                </span>
+                            </header>
+
+                            <!-- MOCKUP MAIN HERO AREA -->
+                            <div class="relative z-20 px-[5%] grid grid-cols-12 gap-2 items-center flex-1 my-2">
+                                
+                                <!-- Left side: Large Headlines -->
+                                <div class="col-span-7 space-y-[1%]">
+                                    <span id="mock-category" contenteditable="true" onblur="syncInputText('input-mock-category', this.innerText)" class="editable-field text-[0.65vw] text-amber-400 font-bold tracking-widest block uppercase focus:outline-none">
+                                        EXPLORE VOYAGE
+                                    </span>
+                                    <h1 class="text-white font-extrabold leading-[1.1] tracking-tight">
+                                        <span id="mock-title-1" contenteditable="true" onblur="syncInputText('input-mock-title-1', this.innerText)" class="editable-field text-[3vw] block focus:outline-none">Discover</span>
+                                        <span id="mock-title-2" contenteditable="true" onblur="syncInputText('input-mock-title-2', this.innerText)" class="editable-field text-[3vw] block focus:outline-none">New Places</span>
+                                    </h1>
+                                </div>
+
+                                <!-- Right side: Paragraph & Button -->
+                                <div class="col-span-5 flex flex-col items-start gap-[6%] pl-[4%] text-left">
+                                    <p id="mock-desc" contenteditable="true" onblur="syncInputText('input-mock-desc', this.innerText)" class="editable-field text-[0.6vw] leading-[1.6] text-zinc-300 font-normal focus:outline-none">
+                                        The path of design is full of wonders. Find inspiration from the desert to the cyber streets, crafting memorable pixel experiences.
+                                    </p>
+                                    
+                                    <!-- Beautiful CTA yellow button -->
+                                    <div class="mt-[6%]">
+                                        <div id="mock-btn-element" class="bg-[#fbbf24] hover:scale-105 active:scale-95 transition-all text-stone-900 font-bold rounded-full text-[0.55vw] tracking-widest py-[0.6vw] px-[1.5vw] uppercase inline-flex items-center gap-1.5 shadow-lg shadow-amber-500/10 cursor-pointer">
+                                            <span id="mock-btn" contenteditable="true" onblur="syncInputText('input-mock-btn', this.innerText)" class="editable-field focus:outline-none">LEARN MORE</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- MOCKUP FOOTER BAR -->
+                            <footer class="relative z-20 px-[5%] pb-[3%] flex items-center justify-between select-none">
+                                <!-- Left Page indicator -->
+                                <span id="mock-pages" contenteditable="true" onblur="syncInputText('input-mock-pages', this.innerText)" class="editable-field text-[0.7vw] font-mono text-zinc-400 focus:outline-none">
+                                    01 / 06
+                                </span>
+
+                                <!-- Center Arrow Element -->
+                                <div class="flex flex-col items-center gap-1 text-[0.7vw] text-zinc-300">
+                                    <i class="fa-solid fa-chevron-up animate-bounce"></i>
+                                    <span class="text-[0.45vw] tracking-widest uppercase">Scroll</span>
+                                </div>
+
+                                <!-- Right Social Links mimicking original mockup icon placements -->
+                                <div class="flex items-center gap-[1vw] text-[0.7vw] text-zinc-400">
+                                    <span class="hover:text-white transition cursor-pointer"><i class="fa-brands fa-facebook"></i></span>
+                                    <span class="hover:text-white transition cursor-pointer"><i class="fa-brands fa-instagram"></i></span>
+                                    <span class="hover:text-white transition cursor-pointer"><i class="fa-brands fa-youtube"></i></span>
+                                </div>
+                            </footer>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JAVASCRIPT CONTROLLER SECTION -->
+    <script>
+        // Preset configurations mapping the spirit of magic-wizard-output.jpg and gorgeous alternate themes
+        const presets = {
+            desert: {
+                leftTitleZh: "每周",
+                leftSubZh: "灵感",
+                leftEng1: "WEEKLY UI",
+                leftEng2: "INTERACTIONS",
+                leftIssue: "#01",
+                leftBgColor: "#fdd2d9", // Soft pastel pink from magic-wizard-output.jpg
+                leftTextColor: "#1c1917", // Dark brown/black
+                logoBg: "#df1c44", // Deep red brand
+                logoText: "U",
+                brandName: "UI/UX研究",
+                mockCategory: "EXPLORE VOYAGE",
+                mockTitle1: "Discover",
+                mockTitle2: "New Places",
+                mockDesc: "The path of design is full of wonders. Find inspiration from the desert to the cyber streets, crafting memorable pixel experiences.",
+                mockBtn: "LEARN MORE",
+                btnColor: "#fbbf24", // Golden sunset yellow
+                mockPages: "01 / 06",
+                bgUrl: "https://images.unsplash.com/photo-1509316975850-ff9c5edd0cd9?auto=format&fit=crop&w=1200&q=80", // Monument Valley Sunset
+                frameStyle: "stone-arch",
+                frameOpacity: "85"
+            },
+            cyberpunk: {
+                leftTitleZh: "極致",
+                leftSubZh: "未來",
+                leftEng1: "CYBERPUNK",
+                leftEng2: "INTERFACE",
+                leftIssue: "#42",
+                leftBgColor: "#0f172a", // Dark blue slate
+                leftTextColor: "#38bdf8", // Cyber sky blue
+                logoBg: "#f43f5e", // Hot neon pink
+                logoText: "C",
+                brandName: "CYBER NEXUS",
+                mockCategory: "SYSTEMS ACTIVATED",
+                mockTitle1: "Neural",
+                mockTitle2: "Overdrive",
+                mockDesc: "Diving deep into neo-tokyo aesthetics. Synthesizing clean matrix structures with dynamic HUD element presets for ultra-modern interfaces.",
+                mockBtn: "BOOT SYSTEM",
+                btnColor: "#ec4899", // Neon rose
+                mockPages: "42 / 99",
+                bgUrl: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80", // Neon style landscape/city vibes
+                frameStyle: "circle",
+                frameOpacity: "70"
+            },
+            forest: {
+                leftTitleZh: "極簡",
+                leftSubZh: "自然",
+                leftEng1: "NATURALIST",
+                leftEng2: "MEDITATION",
+                leftIssue: "#12",
+                leftBgColor: "#dcfce7", // Soft pastel green
+                leftTextColor: "#14532d", // Deep forest green
+                logoBg: "#059669", // Emerald brand
+                logoText: "N",
+                brandName: "PURE DESIGNS",
+                mockCategory: "ECO MINIMALISM",
+                mockTitle1: "Ethereal",
+                mockTitle2: "Foggy Hills",
+                mockDesc: "Connecting organic architecture, atmospheric mist, and human tranquility. Discover UI frameworks centered around silence and sustainability.",
+                mockBtn: "ENTER FOREST",
+                btnColor: "#10b981", // Nature emerald
+                mockPages: "12 / 30",
+                bgUrl: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80", // Magical Misty Pine Forest
+                frameStyle: "portal-arch",
+                frameOpacity: "90"
+            },
+            dune: {
+                leftTitleZh: "曜石",
+                leftSubZh: "極簡",
+                leftEng1: "DARK OBSIDIAN",
+                leftEng2: "MONOLITH",
+                leftIssue: "#09",
+                leftBgColor: "#27272a", // Charcoal black
+                leftTextColor: "#f4f4f5", // Pure white/silver
+                logoBg: "#ffffff", // Pure white logo background
+                logoText: "M",
+                brandName: "MINIMAL.ARCH",
+                mockCategory: "SAND DUNES VOYAGER",
+                mockTitle1: "Silent",
+                mockTitle2: "Monoliths",
+                mockDesc: "Stripping away the noise. High contrast layout coupled with brutalist typography elements and cinematic dune vistas.",
+                mockBtn: "VIEW GALLERY",
+                btnColor: "#ffffff", // White accent
+                mockPages: "09 / 15",
+                bgUrl: "https://images.unsplash.com/photo-1509316975850-ff9c5edd0cd9?auto=format&fit=crop&w=1200&q=80", // Elegant dark dunes
+                frameStyle: "none",
+                frameOpacity: "0"
+            }
+        };
+
+        // Sidebar tabs switcher logic
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.getElementById('tab-left-bar').classList.add('hidden');
+            document.getElementById('tab-mockup').classList.add('hidden');
+            document.getElementById('tab-style').classList.add('hidden');
+            
+            // Remove active classes from buttons
+            document.getElementById('btn-tab-left-bar').className = "flex-1 py-3 px-4 font-semibold text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all flex items-center justify-center gap-2";
+            document.getElementById('btn-tab-mockup').className = "flex-1 py-3 px-4 font-semibold text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all flex items-center justify-center gap-2";
+            document.getElementById('btn-tab-style').className = "flex-1 py-3 px-4 font-semibold text-zinc-400 border-b-2 border-transparent hover:text-zinc-200 transition-all flex items-center justify-center gap-2";
+
+            // Show target tab
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Highlight active button
+            const activeButton = document.getElementById('btn-' + tabId);
+            activeButton.className = "flex-1 py-3 px-4 font-semibold text-pink-400 border-b-2 border-pink-500 bg-zinc-900/30 transition-all flex items-center justify-center gap-2";
+        }
+
+        // Live synchronous updates from Input controls -> Canvas Text
+        function updateText(elementId, text) {
+            const canvasEl = document.getElementById(elementId);
+            if (canvasEl) {
+                canvasEl.innerText = text;
+            }
+        }
+
+        // Live synchronous updates from Canvas Text (editable) -> Input controls
+        function syncInputText(inputId, text) {
+            const inputEl = document.getElementById(inputId);
+            if (inputEl) {
+                inputEl.value = text;
+            }
+        }
+
+        // Live updates for color pickers (Backgrounds / Text)
+        function updateColor(elementId, colorVal, type) {
+            const targetEl = document.getElementById(elementId);
+            if (targetEl) {
+                if (type === 'background') {
+                    targetEl.style.backgroundColor = colorVal;
+                    // Sync parallel hex input inside style panel
+                    if (elementId === 'left-bg-panel') {
+                        document.getElementById('input-left-bg-hex').value = colorVal;
+                        document.getElementById('input-left-bg-color').value = colorVal;
+                    } else if (elementId === 'left-logo-bg') {
+                        document.getElementById('input-left-logo-bg-hex').value = colorVal;
+                    } else if (elementId === 'mock-btn-element') {
+                        document.getElementById('input-btn-hex').value = colorVal;
+                        document.getElementById('input-btn-color').value = colorVal;
+                    }
+                } else if (type === 'text') {
+                    targetEl.style.color = colorVal;
+                    // Also apply to siblings in left-bar
+                    document.getElementById('left-sub-zh').style.color = colorVal;
+                    document.getElementById('left-eng-1').style.color = colorVal + "CC";
+                    document.getElementById('left-eng-2').style.color = colorVal + "CC";
+                    document.getElementById('left-brand-name').style.color = colorVal + "CC";
+                    document.getElementById('left-issue').style.color = colorVal;
+                    
+                    document.getElementById('input-left-text-hex').value = colorVal;
+                    document.getElementById('input-left-text-color').value = colorVal;
+                }
+            }
+        }
+
+        // Live updates for background image URL/uploaded files
+        function changeBackground(url) {
+            if (!url) return;
+            document.getElementById('mock-bg-image').style.backgroundImage = `url('${url}')`;
+            // Also mirror within the stone arch depth overlay background for magnificent refraction effect
+            const depthBg = document.getElementById('arch-depth-bg');
+            if (depthBg) {
+                depthBg.style.backgroundImage = `url('${url}')`;
+            }
+        }
+
+        // Processing custom local image uploads safely
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const uploadedUrl = e.target.result;
+                    changeBackground(uploadedUrl);
+                    document.getElementById('input-bg-url').value = "(本機上傳圖片)";
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // FRAME ADJUSTMENT CONTROLLER (Arch styling/opacity overlays)
+        function toggleFrame(style) {
+            const frameEl = document.getElementById('center-frame-element');
+            const wrapperEl = document.getElementById('arch-frame-wrapper');
+            
+            if (style === 'none') {
+                wrapperEl.style.display = 'none';
+                return;
+            } else {
+                wrapperEl.style.display = 'flex';
+            }
+
+            // Remove previous style borders
+            frameEl.className = "stone-arch-frame relative top-[9%] opacity-85 transition-all duration-300 overflow-hidden";
+            
+            if (style === 'stone-arch') {
+                frameEl.style.width = '34%';
+                frameEl.style.height = '82%';
+                frameEl.style.borderTopLeftRadius = '120px';
+                frameEl.style.borderTopRightRadius = '120px';
+                frameEl.style.borderBottomLeftRadius = '0px';
+                frameEl.style.borderBottomRightRadius = '0px';
+                frameEl.style.border = '4px solid rgba(146, 64, 14, 0.4)'; // Amber border resembling canyon stone
+                frameEl.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.7), inset 0 1px 0 0 rgba(255,255,255,0.15)';
+            } else if (style === 'portal-arch') {
+                frameEl.style.width = '30%';
+                frameEl.style.height = '80%';
+                frameEl.style.borderTopLeftRadius = '999px';
+                frameEl.style.borderTopRightRadius = '999px';
+                frameEl.style.borderBottomLeftRadius = '0px';
+                frameEl.style.borderBottomRightRadius = '0px';
+                frameEl.style.border = '1px solid rgba(255, 255, 255, 0.4)'; // Thin futuristic sleek white outline
+                frameEl.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.7), inset 0 0 20px rgba(255,255,255,0.1)';
+            } else if (style === 'circle') {
+                frameEl.style.width = '38%';
+                frameEl.style.height = '68%';
+                frameEl.style.borderTopLeftRadius = '999px';
+                frameEl.style.borderTopRightRadius = '999px';
+                frameEl.style.borderBottomLeftRadius = '999px';
+                frameEl.style.borderBottomRightRadius = '999px';
+                frameEl.style.border = '2px solid rgba(251, 191, 36, 0.5)'; // Gold circular frame
+                frameEl.style.boxShadow = '0 25px 50px -12px rgba(0,0,0,0.7)';
+            }
+        }
+
+        // Adjust opacity slider of the middle frame
+        function adjustFrameOpacity(val) {
+            const opacityPct = parseInt(val) / 100;
+            const frameEl = document.getElementById('center-frame-element');
+            if (frameEl) {
+                frameEl.style.opacity = opacityPct;
+            }
+            document.getElementById('frame-opacity-val').innerText = val + "%";
+        }
+
+        // Function to load presets instantly
+        function applyPreset(themeKey) {
+            const data = presets[themeKey];
+            if (!data) return;
+
+            // Updates Text Content on Canvas
+            updateText('left-title-zh', data.leftTitleZh);
+            updateText('left-sub-zh', data.leftSubZh);
+            updateText('left-eng-1', data.leftEng1);
+            updateText('left-eng-2', data.leftEng2);
+            updateText('left-issue', data.leftIssue);
+            updateText('left-logo-text', data.logoText);
+            updateText('left-brand-name', data.brandName);
+            updateText('mock-category', data.mockCategory);
+            updateText('mock-title-1', data.mockTitle1);
+            updateText('mock-title-2', data.mockTitle2);
+            updateText('mock-desc', data.mockDesc);
+            updateText('mock-btn', data.mockBtn);
+            updateText('mock-pages', data.mockPages);
+
+            // Sync Inputs in UI Dashboard
+            document.getElementById('input-left-title-zh').value = data.leftTitleZh;
+            document.getElementById('input-left-sub-zh').value = data.leftSubZh;
+            document.getElementById('input-left-eng-1').value = data.leftEng1;
+            document.getElementById('input-left-eng-2').value = data.leftEng2;
+            document.getElementById('input-left-issue').value = data.leftIssue;
+            document.getElementById('input-left-logo-text').value = data.logoText;
+            document.getElementById('input-left-brand-name').value = data.brandName;
+            document.getElementById('input-mock-category').value = data.mockCategory;
+            document.getElementById('input-mock-title-1').value = data.mockTitle1;
+            document.getElementById('input-mock-title-2').value = data.mockTitle2;
+            document.getElementById('input-mock-desc').value = data.mockDesc;
+            document.getElementById('input-mock-btn').value = data.mockBtn;
+            document.getElementById('input-mock-pages').value = data.mockPages;
+
+            // Update Colors
+            updateColor('left-bg-panel', data.leftBgColor, 'background');
+            updateColor('left-title-zh', data.leftTextColor, 'text');
+            updateColor('left-logo-bg', data.logoBg, 'background');
+            updateColor('mock-btn-element', data.btnColor, 'background');
+
+            // Apply Background & Frames
+            changeBackground(data.bgUrl);
+            document.getElementById('input-bg-url').value = data.bgUrl;
+            
+            // Apply frame selection
+            document.getElementById('select-frame-style').value = data.frameStyle;
+            toggleFrame(data.frameStyle);
+            document.getElementById('frame-opacity-val').innerText = data.frameOpacity + "%";
+            adjustFrameOpacity(data.frameOpacity);
+        }
+
+        // Crisp high-resolution png export mechanism
+        function exportBanner() {
+            const captureArea = document.getElementById('capture-container');
+            
+            // Visual feedback - Show exporting HUD toast
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-6 right-6 bg-zinc-900 border border-pink-500/30 text-white font-semibold py-3 px-6 rounded-2xl shadow-2xl shadow-pink-500/10 z-50 flex items-center gap-3 animate-bounce";
+            toast.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-pink-500"></i>正在渲染並優化高畫質 PNG 檔案，請稍候...`;
+            document.body.appendChild(toast);
+
+            // Capture element using HTML2Canvas with optimized configuration to guarantee clarity
+            html2canvas(captureArea, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 3, // Boost resolution 3x for crystal clear prints
+                backgroundColor: null,
+                logging: false,
+                onclone: (clonedDoc) => {
+                    // Hide outline highlight effects on editable areas inside target container clone
+                    const clonedEditables = clonedDoc.querySelectorAll('.editable-field');
+                    clonedEditables.forEach(el => {
+                        el.style.outline = 'none';
+                        el.style.border = 'none';
+                    });
+                }
+            }).then(canvas => {
+                // Convert canvas to URL download trigger
+                const link = document.createElement('a');
+                link.download = `Weekly_UI_Inspiration_${document.getElementById('left-issue').innerText}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Remove loading toast notification
+                toast.remove();
+                
+                // Finished toast callback
+                const finishToast = document.createElement('div');
+                finishToast.className = "fixed bottom-6 right-6 bg-emerald-500 text-stone-900 font-bold py-3 px-6 rounded-2xl shadow-2xl z-50 flex items-center gap-2";
+                finishToast.innerHTML = `<i class="fa-solid fa-circle-check"></i> 圖片已成功下載至您的裝置！`;
+                document.body.appendChild(finishToast);
+                setTimeout(() => finishToast.remove(), 3500);
+            }).catch(err => {
+                console.error("HTML2Canvas Error: ", err);
+                toast.remove();
+            });
+        }
+
+        // Trigger default preset on boot
+        window.onload = function() {
+            applyPreset('desert');
+        };
+    </script>
+</body>
+</html>
