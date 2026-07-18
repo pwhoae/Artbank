@@ -1,23 +1,18 @@
 ### 3D Notes
 ```
 ### 思考方向
-收藏 property (position,rotation,scale,shape) Collision3D常用
-CollisionShape3D 子节点：形状采用 CapsuleShape3D（高度设定为较矮的 1.7 米），并增加安全边距（Margin）至 0.3 米以防止穿墙。
-核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
-Camera3D 子节点：将其 Y 轴高度设为 1.5 米，并勾选 Current 使其激活。
-
- 
+收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
+>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
 1.場景光照+環境光
-2.Player+camera (springarm)
+2.Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
 3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
 4.move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime) 3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
 5.death zone>worldboundary
 
-gripmap
-camera飛過去地圖演示
+gripmap 場地
 X0.UI>CanvasLayer>Label
 X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
-X2.gpuparticle>cpuparticle
+X2.gpuparticle(process material)>cpuparticle
 XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 ```
 
@@ -26,10 +21,6 @@ XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數
 
 AtlasTexture 拼圖
 filedialog:玩家upload file
-### 次研究:粒子系统 【Godot进阶教学】做出你的第一个3D游戏：粒子系统的运用
-```
-process material/standard3d albedo/time amount spawn出生/direction sparation/align y/accel +爆炸
-```
 
 ### 2D Notes
 
