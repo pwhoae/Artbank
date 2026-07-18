@@ -3,6 +3,8 @@
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br>
 
 <details><summary><h6>放棄idea</h6></summary>
+  冲破次元壁的/商業化插圖
+
 棄置:漫畫》動畫/建模/角設<BR>
 遊戲動畫研究                        
 </details>
