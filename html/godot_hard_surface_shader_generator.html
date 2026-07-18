@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4.x Hard Surface Shader Generator</title>
+    <!-- Tailwind CSS for high-quality dashboard layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D hard-surface previewing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for camera manipulation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide icons for gorgeous styling -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar styling for seamless dark UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4B5563;
+        }
+        /* Custom glowing utility classes */
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+        .glow-orange {
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur-md px-6 py-4 flex items-center justify-between z-10">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg shadow-md">
+                <i data-lucide="box" class="w-6 h-6 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400">Godot 4.x 硬表面着色器生成器</h1>
+                <p class="text-xs text-gray-400 font-mono">Hard-Surface Spatial Shader & PBR Generator</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="px-2.5 py-1 text-xs font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800 rounded-full flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                Godot 4.x 兼容
+            </span>
+            <button onclick="copyShaderCode()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-cyan-500/20 transition duration-200">
+                <i data-lucide="copy" class="w-4 h-4"></i> 复制代码
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar: Controls -->
+        <div class="w-1/3 min-w-[360px] max-w-[450px] border-r border-gray-800 bg-gray-900 flex flex-col h-full overflow-y-auto">
+            
+            <!-- Tab Navigation for Parameters -->
+            <div class="flex border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
+                <button onclick="switchTab('material')" id="tab-material" class="flex-1 py-3 text-sm font-semibold border-b-2 border-cyan-500 text-cyan-400 transition">材质基础</button>
+                <button onclick="switchTab('damage')" id="tab-damage" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition">磨损与污渍</button>
+                <button onclick="switchTab('detail')" id="tab-detail" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition">细节与发光</button>
+            </div>
+
+            <!-- Tab Content: Material Base -->
+            <div id="content-material" class="p-6 space-y-6">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="palette" class="w-4 h-4 text-cyan-400"></i>
+                        基础材质属性 (PBR)
+                    </h3>
+                    
+                    <!-- Base Color -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">基础颜色</label>
+                            <span id="val-albedo" class="text-xs text-gray-500 font-mono">#3a4454</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" id="albedo" value="#3a4454" class="w-10 h-10 border border-gray-700 rounded bg-transparent cursor-pointer">
+                            <input type="range" id="brightness" min="0.2" max="1.5" step="0.05" value="1.0" class="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                        </div>
+                    </div>
+
+                    <!-- Metallic -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">金属度 (Metallic)</label>
+                            <span id="val-metallic" class="text-xs text-cyan-400 font-mono">1.0</span>
+                        </div>
+                        <input type="range" id="metallic" min="0.0" max="1.0" step="0.01" value="1.0" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    </div>
+
+                    <!-- Roughness -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">粗糙度 (Roughness)</label>
+                            <span id="val-roughness" class="text-xs text-cyan-400 font-mono">0.3</span>
+                        </div>
+                        <input type="range" id="roughness" min="0.0" max="1.0" step="0.01" value="0.3" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-800 pt-6">
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+                        面板线条 (Panel Lines)
+                    </h3>
+                    
+                    <!-- Panel Grid Density -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">面板网格密度</label>
+                            <span id="val-panel-scale" class="text-xs text-cyan-400 font-mono">4.0</span>
+                        </div>
+                        <input type="range" id="panel-scale" min="1.0" max="12.0" step="0.5" value="4.0" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    </div>
+
+                    <!-- Panel Grooves Width -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">面板线宽 (凹槽)</label>
+                            <span id="val-panel-width" class="text-xs text-cyan-400 font-mono">0.05</span>
+                        </div>
+                        <input type="range" id="panel-width" min="0.01" max="0.15" step="0.01" value="0.05" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    </div>
+
+                    <!-- Panel Normal Depth -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">凹槽深度强度</label>
+                            <span id="val-panel-depth" class="text-xs text-cyan-400 font-mono">0.80</span>
+                        </div>
+                        <input type="range" id="panel-depth" min="0.0" max="2.0" step="0.05" value="0.80" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Damage and Wear -->
+            <div id="content-damage" class="p-6 space-y-6 hidden">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="zap-off" class="w-4 h-4 text-orange-400"></i>
+                        边缘磨损 (Edge Wear)
+                    </h3>
+
+                    <!-- Edge Wear Intensity -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">边缘裸露金属强度</label>
+                            <span id="val-edge-wear" class="text-xs text-orange-400 font-mono">0.65</span>
+                        </div>
+                        <input type="range" id="edge-wear" min="0.0" max="1.5" step="0.05" value="0.65" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                    </div>
+
+                    <!-- Edge Noise Curvature -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">磨损边缘粗糙/不规则度</label>
+                            <span id="val-edge-noise" class="text-xs text-orange-400 font-mono">2.5</span>
+                        </div>
+                        <input type="range" id="edge-noise" min="0.5" max="5.0" step="0.1" value="2.5" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                    </div>
+
+                    <!-- Undercoat Color (Exposed Metal) -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">磨损底层颜色</label>
+                            <span id="val-undercoat" class="text-xs text-gray-500 font-mono">#b0b5bc</span>
+                        </div>
+                        <input type="color" id="undercoat" value="#b0b5bc" class="w-full h-10 border border-gray-700 rounded bg-transparent cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-800 pt-6">
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="droplet" class="w-4 h-4 text-orange-400"></i>
+                        污垢与积灰 (Dirt & Grime)
+                    </h3>
+
+                    <!-- Dirt Amount -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">暗部/凹陷污渍厚度</label>
+                            <span id="val-dirt-amount" class="text-xs text-orange-400 font-mono">0.40</span>
+                        </div>
+                        <input type="range" id="dirt-amount" min="0.0" max="1.0" step="0.05" value="0.40" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                    </div>
+
+                    <!-- Dirt Color -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">污物颜色 (铁锈/沙尘)</label>
+                            <span id="val-dirt-color" class="text-xs text-gray-500 font-mono">#422a18</span>
+                        </div>
+                        <input type="color" id="dirt-color" value="#422a18" class="w-full h-10 border border-gray-700 rounded bg-transparent cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Details & Emission -->
+            <div id="content-detail" class="p-6 space-y-6 hidden">
+                <div>
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-purple-400"></i>
+                        表面微观刮痕 (Micro Scratches)
+                    </h3>
+
+                    <!-- Scratch Intensity -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">划痕可见度 (法线反射)</label>
+                            <span id="val-scratch-strength" class="text-xs text-purple-400 font-mono">0.30</span>
+                        </div>
+                        <input type="range" id="scratch-strength" min="0.0" max="1.0" step="0.05" value="0.30" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+
+                    <!-- Scratch Scale -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">划痕贴图缩放 (密度)</label>
+                            <span id="val-scratch-scale" class="text-xs text-purple-400 font-mono">8.0</span>
+                        </div>
+                        <input type="range" id="scratch-scale" min="1.0" max="20.0" step="0.5" value="8.0" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-800 pt-6">
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <i data-lucide="activity" class="w-4 h-4 text-purple-400"></i>
+                        科幻能量发光 (Emission)
+                    </h3>
+
+                    <!-- Glow Intensity -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">自发光亮度</label>
+                            <span id="val-emission-energy" class="text-xs text-purple-400 font-mono">2.5</span>
+                        </div>
+                        <input type="range" id="emission-energy" min="0.0" max="10.0" step="0.1" value="2.5" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+
+                    <!-- Emission Pulse Speed -->
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">发光呼吸/脉冲频率</label>
+                            <span id="val-emission-pulse" class="text-xs text-purple-400 font-mono">1.2</span>
+                        </div>
+                        <input type="range" id="emission-pulse" min="0.0" max="5.0" step="0.1" value="1.2" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+
+                    <!-- Glow Color -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-sm">
+                            <label class="text-gray-400">发光颜色</label>
+                            <span id="val-emission-color" class="text-xs text-gray-500 font-mono">#00ffea</span>
+                        </div>
+                        <input type="color" id="emission-color" value="#00ffea" class="w-full h-10 border border-gray-700 rounded bg-transparent cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Presets -->
+            <div class="mt-auto p-6 bg-gray-950/50 border-t border-gray-800">
+                <p class="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wider">预设硬表面材质 (Presets)</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('scifi-alloy')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded transition text-left border border-gray-700 hover:border-cyan-500">🛸 科幻合金</button>
+                    <button onclick="applyPreset('rusty-panel')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded transition text-left border border-gray-700 hover:border-orange-500">🚜 废土重工业</button>
+                    <button onclick="applyPreset('stealth-plate')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded transition text-left border border-gray-700 hover:border-purple-500">✈️ 隐形装甲板</button>
+                    <button onclick="applyPreset('gold-cyber')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded transition text-left border border-gray-700 hover:border-yellow-500">✨ 赛博奢华金</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center/Right Area: Viewport + Shader Code -->
+        <div class="flex-1 flex flex-col md:flex-row relative">
+            
+            <!-- 3D Viewport Panel -->
+            <div class="flex-1 relative bg-gray-950 flex flex-col min-h-[300px]">
+                <!-- Canvas container -->
+                <div id="canvas-container" class="w-full flex-1 relative"></div>
+
+                <!-- Viewport HUD info overlay -->
+                <div class="absolute bottom-4 left-4 right-4 pointer-events-none flex justify-between items-end">
+                    <div class="bg-gray-900/90 backdrop-blur border border-gray-800 p-3 rounded-lg text-xs font-mono text-gray-400 space-y-1">
+                        <div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></div>渲染管线: WebGL PBR Emulator</div>
+                        <div>材质模式: 自定义 Godot 着色器同步预览</div>
+                        <div>按住左键旋转 | 滚轮缩放 | 右键拖拽</div>
+                    </div>
+                    <!-- Viewport Actions -->
+                    <div class="pointer-events-auto flex items-center gap-2">
+                        <button onclick="rotateModel()" class="p-2.5 bg-gray-900/90 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500 rounded-lg text-gray-300 transition" title="旋转模型">
+                            <i data-lucide="rotate-3d" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="resetCamera()" class="p-2.5 bg-gray-900/90 hover:bg-gray-800 border border-gray-800 hover:border-cyan-500 rounded-lg text-gray-300 transition" title="重置视角">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godot Code Panel -->
+            <div class="w-full md:w-[480px] border-l border-gray-800 bg-gray-900/90 flex flex-col">
+                <div class="px-4 py-3 bg-gray-950 border-b border-gray-800 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="code" class="w-4 h-4 text-cyan-400"></i>
+                        <span class="text-xs font-bold font-mono text-gray-300">GODOT SHADER (4.x Spatial)</span>
+                    </div>
+                    <button onclick="copyShaderCode()" class="px-2.5 py-1 bg-gray-800 hover:bg-cyan-900/50 hover:text-cyan-400 border border-gray-700 hover:border-cyan-800 text-xs font-mono font-bold rounded transition flex items-center gap-1.5">
+                        <i data-lucide="clipboard" class="w-3.5 h-3.5"></i> COPY
+                    </button>
+                </div>
+                <!-- Shader Output Container -->
+                <div class="flex-1 p-4 overflow-y-auto font-mono text-xs text-gray-300 bg-gray-950/60 leading-relaxed">
+                    <pre><code id="godot-shader-code" class="language-glsl">// shader rendering here...</code></pre>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Success Toast message -->
+    <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 bg-cyan-900/90 border border-cyan-500 text-cyan-200 text-sm font-semibold rounded-lg shadow-xl translate-y-20 opacity-0 transition duration-300 ease-out flex items-center gap-2 z-50">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-cyan-400"></i>
+        <span>代码已成功复制到剪贴板!</span>
+    </div>
+
+    <!-- Custom WebGL and Generator Scripts -->
+    <script>
+        // DOM refs
+        const albedoInput = document.getElementById('albedo');
+        const brightnessInput = document.getElementById('brightness');
+        const metallicInput = document.getElementById('metallic');
+        const roughnessInput = document.getElementById('roughness');
+        const panelScaleInput = document.getElementById('panel-scale');
+        const panelWidthInput = document.getElementById('panel-width');
+        const panelDepthInput = document.getElementById('panel-depth');
+        const edgeWearInput = document.getElementById('edge-wear');
+        const edgeNoiseInput = document.getElementById('edge-noise');
+        const undercoatInput = document.getElementById('undercoat');
+        const dirtAmountInput = document.getElementById('dirt-amount');
+        const dirtColorInput = document.getElementById('dirt-color');
+        const scratchStrengthInput = document.getElementById('scratch-strength');
+        const scratchScaleInput = document.getElementById('scratch-scale');
+        const emissionEnergyInput = document.getElementById('emission-energy');
+        const emissionPulseInput = document.getElementById('emission-pulse');
+        const emissionColorInput = document.getElementById('emission-color');
+        const shaderCodeBlock = document.getElementById('godot-shader-code');
+
+        // State variables
+        let scene, camera, renderer, controls, mesh;
+        let clock = new THREE.Clock();
+        let currentTab = 'material';
+        let shaderMat;
+        let isRotating = true;
+
+        // Custom noise generation shader inputs simulating Godot spatial capabilities
+        const customVertexShader = `
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            varying vec2 vUv;
+            varying vec3 vWorldNormal;
+            varying vec3 vWorldPosition;
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vPosition = position;
+                vUv = uv;
+                
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPos.xyz;
+                vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        // Interactive Three.js approximation of the custom spatial shader
+        const customFragmentShader = `
+            uniform vec3 uAlbedo;
+            uniform float uBrightness;
+            uniform float uMetallic;
+            uniform float uRoughness;
+            
+            uniform float uPanelScale;
+            uniform float uPanelWidth;
+            uniform float uPanelDepth;
+            
+            uniform float uEdgeWear;
+            uniform float uEdgeNoise;
+            uniform vec3 uUndercoat;
+            
+            uniform float uDirtAmount;
+            uniform vec3 uDirtColor;
+            
+            uniform float uScratchStrength;
+            uniform float uScratchScale;
+            
+            uniform float uEmissionEnergy;
+            uniform float uEmissionPulse;
+            uniform vec3 uEmissionColor;
+            
+            uniform float uTime;
+
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            varying vec2 vUv;
+            varying vec3 vWorldNormal;
+            varying vec3 vWorldPosition;
+
+            // Simple hash for noise generator
+            float hash(vec3 p) {
+                p = fract(p * 0.3183099 + vec3(0.1, 0.1, 0.1));
+                p *= 17.0;
+                return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+            }
+
+            // 3D Perlin Noise simulation
+            float noise(vec3 x) {
+                vec3 i = floor(x);
+                vec3 f = fract(x);
+                f = f*f*(3.0-2.0*f);
+                return mix(mix(mix(hash(i+vec3(0,0,0)), hash(i+vec3(1,0,0)),f.x),
+                               mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)),f.x),f.y),
+                           mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)),f.x),
+                               mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)),f.x),f.y),f.z);
+            }
+
+            // Pseudo bump mapping from noise
+            vec3 perturbNormal(vec3 baseNormal, vec3 p, float strength, float scale) {
+                float eps = 0.01;
+                float n = noise(p * scale);
+                float dx = noise(p * scale + vec3(eps, 0.0, 0.0)) - n;
+                float dy = noise(p * scale + vec3(0.0, eps, 0.0)) - n;
+                float dz = noise(p * scale + vec3(0.0, 0.0, eps)) - n;
+                vec3 grad = vec3(dx, dy, dz) / eps;
+                grad -= dot(grad, baseNormal) * baseNormal;
+                return normalize(baseNormal - strength * grad);
+            }
+
+            void main() {
+                vec3 N = normalize(vNormal);
+                vec3 WN = normalize(vWorldNormal);
+                vec3 P = vPosition;
+
+                // --- 1. Procedural Panel Grooves ---
+                // Simulating industrial tile structures using grid lines
+                vec3 grid = abs(fract(P * uPanelScale - 0.5) - 0.5) / uPanelScale;
+                float minGrid = min(grid.x, min(grid.y, grid.z));
+                float isGroove = 1.0 - smoothstep(0.0, uPanelWidth, minGrid);
+                
+                // --- 2. Micro-Scratches Generation ---
+                float microScratches = noise(P * uScratchScale * 10.0);
+                float scratchMask = smoothstep(0.7, 0.9, microScratches);
+                
+                // Apply normal map distortion using panel grooves & scratches
+                vec3 perturbedN = perturbNormal(N, P, uPanelDepth * isGroove * 0.15 + uScratchStrength * scratchMask * 0.05, 12.0);
+
+                // --- 3. Base Material Base Color Calculations ---
+                vec3 baseColor = uAlbedo * uBrightness;
+
+                // --- 4. Procedural Edge Wear ---
+                // Approximates high curvature by calculating slope differential on standard meshes
+                float edgeFactor = 1.0 - abs(dot(normalize(vPosition), N));
+                float edgeNoiseVal = noise(P * uEdgeNoise * 4.0);
+                float finalWear = smoothstep(0.4, 0.8, edgeFactor + edgeNoiseVal * 0.25) * uEdgeWear;
+                baseColor = mix(baseColor, uUndercoat, finalWear);
+
+                // --- 5. Dirt and Grime layer ---
+                // Accumulates in corners and bottom surfaces
+                float dustMap = noise(P * 2.5);
+                float verticalDirt = smoothstep(0.0, 1.0, -perturbedN.y) * 0.3; // Dust settles downwards
+                float dirtMask = smoothstep(0.3, 0.8, dustMap + verticalDirt + isGroove * 0.5) * uDirtAmount;
+                baseColor = mix(baseColor, uDirtColor, dirtMask);
+
+                // --- 6. Realistic Metal PBR Lighting Approximation ---
+                vec3 lightDir = normalize(vec3(1.0, 1.5, 0.8));
+                vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+                vec3 halfDir = normalize(lightDir + viewDir);
+
+                // Lambertian Diffuse
+                float diff = max(dot(perturbedN, lightDir), 0.0);
+                
+                // Blinn-Phong Specular
+                float rough = mix(uRoughness, 0.1, finalWear); // Worn edges have less roughness / shiny metal exposed
+                rough = mix(rough, 0.9, dirtMask); // Dust is highly rough
+                float shininess = (1.0 - rough) * 128.0;
+                float spec = pow(max(dot(perturbedN, halfDir), 0.0), shininess);
+
+                // Specular reflection color based on metallic factor
+                vec3 specColor = mix(vec3(0.1), baseColor, uMetallic);
+                vec3 finalLight = (baseColor * diff) + (specColor * spec * (1.0 - rough));
+                
+                // Ambient lighting
+                vec3 ambient = vec3(0.08) * baseColor;
+                finalLight += ambient;
+
+                // --- 7. Emission Layer ---
+                // Simulates glow lines on panels
+                float emissionPulse = sin(uTime * uEmissionPulse) * 0.5 + 0.5;
+                float finalEmissionAmount = isGroove * uEmissionEnergy * mix(0.5, 1.0, emissionPulse);
+                vec3 emission = uEmissionColor * finalEmissionAmount;
+                finalLight += emission;
+
+                gl_FragColor = vec4(finalLight, 1.0);
+            }
+        `;
+
+        // Initialize Three.js Preview Window
+        function initViewport() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene creation
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0f1d);
+
+            // Fog to enhance depth
+            scene.fog = new THREE.FogExp2(0x0a0f1d, 0.15);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(3, 2, 4);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls setup
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 15;
+            controls.minDistance = 2;
+
+            // Lights setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight1.position.set(5, 8, 5);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x0fa3ff, 0.5);
+            dirLight2.position.set(-5, 3, -5);
+            scene.add(dirLight2);
+
+            // Generate procedural hard-surface geometry with bevel-like subsegments
+            // Custom BoxGeometry representing an advanced sci-fi terminal box
+            const geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6, 32, 32, 32);
+
+            // Custom procedural shader material setup matching Godot properties
+            shaderMat = new THREE.ShaderMaterial({
+                vertexShader: customVertexShader,
+                fragmentShader: customFragmentShader,
+                uniforms: {
+                    uAlbedo: { value: new THREE.Color() },
+                    uBrightness: { value: 1.0 },
+                    uMetallic: { value: 1.0 },
+                    uRoughness: { value: 0.3 },
+                    uPanelScale: { value: 4.0 },
+                    uPanelWidth: { value: 0.05 },
+                    uPanelDepth: { value: 0.8 },
+                    uEdgeWear: { value: 0.65 },
+                    uEdgeNoise: { value: 2.5 },
+                    uUndercoat: { value: new THREE.Color() },
+                    uDirtAmount: { value: 0.4 },
+                    uDirtColor: { value: new THREE.Color() },
+                    uScratchStrength: { value: 0.3 },
+                    uScratchScale: { value: 8.0 },
+                    uEmissionEnergy: { value: 2.5 },
+                    uEmissionPulse: { value: 1.2 },
+                    uEmissionColor: { value: new THREE.Color() },
+                    uTime: { value: 0.0 }
+                }
+            });
+
+            // Create main mesh
+            mesh = new THREE.Mesh(geometry, shaderMat);
+            scene.add(mesh);
+
+            // Simple floor grid
+            const gridHelper = new THREE.GridHelper(10, 20, 0x1e293b, 0x0f172a);
+            gridHelper.position.y = -1.2;
+            scene.add(gridHelper);
+
+            // Start loop animation
+            animate();
+
+            // Setup Event Listeners for Resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Main render loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Sync uniform variables real-time
+            if (shaderMat) {
+                shaderMat.uniforms.uTime.value = elapsedTime;
+            }
+
+            // Slow model rotation to showcase reflections
+            if (mesh && isRotating) {
+                mesh.rotation.y = elapsedTime * 0.15;
+                mesh.rotation.x = Math.sin(elapsedTime * 0.05) * 0.15;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resizing events
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (container) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        // Switch panel tabs
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+                btn.classList.remove('border-cyan-500', 'text-cyan-400');
+                btn.classList.add('border-transparent', 'text-gray-400');
+            });
+            document.querySelectorAll('[id^="content-"]').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.remove('border-transparent', 'text-gray-400');
+            activeBtn.classList.add('border-cyan-500', 'text-cyan-400');
+
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+        }
+
+        // Apply a material preset quickly
+        function applyPreset(presetType) {
+            switch(presetType) {
+                case 'scifi-alloy':
+                    albedoInput.value = "#3a4454";
+                    brightnessInput.value = "1.0";
+                    metallicInput.value = "1.0";
+                    roughnessInput.value = "0.25";
+                    panelScaleInput.value = "4.0";
+                    panelWidthInput.value = "0.04";
+                    panelDepthInput.value = "1.1";
+                    edgeWearInput.value = "0.8";
+                    edgeNoiseInput.value = "2.2";
+                    undercoatInput.value = "#c5cbd4";
+                    dirtAmountInput.value = "0.35";
+                    dirtColorInput.value = "#2a1e15";
+                    scratchStrengthInput.value = "0.4";
+                    scratchScaleInput.value = "10.0";
+                    emissionEnergyInput.value = "3.0";
+                    emissionPulseInput.value = "1.5";
+                    emissionColorInput.value = "#00ffea";
+                    break;
+                case 'rusty-panel':
+                    albedoInput.value = "#8f3a1d";
+                    brightnessInput.value = "0.8";
+                    metallicInput.value = "0.2";
+                    roughnessInput.value = "0.8";
+                    panelScaleInput.value = "3.0";
+                    panelWidthInput.value = "0.06";
+                    panelDepthInput.value = "1.5";
+                    edgeWearInput.value = "1.2";
+                    edgeNoiseInput.value = "3.8";
+                    undercoatInput.value = "#1f2226";
+                    dirtAmountInput.value = "0.9";
+                    dirtColorInput.value = "#3d1f05";
+                    scratchStrengthInput.value = "0.7";
+                    scratchScaleInput.value = "5.0";
+                    emissionEnergyInput.value = "0.0";
+                    emissionPulseInput.value = "0.0";
+                    emissionColorInput.value = "#ff3c00";
+                    break;
+                case 'stealth-plate':
+                    albedoInput.value = "#16181c";
+                    brightnessInput.value = "0.9";
+                    metallicInput.value = "0.9";
+                    roughnessInput.value = "0.45";
+                    panelScaleInput.value = "6.0";
+                    panelWidthInput.value = "0.03";
+                    panelDepthInput.value = "0.7";
+                    edgeWearInput.value = "0.4";
+                    edgeNoiseInput.value = "1.5";
+                    undercoatInput.value = "#4a4f58";
+                    dirtAmountInput.value = "0.2";
+                    dirtColorInput.value = "#111214";
+                    scratchStrengthInput.value = "0.2";
+                    scratchScaleInput.value = "15.0";
+                    emissionEnergyInput.value = "5.0";
+                    emissionPulseInput.value = "0.5";
+                    emissionColorInput.value = "#9d00ff";
+                    break;
+                case 'gold-cyber':
+                    albedoInput.value = "#d4af37";
+                    brightnessInput.value = "1.1";
+                    metallicInput.value = "1.0";
+                    roughnessInput.value = "0.15";
+                    panelScaleInput.value = "5.0";
+                    panelWidthInput.value = "0.04";
+                    panelDepthInput.value = "0.9";
+                    edgeWearInput.value = "0.5";
+                    edgeNoiseInput.value = "2.0";
+                    undercoatInput.value = "#ffea8c";
+                    dirtAmountInput.value = "0.25";
+                    dirtColorInput.value = "#302202";
+                    scratchStrengthInput.value = "0.5";
+                    scratchScaleInput.value = "12.0";
+                    emissionEnergyInput.value = "4.0";
+                    emissionPulseInput.value = "2.0";
+                    emissionColorInput.value = "#ffffff";
+                    break;
+            }
+            updateShaderParams();
+        }
+
+        // Gather values from UI and update the WebGL view, then regenerate Godot Code
+        function updateShaderParams() {
+            // Update labels dynamically
+            document.getElementById('val-albedo').innerText = albedoInput.value;
+            document.getElementById('val-metallic').innerText = parseFloat(metallicInput.value).toFixed(2);
+            document.getElementById('val-roughness').innerText = parseFloat(roughnessInput.value).toFixed(2);
+            document.getElementById('val-panel-scale').innerText = parseFloat(panelScaleInput.value).toFixed(1);
+            document.getElementById('val-panel-width').innerText = parseFloat(panelWidthInput.value).toFixed(2);
+            document.getElementById('val-panel-depth').innerText = parseFloat(panelDepthInput.value).toFixed(2);
+            document.getElementById('val-edge-wear').innerText = parseFloat(edgeWearInput.value).toFixed(2);
+            document.getElementById('val-edge-noise').innerText = parseFloat(edgeNoiseInput.value).toFixed(1);
+            document.getElementById('val-undercoat').innerText = undercoatInput.value;
+            document.getElementById('val-dirt-amount').innerText = parseFloat(dirtAmountInput.value).toFixed(2);
+            document.getElementById('val-dirt-color').innerText = dirtColorInput.value;
+            document.getElementById('val-scratch-strength').innerText = parseFloat(scratchStrengthInput.value).toFixed(2);
+            document.getElementById('val-scratch-scale').innerText = parseFloat(scratchScaleInput.value).toFixed(1);
+            document.getElementById('val-emission-energy').innerText = parseFloat(emissionEnergyInput.value).toFixed(1);
+            document.getElementById('val-emission-pulse').innerText = parseFloat(emissionPulseInput.value).toFixed(1);
+            document.getElementById('val-emission-color').innerText = emissionColorInput.value;
+
+            // Parse hex colors for Three.js
+            const albedoColor = new THREE.Color(albedoInput.value);
+            const undercoatColor = new THREE.Color(undercoatInput.value);
+            const dirtColor = new THREE.Color(dirtColorInput.value);
+            const emissionColor = new THREE.Color(emissionColorInput.value);
+
+            // Update WebGL uniforms
+            if (shaderMat) {
+                shaderMat.uniforms.uAlbedo.value.copy(albedoColor);
+                shaderMat.uniforms.uBrightness.value = parseFloat(brightnessInput.value);
+                shaderMat.uniforms.uMetallic.value = parseFloat(metallicInput.value);
+                shaderMat.uniforms.uRoughness.value = parseFloat(roughnessInput.value);
+                shaderMat.uniforms.uPanelScale.value = parseFloat(panelScaleInput.value);
+                shaderMat.uniforms.uPanelWidth.value = parseFloat(panelWidthInput.value);
+                shaderMat.uniforms.uPanelDepth.value = parseFloat(panelDepthInput.value);
+                shaderMat.uniforms.uEdgeWear.value = parseFloat(edgeWearInput.value);
+                shaderMat.uniforms.uEdgeNoise.value = parseFloat(edgeNoiseInput.value);
+                shaderMat.uniforms.uUndercoat.value.copy(undercoatColor);
+                shaderMat.uniforms.uDirtAmount.value = parseFloat(dirtAmountInput.value);
+                shaderMat.uniforms.uDirtColor.value.copy(dirtColor);
+                shaderMat.uniforms.uScratchStrength.value = parseFloat(scratchStrengthInput.value);
+                shaderMat.uniforms.uScratchScale.value = parseFloat(scratchScaleInput.value);
+                shaderMat.uniforms.uEmissionEnergy.value = parseFloat(emissionEnergyInput.value);
+                shaderMat.uniforms.uEmissionPulse.value = parseFloat(emissionPulseInput.value);
+                shaderMat.uniforms.uEmissionColor.value.copy(emissionColor);
+            }
+
+            // Generate Godot 4.x Spatial Shader Code Block
+            generateGodotShader();
+        }
+
+        // Formulate and inject Godot-compatible Spatial Shader
+        function generateGodotShader() {
+            const alb = hexToVec3(albedoInput.value);
+            const uc = hexToVec3(undercoatInput.value);
+            const dc = hexToVec3(dirtColorInput.value);
+            const ec = hexToVec3(emissionColorInput.value);
+            
+            const shaderCode = `shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+//  === 硬表面自适应 PBR 着色器 (Godot 4.x) ===
+//  由 Godot Hard-Surface Shader Tool 自动生成
+
+uniform group_labels 基础材质设置;
+uniform vec4 albedo_color : source_color = vec4(${alb.x}, ${alb.y}, ${alb.z}, 1.0);
+uniform float brightness : hint_range(0.2, 2.0) = ${parseFloat(brightnessInput.value).toFixed(2)};
+uniform float metallic : hint_range(0.0, 1.0) = ${parseFloat(metallicInput.value).toFixed(2)};
+uniform float roughness : hint_range(0.0, 1.0) = ${parseFloat(roughnessInput.value).toFixed(2)};
+
+uniform group_labels 面板细节与凹槽;
+uniform float panel_scale : hint_range(1.0, 20.0) = ${parseFloat(panelScaleInput.value).toFixed(1)};
+uniform float panel_width : hint_range(0.01, 0.30) = ${parseFloat(panelWidthInput.value).toFixed(3)};
+uniform float panel_depth : hint_range(0.0, 3.0) = ${parseFloat(panelDepthInput.value).toFixed(2)};
+
+uniform group_labels 表面磨损;
+uniform float edge_wear : hint_range(0.0, 2.0) = ${parseFloat(edgeWearInput.value).toFixed(2)};
+uniform float wear_noise_scale : hint_range(0.5, 10.0) = ${parseFloat(edgeNoiseInput.value).toFixed(1)};
+uniform vec4 undercoat_color : source_color = vec4(${uc.x}, ${uc.y}, ${uc.z}, 1.0);
+
+uniform group_labels 污垢与积灰;
+uniform float dirt_amount : hint_range(0.0, 1.0) = ${parseFloat(dirtAmountInput.value).toFixed(2)};
+uniform vec4 dirt_color : source_color = vec4(${dc.x}, ${dc.y}, ${dc.z}, 1.0);
+
+uniform group_labels 刮痕微观法线;
+uniform float scratch_strength : hint_range(0.0, 1.0) = ${parseFloat(scratchStrengthInput.value).toFixed(2)};
+uniform float scratch_scale : hint_range(1.0, 30.0) = ${parseFloat(scratchScaleInput.value).toFixed(1)};
+
+uniform group_labels 能量自发光;
+uniform float emission_energy : hint_range(0.0, 16.0) = ${parseFloat(emissionEnergyInput.value).toFixed(1)};
+uniform float emission_pulse : hint_range(0.0, 10.0) = ${parseFloat(emissionPulseInput.value).toFixed(1)};
+uniform vec4 emission_color : source_color = vec4(${ec.x}, ${ec.y}, ${ec.z}, 1.0);
+
+// 三维哈希随机函数
+float hash_3d(vec3 p) {
+	p = fract(p * 0.3183099 + vec3(0.1));
+	p *= 17.0;
+	return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+// 模拟三维柏林噪声用于污物及磨损
+float perlin_noise(vec3 x) {
+	vec3 i = floor(x);
+	vec3 f = fract(x);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(
+		mix(mix(hash_3d(i + vec3(0,0,0)), hash_3d(i + vec3(1,0,0)), f.x),
+			mix(hash_3d(i + vec3(0,1,0)), hash_3d(i + vec3(1,1,0)), f.x), f.y),
+		mix(mix(hash_3d(i + vec3(0,0,1)), hash_3d(i + vec3(1,0,1)), f.x),
+			mix(hash_3d(i + vec3(0,1,1)), hash_3d(i + vec3(1,1,1)), f.x), f.y), f.z
+	);
+}
+
+// 高保真度伪法线偏转 (微观细节生成)
+vec3 perturb_normal(vec3 normal, vec3 p, float strength, float scale) {
+	float eps = 0.01;
+	float n = perlin_noise(p * scale);
+	float dx = perlin_noise(p * scale + vec3(eps, 0.0, 0.0)) - n;
+	float dy = perlin_noise(p * scale + vec3(0.0, eps, 0.0)) - n;
+	float dz = perlin_noise(p * scale + vec3(0.0, 0.0, eps)) - n;
+	vec3 grad = vec3(dx, dy, dz) / eps;
+	grad -= dot(grad, normal) * normal;
+	return normalize(normal - strength * grad);
+}
+
+void fragment() {
+	// 获取世界坐标和法线 (用于三平面投影计算/防拉伸)
+	vec3 w_pos = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec3 n_val = NORMAL;
+	
+	// 1. 三平面面板线格线划分机制
+	vec3 grid = abs(fract(VERTEX * panel_scale - 0.5) - 0.5) / panel_scale;
+	float min_grid = min(grid.x, min(grid.y, grid.z));
+	float is_groove = 1.0 - smoothstep(0.0, panel_width, min_grid);
+	
+	// 2. 边缘磨损与裸落金属计算 (利用像素级几何法线差分模拟边缘)
+	vec3 d_normal_x = dFdx(NORMAL);
+	vec3 d_normal_y = dFdy(NORMAL);
+	float edge_curvature = length(d_normal_x) + length(d_normal_y);
+	float curvature_factor = smoothstep(0.0, 0.15, edge_curvature);
+	
+	float w_noise = perlin_noise(VERTEX * wear_noise_scale);
+	float wear_mask = smoothstep(0.3, 0.7, curvature_factor + w_noise * 0.4) * edge_wear;
+
+	// 3. 微观划痕法线应用
+	float micro_scratch = perlin_noise(VERTEX * scratch_scale * 10.0);
+	float scratch_mask = smoothstep(0.75, 0.90, micro_scratch);
+	
+	// 法线畸变结合凹槽以及微观刮痕
+	vec3 normal_offset = perturb_normal(
+		NORMAL, 
+		VERTEX, 
+		(panel_depth * is_groove * 0.15) + (scratch_strength * scratch_mask * 0.05), 
+		12.0
+	);
+	NORMAL = normal_offset;
+
+	// 4. 颜色混合逻辑
+	vec3 base_color = albedo_color.rgb * brightness;
+	// 混合磨损漆面
+	base_color = mix(base_color, undercoat_color.rgb, wear_mask);
+	
+	// 5. 污垢暗角与缝隙积灰
+	float dust_p = perlin_noise(VERTEX * 2.5);
+	float settled_dust = smoothstep(0.0, 1.0, -NORMAL.y) * 0.25; // 灰尘向下方落堆
+	float final_dirt = smoothstep(0.3, 0.8, dust_p + settled_dust + is_groove * 0.5) * dirt_amount;
+	base_color = mix(base_color, dirt_color.rgb, final_dirt);
+
+	// PBR 输出
+	ALBEDO = base_color;
+	
+	// 暴露的底层金属通常更平滑，积尘处粗糙度极高
+	float edge_rough = mix(roughness, 0.15, wear_mask);
+	ROUGHNESS = mix(edge_rough, 0.95, final_dirt);
+	
+	// 底层是裸落金属
+	METALLIC = mix(metallic, 1.0, wear_mask * 0.8);
+	
+	// 6. 科幻自发光能量槽脉冲
+	float p_cycle = sin(TIME * emission_pulse) * 0.5 + 0.5;
+	float final_glow = is_groove * emission_energy * mix(0.5, 1.0, p_cycle);
+	EMISSION = emission_color.rgb * final_glow;
+}`;
+            shaderCodeBlock.innerText = shaderCode;
+        }
+
+        // Helper conversion function
+        function hexToVec3(hex) {
+            const r = parseInt(hex.slice(1, 3), 16) / 255;
+            const g = parseInt(hex.slice(3, 5), 16) / 255;
+            const b = parseInt(hex.slice(5, 7), 16) / 255;
+            return { x: r.toFixed(3), y: g.toFixed(3), z: b.toFixed(3) };
+        }
+
+        // Toggle model rotation
+        function rotateModel() {
+            isRotating = !isRotating;
+        }
+
+        // Reset camera positions
+        function resetCamera() {
+            if (controls && camera) {
+                camera.position.set(3, 2, 4);
+                controls.target.set(0, 0, 0);
+                if (mesh) {
+                    mesh.rotation.set(0, 0, 0);
+                }
+            }
+        }
+
+        // Clipboard action helper
+        function copyShaderCode() {
+            const codeText = shaderCodeBlock.innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy shader: ', err);
+            });
+        }
+
+        // Hook listeners to all input DOM nodes
+        const inputs = [
+            albedoInput, brightnessInput, metallicInput, roughnessInput,
+            panelScaleInput, panelWidthInput, panelDepthInput,
+            edgeWearInput, edgeNoiseInput, undercoatInput,
+            dirtAmountInput, dirtColorInput,
+            scratchStrengthInput, scratchScaleInput,
+            emissionEnergyInput, emissionPulseInput, emissionColorInput
+        ];
+
+        inputs.forEach(input => {
+            input.addEventListener('input', updateShaderParams);
+        });
+
+        // Bootstrap on DOM ready
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initViewport();
+            updateShaderParams();
+        });
+    </script>
+</body>
+</html>
