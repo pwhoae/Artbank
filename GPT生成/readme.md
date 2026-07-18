@@ -1,4 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
+1-2天法則
+
 <details><summary><h6>放棄idea</h6></summary>
 棄置:漫畫》動畫/建模/角設<BR>
 遊戲動畫研究                        
