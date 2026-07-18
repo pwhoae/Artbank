@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://bfiusntshmixe"]
+
+[ext_resource type="Shader" uid="uid://bltgl8wfscr8p" path="res://portal/portal.gdshader" id="1_sfjos"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_508n2"]
+noise_type = 5
+frequency = 0.015
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_x3c8y"]
+noise = SubResource("FastNoiseLite_508n2")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mjjvg"]
+render_priority = 0
+shader = ExtResource("1_sfjos")
+shader_parameter/core_color = Color(0.4, 0.1, 0.8, 1)
+shader_parameter/edge_color = Color(0.2, 0.9, 1, 1)
+shader_parameter/inner_glow = Color(0.9, 0.15, 0.7, 1)
+shader_parameter/noise_tex = SubResource("NoiseTexture2D_x3c8y")
+shader_parameter/portal_scale = 0.95
+shader_parameter/threshold = 0.42
+shader_parameter/softness = 0.04
+shader_parameter/border_width = 0.05
+shader_parameter/speed1 = Vector2(0.06, 0.04)
+shader_parameter/speed2 = Vector2(-0.04, 0.08)
+shader_parameter/grid_scale = 180.0
+shader_parameter/grid_intensity = 0.4
+shader_parameter/proximity_fade_distance = 0.3
+
+[sub_resource type="QuadMesh" id="QuadMesh_vrfwa"]
+material = SubResource("ShaderMaterial_mjjvg")
+
+[node name="Node3D" type="Node3D" unique_id=2059072527]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1840547524]
+mesh = SubResource("QuadMesh_vrfwa")
