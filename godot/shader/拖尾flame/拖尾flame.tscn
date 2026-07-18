@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://b8eno40v4f3d7"]
+
+[ext_resource type="Script" uid="uid://d3yxncmedn0ih" path="res://shader/拖尾flame/拖尾flame.gd" id="1_g7fbn"]
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_afsdj"]
+
+[node name="Node3D" type="Node3D" unique_id=1635767338]
+script = ExtResource("1_g7fbn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=301990003]
+mesh = SubResource("RibbonTrailMesh_afsdj")
