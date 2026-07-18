@@ -1,24 +1,4 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
-
-1-2天法則
-Shiny Text/
-Curved Loop/
-Fuzzy Text/
-Falling Text/
-Rotating Text/
-Scroll Velocity/
-Electric Border/
-Orbit Images/
-Pixel Transition/
-Logo Loop/
-Target Cursor/
-
-
-
-https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader
-
-冲破次元壁的/商業化插圖
-Make Blood Pool :https://share.gemini.google/CXvLauNdd5Wl / https://www.youtube.com/watch?v=Ly2yb5v9eDE 
 <details><summary><h6>放棄idea</h6></summary>
 棄置:漫畫》動畫/建模/角設<BR>
 遊戲動畫研究                        
