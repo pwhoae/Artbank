@@ -9,5 +9,7 @@
 | 星球 | [月亮\_moon.gdshader](https://github.com/pwhoae/Artbank/blob/main/godot/shader/_%E5%8F%AF%E7%94%A8shader/%E6%9C%88%E4%BA%AE_moon.gdshader) |  |  |
 | 球 | [黑洞\_blackhole.gdshader](https://github.com/pwhoae/Artbank/blob/main/godot/shader/_%E5%8F%AF%E7%94%A8shader/%E9%BB%91%E6%B4%9E_blackhole.gdshader) |  |  |
 
+故障著色器.gdshader
+
 
 waste:分析热扭曲 godot shader code:https://share.gemini.google/Y6d8CuN0ijp5 
