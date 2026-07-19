@@ -1,5 +1,6 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
+https://share.gemini.google/5NFszxriQJfY
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> gpu>process material
 
 <details><summary><h6>放棄idea</h6></summary>
