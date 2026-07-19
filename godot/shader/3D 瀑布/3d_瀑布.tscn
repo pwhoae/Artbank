@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://8054xhrfk7nv"]
+
+[ext_resource type="Shader" uid="uid://c0s0peqfk1dn" path="res://3D 瀑布/3D 瀑布.gdshader" id="1_nbdf0"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_nbdf0"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_t2ket"]
+noise = SubResource("FastNoiseLite_nbdf0")
+seamless = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_goaxu"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_p32o7"]
+noise = SubResource("FastNoiseLite_goaxu")
+seamless = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_t2ket"]
+render_priority = 0
+shader = ExtResource("1_nbdf0")
+shader_parameter/water_color = Color(0, 0.4, 0.8, 0.8)
+shader_parameter/foam_color = Color(0.9, 0.9, 1, 0.9)
+shader_parameter/noise_tex1 = SubResource("NoiseTexture2D_t2ket")
+shader_parameter/noise_tex2 = SubResource("NoiseTexture2D_p32o7")
+shader_parameter/scroll_speed1 = Vector2(0, -0.6)
+shader_parameter/scroll_speed2 = Vector2(0, -0.8)
+shader_parameter/foam_threshold = 0.5
+shader_parameter/roughness = 0.1
+
+[sub_resource type="QuadMesh" id="QuadMesh_goaxu"]
+material = SubResource("ShaderMaterial_t2ket")
+
+[node name="3D 瀑布" type="Node3D" unique_id=1664560938]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1056993560]
+mesh = SubResource("QuadMesh_goaxu")
