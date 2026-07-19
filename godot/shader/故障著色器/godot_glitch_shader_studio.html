@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot Glitch & Jitter Shader Studio</title>
+    <!-- Tailwind CSS for high fidelity styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for vector symbols -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Orbitron:wght@400;600;800&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+        }
+        
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .font-code {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Neon glow effect classes */
+        .neon-glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+        }
+        .neon-glow-pink {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.35);
+        }
+        
+        /* CRT scanline scan screen effect overlay */
+        .crt-bezel::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+
+<header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur px-6 py-4 flex items-center justify-between z-20 sticky top-0">
+    <div class="flex items-center space-x-3">
+        <div class="p-2 bg-gradient-to-br from-cyan-500 to-fuchsia-600 rounded-lg shadow-lg">
+            <i data-lucide="zap" class="w-6 h-6 text-white animate-pulse"></i>
+        </div>
+        <div>
+            <h1 class="text-xl font-bold font-orbitron bg-gradient-to-r from-cyan-400 via-indigo-200 to-fuchsia-400 bg-clip-text text-transparent tracking-wider">
+                GODOT GLITCH SHADER STUDIO
+            </h1>
+            <p class="text-xs text-slate-400">实时高级抖动与故障艺术着色器生成器 (Godot 4.x)</p>
+        </div>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+        <a href="#code-section" class="px-4 py-2 bg-slate-900 border border-slate-700 hover:border-cyan-500 rounded-lg text-sm font-medium transition duration-200 flex items-center space-x-2">
+            <i data-lucide="code-2" class="w-4 h-4 text-cyan-400"></i>
+            <span>复制代码</span>
+        </a>
+    </div>
+</header>
+
+<main class="flex-1 max-w-[1600px] w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <section class="lg:col-span-7 flex flex-col space-y-4">
+        <!-- Visualizer Container -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 shadow-2xl relative overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+                    <span class="text-xs font-orbitron tracking-widest text-red-500 font-bold">LIVE PREVIEW</span>
+                </div>
+                
+                <!-- Utilities -->
+                <div class="flex items-center space-x-2 text-xs">
+                    <label for="image-upload" class="cursor-pointer bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500 px-3 py-1.5 rounded-lg transition flex items-center space-x-1">
+                        <i data-lucide="upload" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span>导入自定义图片</span>
+                    </label>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden">
+                    
+                    <button id="reset-image-btn" class="bg-slate-900 hover:bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center space-x-1" title="重置回默认图片">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        <span>默认图片</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Glitch Canvas Frame -->
+            <div class="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center crt-bezel group">
+                <!-- Fallback background label if compiling/texture is slow -->
+                <div class="absolute inset-0 flex items-center justify-center text-slate-600 font-orbitron z-0 text-sm">
+                    LOADING SHADER ENGINE...
+                </div>
+                <!-- Main WebGL canvas playing the shader -->
+                <canvas id="glitch-canvas" class="w-full h-full object-contain relative z-10 block cursor-crosshair"></canvas>
+                
+                <!-- Status Overlay HUD -->
+                <div class="absolute bottom-4 left-4 z-20 pointer-events-none bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded border border-slate-700/50 text-[10px] font-code text-cyan-400 flex flex-col space-y-0.5">
+                    <div>RESOLUTION: <span id="hud-resolution">1920x1080</span></div>
+                    <div>FPS: <span id="hud-fps" class="text-fuchsia-400">60</span></div>
+                    <div>SHAKE RATE: <span id="hud-shake-rate" class="text-yellow-400">ACTIVE</span></div>
+                </div>
+            </div>
+            
+            <p class="text-xs text-slate-500 mt-3 text-center">
+                * 以上画布通过 WebGL 实时还原 Godot GLSL 算法，默认加载参考图像 <code class="text-cyan-400 font-code">image_797ec2.jpg</code> 的动态故障和水平抖动
+            </p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <h3 class="text-sm font-semibold font-orbitron text-slate-300 mb-3 flex items-center space-x-2">
+                <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+                <span>抖动故障原理说明</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400 leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-cyan-400 mb-1">1. 时间步进抖动 (Step Jitter)</h4>
+                    <p>通过使用内置 <code class="text-slate-200">floor(TIME * shake_speed)</code> 截断时间，让抖动在固定的频率产生离散的状态跳跃，模拟出数码视频信号不稳定时的瞬间剧烈抖动。</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-fuchsia-400 mb-1">2. 水平条纹错位 (Block Drift)</h4>
+                    <p>通过正弦噪波公式将图像沿垂直轴分割成不同尺寸的横条（Blocks），随机为各条块施加水平偏移，营造画面撕裂感。</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-cyan-400 mb-1">3. RGB 色散 (Chromatic Aberration)</h4>
+                    <p>对提取像素的红色、绿色、蓝色通道分别使用带有微小偏移量的 UV 进行采样，从而使亮色物体边缘分色出红色和青色条纹。</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-fuchsia-400 mb-1">4. CRT 扫描线 (Scanlines)</h4>
+                    <p>依据正弦函数周期计算亮度，产生交替的细微横条暗纹，高度重现老旧阴极射线管监视器（CRT）的视觉质感。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="lg:col-span-5 flex flex-col space-y-6">
+        <!-- Configuration & Parameters -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl relative">
+            <div class="absolute top-0 right-0 transform translate-x-1 -translate-y-1 bg-cyan-500/10 text-cyan-400 text-[10px] font-orbitron px-2 py-0.5 border-l border-b border-cyan-500/30 rounded-bl">
+                PARAMETER MATRIX
+            </div>
+            
+            <h2 class="text-lg font-bold font-orbitron text-slate-200 mb-4 flex items-center space-x-2">
+                <i data-lucide="sliders-horizontal" class="w-5 h-5 text-cyan-500"></i>
+                <span>着色器参数调节</span>
+            </h2>
+
+            <!-- Presets Segment -->
+            <div class="mb-6">
+                <span class="block text-xs font-semibold text-slate-400 mb-2">预设效果方案 (Quick Presets)</span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button onclick="applyPreset('cyber')" class="px-2 py-2 bg-slate-900 border border-slate-700/80 hover:border-cyan-500 rounded text-xs font-medium text-slate-300 hover:text-white transition duration-150 text-center">
+                        ⚡ 赛博轻微
+                    </button>
+                    <button onclick="applyPreset('heavy')" class="px-2 py-2 bg-slate-900 border border-slate-700/80 hover:border-red-500 rounded text-xs font-medium text-slate-300 hover:text-white transition duration-150 text-center">
+                        ⚠️ 信号崩溃
+                    </button>
+                    <button onclick="applyPreset('vhs')" class="px-2 py-2 bg-slate-900 border border-slate-700/80 hover:border-yellow-500 rounded text-xs font-medium text-slate-300 hover:text-white transition duration-150 text-center">
+                        📼 怀旧 VHS
+                    </button>
+                    <button onclick="applyPreset('shaking')" class="px-2 py-2 bg-slate-900 border border-slate-700/80 hover:border-fuchsia-500 rounded text-xs font-medium text-slate-300 hover:text-white transition duration-150 text-center">
+                        🌀 极致颤抖
+                    </button>
+                </div>
+            </div>
+
+            <!-- Form Sliders -->
+            <div class="space-y-4">
+                <!-- Jitter Strength -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="shake_power" class="text-xs font-medium text-slate-300 flex items-center space-x-1">
+                            <span>整体抖动幅度 (shake_power)</span>
+                        </label>
+                        <span id="val-shake_power" class="text-xs font-code text-cyan-400">0.03</span>
+                    </div>
+                    <input type="range" id="shake_power" min="0.0" max="0.1" step="0.001" value="0.030" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Jitter Frequency / Rate -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="shake_rate" class="text-xs font-medium text-slate-300">
+                            抖动发生概率 (shake_rate)
+                        </label>
+                        <span id="val-shake_rate" class="text-xs font-code text-cyan-400">0.25</span>
+                    </div>
+                    <input type="range" id="shake_rate" min="0.0" max="1.0" step="0.01" value="0.25" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Jitter Speed -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="shake_speed" class="text-xs font-medium text-slate-300">
+                            抖动刷新速率 (shake_speed)
+                        </label>
+                        <span id="val-shake_speed" class="text-xs font-code text-cyan-400">12.0</span>
+                    </div>
+                    <input type="range" id="shake_speed" min="1.0" max="40.0" step="0.5" value="12.0" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Block Size -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="block_size" class="text-xs font-medium text-slate-300">
+                            色块分割数量 (block_size)
+                        </label>
+                        <span id="val-block_size" class="text-xs font-code text-cyan-400">25.0</span>
+                    </div>
+                    <input type="range" id="block_size" min="5.0" max="100.0" step="1.0" value="25.0" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Color Aberration -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="color_separation" class="text-xs font-medium text-slate-300">
+                            RGB 色像差偏移 (color_separation)
+                        </label>
+                        <span id="val-color_separation" class="text-xs font-code text-cyan-400">0.012</span>
+                    </div>
+                    <input type="range" id="color_separation" min="0.0" max="0.05" step="0.001" value="0.012" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Scanline Density -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="scanline_density" class="text-xs font-medium text-slate-300">
+                            扫描线细密度 (scanline_density)
+                        </label>
+                        <span id="val-scanline_density" class="text-xs font-code text-cyan-400">180.0</span>
+                    </div>
+                    <input type="range" id="scanline_density" min="0.0" max="500.0" step="5.0" value="180.0" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Scanline Opacity -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="scanline_opacity" class="text-xs font-medium text-slate-300">
+                            扫描线暗度比 (scanline_opacity)
+                        </label>
+                        <span id="val-scanline_opacity" class="text-xs font-code text-cyan-400">0.30</span>
+                    </div>
+                    <input type="range" id="scanline_opacity" min="0.0" max="1.0" step="0.02" value="0.30" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+
+                <!-- Noise Opacity -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="noise_opacity" class="text-xs font-medium text-slate-300">
+                            杂色颗粒度 (noise_opacity)
+                        </label>
+                        <span id="val-noise_opacity" class="text-xs font-code text-cyan-400">0.12</span>
+                    </div>
+                    <input type="range" id="noise_opacity" min="0.0" max="0.5" step="0.01" value="0.12" 
+                           class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                </div>
+            </div>
+
+            <!-- Custom Random Generator Action -->
+            <button id="trigger-spike" class="w-full mt-6 py-2.5 bg-gradient-to-r from-red-600 to-fuchsia-600 hover:from-red-500 hover:to-fuchsia-500 rounded-xl font-bold font-orbitron text-sm transition-all duration-300 shadow-md flex items-center justify-center space-x-2">
+                <i data-lucide="zap-off" class="w-4 h-4"></i>
+                <span>瞬时激发强故障脉冲 (Glitch Burst!)</span>
+            </button>
+        </div>
+    </section>
+</main>
+
+<section id="code-section" class="max-w-[1600px] w-full mx-auto px-4 lg:px-6 pb-12 mt-6">
+    <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 mb-4 gap-4">
+            <div>
+                <h2 class="text-xl font-bold font-orbitron text-cyan-400 flex items-center space-x-2">
+                    <i data-lucide="code-xml" class="w-6 h-6"></i>
+                    <span>Godot 4.x 着色器源码 (.gdshader)</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">直接复制并在 Godot 引擎创建的 ShaderMaterial 中应用，参数支持面板动态调整</p>
+            </div>
+            
+            <button id="copy-code-btn" class="self-start md:self-auto bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl transition duration-150 flex items-center space-x-2 shadow-lg hover:shadow-cyan-500/20">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <span>一键复制代码</span>
+            </button>
+        </div>
+
+        <!-- Guide of setup -->
+        <div class="bg-slate-900/50 rounded-xl p-4 border border-slate-800 text-xs text-slate-300 space-y-2 mb-6">
+            <span class="font-bold text-cyan-400 block mb-1">💡 如何在 Godot 4 中使用该着色器：</span>
+            <ul class="list-decimal list-inside space-y-1">
+                <li>新建一个 <code class="text-slate-100 font-semibold font-code">ColorRect</code> 或 <code class="text-slate-100 font-semibold font-code">Sprite2D</code>（对于 UI 界面、卡牌或贴图等）。</li>
+                <li>在检查器面板（Inspector）中，找到 <code class="text-slate-100 font-semibold font-code">Material</code> 属性，新建并选择 <code class="text-slate-100 font-semibold font-code">ShaderMaterial</code>。</li>
+                <li>在 ShaderMaterial 中，新建并点击打开 <code class="text-slate-100 font-semibold font-code">Shader</code> 属性，输入扩展名为 <code class="text-slate-100 font-semibold font-code">.gdshader</code>。</li>
+                <li>将下方代码框中的内容覆盖黏贴进入 Godot 底部弹出的着色器编辑器中，点击保存（Ctrl+S）。</li>
+                <li>在 Shader 展开面板的 <code class="text-slate-100 font-semibold font-code">Shader Parameters</code> 下面将直接出现可以拖拽调节的进度条！</li>
+            </ul>
+        </div>
+
+        <!-- The Code Content Container with line numbers -->
+        <div class="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex flex-col font-code">
+            <div class="bg-slate-900 px-4 py-2 text-[10px] text-slate-500 flex justify-between items-center border-b border-slate-800">
+                <span>GODOT CANVAS_ITEM SHADER CODE</span>
+                <span class="text-cyan-500">GDSHADER</span>
+            </div>
+            <pre class="overflow-x-auto text-xs text-slate-300 p-4 leading-relaxed max-h-[500px]"><code id="code-block" class="block">shader_type canvas_item;
+
+// 1. 基础物理参数定义与范围控制
+uniform float shake_power : hint_range(0.0, 0.1) = 0.03;      // 整体水平抖动强度
+uniform float shake_rate : hint_range(0.0, 1.0) = 0.25;       // 抖动爆发率 (0代表无抖动, 1代表始终在抖动)
+uniform float shake_speed : hint_range(1.0, 40.0) = 12.0;    // 抖动频率 (每秒抖动包络重算次数)
+uniform float block_size : hint_range(5.0, 100.0) = 25.0;    // 水平分割条块密度
+uniform float color_separation : hint_range(0.0, 0.05) = 0.012; // RGB 通道分色距离 (色差)
+uniform float scanline_density : hint_range(0.0, 500.0) = 180.0; // 扫描线疏密度
+uniform float scanline_opacity : hint_range(0.0, 1.0) = 0.3;     // 扫描线遮罩透明度
+uniform float noise_opacity : hint_range(0.0, 0.5) = 0.12;      // 噪点颗粒混合度
+
+// 用于产生屏幕噪波的伪随机函数
+float random(vec2 uv) {
+    return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+void fragment() {
+    vec2 uv = UV;
+    float time = TIME;
+
+    // 2. 计算离散的时间步骤，创造不连续的阶梯式突发抖动
+    float glitch_time = floor(time * shake_speed);
+    
+    // 基于概率计算当前时刻是否产生抖动激发
+    float is_shaking = step(1.0 - shake_rate, random(vec2(glitch_time, 2.718)));
+    
+    // 3. 计算水平整体振荡偏移 (Shake Jitter)
+    // 产生在 -shake_power 到 +shake_power 之间的随机振幅
+    float shake_offset = (random(vec2(glitch_time, 1.15)) * 2.0 - 1.0) * shake_power * is_shaking;
+    
+    // 4. 计算水平局部色块错位偏移 (Block Jitter)
+    // 根据垂直高度切分像素快并随机偏移其中部分块
+    float block_y = floor(uv.y * block_size);
+    float block_noise = random(vec2(block_y, glitch_time));
+    float block_offset = 0.0;
+    
+    // 若特定行的随机系数低于设定阈值，则使该行发生侧向偏移
+    if (block_noise < 0.25 * is_shaking) {
+        block_offset = (random(vec2(block_noise, 4.312)) * 2.0 - 1.0) * shake_power * 1.8;
+    }
+
+    // 叠加整体抖动及条带偏移
+    vec2 uv_offset = vec2(shake_offset + block_offset, 0.0);
+    
+    // 5. 应用色像差 (Chromatic Aberration) 通道位移
+    // 红色通道和蓝色通道反向溢出，产生红青分色霓虹视觉
+    vec2 uv_r = uv + uv_offset + vec2(color_separation * is_shaking, 0.0);
+    vec2 uv_g = uv + uv_offset;
+    vec2 uv_b = uv + uv_offset - vec2(color_separation * is_shaking, 0.0);
+
+    // 采样贴图并进行边界安全夹持 (防边缘拉伸)
+    vec4 color_r = texture(TEXTURE, clamp(uv_r, vec2(0.0), vec2(1.0)));
+    vec4 color_g = texture(TEXTURE, clamp(uv_g, vec2(0.0), vec2(1.0)));
+    vec4 color_b = texture(TEXTURE, clamp(uv_b, vec2(0.0), vec2(1.0)));
+    
+    // 融合成最终复合通道颜色
+    vec4 final_color = vec4(color_r.r, color_g.g, color_b.b, color_g.a);
+
+    // 6. 产生水平扫描线视觉效果
+    float scanline = sin(uv.y * scanline_density * 3.14159265);
+    // 映射正弦值 [-1, 1] 到 [0, 1] 区间，再结合不透明度衰减系数
+    scanline = mix(1.0, (scanline + 1.0) * 0.5, scanline_opacity);
+    final_color.rgb *= scanline;
+
+    // 7. 像素颗粒雪花噪点混合 (Noise Grain)
+    float noise = (random(uv + vec2(time, 0.0)) - 0.5) * noise_opacity;
+    final_color.rgb += vec3(noise);
+
+    COLOR = final_color;
+}</code></pre>
+        </div>
+    </div>
+</section>
+
+<!-- Footer area -->
+<footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4">
+        <p>© 2026 Godot Glitch Shader Studio. 免版权限制，支持 2D 骨骼动画、瓦片地图、屏幕后期处理滤镜自由接入。</p>
+    </div>
+</footer>
+
+<script>
+    // Initialize icons
+    lucide.createIcons();
+
+    // Glitch Simulation engine parameters state
+    const params = {
+        shake_power: 0.030,
+        shake_rate: 0.25,
+        shake_speed: 12.0,
+        block_size: 25.0,
+        color_separation: 0.012,
+        scanline_density: 180.0,
+        scanline_opacity: 0.30,
+        noise_opacity: 0.12
+    };
+
+    // Glitch presets database
+    const presets = {
+        cyber: {
+            shake_power: 0.015,
+            shake_rate: 0.12,
+            shake_speed: 8.0,
+            block_size: 40.0,
+            color_separation: 0.006,
+            scanline_density: 220.0,
+            scanline_opacity: 0.20,
+            noise_opacity: 0.05
+        },
+        heavy: {
+            shake_power: 0.075,
+            shake_rate: 0.70,
+            shake_speed: 18.0,
+            block_size: 15.0,
+            color_separation: 0.035,
+            scanline_density: 120.0,
+            scanline_opacity: 0.55,
+            noise_opacity: 0.25
+        },
+        vhs: {
+            shake_power: 0.025,
+            shake_rate: 0.40,
+            shake_speed: 5.0,
+            block_size: 8.0,
+            color_separation: 0.015,
+            scanline_density: 350.0,
+            scanline_opacity: 0.45,
+            noise_opacity: 0.18
+        },
+        shaking: {
+            shake_power: 0.050,
+            shake_rate: 0.90,
+            shake_speed: 30.0,
+            block_size: 70.0,
+            color_separation: 0.020,
+            scanline_density: 0.0,
+            scanline_opacity: 0.0,
+            noise_opacity: 0.08
+        }
+    };
+
+    // UI elements mappings
+    const sliders = [
+        'shake_power', 'shake_rate', 'shake_speed', 'block_size', 
+        'color_separation', 'scanline_density', 'scanline_opacity', 'noise_opacity'
+    ];
+
+    // Read values from HTML sliders & update labels
+    function updateStateFromSliders() {
+        sliders.forEach(key => {
+            const input = document.getElementById(key);
+            if (input) {
+                params[key] = parseFloat(input.value);
+                const display = document.getElementById(`val-${key}`);
+                if (display) display.textContent = params[key].toFixed(key === 'shake_speed' || key === 'block_size' || key === 'scanline_density' ? 1 : 3);
+            }
+        });
+    }
+
+    function applyPreset(presetKey) {
+        const p = presets[presetKey];
+        if (!p) return;
+        
+        Object.keys(p).forEach(key => {
+            const input = document.getElementById(key);
+            if (input) {
+                input.value = p[key];
+                params[key] = p[key];
+            }
+        });
+        updateStateFromSliders();
+    }
+
+    // Initialize slider listeners
+    sliders.forEach(key => {
+        const input = document.getElementById(key);
+        if (input) {
+            input.addEventListener('input', updateStateFromSliders);
+        }
+    });
+
+    // Momentary spike trigger (glitch burst button)
+    document.getElementById('trigger-spike').addEventListener('mousedown', () => {
+        const randomPower = 0.08 + Math.random() * 0.04;
+        const randomSep = 0.035 + Math.random() * 0.015;
+        document.getElementById('shake_power').value = randomPower;
+        document.getElementById('shake_rate').value = 0.95;
+        document.getElementById('color_separation').value = randomSep;
+        updateStateFromSliders();
+    });
+
+    document.getElementById('trigger-spike').addEventListener('mouseup', () => {
+        setTimeout(() => {
+            // Restore back to something reasonable
+            document.getElementById('shake_power').value = 0.030;
+            document.getElementById('shake_rate').value = 0.25;
+            document.getElementById('color_separation').value = 0.012;
+            updateStateFromSliders();
+        }, 600);
+    });
+
+    // Copying Godot code function
+    document.getElementById('copy-code-btn').addEventListener('click', () => {
+        const codeElement = document.getElementById('code-block');
+        navigator.clipboard.writeText(codeElement.textContent).then(() => {
+            const origHTML = document.getElementById('copy-code-btn').innerHTML;
+            document.getElementById('copy-code-btn').innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>已复制到剪切板!</span>`;
+            document.getElementById('copy-code-btn').classList.remove('bg-cyan-600', 'hover:bg-cyan-500');
+            document.getElementById('copy-code-btn').classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                document.getElementById('copy-code-btn').innerHTML = origHTML;
+                document.getElementById('copy-code-btn').classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                document.getElementById('copy-code-btn').classList.add('bg-cyan-600', 'hover:bg-cyan-500');
+                lucide.createIcons();
+            }, 2000);
+        });
+    });
+
+    // Canvas context declarations
+    const canvas = document.getElementById('glitch-canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    let program = null;
+    let mainTexture = null;
+    let isTextureLoaded = false;
+    let imgSource = new Image();
+
+    // Default Fallback Generator: creates a high-contrast vintage cyber banner
+    function createFallbackTexture() {
+        const canvas2d = document.createElement('canvas');
+        canvas2d.width = 1024;
+        canvas2d.height = 768;
+        const ctx = canvas2d.getContext('2d');
+        
+        // Dynamic synthwave retro grid graphics
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, canvas2d.width, canvas2d.height);
+        
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas2d.height);
+        gradient.addColorStop(0, '#0f172a');
+        gradient.addColorStop(0.5, '#3b0764');
+        gradient.addColorStop(1, '#020617');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas2d.width, canvas2d.height);
+        
+        // Grid pattern lines
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas2d.width; i += 40) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas2d.height);
+            ctx.stroke();
+        }
+        for (let j = 0; j < canvas2d.height; j += 40) {
+            ctx.beginPath();
+            ctx.moveTo(0, j);
+            ctx.lineTo(canvas2d.width, j);
+            ctx.stroke();
+        }
+
+        // Draw central graphic frame
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(80, 80, canvas2d.width - 160, canvas2d.height - 160);
+
+        // Neon texts representing shader system target
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 64px "Orbitron", sans-serif, monospace';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#06b6d4';
+        ctx.shadowBlur = 15;
+        ctx.fillText('NO SIGNAL / 信号丢失', canvas2d.width / 2, canvas2d.height / 2 - 60);
+        
+        ctx.font = 'bold 36px "Inter", sans-serif';
+        ctx.fillStyle = '#ec4899';
+        ctx.shadowColor = '#ec4899';
+        ctx.shadowBlur = 10;
+        ctx.fillText('GLITCH EFFECT SIMULATOR', canvas2d.width / 2, canvas2d.height / 2 + 10);
+        
+        ctx.font = '16px "Fira Code", monospace';
+        ctx.fillStyle = '#94a3b8';
+        ctx.shadowBlur = 0;
+        ctx.fillText('GODOT SHADER LIVE COMPLIANT PREVIEW', canvas2d.width / 2, canvas2d.height / 2 + 80);
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(canvas2d.width / 2 - 250, canvas2d.height / 2 + 120, 500, 4);
+
+        return canvas2d;
+    }
+
+    // GLSL Vertex Shader code
+    const vsSource = `
+        attribute vec2 a_position;
+        varying vec2 v_uv;
+        void main() {
+            v_uv = a_position * 0.5 + 0.5;
+            // Flip Y for traditional canvas coordinate rendering
+            v_uv.y = 1.0 - v_uv.y;
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+    `;
+
+    // GLSL Fragment Shader code representing exact Godot parameters
+    const fsSource = `
+        precision highp float;
+        varying vec2 v_uv;
+        uniform sampler2D u_texture;
+        uniform float u_time;
+        
+        // Match Godot uniforms
+        uniform float u_shake_power;
+        uniform float u_shake_rate;
+        uniform float u_shake_speed;
+        uniform float u_block_size;
+        uniform float u_color_separation;
+        uniform float u_scanline_density;
+        uniform float u_scanline_opacity;
+        uniform float u_noise_opacity;
+
+        // Custom pseudo random
+        float random(vec2 uv) {
+            return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123);
+        }
+
+        void main() {
+            vec2 uv = v_uv;
+            float time = u_time;
+
+            // Step discrete timeline calculations
+            float glitch_time = floor(time * u_shake_speed);
+            
+            // Random spike occurrence
+            float is_shaking = step(1.0 - u_shake_rate, random(vec2(glitch_time, 2.718)));
+            
+            // Jitter displacements
+            float shake_offset = (random(vec2(glitch_time, 1.15)) * 2.0 - 1.0) * u_shake_power * is_shaking;
+            
+            // Slice displacement
+            float block_y = floor(uv.y * u_block_size);
+            float block_noise = random(vec2(block_y, glitch_time));
+            float block_offset = 0.0;
+            if (block_noise < 0.25 * is_shaking) {
+                block_offset = (random(vec2(block_noise, 4.312)) * 2.0 - 1.0) * u_shake_power * 1.8;
+            }
+
+            vec2 uv_offset = vec2(shake_offset + block_offset, 0.0);
+            
+            // RGB chromatic shift channels
+            vec2 uv_r = uv + uv_offset + vec2(u_color_separation * is_shaking, 0.0);
+            vec2 uv_g = uv + uv_offset;
+            vec2 uv_b = uv + uv_offset - vec2(u_color_separation * is_shaking, 0.0);
+
+            // Channel samples clamping protection
+            vec4 color_r = texture2D(u_texture, clamp(uv_r, vec2(0.0), vec2(1.0)));
+            vec4 color_g = texture2D(u_texture, clamp(uv_g, vec2(0.0), vec2(1.0)));
+            vec4 color_b = texture2D(u_texture, clamp(uv_b, vec2(0.0), vec2(1.0)));
+            
+            vec4 final_color = vec4(color_r.r, color_g.g, color_b.b, color_g.a);
+
+            // Sine wave pattern scanlines
+            float scanline = sin(uv.y * u_scanline_density * 3.14159265);
+            scanline = mix(1.0, (scanline + 1.0) * 0.5, u_scanline_opacity);
+            final_color.rgb *= scanline;
+
+            // Mix snow grain noise
+            float noise = (random(uv + vec2(time, 0.0)) - 0.5) * u_noise_opacity;
+            final_color.rgb += vec3(noise);
+
+            gl_FragColor = final_color;
+        }
+    `;
+
+    function compileShader(source, type) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+            console.error('Shader compilation error:', gl.getShaderInfoLog(s));
+            gl.deleteShader(s);
+            return null;
+        }
+        return s;
+    }
+
+    function initWebGL() {
+        if (!gl) {
+            console.error("WebGL not supported!");
+            return;
+        }
+
+        const vs = compileShader(vsSource, gl.VERTEX_SHADER);
+        const fs = compileShader(fsSource, gl.FRAGMENT_SHADER);
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error('Program linking error:', gl.getProgramInfoLog(program));
+            return;
+        }
+
+        gl.useProgram(program);
+
+        // Setup geometry
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1.0, -1.0,
+             1.0, -1.0,
+            -1.0,  1.0,
+            -1.0,  1.0,
+             1.0, -1.0,
+             1.0,  1.0,
+        ]), gl.STATIC_DRAW);
+
+        const posAttr = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(posAttr);
+        gl.vertexAttribPointer(posAttr, 2, gl.FLOAT, false, 0, 0);
+
+        // Setup textures
+        mainTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    }
+
+    // Set texture source securely
+    function uploadTexture(imgSource) {
+        gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imgSource);
+        isTextureLoaded = true;
+        
+        // Update Resolution HUD
+        document.getElementById('hud-resolution').textContent = `${imgSource.width}x${imgSource.height}`;
+    }
+
+    // Load default or referenced workspace images
+    function loadDefaultImage() {
+        isTextureLoaded = false;
+        imgSource = new Image();
+        imgSource.crossOrigin = "anonymous";
+        
+        // Attempt loading image_797ec2.jpg verbatim as asked
+        imgSource.src = "image_797ec2.jpg";
+        imgSource.onload = () => {
+            uploadTexture(imgSource);
+        };
+        imgSource.onerror = () => {
+            // If CORS or local workspace resource not ready, fallback to gorgeous synthetic neon graphic
+            console.log("Could not resolve image_797ec2.jpg. Loading default premium synthetic shader canvas.");
+            const fallbackCanvas = createFallbackTexture();
+            uploadTexture(fallbackCanvas);
+        };
+    }
+
+    // Custom image uploader handler
+    document.getElementById('image-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                uploadTexture(tempImg);
+            };
+            tempImg.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('reset-image-btn').addEventListener('click', () => {
+        loadDefaultImage();
+    });
+
+    let lastTime = 0;
+    let frames = 0;
+    let fpsTimer = 0;
+
+    function render(currentTime) {
+        currentTime *= 0.001; // convert to seconds
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+        // FPS HUD counter logic
+        frames++;
+        fpsTimer += deltaTime;
+        if (fpsTimer >= 1.0) {
+            document.getElementById('hud-fps').textContent = Math.round(frames / fpsTimer);
+            frames = 0;
+            fpsTimer = 0;
+        }
+
+        // Handle canvas auto sizing layout smoothly
+        if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+
+        if (isTextureLoaded && program) {
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.useProgram(program);
+
+            // Map all Uniform matrices values in parameters space
+            gl.uniform1f(gl.getUniformLocation(program, 'u_time'), currentTime);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_shake_power'), params.shake_power);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_shake_rate'), params.shake_rate);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_shake_speed'), params.shake_speed);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_block_size'), params.block_size);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_color_separation'), params.color_separation);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_scanline_density'), params.scanline_density);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_scanline_opacity'), params.scanline_opacity);
+            gl.uniform1f(gl.getUniformLocation(program, 'u_noise_opacity'), params.noise_opacity);
+
+            // Shaking active indicator HUD
+            const glTime = Math.floor(currentTime * params.shake_speed);
+            const isActiveNow = (fract(Math.sin(glTime * 12.9898) * 43758.5453123) >= (1.0 - params.shake_rate));
+            const hudShake = document.getElementById('hud-shake-rate');
+            if (hudShake) {
+                if (isActiveNow) {
+                    hudShake.textContent = "ACTIVE";
+                    hudShake.className = "text-red-500 font-bold animate-pulse";
+                } else {
+                    hudShake.textContent = "STABLE";
+                    hudShake.className = "text-slate-500 font-medium";
+                }
+            }
+
+            // Bind Texture 2D
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+            gl.uniform1i(gl.getUniformLocation(program, 'u_texture'), 0);
+
+            // Draw full screen quad
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+
+        requestAnimationFrame(render);
+    }
+
+    // Helper math function used inside indicator logic
+    function fract(x) {
+        return x - Math.floor(x);
+    }
+
+    // Initialize systems on load
+    initWebGL();
+    loadDefaultImage();
+    updateStateFromSliders();
+    requestAnimationFrame(render);
+
+</script>
+</body>
+</html>
