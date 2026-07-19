@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bfiusntshmixe"]
 
-[ext_resource type="Shader" uid="uid://bltgl8wfscr8p" path="res://portal/portal.gdshader" id="1_sfjos"]
+[ext_resource type="Shader" uid="uid://bltgl8wfscr8p" path="res://要保存shader/portal.gdshader" id="1_sfjos"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_508n2"]
 noise_type = 5
@@ -30,7 +30,42 @@ shader_parameter/proximity_fade_distance = 0.3
 [sub_resource type="QuadMesh" id="QuadMesh_vrfwa"]
 material = SubResource("ShaderMaterial_mjjvg")
 
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_mjjvg"]
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 0.0
+emission_ring_radius = 0.4
+emission_ring_inner_radius = 0.0
+emission_ring_cone_angle = 90.0
+velocity_pivot = Vector3(0, 0, 1)
+direction = Vector3(0, 0, 1)
+spread = 180.0
+orbit_velocity_min = -0.09999991
+orbit_velocity_max = 0.1000001
+radial_velocity_min = 0.19997764
+radial_velocity_max = 0.7999776
+gravity = Vector3(0, -1, 0)
+scale_max = 2.5
+color = Color(0.5137255, 0.11764706, 0.89411765, 1)
+turbulence_enabled = true
+turbulence_noise_strength = 0.5
+turbulence_noise_scale = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_phlqb"]
+albedo_color = Color(0.5137255, 0.11764706, 0.89411765, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_vrfwa"]
+material = SubResource("StandardMaterial3D_phlqb")
+radius = 0.01
+height = 0.01
+radial_segments = 4
+
 [node name="Node3D" type="Node3D" unique_id=2059072527]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1840547524]
 mesh = SubResource("QuadMesh_vrfwa")
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="." unique_id=1053471706]
+amount = 10
+process_material = SubResource("ParticleProcessMaterial_mjjvg")
+draw_pass_1 = SubResource("SphereMesh_vrfwa")
