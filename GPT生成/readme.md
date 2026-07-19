@@ -1,6 +1,7 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
 https://share.gemini.google/5NFszxriQJfY
+https://share.gemini.google/VtXerUHBiQAJ
 <br>
 https://share.gemini.google/fKaPW6dRD5Er<br>
 https://share.gemini.google/pvOncaHhHKto
