@@ -36,6 +36,9 @@ https://github.com/pwhoae/artbank_private
 29. 音乐音效：pixabay.com<br>https://unity.com/cn/blog/games/level-up-your-code-with-game-programming-patterns
 30. https://quaternius.itch.io/universal-animation-library/download/eyJpZCI6MzQwODAzNCwiZXhwaXJlcyI6MTc4MTUzMDQyN30%3d%2ea9%2bGjXyn%2bo0ydcDE%2fEREJdkicWY%3d
 https://lightpdf.com/tw/
+https://free3d.com/3d-models/animated?dd_referrer= 
+https://www.mixamo.com/#/
+https://kenney.nl/assets/category:3D 
 
 
 ### 音樂
