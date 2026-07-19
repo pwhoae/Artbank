@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://cf5rreuohdcdj"]
+
+[ext_resource type="Shader" uid="uid://csawg2j7rqid7" path="res://20260719 shader/故障著色器/故障著色器.gdshader" id="1_ha12t"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_no852"]
+shader = ExtResource("1_ha12t")
+shader_parameter/shake_power = 0.03
+shader_parameter/shake_rate = 0.25
+shader_parameter/shake_speed = 12.0
+shader_parameter/block_size = 25.0
+shader_parameter/color_separation = 0.012
+shader_parameter/scanline_density = 180.0
+shader_parameter/scanline_opacity = 0.3
+shader_parameter/noise_opacity = 0.12
+
+[node name="Node2D" type="Node2D" unique_id=913934360]
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=310831973]
+material = SubResource("ShaderMaterial_no852")
+offset_right = 215.0
+offset_bottom = 164.0
