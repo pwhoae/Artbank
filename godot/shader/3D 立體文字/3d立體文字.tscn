@@ -1,0 +1,73 @@
+[gd_scene format=3 uid="uid://c1y4gax501nnq"]
+
+[ext_resource type="Script" uid="uid://cuxb0muw6u7v8" path="res://20260719 shader/3D 立體文字/destroy.gd" id="1_mbknl"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fbfjq"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_mbknl"]
+sky_material = SubResource("ProceduralSkyMaterial_fbfjq")
+
+[sub_resource type="Environment" id="Environment_ohk2m"]
+background_mode = 2
+sky = SubResource("Sky_mbknl")
+tonemap_mode = 2
+
+[sub_resource type="TextMesh" id="TextMesh_i233f"]
+text = "HELLO"
+font_size = 64
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_my3de"]
+size = Vector3(1.8398132, 0.45996094, 0.26367188)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_mbknl"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_ohk2m"]
+radius = 0.1
+height = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_mbknl"]
+size = Vector3(10, 1, 1)
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_ohk2m"]
+data = PackedVector3Array(-0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, -0.5, -0.5)
+
+[node name="3D 立體文字" type="Node3D" unique_id=493431346]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1463140563]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=640065466]
+environment = SubResource("Environment_ohk2m")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=368732412]
+mesh = SubResource("TextMesh_i233f")
+
+[node name="Destroy" type="Area3D" parent="." unique_id=972251196]
+script = ExtResource("1_mbknl")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Destroy" unique_id=1313806265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0057525635, 0, 0)
+shape = SubResource("BoxShape3D_my3de")
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="." unique_id=1738290576]
+visible = false
+process_material = SubResource("ParticleProcessMaterial_mbknl")
+draw_pass_1 = SubResource("SphereMesh_ohk2m")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=902673146]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0169518, -0.8525886, 0.22801661)
+mesh = SubResource("BoxMesh_mbknl")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D2" unique_id=1115729425]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MeshInstance3D2/StaticBody3D" unique_id=1636033490]
+shape = SubResource("ConcavePolygonShape3D_ohk2m")
+
+[node name="Button" type="Button" parent="." unique_id=16801216]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[connection signal="pressed" from="Button" to="Destroy" method="_on_button_pressed"]
