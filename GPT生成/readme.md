@@ -2,6 +2,7 @@
 1-2天法則
 https://share.gemini.google/5NFszxriQJfY
 https://share.gemini.google/VtXerUHBiQAJ
+https://share.gemini.google/plHqxDMFJ27i
 <br>
 https://share.gemini.google/fKaPW6dRD5Er<br>
 https://share.gemini.google/pvOncaHhHKto
