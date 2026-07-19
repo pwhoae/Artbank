@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://byjb4vilawayi"]
+
+[ext_resource type="Shader" uid="uid://dtiopaynqct1i" path="res://空间照片/視差.gdshader" id="1_2bdyq"]
+[ext_resource type="Texture2D" uid="uid://6gbb8heaii11" path="res://3d學習/背景.jpeg" id="2_l7ilt"]
+[ext_resource type="Texture2D" uid="uid://ck31ani0olf57" path="res://3d學習/近景.png" id="3_ixipq"]
+[ext_resource type="Script" uid="uid://cych33o4njert" path="res://空间照片/背景.gd" id="3_l7ilt"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fv1we"]
+shader = ExtResource("1_2bdyq")
+shader_parameter/offset = Vector2(0, 0)
+shader_parameter/max_displacement = 0.03
+shader_parameter/focal_point = 0.5
+
+[node name="空间照片" type="Control" unique_id=1721228365]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="背景" type="TextureRect" parent="." unique_id=1552264303]
+material = SubResource("ShaderMaterial_fv1we")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_l7ilt")
+expand_mode = 1
+script = ExtResource("3_l7ilt")
+
+[node name="近景" type="TextureRect" parent="." unique_id=1305623762]
+layout_mode = 0
+offset_left = 384.0
+offset_top = 23.0
+offset_right = 849.0
+offset_bottom = 628.0
+texture = ExtResource("3_ixipq")
+expand_mode = 1
