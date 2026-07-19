@@ -1,3 +1,10 @@
+### addon
+```
+1.tweenfx
+2.dialogue
+3.import cleaner
+4.tween composer
+```
 ### 未implement
 ```
 1.Day 11 传送门.txt
@@ -15,11 +22,5 @@
 4.SpecialButtonEffect.txt
 ```
 
-### addon
-```
-1.tweenfx
-2.dialogue
-3.import cleaner
-4.tween composer
-```
+
 
