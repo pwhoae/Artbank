@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 簡易卡牌效果與擺放系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- FontAwesome for card icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e2e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #45475a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #585b70;
+        }
+    </style>
+</head>
+<body class="bg-[#11111b] text-[#cdd6f4] min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-[#181825] border-b border-[#313244] py-4 px-6 flex justify-between items-center shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-500 text-white p-2 rounded-lg shadow-lg shadow-blue-500/20">
+                <i class="fa-solid font-bold fa-layer-group text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white flex items-center gap-2">
+                    Godot 4 卡牌擺放與扇形排列系統
+                    <span class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/30">Godot 4.x 適用</span>
+                </h1>
+                <p class="text-xs text-[#a6adc8]">完全復刻 Unity 演示影片中的卡牌彎曲、懸停、吸附插槽與數值結算效果</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-xs bg-[#313244] text-[#cdd6f4] py-1 px-3 rounded-full border border-[#45475a]">
+                當前模式：<strong class="text-blue-400">互動原型 + 代碼生成器</strong>
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+        
+        <!-- Left: Simulator Area -->
+        <div class="w-full lg:w-1/2 p-4 flex flex-col border-b lg:border-b-0 lg:border-r border-[#313244] bg-[#1e1e2e] min-h-[500px] lg:min-h-0">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#a6adc8]">即時互動沙盒 (HTML5 Preview)</span>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="btn-draw" class="bg-[#313244] hover:bg-[#45475a] text-xs font-medium text-white px-3 py-1.5 rounded transition flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> 抽一張卡
+                    </button>
+                    <button id="btn-reset" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium px-3 py-1.5 rounded transition border border-red-500/20 flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> 重置場景
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative flex-1 bg-[#24243c] rounded-xl border border-[#313244] shadow-inner overflow-hidden flex flex-col">
+                <!-- Top UI Info -->
+                <div class="absolute top-4 left-4 z-10 flex flex-col space-y-1 bg-[#11111b]/80 backdrop-blur-md p-3 rounded-lg border border-[#313244] text-xs">
+                    <div class="flex justify-between gap-4">
+                        <span class="text-[#a6adc8]">小黑人能量:</span>
+                        <span id="player-energy" class="font-bold text-yellow-400 text-sm">0</span>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <span class="text-[#a6adc8]">卡牌插槽數:</span>
+                        <span id="slot-count" class="font-bold text-blue-400">4 / 4 滿</span>
+                    </div>
+                </div>
+
+                <div class="absolute top-4 right-4 z-10 bg-[#11111b]/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#313244] text-xs text-[#a6adc8] flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info text-blue-400"></i> 拖動下方卡牌至上方插槽
+                </div>
+
+                <!-- Game Canvas -->
+                <canvas id="gameCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+            </div>
+            
+            <!-- Sandbox Controllers -->
+            <div class="mt-4 bg-[#181825] p-3 rounded-lg border border-[#313244] space-y-3 text-xs">
+                <div class="font-bold text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-blue-400"></i> 即時物理參數微調
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[#a6adc8] flex justify-between mb-1">
+                            <span>手牌扇形彎曲度 (Arc):</span>
+                            <span id="val-arc" class="text-blue-400">12</span>
+                        </label>
+                        <input type="range" id="param-arc" min="0" max="30" value="12" class="w-full accent-blue-500 bg-[#313244]">
+                    </div>
+                    <div>
+                        <label class="text-[#a6adc8] flex justify-between mb-1">
+                            <span>吸附半徑 (Snapping):</span>
+                            <span id="val-snap" class="text-blue-400">60px</span>
+                        </label>
+                        <input type="range" id="param-snap" min="30" max="120" value="60" class="w-full accent-blue-500 bg-[#313244]">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Code & Guide Area -->
+        <div class="w-full lg:w-1/2 flex flex-col min-h-0 overflow-y-auto">
+            <!-- Tabs -->
+            <div class="flex border-b border-[#313244] bg-[#181825] sticky top-0 z-20">
+                <button onclick="switchTab('tab-nodes')" class="tab-btn active px-6 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-400 bg-[#1e1e2e]">
+                    <i class="fa-solid fa-sitemap mr-1.5"></i> Godot 場景樹設計
+                </button>
+                <button onclick="switchTab('tab-code-hand')" class="tab-btn px-6 py-3 text-sm font-medium text-[#a6adc8] hover:text-white transition">
+                    <i class="fa-solid fa-code mr-1.5"></i> 手牌排列與拖拽代碼
+                </button>
+                <button onclick="switchTab('tab-code-slot')" class="tab-btn px-6 py-3 text-sm font-medium text-[#a6adc8] hover:text-white transition">
+                    <i class="fa-solid fa-circle-dot mr-1.5"></i> 插槽吸附代碼
+                </button>
+                <button onclick="switchTab('tab-tutorial')" class="tab-btn px-6 py-3 text-sm font-medium text-[#a6adc8] hover:text-white transition">
+                    <i class="fa-solid fa-graduation-cap mr-1.5"></i> 核心原理解析
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="p-6 flex-1 space-y-6">
+                
+                <!-- Tab: Nodes -->
+                <div id="tab-nodes" class="tab-content space-y-4">
+                    <div class="bg-[#181825] p-4 rounded-xl border border-[#313244]">
+                        <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            推薦的 Godot 4 節點結構 (Scene Tree)
+                        </h3>
+                        <p class="text-xs text-[#a6adc8] mb-4">
+                            在 Godot 4 中，為了實現完美的拖拽、縮放與遮擋關係，我們建議使用 <strong>Node2D</strong> 而非單純的 Control UI。這可以避開 UI 容器（如 HBoxContainer）強行限制子節點 Position 和 Rotation 的問題。
+                        </p>
+                        
+                        <div class="code-font text-xs bg-[#11111b] p-4 rounded-lg border border-[#313244] text-[#a6e22e] leading-relaxed">
+                            <div class="text-[#f8f8f2] font-bold mb-2">📂 MainScene (Node2D) <span class="text-gray-500"># 遊戲主場景</span></div>
+                            <div class="pl-4">├── 📂 SlotsContainer (Node2D) <span class="text-gray-500"># 放置插槽的容器</span></div>
+                            <div class="pl-8">├── 📂 Slot1 (Area2D) <span class="text-gray-500"># 帶有 CollisionShape2D 作為吸附感應區</span></div>
+                            <div class="pl-8">├── 📂 Slot2 (Area2D)</div>
+                            <div class="pl-8">└── 📂 Slot3 (Area2D)</div>
+                            <div class="pl-4 mt-1">├── 📂 HandContainer (Node2D) <span class="text-gray-500"># 核心：手牌管理器，掛載 HandManager.gd</span></div>
+                            <div class="pl-8">├── 📄 Card1 (Area2D 或 Control) <span class="text-gray-500"># 動態生成的卡牌實例</span></div>
+                            <div class="pl-8">└── 📄 Card2 (Area2D 或 Control)</div>
+                            <div class="pl-4 mt-1">└── 📂 PlayerCharacter (CharacterBody2D) <span class="text-gray-500"># 中間的小黑人</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-[#181825] p-4 rounded-xl border border-[#313244] text-xs">
+                            <h4 class="font-bold text-white mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-square-caret-right text-blue-400"></i> 卡牌節點 (Card.tscn)
+                            </h4>
+                            <ul class="space-y-2 text-[#a6adc8]">
+                                <li>• <strong>根節點：</strong> <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">Area2D</code> (方便進行滑鼠點擊與拖拽碰撞檢測)</li>
+                                <li>• <strong>外觀：</strong> <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">Sprite2D</code> 或 <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">TextureRect</code> 顯示手繪風卡牌圖案</li>
+                                <li>• <strong>文字：</strong> <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">Label</code> 顯示數值</li>
+                                <li>• <strong>遮罩：</strong> 設置 <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">z_index</code> 用於控制懸停時置頂</li>
+                            </ul>
+                        </div>
+                        <div class="bg-[#181825] p-4 rounded-xl border border-[#313244] text-xs">
+                            <h4 class="font-bold text-white mb-2 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-dot text-blue-400"></i> 插槽節點 (Slot.tscn)
+                            </h4>
+                            <ul class="space-y-2 text-[#a6adc8]">
+                                <li>• <strong>根節點：</strong> <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">Area2D</code></li>
+                                <li>• <strong>碰撞體：</strong> <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">CollisionShape2D</code> (矩形，半徑約卡牌大小)</li>
+                                <li>• <strong>背景：</strong> <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">Sprite2D</code> 繪製虛線或半透明外框</li>
+                                <li>• <strong>狀態變數：</strong> 儲存 <code class="bg-[#11111b] px-1.5 py-0.5 rounded text-red-400">is_occupied</code> 及佔用它的卡牌引用</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Code Hand -->
+                <div id="tab-code-hand" class="tab-content hidden space-y-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-[#a6adc8]">掛載於 HandContainer 節點的控制代碼</span>
+                        <button onclick="copyCode('code-hand-manager')" class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs px-2 py-1 rounded transition flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> 複製代碼
+                        </button>
+                    </div>
+                    <pre class="bg-[#11111b] p-4 rounded-xl border border-[#313244] text-xs overflow-x-auto code-font text-[#f8f8f2] leading-relaxed"><code id="code-hand-manager"># HandManager.gd
+extends Node2D
+
+@export var card_scene: PackedScene
+@export var hand_width: float = 400.0        # 手牌展開寬度
+@export var max_rotation_degrees: float = 15.0 # 最大旋轉角度(兩端卡牌)
+@export var height_curve_offset: float = 20.0  # 扇形中點向上拱起的高度
+
+var cards: Array[Node2D] = []
+
+func _ready():
+    # 測試：初始生成 5 張牌
+    for i in range(5):
+        create_test_card()
+
+func create_test_card():
+    # 動態生成卡牌實例並加入手牌
+    # 這裡的邏輯與排列緊密結合
+    pass
+
+# 核心演算法：計算並平滑插值排列所有手牌
+func update_hand_layout():
+    var card_count = cards.size()
+    if card_count == 0: return
+    
+    for i in range(card_count):
+        var card = cards[i]
+        if card.is_dragging: continue # 被拖拽的卡牌不參與自動排列
+        
+        # 1. 計算比率 t (-1.0 到 1.0)
+        var t = 0.0
+        if card_count > 1:
+            t = (float(i) / (card_count - 1)) * 2.0 - 1.0
+            
+        # 2. 計算 X 座標偏置
+        var target_x = t * (hand_width / 2.0)
+        
+        # 3. 計算 Y 座標偏置（二次曲線實現圓弧效果）
+        # 當 t = 0 (中間) 時，拱起最大；t = -1 或 1 時，高度降至最低
+        var target_y = (1.0 - (t * t)) * -height_curve_offset
+        
+        # 4. 計算旋轉角度
+        var target_rot = t * deg_to_rad(max_rotation_degrees)
+        
+        # 5. 使用 Tween 進行平滑移位
+        var tween = create_tween().set_parallel(true)
+        tween.tween_property(card, "position", Vector2(target_x, target_y), 0.25)\
+            .set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+        tween.tween_property(card, "rotation", target_rot, 0.25)\
+            .set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+            
+        # 確保遮擋關係正確：從左到右 Z-Index 遞增
+        card.z_index = i</code></pre>
+                </div>
+
+                <!-- Tab: Code Slot -->
+                <div id="tab-code-slot" class="tab-content hidden space-y-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs text-[#a6adc8]">掛載於 Card.gd 的吸附與拖拽物理計算代碼</span>
+                        <button onclick="copyCode('code-card-drag')" class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs px-2 py-1 rounded transition flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> 複製代碼
+                        </button>
+                    </div>
+                    <pre class="bg-[#11111b] p-4 rounded-xl border border-[#313244] text-xs overflow-x-auto code-font text-[#f8f8f2] leading-relaxed"><code id="code-card-drag"># Card.gd (掛載於卡牌單體)
+extends Area2D
+
+signal drag_started
+signal drag_ended(card, final_position)
+
+var is_dragging: bool = false
+var drag_offset: Vector2 = Vector2.ZERO
+var original_z_index: int = 0
+
+# 吸附檢測相關參數
+var snap_target_slot: Area2D = null
+var snap_distance_threshold: float = 60.0
+
+func _ready():
+    # 連結滑鼠輸入信號
+    input_event.connect(_on_input_event)
+
+func _process(delta):
+    if is_dragging:
+        var mouse_pos = get_global_mouse_position()
+        var target_pos = mouse_pos - drag_offset
+        
+        # 核心：即時尋找最近的插槽並進行磁性吸附預覽
+        var nearest_slot = find_nearest_empty_slot(target_pos)
+        
+        if nearest_slot:
+            # 磁性吸附：如果距離小於閾值，卡牌平滑吸附在插槽位置，並呈現預覽狀態
+            global_position = global_position.lerp(nearest_slot.global_position, 0.25)
+            rotation = lerp_angle(rotation, 0, 0.25) # 吸附時轉正
+            scale = scale.lerp(Vector2(0.9, 0.9), 0.2) # 稍微縮小表示合體
+            snap_target_slot = nearest_slot
+        else:
+            # 一般自由拖拽跟隨滑鼠
+            global_position = target_pos
+            rotation = lerp_angle(rotation, 0, 0.1)
+            scale = scale.lerp(Vector2(1.1, 1.1), 0.2) # 放大表示正在被提起
+            snap_target_slot = null
+
+func _on_input_event(viewport, event, shape_idx):
+    if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+        if event.pressed:
+            start_drag()
+        elif !event.pressed and is_dragging:
+            end_drag()
+
+func start_drag():
+    is_dragging = true
+    drag_offset = get_global_mouse_position() - global_position
+    original_z_index = z_index
+    z_index = 100 # 置頂顯示
+    drag_started.emit()
+
+func end_drag():
+    is_dragging = false
+    z_index = original_z_index
+    
+    if snap_target_slot:
+        # 正式放入插槽
+        global_position = snap_target_slot.global_position
+        snap_target_slot.occupy(self)
+        drag_ended.emit(self, true) # 成功落袋
+    else:
+        # 回歸手牌排列
+        drag_ended.emit(self, false) # 需要重置回原位
+
+func find_nearest_empty_slot(pos: Vector2) -> Area2D:
+    var slots = get_tree().get_nodes_in_group("slots")
+    var nearest: Area2D = null
+    var min_dist = snap_distance_threshold
+    
+    for slot in slots:
+        if slot.is_occupied: continue
+        var dist = pos.distance_to(slot.global_position)
+        if dist < min_dist:
+            min_dist = dist
+            nearest = slot
+    return nearest</code></pre>
+                </div>
+
+                <!-- Tab: Tutorial -->
+                <div id="tab-tutorial" class="tab-content hidden space-y-4">
+                    <div class="bg-[#181825] p-4 rounded-xl border border-[#313244] text-sm">
+                        <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-yellow-400"></i>
+                            還原 Unity 影片效果的 3 大關鍵技術
+                        </h3>
+                        
+                        <div class="space-y-4 mt-3">
+                            <div class="border-l-4 border-blue-500 pl-3">
+                                <h4 class="font-bold text-white text-xs">1. 扇形排列 (Fan Hand Layout)</h4>
+                                <p class="text-xs text-[#a6adc8] mt-1">
+                                    影片中，手牌不是呈一條直線，而是像一把扇子。這是利用數學上的二次曲線（Quadratic Bezier 或簡單的拋物線）計算出來的。在程式碼中，我們將手牌的排列係數 $t$ 限制在 $[-1.0, 1.0]$。
+                                    Y 軸高度偏置公式為： $Height(t) = (1 - t^2) \times Offset$。這能確保正中間的卡牌高度最高，而兩端漸漸垂下，配合旋轉，形成完美弧形。
+                                </p>
+                            </div>
+                            
+                            <div class="border-l-4 border-green-500 pl-3">
+                                <h4 class="font-bold text-white text-xs">2. 懸停置頂與縮放 (Z-Index Hover)</h4>
+                                <p class="text-xs text-[#a6adc8] mt-1">
+                                    當滑鼠移入時，該卡牌必須被放到最上層，否則會被隔壁卡牌遮擋。在 Godot 中，我們只需要在檢測到滑鼠 Hover 時，臨時將卡牌的 <code class="bg-[#11111b] px-1 py-0.5 rounded text-[#f38ba8]">z_index</code> 設為很高（例如 99），並利用 Tween 對其 <code class="bg-[#11111b] px-1 py-0.5 rounded text-[#f38ba8]">scale</code>、<code class="bg-[#11111b] px-1 py-0.5 rounded text-[#f38ba8]">position.y</code> 進行微調（向上浮動 20-30 像素），就能獲得極佳的打牌手感。
+                                </p>
+                            </div>
+
+                            <div class="border-l-4 border-purple-500 pl-3">
+                                <h4 class="font-bold text-white text-xs">3. 磁性吸附預覽 (Magnetic Snapping Preset)</h4>
+                                <p class="text-xs text-[#a6adc8] mt-1">
+                                    影片最亮眼的是拖動卡牌靠近插槽時的**吸附效果**。當玩家釋放滑鼠前，卡牌會提前「吸附」在槽位中，給予強烈的視覺反饋。
+                                    我們在每一幀物理幀 (<code class="bg-[#11111b] px-1 py-0.5 rounded text-[#f38ba8]">_process</code>) 中，即時搜尋距離卡牌最近且未被佔用的插槽。若距離小於閾值，我們使用插值 <code class="bg-[#11111b] px-1 py-0.5 rounded text-[#f38ba8]">lerp</code> 讓卡牌向插槽座標靠攏，放開滑鼠時則將其完全繫定到插槽上。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#11111b] border-t border-[#313244] py-3 px-6 text-center text-xs text-[#a6adc8] shrink-0">
+        <div>基於 Godot 4 核心架構設計 | 點擊右側的 Tab 分頁來獲取高可讀性的 GDScript 實作代碼</div>
+    </footer>
+
+    <script>
+        // Vue-like State management for the Interactive sandbox
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width = canvas.width = canvas.offsetWidth;
+        let height = canvas.height = canvas.offsetHeight;
+
+        // Sound simulation (UI effects)
+        function playTick() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } catch(e){}
+        }
+
+        // Global Parameters
+        let arcOffset = 12;
+        let snapDistance = 60;
+        let energyValue = 0;
+
+        // Card types/templates matching the video
+        const cardTemplates = [
+            { id: 1, type: 'leaf-triple', title: '三葉草', energy: 1, icon: 'fa-leaf', color: '#a6e3a1', value: 3 },
+            { id: 2, type: 'leaf-single', title: '小葉子', energy: 1, icon: 'fa-seedling', color: '#94e2d5', value: 1 },
+            { id: 3, type: 'clock', title: '時鐘', energy: 2, icon: 'fa-clock', color: '#89b4fa', value: 2 },
+            { id: 4, type: 'fire', title: '聖火', energy: 3, icon: 'fa-fire', color: '#f38ba8', value: 4 },
+            { id: 5, type: 'shield', title: '護盾', energy: 2, icon: 'fa-shield-halved', color: '#f9e2af', value: 2 },
+        ];
+
+        // Entity representations
+        class Slot {
+            constructor(x, y, id) {
+                this.x = x;
+                this.y = y;
+                this.id = id;
+                this.width = 75;
+                this.height = 105;
+                this.occupiedBy = null; // Card reference
+                this.hovered = false;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = this.occupiedBy ? '#a6adc8' : (this.hovered ? '#89b4fa' : '#45475a');
+                ctx.lineWidth = this.hovered ? 3 : 2;
+                ctx.fillStyle = this.occupiedBy ? 'rgba(49, 50, 68, 0.3)' : 'rgba(30, 30, 46, 0.5)';
+                
+                // Draw rounded dash rect
+                const r = 8;
+                const x = this.x - this.width/2;
+                const y = this.y - this.height/2;
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + this.width - r, y);
+                ctx.quadraticCurveTo(x + this.width, y, x + this.width, y + r);
+                ctx.lineTo(x + this.width, y + this.height - r);
+                ctx.quadraticCurveTo(x + this.width, y + this.height, x + this.width - r, y + this.height);
+                ctx.lineTo(x + r, y + this.height);
+                ctx.quadraticCurveTo(x, y + this.height, x, y + this.height - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Small index tag
+                ctx.fillStyle = '#6c7086';
+                ctx.font = '10px "JetBrains Mono"';
+                ctx.textAlign = 'center';
+                ctx.fillText(`槽位 ${this.id}`, this.x, this.y + 5);
+
+                ctx.restore();
+            }
+        }
+
+        class Card {
+            constructor(template, index) {
+                this.template = template;
+                this.width = 75;
+                this.height = 105;
+                
+                // Physics/Positioning state
+                this.x = 0;
+                this.y = 0;
+                this.targetX = 0;
+                this.targetY = 0;
+                this.rotation = 0;
+                this.targetRotation = 0;
+                this.scale = 1.0;
+                this.targetScale = 1.0;
+                
+                this.isDragging = false;
+                this.isHovered = false;
+                this.zIndex = index;
+                this.slotBound = null; // Associated Slot object
+
+                // Interpolation values (spring-like animation)
+                this.lerpSpeed = 0.15;
+            }
+
+            update(mouseX, mouseY) {
+                if (this.isDragging) {
+                    this.x = mouseX;
+                    this.y = mouseY;
+                    this.rotation = 0; // Keep straight when dragging
+                    this.scale = 1.1;  // Slightly pop up
+                } else if (this.slotBound) {
+                    // Smoothly transition into slot
+                    this.x += (this.slotBound.x - this.x) * 0.25;
+                    this.y += (this.slotBound.y - this.y) * 0.25;
+                    this.rotation += (0 - this.rotation) * 0.25;
+                    this.scale += (0.9 - this.scale) * 0.2;
+                } else {
+                    // Regular hand behavior
+                    this.x += (this.targetX - this.x) * this.lerpSpeed;
+                    this.y += (this.targetY - this.y) * this.lerpSpeed;
+                    this.rotation += (this.targetRotation - this.rotation) * this.lerpSpeed;
+                    
+                    if (this.isHovered) {
+                        this.targetScale = 1.15;
+                        this.scale += (this.targetScale - this.scale) * 0.2;
+                    } else {
+                        this.targetScale = 1.0;
+                        this.scale += (this.targetScale - this.scale) * 0.15;
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.scale(this.scale, this.scale);
+
+                // Shadows
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowBlur = this.isDragging ? 15 : (this.isHovered ? 10 : 4);
+                ctx.shadowOffsetY = this.isDragging ? 8 : (this.isHovered ? 4 : 2);
+
+                // Card body
+                ctx.fillStyle = '#1e1e2e';
+                ctx.strokeStyle = this.isHovered ? '#89b4fa' : '#585b70';
+                ctx.lineWidth = this.isHovered ? 3 : 1.5;
+                
+                const r = 8;
+                const w = this.width;
+                const h = this.height;
+                ctx.beginPath();
+                ctx.moveTo(-w/2 + r, -h/2);
+                ctx.lineTo(w/2 - r, -h/2);
+                ctx.quadraticCurveTo(w/2, -h/2, w/2, -h/2 + r);
+                ctx.lineTo(w/2, h/2 - r);
+                ctx.quadraticCurveTo(w/2, h/2, w/2 - r, h/2);
+                ctx.lineTo(-w/2 + r, h/2);
+                ctx.quadraticCurveTo(-w/2, h/2, -w/2, h/2 - r);
+                ctx.lineTo(-w/2, -h/2 + r);
+                ctx.quadraticCurveTo(-w/2, -h/2, -w/2 + r, -h/2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Disabling shadows for card inner content for performance
+                ctx.shadowColor = 'transparent';
+
+                // Inner Frame border matching card hand-drawn style in video
+                ctx.strokeStyle = 'rgba(166, 173, 200, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-w/2 + 5, -h/2 + 5, w - 10, h - 10);
+
+                // Card Title
+                ctx.fillStyle = '#cdd6f4';
+                ctx.font = 'bold 9px "Noto Sans TC"';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.template.title, 0, -h/2 + 18);
+
+                // Draw central icon using FontAwesome symbols mapped to canvas text
+                ctx.fillStyle = this.template.color;
+                ctx.font = '22px "Font Awesome 6 Free"';
+                ctx.fontWeight = '900';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Render custom Unicode for selected icons
+                let iconChar = '\uf06c'; // leaf default
+                if (this.template.icon === 'fa-seedling') iconChar = '\uf4d8';
+                if (this.template.icon === 'fa-clock') iconChar = '\uf017';
+                if (this.template.icon === 'fa-fire') iconChar = '\uf06d';
+                if (this.template.icon === 'fa-shield-halved') iconChar = '\uf3ed';
+                ctx.fillText(iconChar, 0, -3);
+
+                // Energy value circle top-left
+                ctx.beginPath();
+                ctx.arc(-w/2 + 10, -h/2 + 10, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#f9e2af';
+                ctx.fill();
+                ctx.fillStyle = '#11111b';
+                ctx.font = 'bold 8px "JetBrains Mono"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.template.energy, -w/2 + 10, -h/2 + 10);
+
+                // Stat indicator at bottom
+                ctx.fillStyle = '#6c7086';
+                ctx.font = '8px "JetBrains Mono"';
+                ctx.textAlign = 'center';
+                ctx.fillText(`價值: ${this.template.value}`, 0, h/2 - 12);
+
+                ctx.restore();
+            }
+
+            contains(px, py) {
+                // Approximate hit detection
+                const dx = px - this.x;
+                const dy = py - this.y;
+                return Math.abs(dx) < this.width/2 && Math.abs(dy) < this.height/2;
+            }
+        }
+
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 24;
+                this.height = 40;
+                this.pulse = 0;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                this.pulse += 0.05;
+                const breathY = Math.sin(this.pulse) * 1.5;
+
+                // Simple hand-drawn stick figure like in the video
+                ctx.strokeStyle = '#cdd6f4';
+                ctx.lineWidth = 3.5;
+                ctx.lineCap = 'round';
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - 12 + breathY, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#11111b';
+                ctx.fill();
+                ctx.stroke();
+
+                // Body
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 6 + breathY);
+                ctx.lineTo(this.x, this.y + 10);
+                ctx.stroke();
+
+                // Arms
+                ctx.beginPath();
+                ctx.moveTo(this.x - 10, this.y + breathY);
+                ctx.lineTo(this.x + 10, this.y + breathY);
+                ctx.stroke();
+
+                // Legs
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + 10);
+                ctx.lineTo(this.x - 6, this.y + 24);
+                ctx.moveTo(this.x, this.y + 10);
+                ctx.lineTo(this.x + 6, this.y + 24);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // Game state variables
+        let slots = [];
+        let hand = [];
+        let player = new Player(width / 2, height / 2 - 30);
+        let draggedCard = null;
+        let dragOffset = { x: 0, y: 0 };
+        let activeHoveredCard = null;
+
+        // Initialize slots (similar to the slots at 00:11 in the video)
+        function initSlots() {
+            slots = [];
+            const spacing = 88;
+            const startX = width / 2 - (spacing * 1.5);
+            const slotY = height / 2 - 100;
+            
+            for (let i = 0; i < 4; i++) {
+                slots.push(new Slot(startX + i * spacing, slotY, i + 1));
+            }
+        }
+
+        // Populates cards array
+        function initHand() {
+            hand = [];
+            // Spawn 5 random cards from templates
+            for (let i = 0; i < 5; i++) {
+                const t = cardTemplates[Math.floor(Math.random() * cardTemplates.length)];
+                hand.push(new Card(t, i));
+            }
+            updateHandLayout();
+        }
+
+        // Recalculates card positions based on video fanout pattern
+        function updateHandLayout() {
+            const cardCount = hand.filter(c => !c.slotBound && c !== draggedCard).length;
+            if (cardCount === 0) return;
+
+            let remainingIndex = 0;
+            const handCenterX = width / 2;
+            const handCenterY = height - 70;
+            const cardSpacing = 75; // Hand width multiplier
+            const maxAngle = (maxRotation() * Math.PI) / 180;
+
+            hand.forEach((card) => {
+                if (card.slotBound || card === draggedCard) return;
+
+                let t = 0;
+                if (cardCount > 1) {
+                    t = (remainingIndex / (cardCount - 1)) * 2.0 - 1.0;
+                }
+
+                // Bezier/Curve mapping
+                card.targetX = handCenterX + t * (cardCount * cardSpacing * 0.45);
+                card.targetY = handCenterY + Math.abs(t * t) * (arcOffset * 1.5) - (card.isHovered ? 45 : 0);
+                card.targetRotation = t * maxAngle;
+                
+                // Ensure zIndex order
+                card.zIndex = remainingIndex;
+                remainingIndex++;
+            });
+
+            // Sort rendering list based on temporary zIndex/Hover state
+            hand.sort((a, b) => {
+                const aZ = a.isHovered ? 999 : (a.isDragging ? 1000 : a.zIndex);
+                const bZ = b.isHovered ? 999 : (b.isDragging ? 1000 : b.zIndex);
+                return aZ - bZ;
+            });
+        }
+
+        function maxRotation() {
+            return (arcOffset / 15) * 16;
+        }
+
+        // Action loop for calculation
+        function gameLoop() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Slots background
+            slots.forEach(slot => slot.draw(ctx));
+
+            // Update & Draw Player
+            player.draw(ctx);
+
+            // Update state & Draw Cards
+            const mousePos = getCanvasMousePos();
+            
+            // Check snap hover preview
+            slots.forEach(s => s.hovered = false);
+            if (draggedCard) {
+                const nearest = findNearestEmptySlot(draggedCard.x, draggedCard.y);
+                if (nearest) {
+                    nearest.hovered = true;
+                    // Temporary Magnetic snap preview
+                    draggedCard.x += (nearest.x - draggedCard.x) * 0.35;
+                    draggedCard.y += (nearest.y - draggedCard.y) * 0.35;
+                }
+            }
+
+            // Update all cards
+            hand.forEach(card => {
+                card.update(mousePos.x - dragOffset.x, mousePos.y - dragOffset.y);
+                card.draw(ctx);
+            });
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Auxiliary Mouse handlers
+        let mouseX = 0;
+        let mouseY = 0;
+
+        function getCanvasMousePos() {
+            return { x: mouseX, y: mouseY };
+        }
+
+        function findNearestEmptySlot(cx, cy) {
+            let nearest = null;
+            let minDist = snapDistance;
+            slots.forEach(slot => {
+                if (slot.occupiedBy && slot.occupiedBy !== draggedCard) return;
+                const d = Math.hypot(cx - slot.x, cy - slot.y);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = slot;
+                }
+            });
+            return nearest;
+        }
+
+        // Web Event Listeners
+        window.addEventListener('resize', () => {
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+            initSlots();
+            updateHandLayout();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+
+            if (draggedCard) return;
+
+            // Simple Hover Detection prioritizing top z-index cards
+            let currentHover = null;
+            for (let i = hand.length - 1; i >= 0; i--) {
+                const card = hand[i];
+                if (!card.slotBound && card.contains(mouseX, mouseY)) {
+                    currentHover = card;
+                    break;
+                }
+            }
+
+            if (currentHover !== activeHoveredCard) {
+                if (activeHoveredCard) activeHoveredCard.isHovered = false;
+                activeHoveredCard = currentHover;
+                if (activeHoveredCard) {
+                    activeHoveredCard.isHovered = true;
+                    playTick();
+                }
+                updateHandLayout();
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (activeHoveredCard) {
+                draggedCard = activeHoveredCard;
+                draggedCard.isDragging = true;
+                dragOffset = {
+                    x: mouseX - draggedCard.x,
+                    y: mouseY - draggedCard.y
+                };
+                
+                // Free card from slots if it was placed
+                if (draggedCard.slotBound) {
+                    draggedCard.slotBound.occupiedBy = null;
+                    draggedCard.slotBound = null;
+                    recalculateEnergy();
+                }
+                playTick();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (draggedCard) {
+                draggedCard.isDragging = false;
+                const nearest = findNearestEmptySlot(draggedCard.x, draggedCard.y);
+                
+                if (nearest) {
+                    nearest.occupiedBy = draggedCard;
+                    draggedCard.slotBound = nearest;
+                    draggedCard.isHovered = false;
+                } else {
+                    draggedCard.slotBound = null;
+                }
+
+                draggedCard = null;
+                recalculateEnergy();
+                updateHandLayout();
+                playTick();
+            }
+        });
+
+        // Touch adaptation
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const rect = canvas.getBoundingClientRect();
+                mouseX = e.touches[0].clientX - rect.left;
+                mouseY = e.touches[0].clientY - rect.top;
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                const rect = canvas.getBoundingClientRect();
+                mouseX = e.touches[0].clientX - rect.left;
+                mouseY = e.touches[0].clientY - rect.top;
+
+                // Handle tap selection
+                let currentHover = null;
+                for (let i = hand.length - 1; i >= 0; i--) {
+                    const card = hand[i];
+                    if (!card.slotBound && card.contains(mouseX, mouseY)) {
+                        currentHover = card;
+                        break;
+                    }
+                }
+                if (currentHover) {
+                    activeHoveredCard = currentHover;
+                    draggedCard = activeHoveredCard;
+                    draggedCard.isDragging = true;
+                    dragOffset = { x: 0, y: 0 };
+                    if (draggedCard.slotBound) {
+                        draggedCard.slotBound.occupiedBy = null;
+                        draggedCard.slotBound = null;
+                        recalculateEnergy();
+                    }
+                }
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', () => {
+            if (draggedCard) {
+                draggedCard.isDragging = false;
+                const nearest = findNearestEmptySlot(draggedCard.x, draggedCard.y);
+                if (nearest) {
+                    nearest.occupiedBy = draggedCard;
+                    draggedCard.slotBound = nearest;
+                }
+                draggedCard = null;
+                recalculateEnergy();
+                updateHandLayout();
+            }
+        });
+
+        // Energy recalculator matching stickman score in video
+        function recalculateEnergy() {
+            let total = 0;
+            let occupiedCount = 0;
+            slots.forEach(slot => {
+                if (slot.occupiedBy) {
+                    total += slot.occupiedBy.template.value;
+                    occupiedCount++;
+                }
+            });
+            energyValue = total;
+            document.getElementById('player-energy').innerText = energyValue;
+            document.getElementById('slot-count').innerText = `${occupiedCount} / 4 ${occupiedCount === 4 ? '滿' : ''}`;
+        }
+
+        // GUI Interactivity buttons
+        document.getElementById('btn-draw').addEventListener('click', () => {
+            if (hand.length < 8) {
+                const t = cardTemplates[Math.floor(Math.random() * cardTemplates.length)];
+                hand.push(new Card(t, hand.length));
+                updateHandLayout();
+                playTick();
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            slots.forEach(s => s.occupiedBy = null);
+            initHand();
+            recalculateEnergy();
+            playTick();
+        });
+
+        // Parameters change
+        document.getElementById('param-arc').addEventListener('input', (e) => {
+            arcOffset = parseInt(e.target.value);
+            document.getElementById('val-arc').innerText = arcOffset;
+            updateHandLayout();
+        });
+
+        document.getElementById('param-snap').addEventListener('input', (e) => {
+            snapDistance = parseInt(e.target.value);
+            document.getElementById('val-snap').innerText = snapDistance + "px";
+        });
+
+        // Tabs switcher
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-b-2', 'border-blue-500', 'text-blue-400');
+                btn.classList.add('text-[#a6adc8]');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            const activeBtn = event.currentTarget;
+            activeBtn.classList.add('active', 'border-b-2', 'border-blue-500', 'text-blue-400');
+            activeBtn.classList.remove('text-[#a6adc8]');
+            document.getElementById(tabId).classList.remove('hidden');
+        };
+
+        // Copy source code utils
+        window.copyCode = function(elementId) {
+            const code = document.getElementById(elementId).innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> 已複製`;
+            btn.classList.remove('text-blue-400', 'border-blue-500/30');
+            btn.classList.add('text-green-400', 'border-green-500/30');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('text-green-400', 'border-green-500/30');
+                btn.classList.add('text-blue-400', 'border-blue-500/30');
+            }, 2000);
+        };
+
+        // App Initializer
+        initSlots();
+        initHand();
+        gameLoop();
+
+    </script>
+</body>
+</html>
