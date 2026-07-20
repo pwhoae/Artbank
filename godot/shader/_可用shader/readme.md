@@ -11,7 +11,8 @@
 
 故障著色器.gdshader<br>
 燃烧消融:https://github.com/pwhoae/Artbank/blob/main/godot/shader/_%E5%8F%AF%E7%94%A8shader/html/Godot%203D%20Shader%20%E6%B6%88%E6%95%A3%E7%89%B9%E6%95%88.html<br>
-3D空间扫描着色器<br>
+3D空间扫描着色器:https://github.com/pwhoae/Artbank/blob/main/godot/shader/_%E5%8F%AF%E7%94%A8shader/html/Godot%203D%20Shader%20%E6%B6%88%E6%95%A3%E7%89%B9%E6%95%88.html
+<br>
 
 
 waste:分析热扭曲 godot shader code:https://share.gemini.google/Y6d8CuN0ijp5 
