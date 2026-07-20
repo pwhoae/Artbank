@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 炫彩扫光着色器生成器</title>
+    <!-- Tailwind CSS for rich interface -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for clean UI assets -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #0b0c10;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111217;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b2e3a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff5e00;
+        }
+    </style>
+</head>
+<body class="text-gray-100 overflow-x-hidden">
+
+<div class="min-h-screen flex flex-col justify-between">
+    <!-- Top Navigation Header -->
+    <header class="border-b border-gray-800 bg-[#12131a] px-6 py-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-[#ff5e00] to-[#ffaa00] p-2 rounded-lg text-black">
+                <i data-lucide="zap" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+                    GODOT 4 PRISM SWEEP SHADER
+                </h1>
+                <p class="text-xs text-gray-500">《绝区零》可琳风格：棱镜折射与温热蚀边扫光着色器生成工具</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 bg-[#1b1c24] border border-gray-800 rounded-lg px-3 py-1.5 text-xs text-gray-400">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            <span>着色器环境：CanvasItem (2D / UI)</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-6">
+        
+        <section class="xl:col-span-4 bg-[#12131a] border border-gray-800 rounded-2xl p-5 flex flex-col space-y-6 shadow-xl">
+            <div>
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center">
+                    <i data-lucide="sliders" class="w-4 h-4 mr-2 text-[#ff5e00]"></i> 效果预设 (Presets)
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('prism')" class="preset-btn px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition bg-[#ff5e00]/10 border border-[#ff5e00]/30 text-[#ff8033] hover:bg-[#ff5e00]/20 flex items-center justify-between">
+                        <span>🌈 棱镜彩虹色散</span>
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="applyPreset('warm_gold')" class="preset-btn px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between">
+                        <span>🔥 暖金溶解扫描</span>
+                        <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="applyPreset('cyber_laser')" class="preset-btn px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between">
+                        <span>⚡ 赛博锐利激光</span>
+                        <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="applyPreset('slow_hologram')" class="preset-btn px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between">
+                        <span>🛸 全息弱光慢速</span>
+                        <i data-lucide="orbit" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <hr class="border-gray-800" />
+
+            <!-- Dynamic Sliders -->
+            <div class="flex-1 space-y-4 overflow-y-auto pr-1">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4 mr-2 text-[#ff5e00]"></i> 属性微调 (Uniforms)
+                </h2>
+
+                <!-- Switch Color / Rainbow -->
+                <div class="bg-[#181922] p-3 rounded-xl border border-gray-800 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold block">启用多棱镜彩虹</span>
+                        <span class="text-[10px] text-gray-500">模拟RGB光学色散效果</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="enableRainbow" class="sr-only peer" checked onchange="updateUniforms()">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff5e00]"></div>
+                    </label>
+                </div>
+
+                <!-- Custom Beam Color (Hidden if rainbow is active) -->
+                <div id="singleColorContainer" class="hidden space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">扫光基础颜色</span>
+                        <span id="beamColorVal" class="text-xs font-semibold text-gray-400">#ffaa00</span>
+                    </div>
+                    <input type="color" id="beamColor" value="#ffaa00" class="w-full h-10 rounded-lg cursor-pointer bg-transparent border border-gray-800" oninput="updateUniforms()">
+                </div>
+
+                <!-- Speed -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">扫描速度 (Speed)</span>
+                        <span id="speedVal" class="text-xs font-semibold text-gray-400">1.2x</span>
+                    </div>
+                    <input type="range" id="speed" min="0.1" max="4.0" step="0.1" value="1.2" class="w-full accent-[#ff5e00] h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Width -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">光束宽度 (Width)</span>
+                        <span id="widthVal" class="text-xs font-semibold text-gray-400">0.25</span>
+                    </div>
+                    <input type="range" id="width" min="0.05" max="0.8" step="0.01" value="0.25" class="w-full accent-[#ff5e00] h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Angle -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">倾斜角度 (Angle)</span>
+                        <span id="angleVal" class="text-xs font-semibold text-gray-400">-45°</span>
+                    </div>
+                    <input type="range" id="angle" min="-180" max="180" step="5" value="-45" class="w-full accent-[#ff5e00] h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Dispersion -->
+                <div class="space-y-2" id="dispersionWrapper">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">色散强度 (Dispersion)</span>
+                        <span id="dispersionVal" class="text-xs font-semibold text-gray-400">0.06</span>
+                    </div>
+                    <input type="range" id="dispersion" min="0.01" max="0.25" step="0.01" value="0.06" class="w-full accent-[#ff5e00] h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Glow -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">光斑强度 (Glow Intensity)</span>
+                        <span id="glowVal" class="text-xs font-semibold text-gray-400">3.5</span>
+                    </div>
+                    <input type="range" id="glow" min="0.5" max="10.0" step="0.1" value="3.5" class="w-full accent-[#ff5e00] h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Noise Edge -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">边缘噪声/融解度 (Noise Dissolve)</span>
+                        <span id="noiseVal" class="text-xs font-semibold text-gray-400">0.35</span>
+                    </div>
+                    <input type="range" id="noise" min="0.0" max="1.0" step="0.05" value="0.35" class="w-full accent-[#ff5e00] h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+            </div>
+        </section>
+
+        <section class="xl:col-span-4 bg-[#12131a] border border-gray-800 rounded-2xl p-5 flex flex-col items-center justify-between shadow-xl relative min-h-[450px]">
+            <div class="w-full flex justify-between items-center mb-4">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                    <i data-lucide="eye" class="w-4 h-4 mr-2 text-[#ff5e00]"></i> 动态预览 (Real-Time Preview)
+                </h2>
+                <span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 rounded px-2 py-0.5">WebGL 2.0 仿真</span>
+            </div>
+
+            <!-- Preview Wrapper -->
+            <div class="flex-1 w-full flex items-center justify-center relative bg-[#090a0d] rounded-xl overflow-hidden border border-gray-800/60 p-4">
+                <!-- Background grid representing a game state -->
+                <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+                
+                <!-- WebGL Simulation Canvas -->
+                <canvas id="previewCanvas" class="relative z-10 w-full max-w-[280px] h-[340px] rounded-lg shadow-2xl object-cover"></canvas>
+            </div>
+
+            <!-- Bottom helpful tip -->
+            <div class="w-full text-center mt-3 text-[11px] text-gray-500 flex items-center justify-center space-x-1.5">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                <span>效果会在游戏引擎中基于 Sprite 渲染，完美还原可琳动画质感</span>
+            </div>
+        </section>
+
+        <section class="xl:col-span-4 bg-[#12131a] border border-gray-800 rounded-2xl p-5 flex flex-col shadow-xl">
+            <!-- Tabs header -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex space-x-2">
+                    <button onclick="switchTab('shader')" id="tabBtnShader" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#ff5e00] text-black">
+                        gdshader
+                    </button>
+                    <button onclick="switchTab('script')" id="tabBtnScript" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-800 text-gray-400">
+                        GDScript 控制器
+                    </button>
+                </div>
+                <button onclick="copyCurrentCode()" class="flex items-center space-x-1.5 text-xs bg-gray-800/80 hover:bg-[#ff5e00]/20 border border-gray-700 hover:border-[#ff5e00]/40 text-gray-300 hover:text-[#ff8033] px-3 py-1.5 rounded-lg transition">
+                    <i data-lucide="copy" class="w-3.5 h-3.5" id="copyIcon"></i>
+                    <span id="copyText">复制代码</span>
+                </button>
+            </div>
+
+            <!-- Code display scroll window -->
+            <div class="flex-1 bg-[#090a0d] rounded-xl border border-gray-800 p-4 overflow-y-auto relative h-[360px]">
+                <!-- Shader View -->
+                <pre id="shaderCodeContainer" class="text-xs code-font text-emerald-400 select-all leading-relaxed whitespace-pre-wrap"></pre>
+                
+                <!-- GDScript View -->
+                <pre id="scriptCodeContainer" class="text-xs code-font text-cyan-400 select-all leading-relaxed whitespace-pre-wrap hidden"></pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Status Info and Credits -->
+    <footer class="border-t border-gray-800 bg-[#0c0d12] px-6 py-4 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500">
+        <div>
+            建议将 Shader 赋予你的 <code class="text-gray-300 px-1 bg-gray-800 rounded">Sprite2D</code> 或 <code class="text-gray-300 px-1 bg-gray-800 rounded">TextureRect</code> 并在着色器参数中绑定一张 Noise2D (作为噪点质感图)
+        </div>
+        <div class="mt-2 sm:mt-0 flex items-center space-x-1">
+            <span>Powered by</span>
+            <span class="text-[#ff5e00] font-bold">Godot 4.x Engine Shading Language</span>
+        </div>
+    </footer>
+</div>
+
+<script>
+    // Global Configuration / State
+    let state = {
+        speed: 1.2,
+        width: 0.25,
+        angle: -45,
+        dispersion: 0.06,
+        glow: 3.5,
+        noise: 0.35,
+        enableRainbow: true,
+        beamColor: "#ffaa00",
+        activeTab: "shader"
+    };
+
+    // Preset configurations
+    const PRESETS = {
+        prism: {
+            speed: 1.2, width: 0.25, angle: -45, dispersion: 0.06, glow: 3.5, noise: 0.35, enableRainbow: true, beamColor: "#ffaa00"
+        },
+        warm_gold: {
+            speed: 1.0, width: 0.4, angle: -60, dispersion: 0.0, glow: 4.5, noise: 0.55, enableRainbow: false, beamColor: "#ffaa00"
+        },
+        cyber_laser: {
+            speed: 2.2, width: 0.08, angle: 90, dispersion: 0.12, glow: 8.0, noise: 0.1, enableRainbow: true, beamColor: "#00ffcc"
+        },
+        slow_hologram: {
+            speed: 0.4, width: 0.5, angle: -15, dispersion: 0.02, glow: 1.5, noise: 0.2, enableRainbow: true, beamColor: "#8000ff"
+        }
+    };
+
+    // On Load
+    window.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+        initWebGL();
+        generateGodotShaderCode();
+        generateGDScriptCode();
+    });
+
+    // Update form elements and sync State
+    function updateUniforms() {
+        state.speed = parseFloat(document.getElementById('speed').value);
+        state.width = parseFloat(document.getElementById('width').value);
+        state.angle = parseInt(document.getElementById('angle').value);
+        state.dispersion = parseFloat(document.getElementById('dispersion').value);
+        state.glow = parseFloat(document.getElementById('glow').value);
+        state.noise = parseFloat(document.getElementById('noise').value);
+        state.enableRainbow = document.getElementById('enableRainbow').checked;
+        state.beamColor = document.getElementById('beamColor').value;
+
+        // Display current values
+        document.getElementById('speedVal').innerText = state.speed + 'x';
+        document.getElementById('widthVal').innerText = state.width.toFixed(2);
+        document.getElementById('angleVal').innerText = state.angle + '°';
+        document.getElementById('dispersionVal').innerText = state.dispersion.toFixed(2);
+        document.getElementById('glowVal').innerText = state.glow.toFixed(1);
+        document.getElementById('noiseVal').innerText = state.noise.toFixed(2);
+        document.getElementById('beamColorVal').innerText = state.beamColor;
+
+        // UI toggles based on modes
+        const dispersionWrapper = document.getElementById('dispersionWrapper');
+        const singleColorContainer = document.getElementById('singleColorContainer');
+
+        if (state.enableRainbow) {
+            dispersionWrapper.classList.remove('hidden');
+            singleColorContainer.classList.add('hidden');
+        } else {
+            dispersionWrapper.classList.add('hidden');
+            singleColorContainer.classList.remove('hidden');
+        }
+
+        // Regenerate output code blocks
+        generateGodotShaderCode();
+        generateGDScriptCode();
+    }
+
+    // Preset Apply Button handler
+    function applyPreset(key) {
+        const preset = PRESETS[key];
+        if (!preset) return;
+
+        state = { ...state, ...preset };
+
+        // Set control UI elements
+        document.getElementById('speed').value = state.speed;
+        document.getElementById('width').value = state.width;
+        document.getElementById('angle').value = state.angle;
+        document.getElementById('dispersion').value = state.dispersion;
+        document.getElementById('glow').value = state.glow;
+        document.getElementById('noise').value = state.noise;
+        document.getElementById('enableRainbow').checked = state.enableRainbow;
+        document.getElementById('beamColor').value = state.beamColor;
+
+        // Trigger updates on preset change
+        updateUniforms();
+
+        // Style the buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.className = "preset-btn px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between";
+        });
+        event.currentTarget.className = "preset-btn px-3 py-2.5 rounded-lg text-xs font-semibold text-left transition bg-[#ff5e00]/10 border border-[#ff5e00]/30 text-[#ff8033] hover:bg-[#ff5e00]/20 flex items-center justify-between";
+    }
+
+    // Switch Script / Shader Tabs
+    function switchTab(tab) {
+        state.activeTab = tab;
+        const shaderBtn = document.getElementById('tabBtnShader');
+        const scriptBtn = document.getElementById('tabBtnScript');
+        const shaderView = document.getElementById('shaderCodeContainer');
+        const scriptView = document.getElementById('scriptCodeContainer');
+
+        if (tab === 'shader') {
+            shaderBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-[#ff5e00] text-black";
+            scriptBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-800 text-gray-400";
+            shaderView.classList.remove('hidden');
+            scriptView.classList.add('hidden');
+        } else {
+            scriptBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-[#ff5e00] text-black";
+            shaderBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-gray-800 text-gray-400";
+            scriptView.classList.remove('hidden');
+            shaderView.classList.add('hidden');
+        }
+    }
+
+    // Helper to turn Hex to RGB vec3
+    function hexToRgbVec3(hex) {
+        const r = parseInt(hex.slice(1, 3), 16) / 255.0;
+        const g = parseInt(hex.slice(3, 5), 16) / 255.0;
+        const b = parseInt(hex.slice(5, 7), 16) / 255.0;
+        return `vec3(${r.toFixed(3)}, ${g.toFixed(3)}, ${b.toFixed(3)})`;
+    }
+
+    function generateGodotShaderCode() {
+        const rgbVec = hexToRgbVec3(state.beamColor);
+        const shaderCode = `shader_type canvas_item;
+render_mode blend_mix;
+
+// --- 绝区零可琳风格彩虹/暖金扫光着色器 (Godot 4.x) ---
+// 提示：将此着色器应用到 Sprite2D 或 Control(UI) 节点的 Material 上。
+
+uniform float sweep_speed : hint_range(0.0, 5.0) = ${state.speed.toFixed(2)};
+uniform float sweep_width : hint_range(0.01, 1.0) = ${state.width.toFixed(2)};
+uniform float sweep_angle : hint_range(-180.0, 180.0) = ${state.angle.toFixed(1)};
+uniform float glow_intensity : hint_range(0.0, 15.0) = ${state.glow.toFixed(2)};
+uniform float dispersion : hint_range(0.0, 0.3) = ${state.dispersion.toFixed(2)}; // 边缘RGB棱镜色散宽度
+uniform bool enable_rainbow = ${state.enableRainbow};
+uniform vec3 single_beam_color : source_color = ${rgbVec};
+
+uniform float noise_strength : hint_range(0.0, 1.0) = ${state.noise.toFixed(2)};
+uniform sampler2D noise_texture : hint_default_black, filter_linear_repeat;
+
+// 向量旋转辅助方法
+vec2 rotate_uv(vec2 uv, float angle) {
+    float rad = radians(angle);
+    float s = sin(rad);
+    float c = cos(rad);
+    return vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
+}
+
+void fragment() {
+    // 获取基础精灵纹理颜色与 Alpha 通道
+    vec4 base_color = texture(TEXTURE, UV);
+    
+    // 如果像素本来就完全透明，跳过以节省开销 (防边缘白块)
+    if (base_color.a < 0.001) {
+        discard;
+    }
+
+    // 围绕中心进行偏移和旋转运算
+    vec2 rotated = rotate_uv(UV - vec2(0.5), sweep_angle) + vec2(0.5);
+    
+    // 计算周期性循环运动量，扫光宽度会全屏穿透
+    float sweep_pos = mod(TIME * sweep_speed, 2.5) - 0.75;
+    
+    // 相对扫光中轴的绝对距离
+    float dist = rotated.x - sweep_pos;
+
+    // 从噪声贴图中采样并给扫光边缘赋予无序粗糙度 (火焰或溶解颗粒感)
+    float noise_val = texture(noise_texture, UV + vec2(TIME * 0.05)).r;
+    dist += (noise_val - 0.5) * noise_strength * sweep_width;
+
+    vec3 light_addition;
+
+    if (enable_rainbow) {
+        // --- 核心RGB色度偏折算法 (炫彩棱镜) ---
+        float r_mask = smoothstep(sweep_width, 0.0, abs(dist - dispersion));
+        float g_mask = smoothstep(sweep_width, 0.0, abs(dist));
+        float b_mask = smoothstep(sweep_width, 0.0, abs(dist + dispersion));
+        
+        // 融合成三原色叠加的霓虹灯效
+        light_addition = vec3(r_mask, g_mask, b_mask) * glow_intensity;
+    } else {
+        // --- 经典温热或单一光束扫描 (如可琳帧 5-8 爆发效果) ---
+        float mono_mask = smoothstep(sweep_width, 0.0, abs(dist));
+        light_addition = single_beam_color * mono_mask * glow_intensity;
+    }
+
+    // 将发光成分作为加色混合 (Additive) 叠加在原始纹理上，并保留原像素 Alpha
+    vec3 final_rgb = base_color.rgb + (light_addition * base_color.a);
+    
+    COLOR = vec4(final_rgb, base_color.a);
+}`;
+        document.getElementById('shaderCodeContainer').textContent = shaderCode;
+    }
+
+    function generateGDScriptCode() {
+        const scriptCode = `# GDScript 代码示例：用于挂载到带有上述 Shader 的节点上
+# 提供在游戏运行时触发单次/循环扫光或者调动参数的API
+extends Sprite2D
+
+var mat: ShaderMaterial
+
+func _ready() -> void:
+    # 动态获取当前精灵挂载的 ShaderMaterial
+    if material is ShaderMaterial:
+        mat = material as ShaderMaterial
+    else:
+        printerr("请确保该节点上已经正确挂载了扫光着色器材质！")
+
+## 触发一次带有缓冲缓动的快速闪烁色散
+func trigger_sweep(duration: float = 1.0) -> void:
+    if not mat: return
+    
+    # 重置并创建 Tween 补间动画
+    var tween = create_tween().set_parallel(true)
+    
+    # 动画模拟：在给定的持续时间内，均匀推动扫描位移
+    # 使用自定义着色器的 TIME 时，可以通过调节 sweep_speed 产生扫描效果
+    # 也可以在 Shader 内用 uniform float progress 替代 mod(TIME)
+    
+    # 触发时增强色相散开的边缘质感，扫完后削弱
+    tween.tween_property(mat, "shader_parameter/dispersion", ${state.dispersion.toFixed(3)}, 0.1)
+    tween.tween_property(mat, "shader_parameter/glow_intensity", ${state.glow.toFixed(2)}, 0.1)
+    
+    # 待全部滑行完成后，弱化能量斑点
+    await get_tree().create_timer(duration).timeout
+    var fade_tween = create_tween()
+    fade_tween.tween_property(mat, "shader_parameter/glow_intensity", 0.0, 0.3)
+
+## 快捷修改扫光模式 (true: 彩虹色散, false: 温暖纯金)
+func set_rainbow_mode(enabled: bool) -> void:
+    if mat:
+        mat.set_shader_parameter("enable_rainbow", enabled)
+
+## 调整扫光倾斜角度
+func set_sweep_angle(degrees: float) -> void:
+    if mat:
+        mat.set_shader_parameter("sweep_angle", degrees)`;
+        document.getElementById('scriptCodeContainer').textContent = scriptCode;
+    }
+
+    // Copy Clipboards
+    function copyCurrentCode() {
+        const textToCopy = state.activeTab === 'shader' 
+            ? document.getElementById('shaderCodeContainer').textContent 
+            : document.getElementById('scriptCodeContainer').textContent;
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const btnText = document.getElementById('copyText');
+            const icon = document.getElementById('copyIcon');
+            
+            btnText.innerText = "复制成功！";
+            icon.setAttribute('data-lucide', 'check');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btnText.innerText = "复制代码";
+                icon.setAttribute('data-lucide', 'copy');
+                lucide.createIcons();
+            }, 2000);
+        });
+    }
+
+    let gl;
+    let program;
+    let uTime, uSpeed, uWidth, uAngle, uGlow, uDispersion, uNoiseStrength, uRainbow, uCustomColor;
+    let startTime = Date.now();
+
+    function initWebGL() {
+        const canvas = document.getElementById('previewCanvas');
+        gl = canvas.getContext('webgl');
+
+        if (!gl) {
+            console.error("WebGL not supported, falling back to 2D Canvas");
+            setup2DFallback();
+            return;
+        }
+
+        // Set dimensions
+        canvas.width = 280;
+        canvas.height = 340;
+
+        // Vertices for fullscreen quad
+        const vertices = new Float32Array([
+            -1.0, -1.0,  0.0, 0.0,
+             1.0, -1.0,  1.0, 0.0,
+            -1.0,  1.0,  0.0, 1.0,
+            -1.0,  1.0,  0.0, 1.0,
+             1.0, -1.0,  1.0, 0.0,
+             1.0,  1.0,  1.0, 1.0,
+        ]);
+
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        // Simple Vertex Shader
+        const vsSource = `
+            attribute vec2 position;
+            attribute vec2 uv;
+            varying vec2 v_uv;
+            void main() {
+                v_uv = uv;
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+        `;
+
+        // Fragment Shader matching Godot 4.x calculations exactly
+        const fsSource = `
+            precision mediump float;
+            varying vec2 v_uv;
+            
+            uniform float u_time;
+            uniform float u_speed;
+            uniform float u_width;
+            uniform float u_angle; // radians
+            uniform float u_glow;
+            uniform float u_dispersion;
+            uniform float u_noise_strength;
+            uniform bool u_rainbow;
+            uniform vec3 u_custom_color;
+
+            // Simple noise implementation
+            float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+            }
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                vec2 u = f*f*(3.0-2.0*f);
+                return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+                           mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+            }
+
+            vec2 rotate(vec2 uv, float angle) {
+                float s = sin(angle);
+                float c = cos(angle);
+                return vec2(uv.x * c - uv.y * s, uv.x * s + uv.y * c);
+            }
+
+            void main() {
+                // Procedural stylized silhouette of an anime girl with ponytail (representing Corin)
+                vec2 p = v_uv - vec2(0.5, 0.5);
+                
+                // Head silhouette
+                float head = smoothstep(0.28, 0.27, length(p + vec2(0.0, -0.05)));
+                // Hair twin drills/ponytail
+                float ponytail = smoothstep(0.18, 0.17, length(p + vec2(-0.16, 0.22)));
+                ponytail += smoothstep(0.15, 0.14, length(p + vec2(0.2, 0.25)));
+                // Maid dress collars
+                float dress = smoothstep(0.35, 0.34, length(p + vec2(0.0, 0.4)));
+                
+                float mask = clamp(head + ponytail + dress, 0.0, 1.0);
+                
+                // Base shadow background inside silhouette
+                vec3 base_color = vec3(0.18, 0.2, 0.24) * (0.8 + 0.3 * v_uv.y);
+                
+                // Highlight hair gear detail
+                float gear = smoothstep(0.06, 0.05, length(p + vec2(-0.15, -0.2))) * 0.4;
+                base_color += vec3(0.5, 0.4, 0.2) * gear;
+
+                // Rotated UV path for sweep direction
+                vec2 rotated_uv = rotate(v_uv - vec2(0.5), u_angle) + vec2(0.5);
+                
+                // Move scan line back and forth cleanly
+                float sweep_pos = mod(u_time * u_speed, 2.5) - 0.75;
+                float dist = rotated_uv.x - sweep_pos;
+
+                // Add wavy noise along sweep distortion
+                float n = noise(v_uv * 12.0 + vec2(u_time * 0.15));
+                dist += (n - 0.5) * u_noise_strength * u_width;
+
+                vec3 light_color = vec3(0.0);
+
+                if (u_rainbow) {
+                    float r = smoothstep(u_width, 0.0, abs(dist - u_dispersion));
+                    float g = smoothstep(u_width, 0.0, abs(dist));
+                    float b = smoothstep(u_width, 0.0, abs(dist + u_dispersion));
+                    light_color = vec3(r, g, b) * u_glow;
+                } else {
+                    float mono = smoothstep(u_width, 0.0, abs(dist));
+                    light_color = u_custom_color * mono * u_glow;
+                }
+
+                // Render inside anime silhouette with soft ambient edge glow
+                vec3 final_rgb = base_color + (light_color * mask);
+                
+                // Soft alpha contour
+                float alpha = smoothstep(0.001, 0.02, mask);
+                
+                gl_FragColor = vec4(final_rgb * alpha, alpha);
+            }
+        `;
+
+        const vs = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vs, vsSource);
+        gl.compileShader(vs);
+
+        const fs = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fs, fsSource);
+        gl.compileShader(fs);
+
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        const positionLoc = gl.getAttribLocation(program, 'position');
+        const uvLoc = gl.getAttribLocation(program, 'uv');
+
+        gl.enableVertexAttribArray(positionLoc);
+        gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 16, 0);
+
+        gl.enableVertexAttribArray(uvLoc);
+        gl.vertexAttribPointer(uvLoc, 2, gl.FLOAT, false, 16, 8);
+
+        // Save uniform locations
+        uTime = gl.getUniformLocation(program, 'u_time');
+        uSpeed = gl.getUniformLocation(program, 'u_speed');
+        uWidth = gl.getUniformLocation(program, 'u_width');
+        uAngle = gl.getUniformLocation(program, 'u_angle');
+        uGlow = gl.getUniformLocation(program, 'u_glow');
+        uDispersion = gl.getUniformLocation(program, 'u_dispersion');
+        uNoiseStrength = gl.getUniformLocation(program, 'u_noise_strength');
+        uRainbow = gl.getUniformLocation(program, 'u_rainbow');
+        uCustomColor = gl.getUniformLocation(program, 'u_custom_color');
+
+        // Blend function setup for clean transparency
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        requestAnimationFrame(render);
+    }
+
+    // WebGL Loop Execution
+    function render() {
+        if (!gl) return;
+
+        // Clear view
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0.035, 0.039, 0.051, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.useProgram(program);
+
+        // Uniform mapping
+        const elapsed = (Date.now() - startTime) / 1000.0;
+        gl.uniform1f(uTime, elapsed);
+        gl.uniform1f(uSpeed, state.speed);
+        gl.uniform1f(uWidth, state.width);
+        gl.uniform1f(uAngle, state.angle * Math.PI / 180.0);
+        gl.uniform1f(uGlow, state.glow);
+        gl.uniform1f(uDispersion, state.dispersion);
+        gl.uniform1f(uNoiseStrength, state.noise);
+        gl.uniform1i(uRainbow, state.enableRainbow ? 1 : 0);
+
+        // Set base color
+        const r = parseInt(state.beamColor.slice(1, 3), 16) / 255.0;
+        const g = parseInt(state.beamColor.slice(3, 5), 16) / 255.0;
+        const b = parseInt(state.beamColor.slice(5, 7), 16) / 255.0;
+        gl.uniform3f(uCustomColor, r, g, b);
+
+        // Draw Fullscreen Quad
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        requestAnimationFrame(render);
+    }
+
+    // Simple 2D canvas fallback in case WebGL fails
+    function setup2DFallback() {
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 280;
+        canvas.height = 340;
+        
+        function drawFallback() {
+            ctx.fillStyle = '#090a0d';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Text tip
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('WebGL 无法载入。请开启显卡硬件加速。', canvas.width / 2, canvas.height / 2);
+            
+            requestAnimationFrame(drawFallback);
+        }
+        drawFallback();
+    }
+</script>
+</body>
+</html>

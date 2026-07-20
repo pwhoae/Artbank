@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 背包與裝備系統</title>
+    <!-- Tailwind CSS for high quality styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel for dynamic simulation -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons for clean visuals -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', 'JetBrains Mono', sans-serif;
+            background-color: #1a1c23;
+            color: #e0e1e5;
+            user-select: none;
+        }
+
+        /* Custom scrollbar for Godot UI styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e222a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a3f4d;
+            border-radius: 4px;
+            border: 1px solid #2d3139;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+
+        /* Pulse animation for newly looted items */
+        @keyframes itemPulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0px rgba(71, 140, 191, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 12px 4px rgba(71, 140, 191, 0.4); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0px rgba(71, 140, 191, 0); }
+        }
+        .newly-added {
+            animation: itemPulse 1s ease-out;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 min-h-screen flex flex-col justify-between">
+
+    <div id="root" class="w-full max-w-7xl mx-auto flex-grow flex flex-col"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- Mock Data Database ---
+        const RARITY_COLORS = {
+            common: { text: "text-gray-400", border: "border-gray-600", bg: "bg-gray-800/60", glow: "shadow-sm", label: "普通" },
+            uncommon: { text: "text-green-400", border: "border-green-600/80", bg: "bg-green-950/40", glow: "shadow-green-900/30", label: "精良" },
+            rare: { text: "text-blue-400", border: "border-blue-500", bg: "bg-blue-950/40", glow: "shadow-blue-500/20 shadow-md", label: "稀有" },
+            epic: { text: "text-purple-400", border: "border-purple-500", bg: "bg-purple-950/40", glow: "shadow-purple-500/30 shadow-md", label: "史詩" },
+            legendary: { text: "text-yellow-400", border: "border-yellow-500", bg: "bg-yellow-950/40", glow: "shadow-yellow-500/40 shadow-lg animate-pulse", label: "傳說" }
+        };
+
+        const ITEM_POOL = [
+            { id: "weapon_01", name: "微風單手劍", type: "weapon", subType: "sword", rarity: "common", desc: "王國衛兵配發的標準輕劍，輕巧好上手。", value: 12, maxStack: 1, stats: { atk: 12, def: 0, hp: 0 }, icon: "⚔️" },
+            { id: "weapon_02", name: "赤炎魔導杖", type: "weapon", subType: "staff", rarity: "rare", desc: "鑲嵌著微弱火元素結晶的法杖，能使凝聚魔力的效率翻倍。", value: 45, maxStack: 1, stats: { atk: 34, def: 0, hp: 10 }, icon: "🔥" },
+            { id: "weapon_03", name: "王者之耀大劍", type: "weapon", subType: "greatsword", rarity: "legendary", desc: "失落帝國的王室象徵，蘊含強大的光之庇護神力。", value: 250, maxStack: 1, stats: { atk: 99, def: 20, hp: 50 }, icon: "👑" },
+            { id: "armor_01", name: "鏽蝕鐵皮甲", type: "armor", subType: "heavy", rarity: "common", desc: "雖然邊緣有些許鏽蝕，但基本防禦力依然可靠。", value: 15, maxStack: 1, stats: { atk: 0, def: 8, hp: 15 }, icon: "🛡️" },
+            { id: "armor_02", name: "夜行者輕披風", type: "armor", subType: "light", rarity: "uncommon", desc: "使用暗影蛛絲織成的披風，隱蔽性極高，活動方便。", value: 30, maxStack: 1, stats: { atk: 4, def: 12, hp: 20 }, icon: "🧥" },
+            { id: "armor_03", name: "神聖誓言板甲", type: "armor", subType: "heavy", rarity: "epic", desc: "接受過大教堂主教洗禮的白銀戰甲，邪崇之物無法侵犯。", value: 120, maxStack: 1, stats: { atk: 0, def: 45, hp: 100 }, icon: "⚜️" },
+            { id: "potion_01", name: "微效生命藥水", type: "consumable", rarity: "common", desc: "微甜的紅色藥水，能瞬間回復 50 點生命值。", value: 5, maxStack: 99, stats: { healHp: 50 }, icon: "🧪" },
+            { id: "potion_02", name: "強效魔力藥劑", type: "consumable", rarity: "rare", desc: "散發出淡淡星光的幽藍液體，能瞬間回復 100 點法力值。", value: 25, maxStack: 99, stats: { healMp: 100 }, icon: "🌀" },
+            { id: "material_01", name: "黑鐵礦石", type: "material", rarity: "common", desc: "雖然常見，卻是鍛造武器最穩定的基礎鋼材。", value: 3, maxStack: 99, stats: {}, icon: "🪨" },
+            { id: "material_02", name: "精靈古樹枝", type: "material", rarity: "rare", desc: "從世界樹支脈採集的靈木，用於製作高品質法杖與弓弦。", value: 35, maxStack: 99, stats: {}, icon: "🌿" },
+            { id: "quest_01", name: "生鏽的古老鑰匙", type: "quest", rarity: "rare", desc: "上面刻有看不懂的古樹花紋，好像能打開某個秘境寶箱。", value: 0, maxStack: 1, stats: {}, icon: "🔑" }
+        ];
+
+        // --- Initial Inventory Setup ---
+        const INITIAL_INVENTORY = [
+            { ...ITEM_POOL[0], qty: 1, inventoryId: "inv_1", isNew: false },
+            { ...ITEM_POOL[3], qty: 1, inventoryId: "inv_2", isNew: false },
+            { ...ITEM_POOL[6], qty: 5, inventoryId: "inv_3", isNew: false },
+            { ...ITEM_POOL[7], qty: 2, inventoryId: "inv_4", isNew: false },
+            { ...ITEM_POOL[8], qty: 15, inventoryId: "inv_5", isNew: false },
+            { ...ITEM_POOL[10], qty: 1, inventoryId: "inv_6", isNew: false }
+        ];
+
+        function App() {
+            const [inventory, setInventory] = useState(INITIAL_INVENTORY);
+            const [recentLoot, setRecentLoot] = useState([
+                { id: "rl_1", name: "生鏽的古老鑰匙", time: "2分鐘前", type: "obtained", icon: "🔑" },
+                { id: "rl_2", name: "微效生命藥水 x5", time: "5分鐘前", type: "obtained", icon: "🧪" }
+            ]);
+            const [activeTab, setActiveTab] = useState("all");
+            const [searchQuery, setSearchQuery] = useState("");
+            const [sortCriteria, setSortCriteria] = useState("rarity_desc"); // rarity_desc, name_asc, qty_desc
+            const [selectedItem, setSelectedItem] = useState(INITIAL_INVENTORY[0]);
+            
+            // Player Equipments
+            const [equippedWeapon, setEquippedWeapon] = useState(null);
+            const [equippedArmor, setEquippedArmor] = useState(null);
+            
+            // Player Attributes
+            const [playerStats, setPlayerStats] = useState({
+                level: 12,
+                hp: 280,
+                maxHp: 350,
+                mp: 120,
+                maxMp: 150,
+                atk: 25,
+                def: 18
+            });
+
+            // Feedback Toast Messages
+            const [toast, setToast] = useState(null);
+            const showToast = (message, type = "info") => {
+                setToast({ message, type });
+                setTimeout(() => setToast(null), 3000);
+            };
+
+            // Developer View State
+            const [viewMode, setViewMode] = useState("game"); // "game" or "godot_code"
+
+            // Compute actual player stats dynamically based on gear
+            const baseStats = { atk: 25, def: 18, maxHp: 350 };
+            const computedStats = useMemo(() => {
+                let bonusAtk = 0;
+                let bonusDef = 0;
+                let bonusHp = 0;
+
+                if (equippedWeapon) {
+                    bonusAtk += equippedWeapon.stats.atk || 0;
+                    bonusDef += equippedWeapon.stats.def || 0;
+                    bonusHp += equippedWeapon.stats.hp || 0;
+                }
+                if (equippedArmor) {
+                    bonusAtk += equippedArmor.stats.atk || 0;
+                    bonusDef += equippedArmor.stats.def || 0;
+                    bonusHp += equippedArmor.stats.hp || 0;
+                }
+
+                return {
+                    atk: baseStats.atk + bonusAtk,
+                    def: baseStats.def + bonusDef,
+                    maxHp: baseStats.maxHp + bonusHp
+                };
+            }, [equippedWeapon, equippedArmor]);
+
+            const filteredAndSortedInventory = useMemo(() => {
+                let list = inventory.filter(item => {
+                    // Category Filter
+                    if (activeTab !== "all") {
+                        if (activeTab === "weapon" && item.type !== "weapon") return false;
+                        if (activeTab === "armor" && item.type !== "armor") return false;
+                        if (activeTab === "consumable" && item.type !== "consumable") return false;
+                        if (activeTab === "material" && (item.type !== "material" && item.type !== "quest")) return false;
+                    }
+                    // Search Query
+                    if (searchQuery.trim() !== "") {
+                        return item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                               item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+                    }
+                    return true;
+                });
+
+                // Sorting
+                const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+                return list.sort((a, b) => {
+                    if (sortCriteria === "rarity_desc") {
+                        return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+                    } else if (sortCriteria === "name_asc") {
+                        return a.name.localeCompare(b.name, "zh-Hant");
+                    } else if (sortCriteria === "qty_desc") {
+                        return b.qty - a.qty;
+                    }
+                    return 0;
+                });
+            }, [inventory, activeTab, searchQuery, sortCriteria]);
+
+            // Keep selectedItem in sync if inventory elements change
+            useEffect(() => {
+                if (selectedItem) {
+                    const current = inventory.find(i => i.inventoryId === selectedItem.inventoryId);
+                    if (current) {
+                        setSelectedItem(current);
+                    } else {
+                        setSelectedItem(inventory[0] || null);
+                    }
+                } else if (inventory.length > 0) {
+                    setSelectedItem(inventory[0]);
+                }
+            }, [inventory]);
+
+            const handleUseItem = (item) => {
+                if (!item) return;
+
+                if (item.type === "consumable") {
+                    // Heal or Mana Restore
+                    let message = `使用了 ${item.name}。`;
+                    setPlayerStats(prev => {
+                        let newHp = prev.hp;
+                        let newMp = prev.mp;
+                        if (item.stats.healHp) {
+                            newHp = Math.min(prev.hp + item.stats.healHp, computedStats.maxHp);
+                            message += `生命值回復了 ${item.stats.healHp} 點！`;
+                        }
+                        if (item.stats.healMp) {
+                            newMp = Math.min(prev.mp + item.stats.healMp, prev.maxMp);
+                            message += `法力值回復了 ${item.stats.healMp} 點！`;
+                        }
+                        return { ...prev, hp: newHp, mp: newMp };
+                    });
+
+                    // Subtract consumable quantity
+                    setInventory(prev => {
+                        return prev.map(i => {
+                            if (i.inventoryId === item.inventoryId) {
+                                return { ...i, qty: i.qty - 1 };
+                            }
+                            return i;
+                        }).filter(i => i.qty > 0);
+                    });
+
+                    // Log action
+                    addLog(item.name, "使用", item.icon);
+                    showToast(message, "success");
+                }
+            };
+
+            const handleEquipItem = (item) => {
+                if (!item) return;
+
+                if (item.type === "weapon") {
+                    // Equip Weapon
+                    if (equippedWeapon) {
+                        // Return currently equipped to inventory
+                        const weaponToReturn = { ...equippedWeapon, inventoryId: `inv_swap_${Date.now()}`, isNew: false };
+                        setInventory(prev => [...prev, weaponToReturn]);
+                    }
+                    setEquippedWeapon(item);
+                    setInventory(prev => prev.filter(i => i.inventoryId !== item.inventoryId));
+                    addLog(item.name, "裝備武器", item.icon);
+                    showToast(`已成功裝備武器：${item.name}`, "info");
+                } else if (item.type === "armor") {
+                    // Equip Armor
+                    if (equippedArmor) {
+                        // Return currently equipped to inventory
+                        const armorToReturn = { ...equippedArmor, inventoryId: `inv_swap_${Date.now()}`, isNew: false };
+                        setInventory(prev => [...prev, armorToReturn]);
+                    }
+                    setEquippedArmor(item);
+                    setInventory(prev => prev.filter(i => i.inventoryId !== item.inventoryId));
+                    addLog(item.name, "裝備防具", item.icon);
+                    showToast(`已成功穿戴防具：${item.name}`, "info");
+                }
+            };
+
+            const handleUnequipItem = (slot) => {
+                if (slot === "weapon" && equippedWeapon) {
+                    const item = { ...equippedWeapon, inventoryId: `inv_unequip_${Date.now()}`, isNew: true };
+                    setInventory(prev => [...prev, item]);
+                    setSelectedItem(item);
+                    addLog(equippedWeapon.name, "卸下武器", equippedWeapon.icon);
+                    showToast(`卸下了武器：${equippedWeapon.name}`, "info");
+                    setEquippedWeapon(null);
+                } else if (slot === "armor" && equippedArmor) {
+                    const item = { ...equippedArmor, inventoryId: `inv_unequip_${Date.now()}`, isNew: true };
+                    setInventory(prev => [...prev, item]);
+                    setSelectedItem(item);
+                    addLog(equippedArmor.name, "卸下防具", equippedArmor.icon);
+                    showToast(`卸下了防具：${equippedArmor.name}`, "info");
+                    setEquippedArmor(null);
+                }
+            };
+
+            const handleDiscardItem = (item) => {
+                if (!item) return;
+                setInventory(prev => prev.filter(i => i.inventoryId !== item.inventoryId));
+                addLog(item.name, "丟棄", item.icon);
+                showToast(`丟棄了 ${item.name}`, "warning");
+            };
+
+            const addLog = (itemName, action, icon) => {
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                setRecentLoot(prev => [
+                    { id: `rl_${Date.now()}`, name: itemName, time: timeStr, type: action, icon },
+                    ...prev.slice(0, 9) // Limit to last 10 logs
+                ]);
+            };
+
+            const handleSimulateLoot = () => {
+                const randomBase = ITEM_POOL[Math.floor(Math.random() * ITEM_POOL.length)];
+                // Randomize quantity for stackables
+                const qty = randomBase.maxStack > 1 ? Math.floor(Math.random() * 5) + 1 : 1;
+                
+                setInventory(prev => {
+                    // Check if already in inventory & stackable
+                    if (randomBase.maxStack > 1) {
+                        const existingIdx = prev.findIndex(item => item.id === randomBase.id);
+                        if (existingIdx !== -1) {
+                            const updated = [...prev];
+                            updated[existingIdx] = {
+                                ...updated[existingIdx],
+                                qty: updated[existingIdx].qty + qty,
+                                isNew: true
+                            };
+                            return updated;
+                        }
+                    }
+                    // Otherwise append as new individual item / new stack
+                    return [...prev, {
+                        ...randomBase,
+                        qty,
+                        inventoryId: `inv_${Date.now()}`,
+                        isNew: true
+                    }];
+                });
+
+                // Set recently looted highlighted item as active preview
+                setTimeout(() => {
+                    setInventory(prev => prev.map(item => ({ ...item, isNew: false })));
+                }, 1500);
+
+                addLog(`${randomBase.name} (x${qty})`, "獲得戰利品", randomBase.icon);
+                showToast(`獲得了戰利品：${randomBase.name} x${qty}!`, "success");
+            };
+
+            const handleQuickSort = () => {
+                setSortCriteria("rarity_desc");
+                showToast("背包已一鍵排序整理（按稀有度）", "info");
+            };
+
+            return (
+                <div className="flex-grow flex flex-col gap-4">
+                    
+                    {/* Header */}
+                    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#232731] border border-[#2d3139] p-4 rounded-xl gap-4 shadow-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-[#478cbf]/20 text-[#478cbf] rounded-lg border border-[#478cbf]/40 animate-pulse">
+                                <i data-lucide="package" className="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-wide text-white flex items-center gap-2">
+                                    冒險者背包系統 <span className="text-xs bg-[#478cbf] text-white px-2 py-0.5 rounded font-mono">GODOT UI</span>
+                                </h1>
+                                <p className="text-xs text-gray-400">基於 Godot 4.x Control 節點架構設計與 GDScript 實現</p>
+                            </div>
+                        </div>
+
+                        {/* Navigation Toggles */}
+                        <div className="flex bg-[#1a1c23] p-1 rounded-lg border border-[#3a3f4d] self-stretch sm:self-auto">
+                            <button 
+                                onClick={() => setViewMode("game")}
+                                className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${viewMode === 'game' ? 'bg-[#478cbf] text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <i data-lucide="play" className="w-4 h-4"></i>
+                                互動背包演示
+                            </button>
+                            <button 
+                                onClick={() => setViewMode("godot_code")}
+                                className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${viewMode === 'godot_code' ? 'bg-[#ff7c5c] text-white' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                <i data-lucide="code-xml" className="w-4 h-4"></i>
+                                Godot 4 程式碼 / 架構
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Toast Alert */}
+                    {toast && (
+                        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-2xl border transition-all duration-300 transform translate-y-0 ${
+                            toast.type === "success" ? "bg-green-950/90 border-green-500 text-green-300" :
+                            toast.type === "warning" ? "bg-red-950/90 border-red-500 text-red-300" :
+                            "bg-blue-950/90 border-blue-500 text-blue-300"
+                        }`}>
+                            <span className="text-lg">
+                                {toast.type === "success" ? "✅" : toast.type === "warning" ? "⚠️" : "ℹ️"}
+                            </span>
+                            <span className="text-sm font-medium">{toast.message}</span>
+                        </div>
+                    )}
+
+                    {/* Main Content Pane */}
+                    {viewMode === "game" ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+                            
+                            {/* Left Panel: Player Profile / Stats / Gear */}
+                            <div className="lg:col-span-3 bg-[#232731] border border-[#2d3139] p-4 rounded-xl flex flex-col justify-between shadow-lg">
+                                <div>
+                                    <h2 className="text-md font-bold text-white mb-3 border-b border-[#2d3139] pb-2 flex items-center gap-2 text-[#478cbf]">
+                                        <i data-lucide="user" className="w-4 h-4"></i> 角色屬性與裝備
+                                    </h2>
+                                    
+                                    {/* Level & HP/MP Bars */}
+                                    <div className="space-y-3 mb-6 bg-[#1a1c23] p-3 rounded-lg border border-[#2d3139]">
+                                        <div className="flex justify-between items-center text-xs font-mono">
+                                            <span className="text-gray-400">等級 LV.</span>
+                                            <span className="text-[#ff7c5c] font-bold text-sm">{playerStats.level}</span>
+                                        </div>
+                                        {/* HP */}
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-red-400 font-medium">生命值 (HP)</span>
+                                                <span className="font-mono text-gray-300">{playerStats.hp} / {computedStats.maxHp}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-900 h-2.5 rounded-full overflow-hidden border border-gray-800">
+                                                <div 
+                                                    className="bg-gradient-to-r from-red-600 to-rose-400 h-full transition-all duration-300"
+                                                    style={{ width: `${(playerStats.hp / computedStats.maxHp) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        {/* MP */}
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-blue-400 font-medium">法力值 (MP)</span>
+                                                <span className="font-mono text-gray-300">{playerStats.mp} / {playerStats.maxMp}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-900 h-2.5 rounded-full overflow-hidden border border-gray-800">
+                                                <div 
+                                                    className="bg-gradient-to-r from-blue-600 to-cyan-400 h-full transition-all duration-300"
+                                                    style={{ width: `${(playerStats.mp / playerStats.maxMp) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Core Combat Stats */}
+                                    <div className="grid grid-cols-2 gap-2 mb-6">
+                                        <div className="bg-[#1a1c23] p-2.5 rounded border border-[#2d3139] flex flex-col items-center">
+                                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">物理攻擊 (ATK)</span>
+                                            <span className="text-lg font-bold text-yellow-500 font-mono mt-0.5">
+                                                {computedStats.atk}
+                                                {equippedWeapon && <span className="text-xs text-green-400 font-normal ml-1">+{equippedWeapon.stats.atk}</span>}
+                                            </span>
+                                        </div>
+                                        <div className="bg-[#1a1c23] p-2.5 rounded border border-[#2d3139] flex flex-col items-center">
+                                            <span className="text-[10px] text-gray-400 uppercase tracking-wider">物理防禦 (DEF)</span>
+                                            <span className="text-lg font-bold text-[#478cbf] font-mono mt-0.5">
+                                                {computedStats.def}
+                                                {equippedArmor && <span className="text-xs text-green-400 font-normal ml-1">+{equippedArmor.stats.def}</span>}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Equipment Slots */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide">目前裝備</h3>
+                                        
+                                        {/* Weapon Slot */}
+                                        <div className="flex items-center justify-between p-2.5 bg-[#1a1c23] border border-[#2d3139] hover:border-[#478cbf]/50 rounded-lg transition duration-200">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-800/80 rounded border border-gray-700 flex items-center justify-center text-xl shadow-inner">
+                                                    {equippedWeapon ? equippedWeapon.icon : "⚔️"}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 font-mono">武器欄位</p>
+                                                    <p className={`text-sm font-semibold truncate max-w-[120px] ${equippedWeapon ? RARITY_COLORS[equippedWeapon.rarity].text : 'text-gray-500 italic'}`}>
+                                                        {equippedWeapon ? equippedWeapon.name : "未裝備"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {equippedWeapon && (
+                                                <button 
+                                                    onClick={() => handleUnequipItem("weapon")}
+                                                    className="p-1 hover:bg-red-950/50 hover:text-red-400 rounded transition text-gray-400"
+                                                    title="卸下裝備"
+                                                >
+                                                    <i data-lucide="log-out" className="w-4 h-4"></i>
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Armor Slot */}
+                                        <div className="flex items-center justify-between p-2.5 bg-[#1a1c23] border border-[#2d3139] hover:border-[#478cbf]/50 rounded-lg transition duration-200">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-800/80 rounded border border-gray-700 flex items-center justify-center text-xl shadow-inner">
+                                                    {equippedArmor ? equippedArmor.icon : "🛡️"}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 font-mono">防具欄位</p>
+                                                    <p className={`text-sm font-semibold truncate max-w-[120px] ${equippedArmor ? RARITY_COLORS[equippedArmor.rarity].text : 'text-gray-500 italic'}`}>
+                                                        {equippedArmor ? equippedArmor.name : "未裝備"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {equippedArmor && (
+                                                <button 
+                                                    onClick={() => handleUnequipItem("armor")}
+                                                    className="p-1 hover:bg-red-950/50 hover:text-red-400 rounded transition text-gray-400"
+                                                    title="卸下裝備"
+                                                >
+                                                    <i data-lucide="log-out" className="w-4 h-4"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Simulation loot action */}
+                                <div className="mt-6 pt-4 border-t border-[#2d3139]">
+                                    <button 
+                                        onClick={handleSimulateLoot}
+                                        className="w-full bg-gradient-to-r from-[#478cbf] to-blue-600 text-white font-medium text-sm py-2.5 px-4 rounded-lg shadow-md hover:brightness-110 active:scale-[0.98] transition duration-200 flex items-center justify-center gap-2"
+                                    >
+                                        <i data-lucide="swords" className="w-4 h-4"></i>
+                                        模擬打怪 / 獲得隨機戰利品
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Middle Panel: Backpack & Grid (6 columns) */}
+                            <div className="lg:col-span-6 bg-[#232731] border border-[#2d3139] p-4 rounded-xl flex flex-col justify-between shadow-lg">
+                                <div>
+                                    
+                                    {/* Filters & Grid header */}
+                                    <div className="flex flex-col gap-3 mb-4">
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <h2 className="text-md font-bold text-white flex items-center gap-2">
+                                                <i data-lucide="archive" className="w-4 h-4 text-[#478cbf]"></i>
+                                                儲物背包 ({inventory.length} / 24)
+                                            </h2>
+                                            
+                                            {/* Quick Actions */}
+                                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                {/* Search Input */}
+                                                <div className="relative flex-1 sm:flex-initial">
+                                                    <i data-lucide="search" className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 transform -translate-y-1/2"></i>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="搜索戰利品..." 
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        className="w-full sm:w-44 bg-[#1a1c23] border border-[#2d3139] rounded px-2 py-1 pl-8 text-xs text-white focus:outline-none focus:border-[#478cbf]"
+                                                    />
+                                                </div>
+                                                
+                                                {/* Auto Sort Button */}
+                                                <button 
+                                                    onClick={handleQuickSort}
+                                                    className="bg-[#1a1c23] border border-[#2d3139] hover:bg-[#323846] text-xs font-semibold px-2 py-1 rounded text-gray-300 transition flex items-center gap-1 shrink-0"
+                                                    title="一鍵按稀有度排序整理"
+                                                >
+                                                    <i data-lucide="arrow-down-wide-narrow" className="w-3.5 h-3.5"></i>
+                                                    一鍵整理
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Categorization Tabs */}
+                                        <div className="flex bg-[#1a1c23] p-1 rounded border border-[#2d3139] overflow-x-auto gap-1">
+                                            {["all", "weapon", "armor", "consumable", "material"].map(tab => (
+                                                <button
+                                                    key={tab}
+                                                    onClick={() => setActiveTab(tab)}
+                                                    className={`px-3 py-1 rounded text-xs font-medium capitalize whitespace-nowrap transition duration-150 ${
+                                                        activeTab === tab 
+                                                            ? "bg-[#478cbf] text-white" 
+                                                            : "text-gray-400 hover:text-white hover:bg-[#232731]"
+                                                    }`}
+                                                >
+                                                    {tab === "all" && "全部物品"}
+                                                    {tab === "weapon" && "武器專區"}
+                                                    {tab === "armor" && "護甲防具"}
+                                                    {tab === "consumable" && "藥水消耗"}
+                                                    {tab === "material" && "材料與任務"}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {}
+                                    {/* Inventory Slot Grid (6x4 layout representing visual inventory container) */}
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 bg-[#1a1c23] p-3 rounded-lg border border-[#2d3139] min-h-[340px] max-h-[380px] overflow-y-auto">
+                                        
+                                        {/* Active Looted Items */}
+                                        {filteredAndSortedInventory.map((item) => {
+                                            const rarity = RARITY_COLORS[item.rarity];
+                                            const isSelected = selectedItem && selectedItem.inventoryId === item.inventoryId;
+                                            
+                                            return (
+                                                <div 
+                                                    key={item.inventoryId}
+                                                    onClick={() => setSelectedItem(item)}
+                                                    className={`relative aspect-square rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center group transition duration-150 hover:scale-[1.03] ${
+                                                        isSelected 
+                                                            ? "border-[#478cbf] bg-[#232731] shadow-lg shadow-[#478cbf]/10" 
+                                                            : `${rarity.border} ${rarity.bg} ${rarity.glow}`
+                                                    } ${item.isNew ? 'newly-added' : ''}`}
+                                                >
+                                                    {/* Rarity Glow Corner */}
+                                                    <span className={`absolute top-1 left-1.5 text-[8px] font-bold ${rarity.text} tracking-wider opacity-60 uppercase`}>
+                                                        {rarity.label}
+                                                    </span>
+
+                                                    {/* Custom Rich Graphic Symbol */}
+                                                    <span className="text-2xl select-none group-hover:scale-110 transition duration-150 transform">
+                                                        {item.icon}
+                                                    </span>
+
+                                                    {/* Stack Amount Badge */}
+                                                    {item.qty > 1 && (
+                                                        <span className="absolute bottom-1 right-1.5 bg-[#1e222a] text-white text-[10px] px-1 py-0.2 rounded border border-gray-600 font-bold font-mono">
+                                                            {item.qty}
+                                                        </span>
+                                                    )}
+
+                                                    {/* Quick Click Item Hover Focus Node border */}
+                                                    <div className={`absolute inset-0 border rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition duration-150 ${
+                                                        isSelected ? 'border-[#478cbf]' : 'border-white/20'
+                                                    }`}></div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Blank/Empty slots padding up to 24 slots to mimic realistic grid container */}
+                                        {Array.from({ length: Math.max(0, 24 - filteredAndSortedInventory.length) }).map((_, index) => (
+                                            <div 
+                                                key={`empty_${index}`}
+                                                className="aspect-square rounded-lg border border-[#2d3139]/60 bg-gray-900/20 flex items-center justify-center text-gray-700/40 text-xs font-mono select-none"
+                                            >
+                                                空
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Sorting dropdown selector & Quick Stat Summary */}
+                                <div className="mt-4 pt-3 border-t border-[#2d3139] flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-gray-400 gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <span>排序依據：</span>
+                                        <select 
+                                            value={sortCriteria}
+                                            onChange={(e) => setSortCriteria(e.target.value)}
+                                            className="bg-[#1a1c23] border border-[#2d3139] rounded px-1.5 py-0.5 text-xs text-gray-300 focus:outline-none focus:border-[#478cbf]"
+                                        >
+                                            <option value="rarity_desc">✨ 按品質由高到低</option>
+                                            <option value="name_asc">🔤 按名稱排序 (A-Z)</option>
+                                            <option value="qty_desc">📦 按持有數量由多到少</option>
+                                        </select>
+                                    </div>
+                                    <div className="font-mono">
+                                        負重率: <span className="text-white">{(inventory.length * 1.5).toFixed(1)}kg</span> / 50.0kg
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Panel: Detail Panel & Action Log (3 columns) */}
+                            <div className="lg:col-span-3 flex flex-col gap-4">
+                                
+                                {/* Selected Item Details */}
+                                <div className="bg-[#232731] border border-[#2d3139] p-4 rounded-xl flex-grow flex flex-col justify-between shadow-lg">
+                                    {selectedItem ? (
+                                        <div className="flex flex-col justify-between h-full">
+                                            <div>
+                                                {/* Header Info */}
+                                                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-[#2d3139]">
+                                                    <div className={`w-14 h-14 rounded-lg border-2 flex items-center justify-center text-3xl shadow-md ${RARITY_COLORS[selectedItem.rarity].border} ${RARITY_COLORS[selectedItem.rarity].bg}`}>
+                                                        {selectedItem.icon}
+                                                    </div>
+                                                    <div>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm ${RARITY_COLORS[selectedItem.rarity].text} ${RARITY_COLORS[selectedItem.rarity].bg} border ${RARITY_COLORS[selectedItem.rarity].border}`}>
+                                                            {RARITY_COLORS[selectedItem.rarity].label}
+                                                        </span>
+                                                        <h3 className={`text-md font-bold mt-1 text-white`}>
+                                                            {selectedItem.name}
+                                                        </h3>
+                                                    </div>
+                                                </div>
+
+                                                {/* Properties */}
+                                                <div className="space-y-2 mb-4">
+                                                    <div className="flex justify-between text-xs text-gray-400">
+                                                        <span>道具類型：</span>
+                                                        <span className="text-white capitalize">
+                                                            {selectedItem.type === "weapon" && "⚔️ 武器"}
+                                                            {selectedItem.type === "armor" && "🛡️ 護甲"}
+                                                            {selectedItem.type === "consumable" && "🧪 消耗型藥水"}
+                                                            {selectedItem.type === "material" && "🪨 素材原料"}
+                                                            {selectedItem.type === "quest" && "🔑 關鍵任務道具"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between text-xs text-gray-400">
+                                                        <span>最大堆疊：</span>
+                                                        <span className="text-white font-mono">{selectedItem.maxStack}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-xs text-gray-400">
+                                                        <span>物品價值：</span>
+                                                        <span className="text-yellow-500 font-mono">🪙 {selectedItem.value} 金幣</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Item Stats Block */}
+                                                {(selectedItem.stats.atk > 0 || selectedItem.stats.def > 0 || selectedItem.stats.hp > 0 || selectedItem.stats.healHp > 0 || selectedItem.stats.healMp > 0) && (
+                                                    <div className="bg-[#1a1c23] p-2.5 rounded border border-[#2d3139] mb-4 space-y-1.5">
+                                                        <h4 className="text-[10px] font-bold text-[#478cbf] uppercase tracking-wide">屬性加成 / 效果</h4>
+                                                        {selectedItem.stats.atk > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="text-gray-400">物理攻擊力</span>
+                                                                <span className="text-yellow-500 font-bold">+{selectedItem.stats.atk}</span>
+                                                            </div>
+                                                        )}
+                                                        {selectedItem.stats.def > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="text-gray-400">物理防禦力</span>
+                                                                <span className="text-[#478cbf] font-bold">+{selectedItem.stats.def}</span>
+                                                            </div>
+                                                        )}
+                                                        {selectedItem.stats.hp > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="text-gray-400">生命上限值</span>
+                                                                <span className="text-red-400 font-bold">+{selectedItem.stats.hp}</span>
+                                                            </div>
+                                                        )}
+                                                        {selectedItem.stats.healHp > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="text-gray-400">瞬間回復生命</span>
+                                                                <span className="text-green-400 font-bold">+{selectedItem.stats.healHp} HP</span>
+                                                            </div>
+                                                        )}
+                                                        {selectedItem.stats.healMp > 0 && (
+                                                            <div className="flex justify-between text-xs">
+                                                                <span className="text-gray-400">瞬間回復魔力</span>
+                                                                <span className="text-blue-400 font-bold">+{selectedItem.stats.healMp} MP</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Description Text */}
+                                                <div className="bg-[#1a1c23]/40 p-2.5 rounded border border-[#2d3139]/40 text-xs italic text-gray-300 leading-relaxed">
+                                                    "{selectedItem.desc}"
+                                                </div>
+                                            </div>
+
+                                            {/* Action Buttons */}
+                                            <div className="mt-4 space-y-2 pt-3 border-t border-[#2d3139]">
+                                                {/* Equip Action */}
+                                                {(selectedItem.type === "weapon" || selectedItem.type === "armor") && (
+                                                    <button 
+                                                        onClick={() => handleEquipItem(selectedItem)}
+                                                        className="w-full bg-[#478cbf] hover:bg-blue-600 text-white font-medium text-xs py-2 rounded transition duration-150 flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <i data-lucide="shield-check" className="w-4 h-4"></i>
+                                                        裝備至角色
+                                                    </button>
+                                                )}
+
+                                                {/* Use Action */}
+                                                {selectedItem.type === "consumable" && (
+                                                    <button 
+                                                        onClick={() => handleUseItem(selectedItem)}
+                                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs py-2 rounded transition duration-150 flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <i data-lucide="sparkles" className="w-4 h-4"></i>
+                                                        立刻使用 (消耗x1)
+                                                    </button>
+                                                )}
+
+                                                {/* Discard Action */}
+                                                <button 
+                                                    onClick={() => handleDiscardItem(selectedItem)}
+                                                    className="w-full bg-[#1a1c23] hover:bg-red-950/40 hover:text-red-400 border border-red-900/30 text-gray-400 font-medium text-xs py-2 rounded transition duration-150 flex items-center justify-center gap-1.5"
+                                                >
+                                                    <i data-lucide="trash-2" className="w-4 h-4"></i>
+                                                    丟棄物品
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-gray-500 py-10">
+                                            <i data-lucide="info" className="w-8 h-8 mb-2 opacity-50"></i>
+                                            <p className="text-xs">請選擇背包中的任一道具</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {}
+                                {/* Bottom Action Loot Log */}
+                                <div className="bg-[#232731] border border-[#2d3139] p-4 rounded-xl max-h-[200px] flex flex-col shadow-lg">
+                                    <h3 className="text-xs font-bold text-white mb-2 border-b border-[#2d3139] pb-1.5 flex items-center gap-2">
+                                        <i data-lucide="clock" className="w-3.5 h-3.5 text-[#ff7c5c]"></i>
+                                        冒險近期動態紀錄
+                                    </h3>
+                                    <div className="overflow-y-auto space-y-1.5 pr-1 flex-grow">
+                                        {recentLoot.map(log => (
+                                            <div key={log.id} className="flex justify-between items-center text-[11px] bg-[#1a1c23] p-1.5 rounded border border-[#2d3139]/40">
+                                                <span className="text-gray-400 font-mono">{log.time}</span>
+                                                <span className="text-white font-medium flex items-center gap-1">
+                                                    <span>{log.icon}</span>
+                                                    <span>{log.name}</span>
+                                                </span>
+                                                <span className={`px-1.5 py-0.2 rounded text-[10px] ${
+                                                    log.type.includes("獲得") ? "bg-green-950/60 text-green-400 border border-green-900/30" : 
+                                                    log.type.includes("裝備") ? "bg-blue-950/60 text-blue-400 border border-blue-900/30" : 
+                                                    "bg-[#2d3139] text-gray-300"
+                                                }`}>{log.type}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    ) : (
+                        <div className="bg-[#1e1e24] border border-[#2d3139] p-4 sm:p-6 rounded-xl shadow-lg space-y-6 overflow-y-auto flex-grow max-h-[700px]">
+                            
+                            <div>
+                                <h2 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 bg-[#ff7c5c] rounded-full animate-ping"></span>
+                                    Godot 4.x 節點結構設計 (Scene Tree Tree)
+                                </h2>
+                                <p className="text-xs text-gray-400 mb-4">請在 Godot 編輯器內依據以下階層構建您的 UI 場景：</p>
+                                
+                                <pre className="bg-[#15151a] p-4 rounded-lg text-xs font-mono text-emerald-400 border border-emerald-950 overflow-x-auto leading-relaxed">
+{`InventoryCanvas (CanvasLayer)
+└── InventoryUI (Control, script: InventoryUI.gd)
+    └── BackgroundPanel (PanelContainer)
+        └── MarginContainer (邊距控制, e.g. 15px)
+            └── HBoxContainer (分左右兩邊：背包格與詳細面板)
+                ├── LeftPanel (VBoxContainer, 寬度比 7)
+                │   ├── HeaderBar (HBoxContainer)
+                │   │   ├── TitleLabel (Label)
+                │   │   └── SortButton (Button)  <-- 連接 "pressed" 信號
+                │   ├── TabContainer (TabBar / HBoxContainer)
+                │   │   ├── TabAll (Button)
+                │   │   ├── TabWeapons (Button)
+                │   │   └── TabConsumables (Button)
+                │   └── ScrollContainer (滑動區域, 設置垂直滾動)
+                │       └── ItemGrid (GridContainer, 設置 Columns=6)  <-- 背包核心容器
+                └── RightPanel (VBoxContainer, 寬度比 3, 詳細內容面版)
+                    ├── ItemHeader (HBoxContainer)
+                    │   ├── ItemIcon (TextureRect)
+                    │   └── ItemName (Label)
+                    ├── DescriptionBox (RichTextLabel)
+                    ├── StatsContainer (VBoxContainer)
+                    └── ActionButtonGroup (VBoxContainer)
+                        ├── UseButton (Button)  <-- 連接 "pressed" 信號
+                        └── DiscardButton (Button)  <-- 連接 "pressed" 信號`}
+                                </pre>
+                            </div>
+
+                            <div className="border-t border-[#2d3139] pt-6">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <i data-lucide="file-code" className="text-[#ff7c5c] w-5 h-5"></i>
+                                        核心代碼：ItemData.gd (自定義資源檔)
+                                    </h2>
+                                    <span className="text-[10px] bg-[#3a3f4d] text-white px-2 py-0.5 rounded font-mono">GDScript (Resource)</span>
+                                </div>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    使用 Godot 4 的 <code>Resource</code> 作為物品數據基類。您可以在專案中為每種道具（例如：生命藥水、烈焰長劍）創建獨立的 <code>.tres</code> 資源檔。
+                                </p>
+                                <pre className="bg-[#15151a] p-4 rounded-lg text-xs font-mono text-gray-200 border border-gray-800 overflow-x-auto">
+{`# ItemData.gd
+class_name ItemData
+extends Resource
+
+enum Type { WEAPON, ARMOR, CONSUMABLE, MATERIAL, QUEST }
+enum Rarity { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY }
+
+@export var id: String = ""
+@export var name: String = "未命名物品"
+@export var type: Type = Type.CONSUMABLE
+@export var rarity: Rarity = Rarity.COMMON
+@export_multiline var description: String = ""
+@export var icon: Texture2D  # 清楚的圖示
+@export var value: int = 10
+@export var max_stack: int = 99
+
+# 屬性加成字典 (例如: {"atk": 10, "heal_hp": 50})
+@export var stats: Dictionary = {}`}
+                                </pre>
+                            </div>
+
+                            <div className="border-t border-[#2d3139] pt-6">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <i data-lucide="file-code" className="text-[#ff7c5c] w-5 h-5"></i>
+                                        核心控制器：InventoryUI.gd (UI 控制與邏輯整合)
+                                    </h2>
+                                    <span className="text-[10px] bg-[#3a3f4d] text-white px-2 py-0.5 rounded font-mono">GDScript (UI Node)</span>
+                                </div>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    這段代碼控制背包網格的即時渲染、一鍵整理、分類篩選、最近獲取紀錄更新，以及裝備切換。
+                                </p>
+                                <pre className="bg-[#15151a] p-4 rounded-lg text-xs font-mono text-gray-200 border border-gray-800 overflow-x-auto">
+{`# InventoryUI.gd
+extends Control
+
+# 信號通知外部系統 (例如角色數值管理器)
+signal item_used(item: ItemData)
+signal item_equipped(item: ItemData)
+
+@onready var grid_container = $BackgroundPanel/MarginContainer/HBoxContainer/LeftPanel/ScrollContainer/ItemGrid
+@onready var detail_panel = $BackgroundPanel/MarginContainer/HBoxContainer/RightPanel
+@onready var recent_log_list = $BackgroundPanel/MarginContainer/HBoxContainer/RightPanel/RecentLogList
+
+# 內部儲存
+var inventory_list: Array[Dictionary] = [] # 包含 { "item_data": ItemData, "qty": int }
+var recent_loot_queue: Array[Dictionary] = [] # 儲存最近 5 筆戰利品歷史
+var selected_item_index: int = -1
+var current_filter_type: String = "all"
+
+# 背包自定義預製格子場景 (內含 TextureRect 圖示與 Label 數量)
+const SLOT_SCENE = preload("res://scenes/inventory_slot.tscn")
+
+func _ready():
+    # 綁定按鈕信號
+    $BackgroundPanel/MarginContainer/HBoxContainer/LeftPanel/HeaderBar/SortButton.pressed.connect(sort_inventory)
+    $BackgroundPanel/MarginContainer/HBoxContainer/RightPanel/ActionButtonGroup/UseButton.pressed.connect(_on_use_pressed)
+    setup_tabs()
+    render_inventory()
+
+# 添加物品與自動紀錄
+func add_item(item: ItemData, amount: int = 1):
+    # 若為堆疊型，尋找既有格子
+    if item.max_stack > 1:
+        for slot in inventory_list:
+            if slot["item_data"].id == item.id:
+                slot["qty"] = min(slot["qty"] + amount, item.max_stack)
+                add_recent_log(item, "獲得戰利品")
+                render_inventory()
+                return
+                
+    inventory_list.append({"item_data": item, "qty": amount})
+    add_recent_log(item, "獲得戰利品")
+    render_inventory()
+
+# 一鍵快速排序與整理
+func sort_inventory():
+    # 依稀有度排序 (品質高 -> 低)
+    inventory_list.sort_custom(func(a, b):
+        return a["item_data"].rarity > b["item_data"].rarity
+    )
+    render_inventory()
+
+# 分類分頁篩選器
+func set_filter(category: String):
+    current_filter_type = category
+    render_inventory()
+
+# 核心渲染方法
+func render_inventory():
+    # 清空目前所有格子
+    for child in grid_container.get_children():
+        child.queue_free()
+        
+    for index in range(inventory_list.size()):
+        var slot = inventory_list[index]
+        var item: ItemData = slot["item_data"]
+        
+        # 篩選比對
+        if current_filter_type != "all":
+            if current_filter_type == "weapon" and item.type != ItemData.Type.WEAPON: continue
+            if current_filter_type == "armor" and item.type != ItemData.Type.ARMOR: continue
+            if current_filter_type == "consumable" and item.type != ItemData.Type.CONSUMABLE: continue
+            if current_filter_type == "material" and item.type != ItemData.Type.MATERIAL: continue
+            
+        # 實例化格子並賦予數值
+        var slot_inst = SLOT_SCENE.instantiate()
+        grid_container.add_child(slot_inst)
+        
+        # 傳遞點擊焦點事件
+        slot_inst.setup(item, slot["qty"])
+        slot_inst.focus_entered.connect(func(): _on_item_focused(index))
+
+# 近期動態紀錄功能
+func add_recent_log(item: ItemData, action_type: String):
+    var log_data = {
+        "name": item.name,
+        "action": action_type,
+        "time": Time.get_time_string_from_system()
+    }
+    recent_loot_queue.push_front(log_data)
+    if recent_loot_queue.size() > 5:
+        recent_loot_queue.pop_back()
+    update_recent_log_ui()
+
+func update_recent_log_ui():
+    # 清空並在 UI 控制區段繪製最近拾取的 5 個戰利品標籤
+    pass
+
+# 使用道具或穿戴裝備
+func _on_use_pressed():
+    if selected_item_index == -1: return
+    var slot = inventory_list[selected_item_index]
+    var item: ItemData = slot["item_data"]
+    
+    if item.type == ItemData.Type.CONSUMABLE:
+        item_used.emit(item) # 觸發消耗
+        slot["qty"] -= 1
+        if slot["qty"] <= 0:
+            inventory_list.remove_at(selected_item_index)
+            selected_item_index = -1
+    elif item.type == ItemData.Type.WEAPON or item.type == ItemData.Type.ARMOR:
+        item_equipped.emit(item) # 切換裝備
+        inventory_list.remove_at(selected_item_index)
+        selected_item_index = -1
+        
+    render_inventory()
+`}
+                                </pre>
+                            </div>
+
+                        </div>
+                    )}
+
+                    {/* Footer System Meta */}
+                    <footer className="mt-4 text-center text-xs text-gray-500 font-mono">
+                        Designed for Godot Engine 4.x • Fully Responsive Sandbox UI • Implemented with React & Tailwind CSS
+                    </footer>
+
+                </div>
+            );
+        }
+
+        // Render the application
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<App />);
+
+        // Initialize Lucide Icons after React rendering settles
+        setTimeout(() => {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }, 300);
+    </script>
+</body>
+</html>

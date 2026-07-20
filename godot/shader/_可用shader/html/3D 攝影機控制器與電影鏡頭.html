@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D 摄像机与电影镜头控制器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=PingFang+SC:wght@400;600;800&display=swap');
+        body {
+            font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0d0e12;
+            color: #e2e8f0;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1c23;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #718096;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+<div class="min-h-screen flex flex-col">
+    <!-- Top Header Navigation -->
+    <header class="bg-[#15171e] border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2.5 rounded-lg text-white shadow-lg shadow-blue-900/30">
+                <i class="fa-solid fa-camera-retro text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight tracking-wide text-white">Godot 3D 摄像机控制器与电影镜头教学系统</h1>
+                <p class="text-xs text-slate-400">支持 1/2/3 人称平滑过渡与电影工业标准八大镜头参数模拟</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-slate-300 font-medium">Godot 4.x 兼容</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+        
+        <!-- Left Panel: 3D Camera Simulator -->
+        <div class="lg:col-span-7 flex flex-col bg-[#0f1115] border-r border-slate-800 min-h-[500px]">
+            <!-- 3D Canvas Area -->
+            <div class="relative flex-1 bg-slate-950 overflow-hidden min-h-[350px]">
+                <!-- Simulator Canvas Container -->
+                <div id="canvas-container" class="w-full h-full absolute inset-0"></div>
+                
+                <!-- HUD Overlay (Camera info) -->
+                <div class="absolute top-4 left-4 z-10 pointer-events-none bg-slate-900/85 backdrop-blur-md px-4 py-3 rounded-xl border border-slate-700/50 max-w-xs shadow-2xl">
+                    <div class="text-[10px] font-bold tracking-wider text-blue-400 uppercase">镜头状态 (HUD)</div>
+                    <div class="text-base font-extrabold text-white mt-1" id="hud-cam-name">第三人称 (常规视角)</div>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-slate-300">
+                        <div>距离: <span id="hud-distance" class="font-mono text-emerald-400">4.50m</span></div>
+                        <div>FOV: <span id="hud-fov" class="font-mono text-emerald-400">70°</span></div>
+                        <div>仰角: <span id="hud-pitch" class="font-mono text-emerald-400">15.0°</span></div>
+                        <div>倾斜角: <span id="hud-roll" class="font-mono text-emerald-400">0.0°</span></div>
+                    </div>
+                </div>
+
+                <!-- 3D Scene Controls (Interactive UI overlays) -->
+                <div class="absolute bottom-4 left-4 right-4 z-10 flex flex-wrap gap-2 justify-between items-center pointer-events-none">
+                    <div class="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[11px] text-slate-300 border border-slate-800">
+                        <i class="fa-solid fa-info-circle mr-1 text-blue-400"></i>
+                        拖动鼠标可旋转观察角色环境位置。
+                    </div>
+                    <div class="pointer-events-auto flex gap-2">
+                        <button id="btn-reset-character" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrows-spin"></i> 重置演员
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Controller Buttons -->
+            <div class="p-6 bg-[#12141c] border-t border-slate-800">
+                <div class="mb-5">
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-blue-500"></i> 1. 人称视角切换 (游戏核心)
+                    </h2>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="switchView('firstPerson')" class="view-btn group relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 hover:from-blue-600 hover:to-blue-700 text-white p-3.5 rounded-xl border border-slate-700/60 hover:border-blue-500 shadow-md transition-all duration-300 flex flex-col items-center justify-center text-center">
+                            <div class="text-xl mb-1 text-slate-300 group-hover:text-white transition"><i class="fa-solid fa-eye"></i></div>
+                            <span class="text-sm font-bold">第一人称 (FPS)</span>
+                            <span class="text-[10px] text-slate-400 group-hover:text-blue-100 mt-0.5">沉浸/射击视角</span>
+                        </button>
+                        
+                        <button onclick="switchView('secondPerson')" class="view-btn group relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 hover:from-blue-600 hover:to-blue-700 text-white p-3.5 rounded-xl border border-slate-700/60 hover:border-blue-500 shadow-md transition-all duration-300 flex flex-col items-center justify-center text-center">
+                            <div class="text-xl mb-1 text-slate-300 group-hover:text-white transition"><i class="fa-solid fa-comments"></i></div>
+                            <span class="text-sm font-bold">第二人称 (OTS)</span>
+                            <span class="text-[10px] text-slate-400 group-hover:text-blue-100 mt-0.5">越肩/对话视角</span>
+                        </button>
+
+                        <button onclick="switchView('thirdPerson')" class="view-btn group relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white p-3.5 rounded-xl border border-blue-500 shadow-md shadow-blue-900/20 transition-all duration-300 flex flex-col items-center justify-center text-center" id="default-active-btn">
+                            <div class="text-xl mb-1 text-white transition"><i class="fa-solid fa-person-running"></i></div>
+                            <span class="text-sm font-bold">第三人称 (TPS)</span>
+                            <span class="text-[10px] text-blue-100 mt-0.5">传统动作/冒险视角</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-film text-pink-500"></i> 2. 电影工业常用镜头 (戏剧张力)
+                    </h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <button onclick="switchView('closeUp')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">面部特写 (CU)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">表达角色情感</span>
+                        </button>
+                        
+                        <button onclick="switchView('extremeCloseUp')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">大特写 (ECU)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">局部/眼睛特写</span>
+                        </button>
+
+                        <button onclick="switchView('lowAngle')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">英雄仰拍 (Low-Angle)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">显示高大与力量</span>
+                        </button>
+
+                        <button onclick="switchView('highAngle')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">俯俯拍 (High-Angle)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">表达弱小、危险</span>
+                        </button>
+
+                        <button onclick="switchView('dutchAngle')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">荷兰角斜拍 (Dutch)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">疯狂、眩晕、悬疑</span>
+                        </button>
+
+                        <button onclick="switchView('birdsEye')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">鸟瞰俯视 (Bird's Eye)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">上帝视角，展现环境</span>
+                        </button>
+
+                        <button onclick="switchView('mediumShot')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">半身中景 (Medium)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">展示半身与手势</span>
+                        </button>
+
+                        <button onclick="switchView('fullShot')" class="view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center">
+                            <span class="text-xs font-bold">全身远景 (Full Shot)</span>
+                            <span class="text-[9px] text-slate-400 group-hover:text-slate-300 mt-0.5">展现角色完整造型</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Tabs for Code and Explanations -->
+        <div class="lg:col-span-5 bg-[#111318] flex flex-col h-full border-t lg:border-t-0 border-slate-800">
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-slate-800 text-sm bg-[#15181e] select-none">
+                <button onclick="activeTab('gdscript-code')" id="tab-btn-gdscript-code" class="tab-btn py-3.5 px-5 text-blue-400 border-b-2 border-blue-500 font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-code"></i> GDScript 源码
+                </button>
+                <button onclick="activeTab('godot-scene')" id="tab-btn-godot-scene" class="tab-btn py-3.5 px-5 text-slate-400 hover:text-slate-200 border-b-2 border-transparent font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-sitemap"></i> 节点架构图
+                </button>
+                <button onclick="activeTab('theory-guide')" id="tab-btn-theory-guide" class="tab-btn py-3.5 px-5 text-slate-400 hover:text-slate-200 border-b-2 border-transparent font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap"></i> 电影运镜理论
+                </button>
+            </div>
+
+            <!-- Tab Contents Container -->
+            <div class="flex-1 overflow-y-auto p-6 max-h-[calc(100vh-140px)]">
+                
+                <!-- Tab 1: GDScript Code -->
+                <div id="tab-gdscript-code" class="tab-content block space-y-4">
+                    <div class="flex justify-between items-center bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 font-medium">实现核心: <code class="text-blue-400">CameraController.gd</code></div>
+                        <span class="bg-blue-900/30 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">GDScript</span>
+                    </div>
+
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        以下代码实现了通过单个 Camera3D 节点，在游戏里用平滑的线性插值（Lerp）和球形平滑过渡各种预设。只需在场景中创建不同的 Marker3D 节点，摄像机将会在它们之间优雅地滑行和调整视角。
+                    </p>
+
+                    <div class="relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner">
+                        <div class="absolute top-3 right-3 z-10">
+                            <button onclick="copyToClipboard('gdscript-code-block')" class="bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs px-2.5 py-1.5 rounded border border-slate-700 flex items-center gap-1.5 active:bg-blue-600 transition">
+                                <i class="fa-regular fa-copy"></i> <span>复制代码</span>
+                            </button>
+                        </div>
+                        <pre class="p-4 text-xs text-emerald-400 code-font overflow-x-auto leading-relaxed max-h-[500px]" id="gdscript-code-block">
+# ==============================================================================
+#                      3D 游戏/电影多视角摄像机控制器 (Godot 4.x)
+# ==============================================================================
+extends Camera3D
+
+# 定义视角模式枚举
+enum CamMode {
+	FIRST_PERSON,     # 第一人称
+	SECOND_PERSON,    # 第二人称 (过肩/对话)
+	THIRD_PERSON,     # 第三人称 (动作冒险)
+	CLOSE_UP,         # 演员特写 (Close-Up)
+	EXTREME_CLOSE_UP, # 演员大特写 (Extreme Close-Up)
+	LOW_ANGLE,        # 仰拍
+	HIGH_ANGLE,       # 俯拍
+	DUTCH_ANGLE,      # 荷兰角斜拍
+	BIRDS_EYE         # 鸟瞰
+}
+
+@export_group("摄像机定位锚点 (Marker3D)")
+# 挂载在玩家(或剧场中心)子节点下的定位锚点
+@export var first_person_marker: Marker3D
+@export var second_person_marker: Marker3D
+@export var third_person_marker: Marker3D
+@export var close_up_marker: Marker3D
+@export var extreme_close_up_marker: Marker3D
+@export var low_angle_marker: Marker3D
+@export var high_angle_marker: Marker3D
+@export var dutch_angle_marker: Marker3D
+@export var birds_eye_marker: Marker3D
+
+@export_group("平滑插值参数")
+@export var transition_speed: float = 5.0 # 平滑插值速度 (值越大越迅速)
+@export var rotation_speed: float = 6.0   # 旋转平滑速度
+@export var fov_speed: float = 4.0        # 视场角缩放插值速度
+
+# 默认设置当前视角
+@export var current_mode: CamMode = CamMode.THIRD_PERSON
+
+# 运行时用于控制各模式的特定 FOV 参数
+var mode_fovs: Dictionary = {
+	CamMode.FIRST_PERSON: 85.0,
+	CamMode.SECOND_PERSON: 55.0,     # OTS 焦段偏窄，有纵深压缩感
+	CamMode.THIRD_PERSON: 70.0,
+	CamMode.CLOSE_UP: 35.0,          # 电影特写建议使用长焦 (低FOV)，减少面部畸变
+	CamMode.EXTREME_CLOSE_UP: 20.0,  # 极其狭窄的长焦
+	CamMode.LOW_ANGLE: 65.0,
+	CamMode.HIGH_ANGLE: 75.0,
+	CamMode.DUTCH_ANGLE: 65.0,
+	CamMode.BIRDS_EYE: 60.0
+}
+
+# 当前正在插值的目标定位节点
+var target_marker: Marker3D
+# 电影导演镜头可能会有特殊的 Z 轴（滚转角 Roll），用于类似荷兰角的旋转
+var target_roll: float = 0.0
+
+func _ready() -> void:
+	# 检查初始化锚点
+	_update_target_marker()
+	if target_marker:
+		global_transform = target_marker.global_transform
+		fov = mode_fovs[current_mode]
+
+func _process(delta: float) -> void:
+	_update_target_marker()
+	if not target_marker:
+		return
+
+	# 1. 位置插值 (Lerp Location)
+	global_position = global_position.lerp(target_marker.global_position, transition_speed * delta)
+
+	# 2. 旋转插值 (Slerp Rotation)
+	# 使用四元数进行平滑旋转，避免万向节锁
+	var current_quat = global_transform.basis.get_rotation_quaternion()
+	var target_quat = target_marker.global_transform.basis.get_rotation_quaternion()
+	
+	# 如果是荷兰角，给目标四元数人为叠加 Z 轴倾斜
+	if current_mode == CamMode.DUTCH_ANGLE:
+		# 倾斜大约 -15 度
+		var roll_offset = Quaternion(Vector3.FORWARD, deg_to_rad(-15.0))
+		target_quat = target_quat * roll_offset
+		
+	var final_quat = current_quat.slerp(target_quat, rotation_speed * delta)
+	global_transform.basis = Basis(final_quat)
+
+	# 3. 视场角插值 (Lerp FOV) - 电影长焦的关键
+	var target_fov = mode_fovs.get(current_mode, 70.0)
+	fov = lerp(fov, target_fov, fov_speed * delta)
+
+# 核心：根据枚举切换目标锚点
+func switch_camera_mode(new_mode: CamMode) -> void:
+	current_mode = new_mode
+	_update_target_marker()
+
+# 获取当前枚举对应的 Marker3D
+func _update_target_marker() -> void:
+	match current_mode:
+		CamMode.FIRST_PERSON:
+			target_marker = first_person_marker
+		CamMode.SECOND_PERSON:
+			target_marker = second_person_marker
+		CamMode.THIRD_PERSON:
+			target_marker = third_person_marker
+		CamMode.CLOSE_UP:
+			target_marker = close_up_marker
+		CamMode.EXTREME_CLOSE_UP:
+			target_marker = extreme_close_up_marker
+		CamMode.LOW_ANGLE:
+			target_marker = low_angle_marker
+		CamMode.HIGH_ANGLE:
+			target_marker = high_angle_marker
+		CamMode.DUTCH_ANGLE:
+			target_marker = dutch_angle_marker
+		CamMode.BIRDS_EYE:
+			target_marker = birds_eye_marker
+</pre>
+                    </div>
+
+                    <!-- Godot UI Connection script -->
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold text-slate-200 uppercase">前端 UI 按键触发关联脚本</h4>
+                        <p class="text-xs text-slate-400">将以下逻辑绑定在场景内的 `Button` 上，通过简单的信号触发模式切换：</p>
+                        <pre class="bg-slate-950 p-3 rounded-lg text-[11px] text-blue-300 code-font">
+# Button UI 绑定的控制脚本示例
+extends Control
+
+@export var camera_controller: Camera3D # 拖入挂载了上述脚本的 Camera3D
+
+func _on_first_person_btn_pressed():
+	camera_controller.switch_camera_mode(camera_controller.CamMode.FIRST_PERSON)
+
+func _on_close_up_btn_pressed():
+	camera_controller.switch_camera_mode(camera_controller.CamMode.CLOSE_UP)
+</pre>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Godot Scene Tree -->
+                <div id="tab-godot-scene" class="tab-content hidden space-y-4">
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <h3 class="text-sm font-bold text-white mb-2">上帝说：“让场景井井有条。”</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            在 3D 游戏开发中，不应该直接写死摄像机的绝对数值。最优秀、最容易维护的做法是：
+                            <strong>“锚点定位法”</strong>。在角色的特定物理坐标轴下，建立不同的空节点（Marker3D），用于充当摄像机的目标终点。
+                        </p>
+                    </div>
+
+                    <!-- Node diagram visualizer -->
+                    <div class="p-5 bg-slate-950 rounded-xl border border-slate-800 code-font text-xs text-slate-300 leading-relaxed">
+                        <div class="text-blue-400 font-bold mb-3"><i class="fa-regular fa-folder-open mr-1"></i> Godot 场景树节点树层级关系 (Scene Tree)</div>
+                        <div class="space-y-1">
+                            <div>📦 <span class="text-emerald-400 font-bold">World3D</span> (主场景根节点)</div>
+                            <div> ├── ☀️ DirectionalLight3D (主光源)</div>
+                            <div> ├── 🧱 CSGBox3D (地面环境障碍物)</div>
+                            <div> └── 👤 <span class="text-amber-400 font-bold">Player</span> (你的物理玩家 - CharacterBody3D)</div>
+                            <div class="pl-6 text-slate-500">├── CollisionShape3D (物理碰撞体)</div>
+                            <div class="pl-6 text-slate-500">├── MeshInstance3D (玩家外观模型/演员)</div>
+                            <div class="pl-6 text-indigo-400">└── ⚙️ <span class="font-bold">CameraAnchors</span> (用于管理相机各机位的父容器 Node3D)</div>
+                            <div class="pl-12 text-slate-400">├── 📍 <span class="text-sky-300">FirstPersonMarker</span> (位置置于头部前侧, rotation.y = 0)</div>
+                            <div class="pl-12 text-slate-400">├── 📍 <span class="text-sky-300">SecondPersonMarker</span> (位置置于右肩后上方, 略微朝向玩家前方)</div>
+                            <div class="pl-12 text-slate-400">├── 📍 <span class="text-sky-300">ThirdPersonMarker</span> (经典后撤机位, 距离2-4米, 稍微斜俯)</div>
+                            <div class="pl-12 text-slate-400">├── 📍 <span class="text-sky-300">CloseUpMarker</span> (置于正前方 1.2米，高度对准面部)</div>
+                            <div class="pl-12 text-slate-400">├── 📍 <span class="text-sky-300">LowAngleMarker</span> (置于脚底下方向上仰望 30度)</div>
+                            <div class="pl-12 text-slate-400">└── 📍 <span class="text-sky-300">BirdsEyeMarker</span> (高空 8米 垂直向下俯视)</div>
+                            <div class="pl-6 text-blue-400">└── 🎥 <span class="font-bold">Camera3D</span> (挂载 CameraController.gd 脚本，并在属性面板拖入映射上述所有📍锚点)</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-950/20 border border-blue-900/40 p-4 rounded-xl">
+                        <h4 class="text-xs font-bold text-blue-300 mb-1.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb"></i> 专家开发建议
+                        </h4>
+                        <p class="text-xs text-slate-400 leading-normal">
+                            由于玩家节点在转动时会带着子节点（CameraAnchors）一起转动，摄像机会自动跟随旋转，所以<b>摄像机本身不需要处理过于复杂的绕转物理代码</b>，完全交由 Godot 内置的物理父子层级同步完成。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Cinematic Theory Guide -->
+                <div id="tab-theory-guide" class="tab-content hidden space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-[#181a20] p-4 rounded-xl border border-slate-800 space-y-2">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="bg-pink-600 text-white text-[10px] px-2 py-0.5 rounded">CU</span>
+                                特写镜头 (Close-Up)
+                            </h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                <b class="text-slate-200">游戏代表：</b>《底特律：化身为人》对话选择、各种高沉浸式剧情演出的对焦。<br>
+                                <b class="text-slate-200">技术要点：</b>必须调低视场角（FOV 降低至 35°左右），相当于相机镜头拉远但焦距变长。这能极大消除由于近景导致的“透视大鼻子畸变”，让面部轮廓显得平整专业。
+                            </p>
+                        </div>
+
+                        <div class="bg-[#181a20] p-4 rounded-xl border border-slate-800 space-y-2">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="bg-pink-600 text-white text-[10px] px-2 py-0.5 rounded">Dutch</span>
+                                荷兰角斜拍 (Dutch Angle)
+                            </h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                <b class="text-slate-200">游戏代表：</b>《生化危机》恐怖逃生阶段、BOSS 出场特写、角色丧失神智。<br>
+                                <b class="text-slate-200">技术要点：</b>人为增加 Z 轴（Roll 翻滚度）15°到 25° 的偏转。该镜头故意破坏画面的水平平衡感，向观众传递紧张、不安、混乱、甚至精神错乱的情感暗示。
+                            </p>
+                        </div>
+
+                        <div class="bg-[#181a20] p-4 rounded-xl border border-slate-800 space-y-2">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="bg-pink-600 text-white text-[10px] px-2 py-0.5 rounded">Low</span>
+                                低角度仰拍 (Low Angle)
+                            </h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                <b class="text-slate-200">游戏代表：</b>《只狼：影逝二度》义父或弦一郎战前亮相、巨型怪物登场、机甲庞大体态展示。<br>
+                                <b class="text-slate-200">技术要点：</b>相机高度大幅降低（置于胸腔、膝盖甚至脚踝以下），朝向上方仰视。这会令拍摄主体高大、压抑、具有不可一世的权威性与力量感。
+                            </p>
+                        </div>
+
+                        <div class="bg-[#181a20] p-4 rounded-xl border border-slate-800 space-y-2">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="bg-pink-600 text-white text-[10px] px-2 py-0.5 rounded">OTS</span>
+                                过肩双人对话 (Over-the-Shoulder)
+                            </h4>
+                            <p class="text-xs text-slate-400 leading-relaxed">
+                                <b class="text-slate-200">游戏代表：</b>《巫师3》、《质量效应》等经典 RPG 对话。<br>
+                                <b class="text-slate-200">技术要点：</b>利用前景（说话者后肩部轮廓，通常失焦模糊）作为框架，对焦框住远处说话的角色。它能够将玩家拉入对话当事人的真实空间，比干瘪的上帝视角对话更有主观参与度。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 3D Scene Initialization & Camera Presets ---
+    let scene, camera, renderer, actor, backdrop, gridHelper, stageLights;
+    const container = document.getElementById('canvas-container');
+    
+    // Animation target values for smooth camera interpolation
+    let targetPos = new THREE.Vector3(0, 2.5, 4.5); // Default: 3rd person
+    let targetLook = new THREE.Vector3(0, 1.2, 0); // Looking at actor's chest
+    let targetFov = 70;
+    let targetRoll = 0; // Z rotation
+    
+    // Smooth transition damping coefficients
+    const LERP_FACTOR = 0.08;
+
+    // View presets database
+    const CAMERA_PRESETS = {
+        thirdPerson: {
+            name: "第三人称 (TPS 常规)",
+            posOffset: new THREE.Vector3(0, 2.5, 4.5),
+            lookOffset: new THREE.Vector3(0, 1.2, 0),
+            fov: 70,
+            roll: 0,
+            desc: { dist: "4.50m", pitch: "15.0°" }
+        },
+        firstPerson: {
+            name: "第一人称 (FPS 视线)",
+            posOffset: new THREE.Vector3(0, 1.62, 0.15), // Eyes level, slightly forward
+            lookOffset: new THREE.Vector3(0, 1.62, -2.0), // Looking forward into space
+            fov: 85,
+            roll: 0,
+            desc: { dist: "0.15m", pitch: "0.0°" }
+        },
+        secondPerson: {
+            name: "第二人称 (OTS 越肩对白)",
+            posOffset: new THREE.Vector3(0.55, 1.65, 1.2), // Over right shoulder
+            lookOffset: new THREE.Vector3(-0.15, 1.4, -0.5), // Frame Actor 2
+            fov: 55, // Low fov for cinematic zoom
+            roll: 0,
+            desc: { dist: "1.30m", pitch: "-5.0°" }
+        },
+        closeUp: {
+            name: "特写镜头 (CU)",
+            posOffset: new THREE.Vector3(0.2, 1.65, 1.3), // Near face
+            lookOffset: new THREE.Vector3(0, 1.6, 0), // Directly look at eyes
+            fov: 35, // Narrow compression
+            roll: 0,
+            desc: { dist: "1.32m", pitch: "-2.0°" }
+        },
+        extremeCloseUp: {
+            name: "局部大特写 (ECU)",
+            posOffset: new THREE.Vector3(0.0, 1.58, 0.65), // Super close
+            lookOffset: new THREE.Vector3(0, 1.58, 0),
+            fov: 20, // High-telephoto zoom
+            roll: 0,
+            desc: { dist: "0.65m", pitch: "0.0°" }
+        },
+        lowAngle: {
+            name: "英雄仰角拍 (Low Angle)",
+            posOffset: new THREE.Vector3(0, 0.3, 3.2), // Very low
+            lookOffset: new THREE.Vector3(0, 1.5, 0), // Look high up at head
+            fov: 65,
+            roll: 0,
+            desc: { dist: "3.21m", pitch: "-20.0°" }
+        },
+        highAngle: {
+            name: "高俯角俯拍 (High Angle)",
+            posOffset: new THREE.Vector3(0, 4.2, 3.0), // Very high
+            lookOffset: new THREE.Vector3(0, 1.0, 0), // Look down at torso
+            fov: 75,
+            roll: 0,
+            desc: { dist: "5.16m", pitch: "45.0°" }
+        },
+        dutchAngle: {
+            name: "荷兰角斜拍 (Dutch Angle)",
+            posOffset: new THREE.Vector3(-0.4, 1.4, 2.2),
+            lookOffset: new THREE.Vector3(0, 1.4, 0),
+            fov: 65,
+            roll: -0.26, // Radian: approx -15 degrees Tilt
+            desc: { dist: "2.23m", pitch: "0.0°" }
+        },
+        birdsEye: {
+            name: "上帝视角鸟瞰 (Bird's Eye)",
+            posOffset: new THREE.Vector3(0, 6.5, 0.5), // High up vertically
+            lookOffset: new THREE.Vector3(0, 0.5, 0), // Looking straight down
+            fov: 60,
+            roll: 0,
+            desc: { dist: "6.51m", pitch: "85.0°" }
+        },
+        mediumShot: {
+            name: "中景拍摄 (Medium Shot)",
+            posOffset: new THREE.Vector3(0, 1.8, 2.8),
+            lookOffset: new THREE.Vector3(0, 1.1, 0),
+            fov: 50,
+            roll: 0,
+            desc: { dist: "2.86m", pitch: "12.0°" }
+        },
+        fullShot: {
+            name: "全身远景 (Full Shot)",
+            posOffset: new THREE.Vector3(0, 1.5, 5.5),
+            lookOffset: new THREE.Vector3(0, 0.8, 0),
+            fov: 65,
+            roll: 0,
+            desc: { dist: "5.50m", pitch: "5.0°" }
+        }
+    };
+
+    // Initialize 3D Engine
+    function init3D() {
+        // Create Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0c10);
+        scene.fog = new THREE.FogExp2(0x0a0c10, 0.08);
+
+        // Create WebGL Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Create Perspective Camera
+        camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.copy(targetPos);
+        camera.lookAt(targetLook);
+
+        // Lights Setup
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
+        keyLight.position.set(4, 6, 4);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 1024;
+        keyLight.shadow.mapSize.height = 1024;
+        scene.add(keyLight);
+
+        const fillLight = new THREE.DirectionalLight(0x88bbff, 0.4);
+        fillLight.position.set(-4, 3, 2);
+        scene.add(fillLight);
+
+        const groundLight = new THREE.DirectionalLight(0x334466, 0.15);
+        groundLight.position.set(0, -5, 0);
+        scene.add(groundLight);
+
+        // Environment floor setup
+        const floorGeo = new THREE.PlaneGeometry(30, 30);
+        const floorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x11141a, 
+            roughness: 0.85,
+            metalness: 0.1
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Tech visual floor grid helper
+        gridHelper = new THREE.GridHelper(24, 24, 0x3b82f6, 0x1d2432);
+        gridHelper.position.y = 0.01; // slightly above floor to prevent z-fighting
+        scene.add(gridHelper);
+
+        // Construct Actor 1 (Player / Focus Character)
+        actor = new THREE.Group();
+        
+        // Torso
+        const bodyGeo = new THREE.CylinderGeometry(0.3, 0.2, 1.0, 12);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 }); // Blue Outfit
+        const torso = new THREE.Mesh(bodyGeo, bodyMat);
+        torso.position.y = 1.0;
+        torso.castShadow = true;
+        torso.receiveShadow = true;
+        actor.add(torso);
+
+        // Head
+        const headGeo = new THREE.SphereGeometry(0.24, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xfdbb2d, roughness: 0.6 }); // Golden Mask/Skin
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.62;
+        head.castShadow = true;
+        actor.add(head);
+
+        // Face Visor / Direction Indicator (shows where he looks)
+        const visorGeo = new THREE.BoxGeometry(0.18, 0.08, 0.12);
+        const visorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1 });
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(0, 1.65, 0.2); // Looks forward (+z)
+        actor.add(visor);
+
+        // Hair/Hat Accent
+        const hatGeo = new THREE.ConeGeometry(0.25, 0.15, 4);
+        const hatMat = new THREE.MeshStandardMaterial({ color: 0xef4444 }); // Red accessory
+        const hat = new THREE.Mesh(hatGeo, hatMat);
+        hat.position.set(0, 1.80, 0);
+        hat.rotation.y = Math.PI/4;
+        actor.add(hat);
+
+        // Stand base ring
+        const ringGeo = new THREE.RingGeometry(0.48, 0.5, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, side: THREE.DoubleSide });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = 0.02;
+        actor.add(ring);
+
+        scene.add(actor);
+
+        // Construct Actor 2 (Dialogue Companion - standing ahead of Actor 1)
+        const dialogPartner = new THREE.Group();
+        dialogPartner.position.set(-0.35, 0, -1.5); // Placed slightly closer for dialogue
+        dialogPartner.rotation.y = Math.PI; // Face to Face
+
+        const pBodyGeo = new THREE.CylinderGeometry(0.25, 0.18, 0.95, 12);
+        const pBodyMat = new THREE.MeshStandardMaterial({ color: 0xdb2777, roughness: 0.5 }); // Magenta clothes
+        const pTorso = new THREE.Mesh(pBodyGeo, pBodyMat);
+        pTorso.position.y = 0.95;
+        pTorso.castShadow = true;
+        dialogPartner.add(pTorso);
+
+        const pHeadGeo = new THREE.SphereGeometry(0.23, 16, 16);
+        const pHeadMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
+        const pHead = new THREE.Mesh(pHeadGeo, pHeadMat);
+        pHead.position.y = 1.55;
+        pHead.castShadow = true;
+        dialogPartner.add(pHead);
+
+        const pVisorGeo = new THREE.BoxGeometry(0.16, 0.06, 0.12);
+        const pVisorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1 });
+        const pVisor = new THREE.Mesh(pVisorGeo, pVisorMat);
+        pVisor.position.set(0, 1.58, 0.18);
+        dialogPartner.add(pVisor);
+
+        scene.add(dialogPartner);
+
+        // Adding background visual environment props (A glowing obelisk monument behind)
+        const monolithGeo = new THREE.BoxGeometry(0.8, 4.0, 0.8);
+        const monolithMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+        const monolith = new THREE.Mesh(monolithGeo, monolithMat);
+        monolith.position.set(-3, 2, -4);
+        monolith.castShadow = true;
+        scene.add(monolith);
+
+        const orbGeo = new THREE.SphereGeometry(0.25, 16, 16);
+        const orbMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa });
+        const orb = new THREE.Mesh(orbGeo, orbMat);
+        orb.position.set(-3, 4.4, -4);
+        scene.add(orb);
+    }
+
+    // Frame Render and Camera Interpolation Loop
+    let lastTime = 0;
+    function animate(time) {
+        requestAnimationFrame(animate);
+        
+        // Character breathing idle animation
+        const pulse = Math.sin(time * 0.003) * 0.02;
+        actor.children[1].position.y = 1.62 + pulse; // Head bobbing
+        
+        // Calculate smooth Camera position lerp
+        camera.position.lerp(targetPos, LERP_FACTOR);
+
+        // Smooth camera LookAt point interpolation
+        // We track a virtual look point and make camera update its look direction
+        const currentLook = new THREE.Vector3();
+        // Since ThreeJS's camera.lookAt doesn't store a target, we extrapolate the direction vector
+        // and guide camera back towards looking at the interpolated targetLook
+        const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        currentLook.copy(camera.position).addScaledVector(dir, 1.0);
+        
+        currentLook.lerp(targetLook, LERP_FACTOR);
+        camera.lookAt(currentLook);
+
+        // Apply Dutch Roll (Roll Axis Rotation)
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, targetRoll, LERP_FACTOR);
+
+        // Smoothly adjust Field Of View
+        if (Math.abs(camera.fov - targetFov) > 0.1) {
+            camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, LERP_FACTOR);
+            camera.updateProjectionMatrix();
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    // Trigger Camera Switch
+    function switchView(presetKey) {
+        const preset = CAMERA_PRESETS[presetKey];
+        if (!preset) return;
+
+        // Reset all buttons visual state, highlight selected
+        document.querySelectorAll('.view-btn').forEach(b => {
+            b.className = "view-btn group bg-slate-800 hover:bg-slate-700 text-white p-2.5 rounded-lg border border-slate-700 transition flex flex-col items-center text-center";
+        });
+        
+        // Target current clicked button or find closest match in listing
+        const clickedBtn = event ? event.currentTarget : null;
+        if (clickedBtn) {
+            if (presetKey === 'firstPerson' || presetKey === 'secondPerson' || presetKey === 'thirdPerson') {
+                clickedBtn.className = "view-btn group relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white p-3.5 rounded-xl border border-blue-500 shadow-md shadow-blue-900/20 transition-all duration-300 flex flex-col items-center justify-center text-center";
+            } else {
+                clickedBtn.className = "view-btn group bg-blue-600/90 text-white p-2.5 rounded-lg border border-blue-500 shadow-lg shadow-blue-900/30 transition flex flex-col items-center text-center";
+            }
+        }
+
+        // Set interpolation target vectors
+        targetPos.copy(preset.posOffset);
+        targetLook.copy(preset.lookOffset);
+        targetFov = preset.fov;
+        targetRoll = preset.roll;
+
+        // Update real-time HUD Text
+        document.getElementById('hud-cam-name').innerText = preset.name;
+        document.getElementById('hud-distance').innerText = preset.desc.dist;
+        document.getElementById('hud-fov').innerText = preset.fov + "°";
+        document.getElementById('hud-pitch').innerText = preset.desc.pitch;
+        document.getElementById('hud-roll').innerText = (preset.roll * (180 / Math.PI)).toFixed(1) + "°";
+    }
+
+    // Reset Actor to base center
+    document.getElementById('btn-reset-character').addEventListener('click', () => {
+        actor.position.set(0, 0, 0);
+        actor.rotation.set(0, 0, 0);
+    });
+
+    // Handle Responsive Resize
+    window.addEventListener('resize', () => {
+        if (!container || !camera || !renderer) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Initial load
+    window.onload = () => {
+        init3D();
+        animate(0);
+        // Highlight third person button by default
+        const btn = document.getElementById('default-active-btn');
+        if (btn) btn.click();
+    };
+
+    // --- Tab Selection Controls ---
+    function activeTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => {
+            el.classList.remove('text-blue-400', 'border-blue-500', 'font-bold');
+            el.classList.add('text-slate-400', 'hover:text-slate-200', 'border-transparent', 'font-semibold');
+        });
+
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        document.getElementById('tab-btn-' + tabId).className = "tab-btn py-3.5 px-5 text-blue-400 border-b-2 border-blue-500 font-bold flex items-center gap-2";
+    }
+
+    // Utility code copy helper
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const btnSpan = document.querySelector('#tab-gdscript-code button span');
+            btnSpan.innerText = '已复制！';
+            setTimeout(() => {
+                btnSpan.innerText = '复制代码';
+            }, 2000);
+        });
+    }
+</script>
+</body>
+</html>
