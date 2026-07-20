@@ -1,5 +1,8 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 1-2天法則
+背包
+有優質的生活機能，像是清楚的圖示/圖片，還有一些標題讓你快速知道那是什麼東西。
+紀錄功能，讓你看看最近拿了什麼東西，如果你想知道有沒有拿到特定的戰利品。可以快速整理、篩選，有分類清楚的「分頁」/區塊，而且還可以快速操作，像是輕鬆使用道具、輕鬆切換裝備。
  
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> gpu>process material
 
