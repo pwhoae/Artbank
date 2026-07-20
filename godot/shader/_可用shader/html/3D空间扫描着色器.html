@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 3D 炫彩全息空间扫光着色器生成器</title>
+    <!-- Tailwind CSS for modern responsive layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for high quality UI assets -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js for outstanding WebGL 3D preview rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for full 3D viewport navigation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #08090c;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Elegant responsive custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d0e12;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #23252f;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="text-gray-100 overflow-x-hidden">
+
+<div class="min-h-screen flex flex-col justify-between">
+    <!-- Premium Top Navigation Header -->
+    <header class="border-b border-gray-800 bg-[#0c0d12] px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20">
+                <i data-lucide="box" class="w-6 h-6 animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-gray-500">
+                    GODOT 4 3D SPATIAL SWEEP SHADER
+                </h1>
+                <p class="text-xs text-gray-500"></p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3 bg-[#13151f] border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span>
+            <span>着色器环境：Spatial (3D Model / Mesh)</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-6">
+        
+        <!-- Controls Section -->
+        <section class="xl:col-span-4 bg-[#0c0d12]/90 border border-gray-800 rounded-2xl p-5 flex flex-col space-y-6 shadow-2xl backdrop-blur-md">
+            <div>
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center">
+                    <i data-lucide="layers" class="w-4 h-4 mr-2 text-blue-500"></i> 3D 渲染预设 (Presets)
+                </h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('prism')" class="preset-btn px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition bg-blue-600/10 border border-blue-500/30 text-blue-400 hover:bg-blue-600/20 flex items-center justify-between">
+                        <span>🌈 棱镜 3D 炫彩</span>
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="applyPreset('warm_gold')" class="preset-btn px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between">
+                        <span>🔥 3D 暖金溶解</span>
+                        <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="applyPreset('cyber_edge')" class="preset-btn px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between">
+                        <span>⚡ 锋芒极光边缘</span>
+                        <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="applyPreset('ghost_hollow')" class="preset-btn px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between">
+                        <span>🛸 全息弱光鬼魅</span>
+                        <i data-lucide="orbit" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <hr class="border-gray-800/80" />
+
+            <!-- Dynamic Sliders -->
+            <div class="flex-1 space-y-4 overflow-y-auto pr-1">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4 mr-2 text-blue-500"></i> 属性参数 (Uniforms)
+                </h2>
+
+                <!-- Enable Rainbow Switch -->
+                <div class="bg-[#11131a] p-3 rounded-xl border border-gray-800/60 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold block">启用棱镜彩虹色散</span>
+                        <span class="text-[10px] text-gray-500">开启后分离 RGB 模仿折射光谱</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="enableRainbow" class="sr-only peer" checked onchange="updateUniforms()">
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                    </label>
+                </div>
+
+                <!-- Custom Beam Color -->
+                <div id="singleColorContainer" class="hidden space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">扫光基础颜色 (Single Beam Color)</span>
+                        <span id="beamColorVal" class="text-xs font-semibold text-blue-400">#ffaa00</span>
+                    </div>
+                    <input type="color" id="beamColor" value="#ffaa00" class="w-full h-10 rounded-xl cursor-pointer bg-transparent border border-gray-800" oninput="updateUniforms()">
+                </div>
+
+                <!-- Speed -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">3D 扫描速度 (Sweep Speed)</span>
+                        <span id="speedVal" class="text-xs font-semibold text-gray-400">1.2x</span>
+                    </div>
+                    <input type="range" id="speed" min="0.1" max="4.0" step="0.1" value="1.2" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Width -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">光束宽度 (Sweep Width)</span>
+                        <span id="widthVal" class="text-xs font-semibold text-gray-400">0.25</span>
+                    </div>
+                    <input type="range" id="width" min="0.05" max="0.8" step="0.01" value="0.25" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Angle -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">3D 局部倾角 (Sweep Angle)</span>
+                        <span id="angleVal" class="text-xs font-semibold text-gray-400">-45°</span>
+                    </div>
+                    <input type="range" id="angle" min="-180" max="180" step="5" value="-45" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Dispersion -->
+                <div class="space-y-2" id="dispersionWrapper">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">色散偏移 (Dispersion)</span>
+                        <span id="dispersionVal" class="text-xs font-semibold text-gray-400">0.06</span>
+                    </div>
+                    <input type="range" id="dispersion" min="0.01" max="0.25" step="0.01" value="0.06" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Glow Intensity -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">发光总强度 (Glow Intensity)</span>
+                        <span id="glowVal" class="text-xs font-semibold text-gray-400">3.5</span>
+                    </div>
+                    <input type="range" id="glow" min="0.5" max="10.0" step="0.1" value="3.5" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- 3D Rim Power -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">菲涅尔指数/硬度 (Rim Power)</span>
+                        <span id="rimPowerVal" class="text-xs font-semibold text-gray-400">3.0</span>
+                    </div>
+                    <input type="range" id="rimPower" min="0.5" max="8.0" step="0.1" value="3.0" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- 3D Rim Intensity -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">边缘掠射增益 (Rim Intensity)</span>
+                        <span id="rimIntVal" class="text-xs font-semibold text-gray-400">1.5</span>
+                    </div>
+                    <input type="range" id="rimInt" min="0.0" max="5.0" step="0.1" value="1.5" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+
+                <!-- Noise Edge -->
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-300">融解噪点强度 (Noise Dissolve)</span>
+                        <span id="noiseVal" class="text-xs font-semibold text-gray-400">0.35</span>
+                    </div>
+                    <input type="range" id="noise" min="0.0" max="1.0" step="0.05" value="0.35" class="w-full accent-blue-500 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer" oninput="updateUniforms()">
+                </div>
+            </div>
+        </section>
+
+        <!-- 3D Viewport Area -->
+        <section class="xl:col-span-4 bg-[#0c0d12]/90 border border-gray-800 rounded-2xl p-5 flex flex-col items-center justify-between shadow-2xl relative min-h-[500px]">
+            <div class="w-full flex justify-between items-center mb-3">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                    <i data-lucide="eye" class="w-4 h-4 mr-2 text-blue-500 animate-spin"></i> 3D 动态模型预览
+                </h2>
+                <span class="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-lg px-2.5 py-1">Three.js WebGL 3D</span>
+            </div>
+
+            <!-- Preview Wrapper -->
+            <div class="flex-1 w-full flex items-center justify-center relative bg-[#050608] rounded-xl overflow-hidden border border-gray-800/60 p-1">
+                <!-- Instruction tooltip overlay -->
+                <div class="absolute top-3 left-3 z-20 text-[10px] bg-black/60 backdrop-blur-md border border-gray-800 px-2 py-1 rounded text-gray-400 pointer-events-none flex items-center gap-1">
+                    <i data-lucide="mouse-pointer" class="w-3 h-3"></i>
+                    <span>按住左键拖拽旋转模型</span>
+                </div>
+
+                <!-- WebGL 3D Canvas -->
+                <div id="canvas3dContainer" class="w-full h-full min-h-[350px] md:min-h-[380px] rounded-lg"></div>
+            </div>
+
+            <!-- Bottom helpful tip -->
+            <div class="w-full text-center mt-3 text-[11px] text-gray-500 flex items-center justify-center space-x-1.5">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-blue-500"></i>
+                <span></span>
+            </div>
+        </section>
+
+        <!-- Code Export Panel -->
+        <section class="xl:col-span-4 bg-[#0c0d12]/90 border border-gray-800 rounded-2xl p-5 flex flex-col shadow-2xl">
+            <!-- Tabs header -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex space-x-2">
+                    <button onclick="switchTab('shader')" id="tabBtnShader" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/10">
+                        gdshader (3D)
+                    </button>
+                    <button onclick="switchTab('script')" id="tabBtnScript" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-gray-800/80 text-gray-400">
+                        GDScript 3D 动画
+                    </button>
+                </div>
+                <button onclick="copyCurrentCode()" class="flex items-center space-x-1.5 text-xs bg-gray-800/80 hover:bg-blue-600/20 border border-gray-700 hover:border-blue-500/40 text-gray-300 hover:text-blue-400 px-3 py-2 rounded-xl transition">
+                    <i data-lucide="copy" class="w-3.5 h-3.5" id="copyIcon"></i>
+                    <span id="copyText">复制代码</span>
+                </button>
+            </div>
+
+            <!-- Code display scroll window -->
+            <div class="flex-1 bg-[#050608] rounded-xl border border-gray-800/60 p-4 overflow-y-auto relative h-[400px]">
+                <!-- Shader View -->
+                <pre id="shaderCodeContainer" class="text-xs code-font text-emerald-400 select-all leading-relaxed whitespace-pre-wrap"></pre>
+                
+                <!-- GDScript View -->
+                <pre id="scriptCodeContainer" class="text-xs code-font text-cyan-400 select-all leading-relaxed whitespace-pre-wrap hidden"></pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Status Info and Credits -->
+    <footer class="border-t border-gray-800 bg-[#06070a] px-6 py-4 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-2">
+        <div class="text-center sm:text-left">
+            建议将 Shader 赋予你的 <code class="text-gray-300 px-1 bg-gray-800 rounded">MeshInstance3D</code> 节点的材质，并在着色器参数中绑定一张 Noise2D（用做动态融边高亮）。
+        </div>
+        <div class="flex items-center space-x-1">
+            <span>Powered by</span>
+            <span class="text-blue-500 font-bold">Godot 4.x Spatial Shading Language</span>
+        </div>
+    </footer>
+</div>
+
+<script>
+    // Global Configuration / State (matching the 3D updates)
+    let state = {
+        speed: 1.2,
+        width: 0.25,
+        angle: -45,
+        dispersion: 0.06,
+        glow: 3.5,
+        rimPower: 3.0,
+        rimIntensity: 1.5,
+        noise: 0.35,
+        enableRainbow: true,
+        beamColor: "#ffaa00",
+        activeTab: "shader"
+    };
+
+    // Preset configurations tweaked for stunning 3D presentation
+    const PRESETS = {
+        prism: {
+            speed: 1.2, width: 0.25, angle: -45, dispersion: 0.06, glow: 3.5, rimPower: 3.0, rimIntensity: 1.5, noise: 0.35, enableRainbow: true, beamColor: "#ffaa00"
+        },
+        warm_gold: {
+            speed: 0.9, width: 0.40, angle: -60, dispersion: 0.0, glow: 4.5, rimPower: 2.0, rimIntensity: 2.5, noise: 0.60, enableRainbow: false, beamColor: "#ffaa00"
+        },
+        cyber_edge: {
+            speed: 2.2, width: 0.08, angle: 90, dispersion: 0.12, glow: 8.0, rimPower: 5.0, rimIntensity: 3.5, noise: 0.15, enableRainbow: true, beamColor: "#00ffcc"
+        },
+        ghost_hollow: {
+            speed: 0.4, width: 0.50, angle: -15, dispersion: 0.02, glow: 1.8, rimPower: 1.2, rimIntensity: 1.0, noise: 0.25, enableRainbow: true, beamColor: "#8000ff"
+        }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
+        init3DPreview();
+        generateGodotShaderCode();
+        generateGDScriptCode();
+    });
+
+    // Update form elements and sync State
+    function updateUniforms() {
+        state.speed = parseFloat(document.getElementById('speed').value);
+        state.width = parseFloat(document.getElementById('width').value);
+        state.angle = parseInt(document.getElementById('angle').value);
+        state.dispersion = parseFloat(document.getElementById('dispersion').value);
+        state.glow = parseFloat(document.getElementById('glow').value);
+        state.rimPower = parseFloat(document.getElementById('rimPower').value);
+        state.rimIntensity = parseFloat(document.getElementById('rimInt').value);
+        state.noise = parseFloat(document.getElementById('noise').value);
+        state.enableRainbow = document.getElementById('enableRainbow').checked;
+        state.beamColor = document.getElementById('beamColor').value;
+
+        // Display current values
+        document.getElementById('speedVal').innerText = state.speed + 'x';
+        document.getElementById('widthVal').innerText = state.width.toFixed(2);
+        document.getElementById('angleVal').innerText = state.angle + '°';
+        document.getElementById('dispersionVal').innerText = state.dispersion.toFixed(2);
+        document.getElementById('glowVal').innerText = state.glow.toFixed(1);
+        document.getElementById('rimPowerVal').innerText = state.rimPower.toFixed(1);
+        document.getElementById('rimIntVal').innerText = state.rimIntensity.toFixed(1);
+        document.getElementById('beamColorVal').innerText = state.beamColor;
+
+        // UI toggles based on modes
+        const dispersionWrapper = document.getElementById('dispersionWrapper');
+        const singleColorContainer = document.getElementById('singleColorContainer');
+
+        if (state.enableRainbow) {
+            dispersionWrapper.classList.remove('hidden');
+            singleColorContainer.classList.add('hidden');
+        } else {
+            dispersionWrapper.classList.add('hidden');
+            singleColorContainer.classList.remove('hidden');
+        }
+
+        // Update the 3D ShaderMaterial uniforms directly
+        updateShaderUniforms();
+
+        // Regenerate output code blocks
+        generateGodotShaderCode();
+        generateGDScriptCode();
+    }
+
+    // Preset Apply Button handler
+    function applyPreset(key) {
+        const preset = PRESETS[key];
+        if (!preset) return;
+
+        state = { ...state, ...preset };
+
+        // Set control UI elements
+        document.getElementById('speed').value = state.speed;
+        document.getElementById('width').value = state.width;
+        document.getElementById('angle').value = state.angle;
+        document.getElementById('dispersion').value = state.dispersion;
+        document.getElementById('glow').value = state.glow;
+        document.getElementById('rimPower').value = state.rimPower;
+        document.getElementById('rimInt').value = state.rimIntensity;
+        document.getElementById('noise').value = state.noise;
+        document.getElementById('enableRainbow').checked = state.enableRainbow;
+        document.getElementById('beamColor').value = state.beamColor;
+
+        // Trigger updates on preset change
+        updateUniforms();
+
+        // Style the buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.className = "preset-btn px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition bg-gray-800/30 border border-gray-700/50 text-gray-400 hover:bg-gray-800/60 hover:text-white flex items-center justify-between";
+        });
+        event.currentTarget.className = "preset-btn px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition bg-blue-600/10 border border-blue-500/30 text-blue-400 hover:bg-blue-600/20 flex items-center justify-between";
+    }
+
+    // Switch Script / Shader Tabs
+    function switchTab(tab) {
+        state.activeTab = tab;
+        const shaderBtn = document.getElementById('tabBtnShader');
+        const scriptBtn = document.getElementById('tabBtnScript');
+        const shaderView = document.getElementById('shaderCodeContainer');
+        const scriptView = document.getElementById('scriptCodeContainer');
+
+        if (tab === 'shader') {
+            shaderBtn.className = "px-3.5 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/10";
+            scriptBtn.className = "px-3.5 py-2 text-xs font-bold rounded-xl bg-gray-800/80 text-gray-400";
+            shaderView.classList.remove('hidden');
+            scriptView.classList.add('hidden');
+        } else {
+            scriptBtn.className = "px-3.5 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/10";
+            shaderBtn.className = "px-3.5 py-2 text-xs font-bold rounded-xl bg-gray-800/80 text-gray-400";
+            scriptView.classList.remove('hidden');
+            shaderView.classList.add('hidden');
+        }
+    }
+
+    // Helper to turn Hex to RGB vec3
+    function hexToRgbVec3(hex) {
+        const r = parseInt(hex.slice(1, 3), 16) / 255.0;
+        const g = parseInt(hex.slice(3, 5), 16) / 255.0;
+        const b = parseInt(hex.slice(5, 7), 16) / 255.0;
+        return `vec3(${r.toFixed(3)}, ${g.toFixed(3)}, ${b.toFixed(3)})`;
+    }
+
+    function generateGodotShaderCode() {
+        const rgbVec = hexToRgbVec3(state.beamColor);
+        const shaderCode = `shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+//  ---
+// 提示：将此着色器赋予任何 MeshInstance3D 节点，并可配合一张噪点贴图 (Noise2D) 产生边缘撕裂融化效果。
+
+uniform vec4 base_albedo : source_color = vec4(0.12, 0.13, 0.18, 1.0);
+uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_enable;
+
+// 3D 扫光核心参数
+uniform float sweep_speed : hint_range(0.0, 5.0) = ${state.speed.toFixed(2)};
+uniform float sweep_width : hint_range(0.01, 1.0) = ${state.width.toFixed(2)};
+uniform float sweep_angle : hint_range(-180.0, 180.0) = ${state.angle.toFixed(1)};
+uniform float glow_intensity : hint_range(0.0, 15.0) = ${state.glow.toFixed(2)};
+uniform float dispersion : hint_range(0.0, 0.3) = ${state.dispersion.toFixed(2)}; // 边缘RGB折射色散
+uniform bool enable_rainbow = ${state.enableRainbow};
+uniform vec3 single_beam_color : source_color = ${rgbVec};
+
+// 3D 菲涅尔边缘掠射高亮 (Rim Light) 参数
+uniform float rim_power : hint_range(0.1, 8.0) = ${state.rimPower.toFixed(2)};
+uniform float rim_intensity : hint_range(0.0, 5.0) = ${state.rimIntensity.toFixed(2)};
+
+// 溶解边缘动态噪声
+uniform float noise_strength : hint_range(0.0, 1.0) = ${state.noise.toFixed(2)};
+uniform sampler2D noise_texture : hint_default_black, filter_linear_repeat;
+
+varying vec3 v_local_pos;
+
+void vertex() {
+    // 捕获模型局部坐标，使扫光相对于物体自身的姿态运行
+    v_local_pos = VERTEX;
+}
+
+void fragment() {
+    // 基础漫反射纹理混合
+    vec4 tex_color = texture(albedo_texture, UV);
+    ALBEDO = base_albedo.rgb * tex_color.rgb;
+    
+    // 旋转变换：沿指定角度产生扫光坐标路径
+    float rad = radians(sweep_angle);
+    float s = sin(rad);
+    float c = cos(rad);
+    float sweep_coord = v_local_pos.x * c - v_local_pos.y * s;
+    
+    // 随时间周期推移的扫描基准线
+    float sweep_pos = mod(TIME * sweep_speed, 3.0) - 1.5;
+    float dist = sweep_coord - sweep_pos;
+    
+    // 噪声贴图采样，利用噪声为扫描锋芒赋予扭曲和破碎质感 (还原视频第5~8帧的火焰融化感)
+    float noise_val = texture(noise_texture, UV + vec2(TIME * 0.05)).r;
+    dist += (noise_val - 0.5) * noise_strength * sweep_width;
+    
+    // 菲涅尔方程计算：获取表面与视角垂直的轮廓带
+    float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), rim_power);
+    float rim_glow = fresnel * rim_intensity;
+    
+    vec3 sweep_addition = vec3(0.0);
+    
+    if (enable_rainbow) {
+        // --- RGB 炫彩偏折 (Chromatic Aberration) 算法 ---
+        float r_mask = smoothstep(sweep_width, 0.0, abs(dist - dispersion));
+        float g_mask = smoothstep(sweep_width, 0.0, abs(dist));
+        float b_mask = smoothstep(sweep_width, 0.0, abs(dist + dispersion));
+        
+        sweep_addition = vec3(r_mask, g_mask, b_mask) * glow_intensity;
+    } else {
+        // --- 纯单色/暖金烈焰扫光 ---
+        float mono_mask = smoothstep(sweep_width, 0.0, abs(dist));
+        sweep_addition = single_beam_color * mono_mask * glow_intensity;
+    }
+    
+    // 将扫描线和菲涅尔边缘光晕融合：扫光经过轮廓边缘时，辉光由于菲涅尔指数会成倍放大发散！
+    vec3 final_emission = sweep_addition * (1.0 + rim_glow);
+    EMISSION = final_emission;
+}`;
+        document.getElementById('shaderCodeContainer').textContent = shaderCode;
+    }
+
+    function generateGDScriptCode() {
+        const scriptCode = `# GDScript 3D 逻辑控制示例：用于挂载到带有上述 3D 着色器材质的 MeshInstance3D 上。
+# 支持在游戏事件触发单次强光冲击。
+extends MeshInstance3D
+
+var shader_material: ShaderMaterial
+
+func _ready() -> void:
+    # 提取当前 3D 网格的活跃材质
+    if get_active_material(0) is ShaderMaterial:
+        shader_material = get_active_material(0) as ShaderMaterial
+    else:
+        printerr("请确保在 MeshInstance3D 的 Material Slot 0 上挂载了该 3D 扫光材质！")
+
+## 触发一次激烈的强扫光冲击 (可配合动画帧或打击判定触发)
+func trigger_impact_sweep(duration: float = 1.2) -> void:
+    if not shader_material: return
+    
+    var tween = create_tween().set_parallel(true)
+    
+    # 将菲涅尔亮度和色相离散推向峰值
+    tween.tween_property(shader_material, "shader_parameter/rim_intensity", ${state.rimIntensity.toFixed(2)} * 2.0, 0.15)
+    tween.tween_property(shader_material, "shader_parameter/glow_intensity", ${state.glow.toFixed(2)} * 2.0, 0.15)
+    tween.tween_property(shader_material, "shader_parameter/dispersion", ${state.dispersion.toFixed(3)} * 1.5, 0.2)
+    
+    # 待滑过时间阈值后，柔和衰减回设定的默认高雅参数
+    await get_tree().create_timer(duration * 0.6).timeout
+    
+    var fade_tween = create_tween().set_parallel(true)
+    fade_tween.tween_property(shader_material, "shader_parameter/rim_intensity", ${state.rimIntensity.toFixed(2)}, duration * 0.4)
+    fade_tween.tween_property(shader_material, "shader_parameter/glow_intensity", ${state.glow.toFixed(2)}, duration * 0.4)
+    fade_tween.tween_property(shader_material, "shader_parameter/dispersion", ${state.dispersion.toFixed(3)}, duration * 0.4)
+
+## 在运行时一键转换发光色彩
+func set_single_glow_color(color: Color) -> void:
+    if shader_material:
+        shader_material.set_shader_parameter("enable_rainbow", false)
+        shader_material.set_shader_parameter("single_beam_color", color)
+
+## 调整倾角
+func rotate_sweep_angle(new_angle: float) -> void:
+    if shader_material:
+        shader_material.set_shader_parameter("sweep_angle", new_angle)`;
+        document.getElementById('scriptCodeContainer').textContent = scriptCode;
+    }
+
+    function copyCurrentCode() {
+        const textToCopy = state.activeTab === 'shader' 
+            ? document.getElementById('shaderCodeContainer').textContent 
+            : document.getElementById('scriptCodeContainer').textContent;
+
+        // Use custom message notification as per safety guardrails
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const btnText = document.getElementById('copyText');
+            const icon = document.getElementById('copyIcon');
+            
+            btnText.innerText = "复制成功！";
+            icon.setAttribute('data-lucide', 'check');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btnText.innerText = "复制代码";
+                icon.setAttribute('data-lucide', 'copy');
+                lucide.createIcons();
+            }, 2000);
+        });
+    }
+
+    // --- THREE.JS 3D VIEWPORT WITH FRESNEL SHADER ---
+    let renderer, scene, camera, controls, customMaterial;
+    let animeGroup;
+
+    function init3DPreview() {
+        const container = document.getElementById('canvas3dContainer');
+        const width = container.clientWidth;
+        const height = container.clientHeight || 380;
+
+        // Create WebGL Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050608);
+
+        // Camera setup
+        camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        camera.position.set(0, 0, 7);
+
+        // WebGL Renderer Setup
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Orbit controls
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 3;
+        controls.maxDistance = 15;
+
+        // Custom Shader Material mimicking Godot's 3D Spatial behavior
+        const customShader = {
+            uniforms: {
+                u_time: { value: 0 },
+                u_speed: { value: state.speed },
+                u_width: { value: state.width },
+                u_angle: { value: state.angle * Math.PI / 180.0 },
+                u_dispersion: { value: state.dispersion },
+                u_glow: { value: state.glow },
+                u_rimPower: { value: state.rimPower },
+                u_rimIntensity: { value: state.rimIntensity },
+                u_noiseStrength: { value: state.noise },
+                u_enableRainbow: { value: state.enableRainbow ? 1 : 0 },
+                u_singleColor: { value: new THREE.Color(state.beamColor) }
+            },
+            vertexShader: `
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                varying vec3 vLocalPos;
+                varying vec2 vUv;
+                
+                void main() {
+                    vUv = uv;
+                    vLocalPos = position;
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                varying vec3 vLocalPos;
+                varying vec2 vUv;
+                
+                uniform float u_time;
+                uniform float u_speed;
+                uniform float u_width;
+                uniform float u_angle;
+                uniform float u_dispersion;
+                uniform float u_glow;
+                uniform float u_rimPower;
+                uniform float u_rimIntensity;
+                uniform float u_noiseStrength;
+                uniform int u_enableRainbow;
+                uniform vec3 u_singleColor;
+
+                // Simple procedural 2D noise
+                float hash(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+                }
+                float noise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    vec2 u = f*f*(3.0-2.0*f);
+                    return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+                               mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+                }
+
+                void main() {
+                    // Base shading (dark metallic / anime shadow style)
+                    vec3 baseAlbedo = vec3(0.08, 0.09, 0.12) + 0.04 * vNormal.y;
+                    
+                    // Rotate position vector in local space
+                    float s = sin(u_angle);
+                    float c = cos(u_angle);
+                    float sweepCoord = vLocalPos.x * c - vLocalPos.y * s;
+                    
+                    // Floating scanline index
+                    float sweepPos = mod(u_time * u_speed, 3.0) - 1.5;
+                    float dist = sweepCoord - sweepPos;
+                    
+                    // Sample dynamic procedural noise to simulate edge dissolution
+                    float n = noise(vUv * 15.0 + vec2(u_time * 0.1));
+                    dist += (n - 0.5) * u_noiseStrength * u_width;
+                    
+                    // Fresnel Rim Lighting calculations
+                    vec3 normal = normalize(vNormal);
+                    vec3 viewDir = normalize(vViewPosition);
+                    float fresnel = pow(1.0 - clamp(dot(normal, viewDir), 0.0, 1.0), u_rimPower);
+                    float rimGlow = fresnel * u_rimIntensity;
+
+                    vec3 scanLight = vec3(0.0);
+                    
+                    if (u_enableRainbow == 1) {
+                        float r = smoothstep(u_width, 0.0, abs(dist - u_dispersion));
+                        float g = smoothstep(u_width, 0.0, abs(dist));
+                        float b = smoothstep(u_width, 0.0, abs(dist + u_dispersion));
+                        scanLight = vec3(r, g, b) * u_glow;
+                    } else {
+                        float mono = smoothstep(u_width, 0.0, abs(dist));
+                        scanLight = u_singleColor * mono * u_glow;
+                    }
+                    
+                    // Combine 3D scan and 3D Rim highlights
+                    vec3 emission = scanLight * (1.0 + rimGlow);
+                    
+                    vec3 finalColor = baseAlbedo + emission;
+                    
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `
+        };
+
+        customMaterial = new THREE.ShaderMaterial({
+            vertexShader: customShader.vertexShader,
+            fragmentShader: customShader.fragmentShader,
+            uniforms: customShader.uniforms
+        });
+
+        // Build a procedural Anime character bust (resembling Corin) to preview the shader beautifully!
+        animeGroup = new THREE.Group();
+
+        // 1. Head shape
+        const headGeo = new THREE.SphereGeometry(1.0, 32, 32);
+        const head = new THREE.Mesh(headGeo, customMaterial);
+        animeGroup.add(head);
+
+        // 2. Corin's Hair Ponytails (twin cylinders/cones)
+        const hairGeo1 = new THREE.ConeGeometry(0.35, 2.5, 16);
+        const leftTail = new THREE.Mesh(hairGeo1, customMaterial);
+        leftTail.position.set(-1.1, -0.4, -0.2);
+        leftTail.rotation.z = Math.PI / 8;
+        leftTail.rotation.x = Math.PI / 10;
+        animeGroup.add(leftTail);
+
+        const rightTail = new THREE.Mesh(hairGeo1, customMaterial);
+        rightTail.position.set(1.1, -0.4, -0.2);
+        rightTail.rotation.z = -Math.PI / 8;
+        rightTail.rotation.x = Math.PI / 10;
+        animeGroup.add(rightTail);
+
+        // 3. Maid Headband/Headdress (torus segment)
+        const bandGeo = new THREE.TorusGeometry(1.05, 0.12, 16, 40, Math.PI);
+        const headBand = new THREE.Mesh(bandGeo, customMaterial);
+        headBand.position.set(0, 0.2, 0);
+        headBand.rotation.x = -Math.PI / 4;
+        animeGroup.add(headBand);
+
+        // 4. Hair Bow/Decorations
+        const bowGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+        const leftBow = new THREE.Mesh(bowGeo, customMaterial);
+        leftBow.position.set(-0.9, 0.5, 0);
+        leftBow.rotation.set(0.2, 0.2, 0.5);
+        animeGroup.add(leftBow);
+
+        const rightBow = new THREE.Mesh(bowGeo, customMaterial);
+        rightBow.position.set(0.9, 0.5, 0);
+        rightBow.rotation.set(0.2, -0.2, -0.5);
+        animeGroup.add(rightBow);
+
+        scene.add(animeGroup);
+
+        // Ambient lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        // Handle resize events
+        window.addEventListener('resize', onWindowResize);
+
+        // Start render loop on load
+        animate();
+    }
+
+    function updateShaderUniforms() {
+        if (!customMaterial) return;
+        customMaterial.uniforms.u_speed.value = state.speed;
+        customMaterial.uniforms.u_width.value = state.width;
+        customMaterial.uniforms.u_angle.value = state.angle * Math.PI / 180.0;
+        customMaterial.uniforms.u_dispersion.value = state.dispersion;
+        customMaterial.uniforms.u_glow.value = state.glow;
+        customMaterial.uniforms.u_rimPower.value = state.rimPower;
+        customMaterial.uniforms.u_rimIntensity.value = state.rimIntensity;
+        customMaterial.uniforms.u_noiseStrength.value = state.noise;
+        customMaterial.uniforms.u_enableRainbow.value = state.enableRainbow ? 1 : 0;
+        customMaterial.uniforms.u_singleColor.value.set(state.beamColor);
+    }
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        const elapsed = clock.getElapsedTime();
+        if (customMaterial) {
+            customMaterial.uniforms.u_time.value = elapsed;
+        }
+
+        // Add a gentle idle hover rotation to the character model
+        if (animeGroup) {
+            animeGroup.rotation.y = Math.sin(elapsed * 0.3) * 0.15;
+            animeGroup.rotation.x = Math.sin(elapsed * 0.1) * 0.08;
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+        const container = document.getElementById('canvas3dContainer');
+        const width = container.clientWidth;
+        const height = container.clientHeight || 380;
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+    }
+</script>
+</body>
+</html>
