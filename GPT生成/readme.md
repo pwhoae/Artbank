@@ -251,6 +251,10 @@ Transform the uploaded logo into a hyper-realistic scene where the logo silhouet
 ```
 請根據提供的「參考圖」角色，製作成高品質「努努風格（Q版絨毛公仔 / Plush Doll）」玩偶設計。 【核心要求】 - 完全保留參考圖角色的髮型、配色、服裝元素、角色辨識特徵 - 整體轉化為可愛Q版公仔比例（大頭小身） - 材質改為柔軟布偶／絨毛娃娃質感 - 臉部使用簡化刺繡風五官（embroidered face） - 四肢短小圓潤，呈現收藏級玩偶感 - 保留角色代表性的配件與服裝細節，但做成布料拼接與玩偶化設計 - 玩偶表面具有柔軟絨毛、布料縫線、棉花填充感 - 可加入吊飾、坐姿、抱抱感設計 - 整體氛圍可愛、療癒、適合做成官方周邊 【風格方向】 - 日系Q版公仔 - 高品質 plush toy photography - 可愛收藏玩偶 - cotton plush texture - soft fabric shading - detailed stitching - fluffy material - toy product showcase 【畫面構圖】 - 玩偶置中 - 純色或簡潔背景 - 商品展示風格 - 柔和棚拍燈光 - 高細節、高質感 - 4K 【可選加強】 - 玩偶旁附迷你配件 - 加入透明包裝盒版本 - 坐在床上／沙發上的療癒感構圖 - 可做成吊飾娃娃比例
 ```
+### Q版:
+```
+masterpiece, best quality, official anime game artwork, super deformed, chibi, SD character, 2 heads tall, oversized head, tiny body, cute proportions, round face, soft cheeks, large forehead, small pointed chin, huge anime eyes, small nose, tiny mouth, wide face, simple facial features, clean anime lineart, cute Japanese anime style, official game concept art, thin smooth lines, soft pencil feeling, (use on both characters),(use reference character clothing), (use reference character hairstyle), (use reference character colors)
+```
 go
 <a id="readme"></a>
 ## 回到底部
