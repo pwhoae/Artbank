@@ -1,5 +1,16 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 Godot：2d/3d/shader<br>
+https://share.gemini.google/pEXw4k1czWTQ
+【CSS神级网站】 https://www.bilibili.com/video/BV1Kx4y147dn/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+【CSS - 用 HTML & CSS 创造令人惊艳的动画网站！】 https://www.bilibili.com/video/BV1y6mwYgE2c/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+【CSS - (附源码)渐变彩色文字擦拭动画】 https://www.bilibili.com/video/BV1AkaZeVEY4/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+【不用监听 scroll，也能让吸顶导航栏滚动时切换样式】 https://www.bilibili.com/video/BV16RLg6gE94/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+【「福利」「中英字幕」Udemy - 使用Unity和C#编写你的第一个3D太空射击游戏】 https://www.bilibili.com/video/BV1toNX6kEFW/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+
+无限世界！Godot 3D 无限生成地形演示。_视频
+ZZZ_傳送門
+UE5破碎系统空间斩_视频
+【视觉过载⚠️？手搓一个机能风音乐网站】 https://www.bilibili.com/video/BV1eBz5BcETa/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 1-2天法則
 背包
 有優質的生活機能，像是清楚的圖示/圖片，還有一些標題讓你快速知道那是什麼東西。
