@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D Shader 消散效果演示中心</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-btn {
+            transition: all 0.3s ease;
+        }
+        .glow-btn:hover {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-lg text-white">
+                <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">
+                    Godot 3D Shader 消散特效中心
+                </h1>
+                <p class="text-xs text-slate-400">交互式 Web 模拟器 & Godot 4 源码生成器</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                <i class="fa-solid fa-circle text-[8px] mr-1.5 animate-pulse text-indigo-400"></i> Godot 4.x 兼容
+            </span>
+            <a href="#how-to-use" class="text-sm text-slate-400 hover:text-white transition">使用说明</a>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-6 p-6 max-w-[1600px] w-full mx-auto">
+        
+        <!-- Left Sidebar: Controls & Shader Selector -->
+        <div class="xl:col-span-4 flex flex-col space-y-6">
+            <!-- Shader selector -->
+            <div class="glass p-5 rounded-2xl flex flex-col space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center">
+                    <i class="fa-solid fa-layer-group mr-2 text-indigo-400"></i> 选择消散类型
+                </h2>
+                
+                <div class="grid grid-cols-1 gap-2.5" id="shader-selector-group">
+                    <!-- Pixelated Option -->
+                    <button id="btn-pixel" class="flex items-center justify-between p-3.5 rounded-xl text-left bg-indigo-600/20 border border-indigo-500/30 text-white transition-all duration-200 shadow-md shadow-indigo-500/5 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-cubes"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">像素化消散</div>
+                                <div class="text-xs text-indigo-200/70">类 image_6bf5e5.png 艺术感栅格化</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-60"></i>
+                    </button>
+
+                    <!-- Classic Noise Option -->
+                    <button id="btn-noise" class="flex items-center justify-between p-3.5 rounded-xl text-left bg-slate-900/60 border border-slate-800/80 text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-slate-800 text-slate-400 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-fire"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">经典噪点消散</div>
+                                <div class="text-xs text-slate-400">熔岩燃烧式自然无规则消退</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-60 transition-opacity"></i>
+                    </button>
+
+                    <!-- Linear sweep Option -->
+                    <button id="btn-linear" class="flex items-center justify-between p-3.5 rounded-xl text-left bg-slate-900/60 border border-slate-800/80 text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-slate-800 text-slate-400 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-arrows-up-down"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">线性扫描消散</div>
+                                <div class="text-xs text-slate-400">纵向科技感能量扫掠消散</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-60 transition-opacity"></i>
+                    </button>
+
+                    <!-- Glitch Option -->
+                    <button id="btn-glitch" class="flex items-center justify-between p-3.5 rounded-xl text-left bg-slate-900/60 border border-slate-800/80 text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-slate-800 text-slate-400 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">数码故障消散</div>
+                                <div class="text-xs text-slate-400">赛博朋克横条错位数字抖动</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-60 transition-opacity"></i>
+                    </button>
+
+                    <!-- Voronoi Option -->
+                    <button id="btn-voronoi" class="flex items-center justify-between p-3.5 rounded-xl text-left bg-slate-900/60 border border-slate-800/80 text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-slate-800 text-slate-400 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-gem"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">沃罗诺伊晶体消散</div>
+                                <div class="text-xs text-slate-400">蜂窝状多边形晶格破碎溶解</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover:opacity-60 transition-opacity"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls panel -->
+            <div class="glass p-5 rounded-2xl flex flex-col space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center">
+                        <i class="fa-solid fa-sliders mr-2 text-indigo-400"></i> 调节着色器参数
+                    </h2>
+                    <button id="btn-reset" class="text-xs text-indigo-400 hover:text-indigo-300 transition flex items-center space-x-1">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>重置</span>
+                    </button>
+                </div>
+
+                <div class="space-y-4 text-sm">
+                    <!-- Progress (Dissolve Amount) -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span>消散进度 (Dissolve Progress)</span>
+                            <span id="val-progress" class="font-mono text-indigo-400 font-semibold">0.40</span>
+                        </div>
+                        <input type="range" id="slider-progress" min="0.0" max="1.0" step="0.01" value="0.4"
+                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>0.0 (完整)</span>
+                            <span>1.0 (完全消散)</span>
+                        </div>
+                    </div>
+
+                    <!-- Edge Width -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span>发光边缘宽度 (Edge Width)</span>
+                            <span id="val-edge-width" class="font-mono text-indigo-400 font-semibold">0.05</span>
+                        </div>
+                        <input type="range" id="slider-edge-width" min="0.0" max="0.3" step="0.01" value="0.05"
+                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <!-- Edge Glow Color -->
+                    <div class="space-y-1.5">
+                        <label class="block text-xs text-slate-300">发光边缘颜色 (Edge Glow Color)</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" id="color-edge" value="#ff5500" class="w-10 h-10 bg-transparent border-0 rounded cursor-pointer">
+                            <span id="hex-color-edge" class="font-mono text-xs text-slate-400">#FF5500</span>
+                        </div>
+                    </div>
+
+                    <!-- Scale/Density -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs text-slate-300">
+                            <span id="label-scale">像素密度 / 噪点缩放</span>
+                            <span id="val-scale" class="font-mono text-indigo-400 font-semibold">48.0</span>
+                        </div>
+                        <input type="range" id="slider-scale" min="8.0" max="128.0" step="1.0" value="48.0"
+                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <!-- Toggle Animation Auto-play -->
+                    <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-semibold">自动循环演示 (Auto-play Loop)</div>
+                            <div class="text-[10px] text-slate-500">自动反复执行消散及还原动画</div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-autoplay" class="sr-only peer" checked>
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-gray-300 after:border after:rounded-full after:h-4 after:width-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mesh selector & texture info -->
+            <div class="glass p-5 rounded-2xl flex flex-col space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center">
+                    <i class="fa-solid fa-shapes mr-2 text-indigo-400"></i> 演示模型 & 纹理
+                </h2>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button id="mesh-frame" class="p-2.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-white font-medium text-center transition">
+                        🎨 复古画框 (类似图像)
+                    </button>
+                    <button id="mesh-sphere" class="p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-400 font-medium text-center hover:bg-slate-800 hover:text-slate-200 transition">
+                        🔮 完美球体
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-500 leading-relaxed mt-1">
+                    提示: “复古画框”模型内置了一张专门算法生成的模拟马赛克蒙娜丽莎图画（向 <code class="text-indigo-400">image_6bf5e5.png</code> 致敬），能完美体验像素块在UV平面逐步解体消散的过程。
+                </p>
+            </div>
+        </div>
+
+        <!-- Center/Right: 3D Preview Canvas & Code Workspace -->
+        <div class="xl:col-span-8 flex flex-col space-y-6">
+            
+            <!-- Three.js Live Canvas Card -->
+            <div class="glass rounded-2xl overflow-hidden flex flex-col h-[480px] relative">
+                <div class="absolute top-4 left-4 z-10 flex space-x-2">
+                    <span class="text-xs bg-slate-900/95 backdrop-blur border border-slate-800/80 px-3 py-1.5 rounded-lg text-slate-300 flex items-center shadow-lg">
+                        <i class="fa-solid fa-cube mr-1.5 text-indigo-400"></i> 3D WebGL 实时预览
+                    </span>
+                    <span id="badge-active-shader" class="text-xs bg-indigo-500/20 backdrop-blur border border-indigo-500/30 px-3 py-1.5 rounded-lg text-indigo-300 font-medium shadow-lg">
+                        像素化消散
+                    </span>
+                </div>
+                
+                <div class="absolute top-4 right-4 z-10 flex space-x-2">
+                    <button id="btn-camera-reset" title="重置视角" class="p-2 bg-slate-900/90 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 shadow-lg transition">
+                        <i class="fa-solid fa-camera-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- WebGL DOM Canvas -->
+                <div id="canvas-container" class="w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black cursor-grab active:cursor-grabbing"></div>
+                
+                <!-- Bottom controls overlay -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-800 px-4 py-2 rounded-xl flex items-center space-x-4 shadow-xl">
+                    <div class="text-xs text-slate-400 flex items-center">
+                        <i class="fa-solid fa-mouse mr-1.5"></i> 鼠标左键旋转 | 右键平移 | 滚轮缩放
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godot 4 Shader Code Display Tab -->
+            <div class="glass rounded-2xl flex flex-col overflow-hidden">
+                <div class="border-b border-slate-800/80 bg-slate-900/40 px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        <h3 class="font-semibold text-sm tracking-wide text-slate-200">
+                            Godot 4.x Spatial Shader 源码
+                        </h3>
+                    </div>
+                    <button id="btn-copy-code" class="glow-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-1.5 transition">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>复制代码</span>
+                    </button>
+                </div>
+                
+                <!-- Code box wrapper -->
+                <div class="relative bg-slate-950 p-5 overflow-x-auto max-h-[500px]">
+                    <pre><code id="code-block" class="text-slate-300 text-xs leading-relaxed font-mono block"></code></pre>
+                </div>
+            </div>
+
+            <!-- Godot Setup Tutorial Card -->
+            <div id="how-to-use" class="glass p-6 rounded-2xl flex flex-col space-y-4">
+                <h3 class="font-bold text-base text-slate-200 flex items-center">
+                    <i class="fa-solid fa-book-open mr-2 text-indigo-400"></i> Godot 引擎配置与使用指南
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs leading-relaxed">
+                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                        <div class="font-semibold text-indigo-300 mb-2 flex items-center">
+                            <span class="w-5 h-5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] rounded-full flex items-center justify-center mr-1.5 font-bold">1</span>
+                            材质节点设置
+                        </div>
+                        <p class="text-slate-400">
+                            在 Godot 场景中，选择您的 3D 节点 (例如 <code class="text-slate-200">MeshInstance3D</code>)，在属性面板中新建或分配一个 <code class="text-slate-200">ShaderMaterial</code>，然后将上方复制的着色器代码粘贴进新着色器中。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                        <div class="font-semibold text-indigo-300 mb-2 flex items-center">
+                            <span class="w-5 h-5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] rounded-full flex items-center justify-center mr-1.5 font-bold">2</span>
+                            关键属性及剔除设置
+                        </div>
+                        <p class="text-slate-400">
+                            为了使模型内部在消散后也能正确看到，代码内默认开启了 <code class="text-indigo-400">cull_disabled</code> (不剔除背面)。建议在 Shader Parameters 中指定一张 <code class="text-slate-200">Albedo Tex</code> 纹理贴图。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                        <div class="font-semibold text-indigo-300 mb-2 flex items-center">
+                            <span class="w-5 h-5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] rounded-full flex items-center justify-center mr-1.5 font-bold">3</span>
+                            代码动画集成
+                        </div>
+                        <p class="text-slate-400">
+                            使用 GDScript 或 <code class="text-slate-200">AnimationPlayer</code> 对着色器变量 <code class="text-indigo-400">dissolve_amount</code> 在 0.0 至 1.0 之间进行插值，即可在游戏运行时完美实现物体消融的过场特效。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer block -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-6 mt-12 text-center text-xs text-slate-500">
+        <p>© 2026 Godot Shader Lab. 结合 WebGL 实时仿真，赋能游戏美术创意。</p>
+    </footer>
+
+    <script>
+        // Store Godot 4 Shader Source Codes
+        const godotShaders = {
+            pixel: `//=========================================================
+// Godot 4.x Spatial Shader: Pixelated Dissolve (像素化消散)
+// 灵感来源于经典画作像素格风格 (如 image_6bf5e5.png)
+//=========================================================
+shader_type spatial;
+render_mode depth_draw_always, cull_disabled;
+
+// 基础纹理与消散参数
+uniform sampler2D albedo_tex : source_color, filter_linear_mipmap;
+uniform float dissolve_amount : hint_range(0.0, 1.0) = 0.40;
+uniform float pixel_density : hint_range(8.0, 256.0) = 48.0;
+
+// 边缘发光参数
+uniform float edge_width : hint_range(0.0, 0.3) = 0.05;
+uniform vec4 edge_color : source_color = vec4(1.0, 0.33, 0.0, 1.0);
+uniform float emission_intensity : hint_range(0.0, 10.0) = 4.0;
+
+// 经典伪随机函数，以UV格数为输入
+float rand(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void fragment() {
+    // 1. 将UV坐标按照给定像素密度“切碎”成格子，从而形成像素化UV坐标
+    vec2 pixel_uv = floor(UV * pixel_density) / pixel_density;
+    
+    // 2. 依据像素化UV生成均匀稳定的噪点特征值
+    float noise_val = rand(pixel_uv);
+    
+    // 3. 计算消散逻辑 (加宽边缘以防裁切越界)
+    float threshold = dissolve_amount * (1.0 + edge_width);
+    
+    // 如果噪音比阈值更低，则将该像素网格剔除
+    if (noise_val < threshold - edge_width) {
+        discard;
+    }
+    
+    // 4. 采样原画贴图
+    vec4 tex = texture(albedo_tex, UV);
+    ALBEDO = tex.rgb;
+    ALPHA = tex.a;
+    METALLIC = 0.1;
+    ROUGHNESS = 0.8;
+    
+    // 5. 如果处于消散过渡的临界区，赋予明亮的像素化边缘发光
+    if (noise_val < threshold) {
+        ALBEDO = mix(tex.rgb, edge_color.rgb, 0.9);
+        EMISSION = edge_color.rgb * emission_intensity;
+    }
+}`,
+            noise: `//=========================================================
+// Godot 4.x Spatial Shader: Classic Noise Dissolve (噪声消散)
+// 基于 2D Perlin 伪噪声的传统燃烧或风化消融外观
+//=========================================================
+shader_type spatial;
+render_mode depth_draw_always, cull_disabled;
+
+uniform sampler2D albedo_tex : source_color;
+uniform float dissolve_amount : hint_range(0.0, 1.0) = 0.40;
+uniform float noise_scale : hint_range(1.0, 100.0) = 32.0;
+
+// 发光设置
+uniform float edge_width : hint_range(0.0, 0.3) = 0.05;
+uniform vec4 edge_color : source_color = vec4(1.0, 0.33, 0.0, 1.0);
+uniform float emission_intensity : hint_range(0.0, 10.0) = 4.0;
+
+// 二维噪点生成
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+               mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+}
+
+void fragment() {
+    // 1. 生成自然起伏的噪点值
+    float noise_val = noise(UV * noise_scale);
+    
+    // 2. 消散与裁切计算
+    float threshold = dissolve_amount * (1.0 + edge_width);
+    if (noise_val < threshold - edge_width) {
+        discard;
+    }
+    
+    // 3. 基础色彩采样
+    vec4 tex = texture(albedo_tex, UV);
+    ALBEDO = tex.rgb;
+    METALLIC = 0.15;
+    ROUGHNESS = 0.6;
+    
+    // 4. 熔岩般的渐变边缘
+    if (noise_val < threshold) {
+        float edge_factor = (threshold - noise_val) / edge_width;
+        vec3 glow = edge_color.rgb * emission_intensity;
+        ALBEDO = mix(ALBEDO, edge_color.rgb, edge_factor);
+        EMISSION = mix(vec3(0.0), glow, edge_factor);
+    }
+}`,
+            linear: `//=========================================================
+// Godot 4.x Spatial Shader: Directional Sweep (线性扫描消散)
+// 沿世界/局部垂直轴方向的线性剥落，伴随激光边缘
+//=========================================================
+shader_type spatial;
+render_mode depth_draw_always, cull_disabled;
+
+uniform sampler2D albedo_tex : source_color;
+uniform float dissolve_amount : hint_range(0.0, 1.0) = 0.40;
+uniform float noise_roughness : hint_range(0.0, 1.0) = 0.15;
+
+// 发光设置
+uniform float edge_width : hint_range(0.0, 0.3) = 0.05;
+uniform vec4 edge_color : source_color = vec4(1.0, 0.33, 0.0, 1.0);
+uniform float emission_intensity : hint_range(0.0, 10.0) = 5.0;
+
+// 极简随机噪点，增加边缘锯齿感
+float rand(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+varying float v_y_pos;
+
+void vertex() {
+    // 传递高度轴信息给片段着色器
+    v_y_pos = VERTEX.y;
+}
+
+void fragment() {
+    // 1. 基于高度轴建立消融趋势 (假设高度范围大致在 -1.0 到 1.0 之间)
+    // 混合一些噪点使边缘具有侵蚀起伏感
+    float noise_val = rand(UV) * noise_roughness;
+    float height_val = (v_y_pos + 1.0) * 0.5 + noise_val; // 映射至 0.0 - 1.0 区域
+    
+    // 2. 轴向比对裁剪
+    float threshold = dissolve_amount * (1.0 + edge_width);
+    if (height_val < threshold - edge_width) {
+        discard;
+    }
+    
+    vec4 tex = texture(albedo_tex, UV);
+    ALBEDO = tex.rgb;
+    
+    // 3. 水平扫描光边缘发光
+    if (height_val < threshold) {
+        ALBEDO = mix(tex.rgb, edge_color.rgb, 0.85);
+        EMISSION = edge_color.rgb * emission_intensity;
+    }
+}`,
+            glitch: `//=========================================================
+// Godot 4.x Spatial Shader: Digital Glitch Dissolve (故障消散)
+// 极客/赛博朋克风的信号破裂、水平数字条纹消散
+//=========================================================
+shader_type spatial;
+render_mode depth_draw_always, cull_disabled;
+
+uniform sampler2D albedo_tex : source_color;
+uniform float dissolve_amount : hint_range(0.0, 1.0) = 0.40;
+uniform float glitch_density : hint_range(5.0, 100.0) = 35.0;
+
+uniform float edge_width : hint_range(0.0, 0.3) = 0.05;
+uniform vec4 edge_color : source_color = vec4(1.0, 0.33, 0.0, 1.0);
+uniform float emission_intensity : hint_range(0.0, 10.0) = 4.0;
+
+float rand(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void fragment() {
+    // 1. 使用横条纹格来分段 UV 空间
+    float row = floor(UV.y * glitch_density) / glitch_density;
+    
+    // 2. 结合 X 坐标形成具有错位感的像素噪点
+    float seed = row * 342.12 + floor(UV.x * (glitch_density * 0.4)) / (glitch_density * 0.4);
+    float noise_val = rand(vec2(seed, row));
+    
+    float threshold = dissolve_amount * (1.0 + edge_width);
+    if (noise_val < threshold - edge_width) {
+        discard;
+    }
+    
+    // 3. 对部分条纹施加错位采样以模拟故障波形
+    vec2 uv_offset = vec2(0.0);
+    if (noise_val < threshold + 0.1) {
+        uv_offset.x = (rand(vec2(row, TIME)) - 0.5) * 0.1 * dissolve_amount;
+    }
+    
+    vec4 tex = texture(albedo_tex, UV + uv_offset);
+    ALBEDO = tex.rgb;
+    
+    // 4. 数码霓虹光束边缘
+    if (noise_val < threshold) {
+        ALBEDO = mix(tex.rgb, edge_color.rgb, 0.9);
+        EMISSION = edge_color.rgb * emission_intensity;
+    }
+}`,
+            voronoi: `//=========================================================
+// Godot 4.x Spatial Shader: Voronoi Cell Dissolve (晶体消散)
+// 基于多边形沃罗诺伊晶胞的多边形碎裂溶解效果
+//=========================================================
+shader_type spatial;
+render_mode depth_draw_always, cull_disabled;
+
+uniform sampler2D albedo_tex : source_color;
+uniform float dissolve_amount : hint_range(0.0, 1.0) = 0.40;
+uniform float voronoi_scale : hint_range(5.0, 50.0) = 15.0;
+
+uniform float edge_width : hint_range(0.0, 0.3) = 0.05;
+uniform vec4 edge_color : source_color = vec4(1.0, 0.33, 0.0, 1.0);
+uniform float emission_intensity : hint_range(0.0, 10.0) = 5.0;
+
+// 胞元核心哈希
+vec2 voronoi_hash(vec2 p) {
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return fract(sin(p) * 43758.5453);
+}
+
+// 沃罗诺伊核心算法：返回到中心点的距离与每个晶胞对应的专属哈希色值
+vec2 get_voronoi_val(vec2 p) {
+    vec2 n = floor(p);
+    vec2 f = fract(p);
+    
+    float min_dist = 8.0;
+    vec2 closest_cell = vec2(0.0);
+    
+    for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+            vec2 g = vec2(float(i), float(j));
+            vec2 o = voronoi_hash(n + g);
+            vec2 r = g + o - f;
+            float d = dot(r, r); // 平方欧式距离
+            
+            if (d < min_dist) {
+                min_dist = d;
+                closest_cell = n + g;
+            }
+        }
+    }
+    // 返回：x=晶胞特征指，y=距离边缘参数
+    float cell_hash = fract(sin(dot(closest_cell, vec2(15.23, 75.34))) * 342.34);
+    return vec2(cell_hash, sqrt(min_dist));
+}
+
+void fragment() {
+    vec2 v_val = get_voronoi_val(UV * voronoi_scale);
+    float noise_val = v_val.x; // 每个晶胞单元对应一个统一的消融优先级
+    
+    float threshold = dissolve_amount * (1.0 + edge_width);
+    if (noise_val < threshold - edge_width) {
+        discard;
+    }
+    
+    vec4 tex = texture(albedo_tex, UV);
+    ALBEDO = tex.rgb;
+    
+    // 晶体破碎发光边界
+    if (noise_val < threshold) {
+        ALBEDO = mix(tex.rgb, edge_color.rgb, 0.85);
+        EMISSION = edge_color.rgb * emission_intensity;
+    }
+}`
+        };
+
+        // ==========================================
+        // Three.js Shader Simulation Logic
+        // ==========================================
+        let scene, camera, renderer, controls;
+        let mainMesh, frameContainer;
+        let simMaterial;
+        let artTexture;
+        let activeShader = 'pixel'; // Default is pixelated
+        let autoPlay = true;
+        let autoPlayDir = 1; // 1 = dissolving, -1 = resolving
+
+        // Object containing live parameters for uniform feeding
+        const config = {
+            dissolve: 0.40,
+            edgeWidth: 0.05,
+            edgeColor: new THREE.Color('#ff5500'),
+            scale: 48.0,
+            meshType: 'frame' // 'frame' or 'sphere'
+        };
+
+        // Custom GLSL Noise helper functions inside Three.js custom material
+        const shaderUtils = `
+            float rand(vec2 co) {
+                return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+
+            float hash(vec2 p) {
+                p = fract(p * vec2(123.34, 456.21));
+                p += dot(p, p + 45.32);
+                return fract(p.x * p.y);
+            }
+
+            float noise2D(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i + vec2(0.0,0.0)), hash(i + vec2(1.0,0.0)), u.x),
+                           mix(hash(i + vec2(0.0,1.0)), hash(i + vec2(1.0,1.0)), u.x), u.y);
+            }
+
+            vec2 voronoi_hash(vec2 p) {
+                p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+                return fract(sin(p) * 43758.5453);
+            }
+
+            float get_voronoi(vec2 p) {
+                vec2 n = floor(p);
+                vec2 f = fract(p);
+                float min_dist = 8.0;
+                vec2 closest_cell = vec2(0.0);
+                for (int j = -1; j <= 1; j++) {
+                    for (int i = -1; i <= 1; i++) {
+                        vec2 g = vec2(float(i), float(j));
+                        vec2 o = voronoi_hash(n + g);
+                        vec2 r = g + o - f;
+                        float d = dot(r, r);
+                        if (d < min_dist) {
+                            min_dist = d;
+                            closest_cell = n + g;
+                        }
+                    }
+                }
+                return fract(sin(dot(closest_cell, vec2(15.23, 75.34))) * 342.34);
+            }
+        `;
+
+        // Vertex shader simulating the spatial inputs
+        const customVertexShader = `
+            varying vec2 vUv;
+            varying vec3 vLocalPos;
+            void main() {
+                vUv = uv;
+                vLocalPos = position;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        // Fragment shader that switches the exact dissolve behavior based on selection
+        const customFragmentShader = `
+            uniform sampler2D uAlbedoTex;
+            uniform float uDissolve;
+            uniform float uEdgeWidth;
+            uniform vec3 uEdgeColor;
+            uniform float uScale;
+            uniform int uType; // 0=Pixel, 1=Noise, 2=Linear, 3=Glitch, 4=Voronoi
+            uniform float uTime;
+
+            varying vec2 vUv;
+            varying vec3 vLocalPos;
+
+            ${shaderUtils}
+
+            void main() {
+                float noise_val = 0.0;
+                float threshold = uDissolve * (1.0 + uEdgeWidth);
+
+                // --- SWITCH DISSOLVE LOGIC ---
+                if (uType == 0) {
+                    // Pixelated Dissolve
+                    vec2 pixel_uv = floor(vUv * uScale) / uScale;
+                    noise_val = rand(pixel_uv);
+                } 
+                else if (uType == 1) {
+                    // Classic Noise Dissolve
+                    noise_val = noise2D(vUv * uScale);
+                } 
+                else if (uType == 2) {
+                    // Height Linear Sweep (Model coordinate ranges approximately -1.0 to 1.0 on Y)
+                    float jitter = rand(vUv) * 0.12;
+                    noise_val = (vLocalPos.y + 1.2) * 0.45 + jitter;
+                } 
+                else if (uType == 3) {
+                    // Glitch strip
+                    float row = floor(vUv.y * uScale) / uScale;
+                    float seed = row * 342.12 + floor(vUv.x * (uScale * 0.4)) / (uScale * 0.4);
+                    noise_val = rand(vec2(seed, row));
+                } 
+                else if (uType == 4) {
+                    // Voronoi Cell
+                    noise_val = get_voronoi(vUv * uScale * 0.4);
+                }
+
+                // Discard fragment if threshold met
+                if (noise_val < threshold - uEdgeWidth) {
+                    discard;
+                }
+
+                // Sample texture color
+                vec2 final_uv = vUv;
+                if (uType == 3 && noise_val < threshold + 0.1) {
+                    // Glitch UV displacement offset
+                    final_uv.x += (rand(vec2(floor(vUv.y * uScale), uTime)) - 0.5) * 0.08 * uDissolve;
+                }
+
+                vec4 tex_color = texture2D(uAlbedoTex, final_uv);
+                vec3 final_albedo = tex_color.rgb;
+
+                // Edge glow emission block
+                if (noise_val < threshold) {
+                    // Interpolate blend color for premium aesthetics
+                    float edge_factor = (threshold - noise_val) / uEdgeWidth;
+                    final_albedo = mix(tex_color.rgb, uEdgeColor, 0.95);
+                    // Add bright emission glow effect on outer boundary
+                    final_albedo += uEdgeColor * 1.5;
+                }
+
+                gl_FragColor = vec4(final_albedo, tex_color.a);
+            }
+        `;
+
+        // ==========================================
+        // Canvas Generator for "Mona Lisa" Mosaic Texture (image_6bf5e5.png reference)
+        // ==========================================
+        function createMosaicTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Generate an elegant warm-toned classic gradient landscape first
+            const grad = ctx.createRadialGradient(256, 256, 50, 256, 256, 300);
+            grad.addColorStop(0, '#ebd2b0'); // Warm face tone
+            grad.addColorStop(0.3, '#8b5a2b'); // Brown hair
+            grad.addColorStop(0.7, '#2f4f4f'); // Dark olive robe
+            grad.addColorStop(1, '#111827'); // Background shadows
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Recreate pixelated grid abstraction blocks reminiscent of the classic art frame
+            const numBlocks = 18;
+            const size = 512 / numBlocks;
+            
+            // Fixed color matrix representing abstracted portrait components
+            const palette = [
+                '#1f2421', '#212f3d', '#34495e', '#566573', '#2c3e50', // dark backdrop
+                '#8e805d', '#d5c4a1', '#fbf1c7', '#ebdbb2', '#bdae93', // skin tones
+                '#458588', '#3c3836', '#504945', '#665c54', '#7c6f64', // robes
+                '#32302f', '#282828', '#1d2021', '#0e3a2f', '#065c41'  // deep greens and accents
+            ];
+
+            for (let y = 0; y < numBlocks; y++) {
+                for (let x = 0; x < numBlocks; x++) {
+                    // Draw centered abstract shapes mimicking Mona Lisa's stance
+                    let col;
+                    const dx = Math.abs(x - numBlocks / 2);
+                    
+                    if (y < 4) {
+                        // Upper background (emerald/teal halo visible in image_6bf5e5.png)
+                        col = y === 0 ? '#059669' : palette[Math.floor(Math.random() * 4)];
+                    } else if (y >= 4 && y <= 9 && dx < 3) {
+                        // Face and neck area (warm pixels)
+                        col = palette[5 + Math.floor(dx * 1.2 + (y - 4) * 0.3)];
+                    } else if (y > 9 && dx < 5) {
+                        // Clothes and hands (darker drapes with hands highlights)
+                        col = y > 14 && dx < 2 ? '#bdae93' : palette[10 + Math.floor(Math.random() * 5)];
+                    } else {
+                        // Dark hair/shadow margins
+                        col = palette[Math.floor(Math.random() * 3) + 15];
+                    }
+
+                    ctx.fillStyle = col;
+                    // Draw flat pixel squares
+                    ctx.fillRect(x * size, y * size, size, size);
+                }
+            }
+
+            // Bring procedural noise overlay for richer details
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            for (let i = 0; i < 500; i++) {
+                const rx = Math.random() * 512;
+                const ry = Math.random() * 512;
+                const rSize = Math.random() * 8 + 2;
+                ctx.fillRect(rx, ry, rSize, rSize);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            return texture;
+        }
+
+        // ==========================================
+        // Three.js Scene Setup & Initialization
+        // ==========================================
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            // 1. Create Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2('#090d16', 0.15);
+
+            // 2. Create Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 0, 4.2);
+
+            // 3. Create WebGL Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            container.appendChild(renderer.domElement);
+
+            // 4. Create Interactive Camera Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 8;
+            controls.minDistance = 1.5;
+
+            // 5. Add Lights
+            const ambientLight = new THREE.AmbientLight('#ffffff', 0.6);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight('#818cf8', 1.2);
+            dirLight1.position.set(5, 5, 5);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight('#c084fc', 0.6);
+            dirLight2.position.set(-5, -3, 3);
+            scene.add(dirLight2);
+
+            // Create procedural artwork texture
+            artTexture = createMosaicTexture();
+
+            // 6. Build the custom shader simulation material
+            simMaterial = new THREE.ShaderMaterial({
+                vertexShader: customVertexShader,
+                fragmentShader: customFragmentShader,
+                side: THREE.DoubleSide,
+                transparent: true,
+                uniforms: {
+                    uAlbedoTex: { value: artTexture },
+                    uDissolve: { value: config.dissolve },
+                    uEdgeWidth: { value: config.edgeWidth },
+                    uEdgeColor: { value: config.edgeColor },
+                    uScale: { value: config.scale },
+                    uType: { value: 0 }, // 0=Pixel
+                    uTime: { value: 0.0 }
+                }
+            });
+
+            // Assemble demonstration meshes
+            buildMeshes();
+
+            // Set up resize responder
+            window.addEventListener('resize', onWindowResize);
+            
+            // Boot rendering loop
+            animate(0);
+        }
+
+        // ==========================================
+        // Model Assemblers
+        // ==========================================
+        function buildMeshes() {
+            // Remove existing entities
+            if (frameContainer) scene.remove(frameContainer);
+            if (mainMesh) scene.remove(mainMesh);
+
+            if (config.meshType === 'frame') {
+                // Construct hierarchical components for a framed painting setup (Inspired by image_6bf5e5.png)
+                frameContainer = new THREE.Group();
+
+                // Center Canvas Board where the dissolve material acts
+                const canvasGeom = new THREE.PlaneGeometry(1.6, 2.2);
+                mainMesh = new THREE.Mesh(canvasGeom, simMaterial);
+                mainMesh.position.set(0, 0, 0.05); // Place slightly forward inside the frame
+                frameContainer.add(mainMesh);
+
+                // Build a gorgeous dark wooden frame surrounding the canvas
+                const frameMat = new THREE.MeshStandardMaterial({
+                    color: 0x2e1d11, // Antique dark golden brown wood tint
+                    roughness: 0.4,
+                    metalness: 0.35,
+                    bumpScale: 0.05
+                });
+
+                // Frame Borders: Top, Bottom, Left, Right
+                const borderThickness = 0.15;
+                const borderDepth = 0.12;
+
+                const borderTop = new THREE.Mesh(new THREE.BoxGeometry(1.6 + borderThickness*2, borderThickness, borderDepth), frameMat);
+                borderTop.position.set(0, 1.1 + borderThickness/2, 0);
+                frameContainer.add(borderTop);
+
+                const borderBottom = new THREE.Mesh(new THREE.BoxGeometry(1.6 + borderThickness*2, borderThickness, borderDepth), frameMat);
+                borderBottom.position.set(0, -(1.1 + borderThickness/2), 0);
+                frameContainer.add(borderBottom);
+
+                const borderLeft = new THREE.Mesh(new THREE.BoxGeometry(borderThickness, 2.2, borderDepth), frameMat);
+                borderLeft.position.set(-(0.8 + borderThickness/2), 0, 0);
+                frameContainer.add(borderLeft);
+
+                const borderRight = new THREE.Mesh(new THREE.BoxGeometry(borderThickness, 2.2, borderDepth), frameMat);
+                borderRight.position.set(0.8 + borderThickness/2, 0, 0);
+                frameContainer.add(borderRight);
+
+                // Add a gold inner trim (bevel spacer)
+                const trimMat = new THREE.MeshStandardMaterial({
+                    color: 0xd4af37, // Golden accent highlight
+                    roughness: 0.25,
+                    metalness: 0.95
+                });
+                const trimTop = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.04, 0.08), trimMat);
+                trimTop.position.set(0, 1.11, 0.04);
+                frameContainer.add(trimTop);
+
+                const trimBottom = new THREE.Mesh(new THREE.BoxGeometry(1.62, 0.04, 0.08), trimMat);
+                trimBottom.position.set(0, -1.11, 0.04);
+                frameContainer.add(trimBottom);
+
+                const trimLeft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.2, 0.08), trimMat);
+                trimLeft.position.set(-0.81, 0, 0.04);
+                frameContainer.add(trimLeft);
+
+                const trimRight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.2, 0.08), trimMat);
+                trimRight.position.set(0.81, 0, 0.04);
+                frameContainer.add(trimRight);
+
+                scene.add(frameContainer);
+            } 
+            else if (config.meshType === 'sphere') {
+                // Sphere demonstration
+                const sphereGeom = new THREE.SphereGeometry(1.0, 64, 64);
+                mainMesh = new THREE.Mesh(sphereGeom, simMaterial);
+                scene.add(mainMesh);
+            }
+        }
+
+        // Window resize handler
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // ==========================================
+        // Continuous Render and Animation Update Loop
+        // ==========================================
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            const timeSec = timestamp * 0.001;
+
+            // Handle automatic fade in/fade out cycle (Autoplay logic)
+            if (autoPlay) {
+                const step = 0.005 * autoPlayDir;
+                config.dissolve += step;
+                
+                if (config.dissolve >= 0.95) {
+                    config.dissolve = 0.95;
+                    autoPlayDir = -1; // Reverse to resolving
+                } 
+                else if (config.dissolve <= 0.05) {
+                    config.dissolve = 0.05;
+                    autoPlayDir = 1; // Reverse to dissolving
+                }
+
+                // Sync GUI sliders with active loop values
+                document.getElementById('slider-progress').value = config.dissolve;
+                document.getElementById('val-progress').innerText = config.dissolve.toFixed(2);
+            }
+
+            // Sync uniforms with JS state config variables
+            simMaterial.uniforms.uDissolve.value = config.dissolve;
+            simMaterial.uniforms.uEdgeWidth.value = config.edgeWidth;
+            simMaterial.uniforms.uEdgeColor.value.copy(config.edgeColor);
+            simMaterial.uniforms.uScale.value = config.scale;
+            simMaterial.uniforms.uTime.value = timeSec;
+
+            // Rotate model slightly for perspective depth
+            if (config.meshType === 'frame' && frameContainer) {
+                frameContainer.rotation.y = Math.sin(timeSec * 0.3) * 0.15;
+            } else if (config.meshType === 'sphere' && mainMesh) {
+                mainMesh.rotation.y = timeSec * 0.2;
+                mainMesh.rotation.x = Math.sin(timeSec * 0.1) * 0.1;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // DOM Interaction and Uniform Control Handlers
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            init3D();
+
+            // Fill code viewer initially
+            updateShaderDisplay();
+
+            // Set up sliders
+            const sliderProgress = document.getElementById('slider-progress');
+            const valProgress = document.getElementById('val-progress');
+            sliderProgress.addEventListener('input', (e) => {
+                config.dissolve = parseFloat(e.target.value);
+                valProgress.innerText = config.dissolve.toFixed(2);
+                // Temporarily disable autoplay if user slides manually
+                document.getElementById('toggle-autoplay').checked = false;
+                autoPlay = false;
+            });
+
+            const sliderEdgeWidth = document.getElementById('slider-edge-width');
+            const valEdgeWidth = document.getElementById('val-edge-width');
+            sliderEdgeWidth.addEventListener('input', (e) => {
+                config.edgeWidth = parseFloat(e.target.value);
+                valEdgeWidth.innerText = config.edgeWidth.toFixed(2);
+            });
+
+            const sliderScale = document.getElementById('slider-scale');
+            const valScale = document.getElementById('val-scale');
+            sliderScale.addEventListener('input', (e) => {
+                config.scale = parseFloat(e.target.value);
+                valScale.innerText = config.scale.toFixed(1);
+            });
+
+            // Edge Color picking
+            const colorEdge = document.getElementById('color-edge');
+            const hexColorEdge = document.getElementById('hex-color-edge');
+            colorEdge.addEventListener('input', (e) => {
+                const hexValue = e.target.value;
+                hexColorEdge.innerText = hexValue.toUpperCase();
+                config.edgeColor.set(hexValue);
+            });
+
+            // Autoplay Toggle
+            const toggleAutoplay = document.getElementById('toggle-autoplay');
+            toggleAutoplay.addEventListener('change', (e) => {
+                autoPlay = e.target.checked;
+            });
+
+            // Reset parameters button
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                config.dissolve = 0.40;
+                config.edgeWidth = 0.05;
+                config.edgeColor.set('#ff5500');
+                config.scale = activeShader === 'pixel' ? 48.0 : (activeShader === 'linear' ? 0.15 : 32.0);
+                
+                // Reset form visual display elements
+                sliderProgress.value = 0.40;
+                valProgress.innerText = "0.40";
+                sliderEdgeWidth.value = 0.05;
+                valEdgeWidth.innerText = "0.05";
+                colorEdge.value = "#ff5500";
+                hexColorEdge.innerText = "#FF5500";
+                
+                updateScaleLabelLimits();
+
+                document.getElementById('toggle-autoplay').checked = true;
+                autoPlay = true;
+            });
+
+            // Camera view resets
+            document.getElementById('btn-camera-reset').addEventListener('click', () => {
+                camera.position.set(0, 0, 4.2);
+                controls.target.set(0, 0, 0);
+                controls.reset();
+            });
+
+            // Mesh toggle triggers
+            document.getElementById('mesh-frame').addEventListener('click', (e) => {
+                selectMesh('frame', e.target);
+            });
+            document.getElementById('mesh-sphere').addEventListener('click', (e) => {
+                selectMesh('sphere', e.target);
+            });
+
+            // Switch layout mesh type selection
+            function selectMesh(type, buttonEl) {
+                config.meshType = type;
+                document.querySelectorAll('[id^="mesh-"]').forEach(btn => {
+                    btn.className = "p-2.5 rounded-lg border border-slate-800 bg-slate-900/60 text-slate-400 font-medium text-center hover:bg-slate-800 hover:text-slate-200 transition";
+                });
+                buttonEl.className = "p-2.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-white font-medium text-center transition";
+                buildMeshes();
+            }
+
+            // ==========================================
+            // Active Shader Switching Mechanism
+            // ==========================================
+            const shaderButtons = {
+                pixel: document.getElementById('btn-pixel'),
+                noise: document.getElementById('btn-noise'),
+                linear: document.getElementById('btn-linear'),
+                glitch: document.getElementById('btn-glitch'),
+                voronoi: document.getElementById('btn-voronoi')
+            };
+
+            const shaderTypesMap = {
+                pixel: 0,
+                noise: 1,
+                linear: 2,
+                glitch: 3,
+                voronoi: 4
+            };
+
+            const shaderLabelsMap = {
+                pixel: '像素化消散',
+                noise: '经典噪点消散',
+                linear: '线性扫描消散',
+                glitch: '数码故障消散',
+                voronoi: '沃罗诺伊晶体消散'
+            };
+
+            Object.keys(shaderButtons).forEach(key => {
+                shaderButtons[key].addEventListener('click', () => {
+                    setActiveShader(key);
+                });
+            });
+
+            function setActiveShader(key) {
+                activeShader = key;
+                simMaterial.uniforms.uType.value = shaderTypesMap[key];
+                
+                // Update Badge text
+                document.getElementById('badge-active-shader').innerText = shaderLabelsMap[key];
+
+                // Refresh styling buttons highlight
+                Object.keys(shaderButtons).forEach(btnKey => {
+                    const btn = shaderButtons[btnKey];
+                    if (btnKey === key) {
+                        btn.className = "flex items-center justify-between p-3.5 rounded-xl text-left bg-indigo-600/20 border border-indigo-500/30 text-white transition-all duration-200 shadow-md shadow-indigo-500/5 group";
+                        btn.querySelector('div > div:first-child').nextElementSibling.className = "text-xs text-indigo-200/70";
+                        const iconContainer = btn.querySelector('.p-2');
+                        iconContainer.className = "p-2 bg-indigo-500 text-white rounded-lg transition-colors";
+                    } else {
+                        btn.className = "flex items-center justify-between p-3.5 rounded-xl text-left bg-slate-900/60 border border-slate-800/80 text-slate-300 hover:bg-slate-800/50 hover:text-white transition-all duration-200 group";
+                        btn.querySelector('div > div:first-child').nextElementSibling.className = "text-xs text-slate-400";
+                        const iconContainer = btn.querySelector('.p-2');
+                        iconContainer.className = "p-2 bg-slate-800 text-slate-400 rounded-lg group-hover:bg-indigo-500 group-hover:text-white transition-colors";
+                    }
+                });
+
+                // Customize slider ranges dynamically depending on the selected shader
+                updateScaleLabelLimits();
+                updateShaderDisplay();
+            }
+
+            function updateScaleLabelLimits() {
+                const sliderScale = document.getElementById('slider-scale');
+                const labelScale = document.getElementById('label-scale');
+                const valScale = document.getElementById('val-scale');
+
+                if (activeShader === 'pixel') {
+                    labelScale.innerText = "像素化格数密度 (Density)";
+                    sliderScale.min = "8";
+                    sliderScale.max = "128";
+                    sliderScale.step = "1";
+                    config.scale = 48.0;
+                } else if (activeShader === 'noise') {
+                    labelScale.innerText = "噪点频率缩放 (Noise Frequency)";
+                    sliderScale.min = "8";
+                    sliderScale.max = "100";
+                    sliderScale.step = "1";
+                    config.scale = 32.0;
+                } else if (activeShader === 'linear') {
+                    labelScale.innerText = "边缘波澜粗糙度 (Edge Jitter)";
+                    sliderScale.min = "0.0";
+                    sliderScale.max = "0.5";
+                    sliderScale.step = "0.01";
+                    config.scale = 0.15;
+                } else if (activeShader === 'glitch') {
+                    labelScale.innerText = "数码条状密度 (Bar Density)";
+                    sliderScale.min = "5";
+                    sliderScale.max = "80";
+                    sliderScale.step = "1";
+                    config.scale = 35.0;
+                } else if (activeShader === 'voronoi') {
+                    labelScale.innerText = "晶胞网格大小 (Cell Scale)";
+                    sliderScale.min = "4";
+                    sliderScale.max = "40";
+                    sliderScale.step = "1";
+                    config.scale = 15.0;
+                }
+
+                sliderScale.value = config.scale;
+                valScale.innerText = config.scale.toString();
+            }
+
+            function updateShaderDisplay() {
+                document.getElementById('code-block').innerText = godotShaders[activeShader];
+            }
+
+            // ==========================================
+            // Clipboard copying implementation
+            // ==========================================
+            const copyBtn = document.getElementById('btn-copy-code');
+            copyBtn.addEventListener('click', () => {
+                const codeText = godotShaders[activeShader];
+                navigator.clipboard.writeText(codeText).then(() => {
+                    // Visual feedback effect on success
+                    const originalHTML = copyBtn.innerHTML;
+                    copyBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>已复制到剪贴板!</span>`;
+                    copyBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-1.5 transition";
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalHTML;
+                        copyBtn.className = "glow-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center space-x-1.5 transition";
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Copy failed: ', err);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
