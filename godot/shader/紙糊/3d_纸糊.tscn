@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://pq0kx8in1tpb"]
+
+[ext_resource type="Shader" uid="uid://c0mb5i41t0bh7" path="res://202607/紙糊/3D 纸糊.gdshader" id="1_btnc0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xqj27"]
+render_priority = 0
+shader = ExtResource("1_btnc0")
+shader_parameter/vertex_jitter = 0.0170000008075
+shader_parameter/jitter_frequency = 8.0
+shader_parameter/paper_tint = Color(1, 0.98, 0.95, 1)
+shader_parameter/paper_roughness = 0.95
+shader_parameter/paper_grain_depth = 0.04
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_28sen"]
+material = SubResource("ShaderMaterial_xqj27")
+
+[node name="3D 纸糊" type="Node3D" unique_id=1467660967]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2074705229]
+mesh = SubResource("CapsuleMesh_28sen")

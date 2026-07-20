@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://ca35i64645vn6"]
+
+[ext_resource type="Shader" uid="uid://ksmexbqgm1eo" path="res://202607/紙糊/紙糊.gdshader" id="1_k1k0c"]
+[ext_resource type="Texture2D" uid="uid://ck31ani0olf57" path="res://3d學習/近景.png" id="2_onvr6"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_x4kdy"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7s3sg"]
+shader = ExtResource("1_k1k0c")
+shader_parameter/grid_density = 180.0000083125
+shader_parameter/poly_shading_intensity = 0.18
+shader_parameter/paper_grain_strength = 0.0
+shader_parameter/paper_fold_strength = 0.12
+shader_parameter/paper_edge_color = Color(0.95, 0.93, 0.88, 1)
+shader_parameter/paper_edge_thickness = 1.5
+shader_parameter/alpha_threshold = 0.4
+shader_parameter/paper_noise_tex = SubResource("NoiseTexture2D_x4kdy")
+
+[node name="紙糊" type="Node2D" unique_id=261144490]
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1581140943]
+material = SubResource("ShaderMaterial_7s3sg")
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("2_onvr6")
