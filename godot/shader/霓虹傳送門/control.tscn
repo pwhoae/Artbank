@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://c85xiafu1ymg7"]
+
+[ext_resource type="Shader" uid="uid://ccmwkth5rlnwv" path="res://霓虹傳送門/霓虹傳送門.gdshader" id="1_85eb4"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pb8cv"]
+shader = ExtResource("1_85eb4")
+shader_parameter/ring_radius = 0.10400000494
+shader_parameter/ring_thickness = 0.022000001045000002
+shader_parameter/glow_strength = 0.6000000285
+shader_parameter/aspect_ratio = 1.0
+shader_parameter/wave_amplitude = 0.04
+shader_parameter/wave_speed = 3.0000001425
+shader_parameter/noise_scale = 4.0
+shader_parameter/color_a = Color(0.8, 0.2, 0.9, 1)
+shader_parameter/color_b = Color(0.2, 0.8, 0.9, 1)
+shader_parameter/color_speed = 0.6930000329175
+
+[node name="Control" type="Control" unique_id=1315941849]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect2" type="ColorRect" parent="." unique_id=2004440477]
+layout_mode = 0
+offset_left = 267.0
+offset_top = 123.0
+offset_right = 940.0
+offset_bottom = 518.0
+color = Color(1, 1, 1, 0.14901961)
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1256689420]
+material = SubResource("ShaderMaterial_pb8cv")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = -33.0
+offset_right = 50.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
