@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disney Motion Design System Interactive Tool</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                            accent: '#6366f1'
+                        },
+                        disney: {
+                            gold: '#f59e0b',
+                            purple: '#8b5cf6',
+                            pink: '#ec4899',
+                            cyan: '#06b6d4'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* CSS Motion Tokens Definitions */
+        :root {
+            --motion-ease-standard: cubic-bezier(0.2, 0.0, 0.0, 1.0);
+            --motion-ease-entrance: cubic-bezier(0.0, 0.0, 0.2, 1.0);
+            --motion-ease-exit: cubic-bezier(0.4, 0.0, 1.0, 1.0);
+            --motion-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1.0);
+            
+            --motion-duration-instant: 100ms;
+            --motion-duration-fast: 200ms;
+            --motion-duration-normal: 300ms;
+            --motion-duration-slow: 400ms;
+            --motion-duration-expressive: 500ms;
+
+            --current-ease: var(--motion-ease-standard);
+            --current-duration: var(--motion-duration-normal);
+            --current-stagger: 40ms;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.6);
+        }
+
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel-light {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        /* Reduced Motion Simulation Mode */
+        .simulated-reduced-motion *,
+        .simulated-reduced-motion *::before,
+        .simulated-reduced-motion *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.15s !important;
+            transition-timing-function: linear !important;
+            transform: none !important;
+        }
+
+        /* Dynamic Preview Animation Trigger CSS */
+        .animate-target {
+            transition-property: transform, opacity, background-color, box-shadow, border-radius;
+            transition-duration: var(--current-duration);
+            transition-timing-function: var(--current-ease);
+        }
+
+        /* Keyframe Ball Animations for Curve Visualizer */
+        @keyframes ballTravel {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(100% - 24px)); }
+        }
+
+        .ball-animated {
+            animation: ballTravel var(--current-duration) var(--current-ease) infinite alternate;
+        }
+
+        /* Toast Container */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            transition: all var(--motion-duration-normal) var(--motion-ease-bounce);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Header / Nav -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-disney-purple to-disney-pink flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid font-bold text-white text-lg">D</i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
+                        Disney Motion System <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">Studio</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">迪士尼 12 原则 UI 动效系统交互式可视化规范与工具箱</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Reduced Motion Simulator Switch -->
+                <label class="relative inline-flex items-center cursor-pointer group" title="模拟无障碍 Reduced Motion 模式">
+                    <input type="checkbox" id="reduced-motion-toggle" class="sr-only peer" onchange="toggleReducedMotion(this.checked)">
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    <span class="ml-2 text-xs font-medium text-slate-300 group-hover:text-white transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-universal-access text-amber-400"></i> Reduced Motion
+                    </span>
+                </label>
+
+                <div class="h-4 w-px bg-slate-800"></div>
+
+                <!-- Export Spec Button -->
+                <button onclick="switchTab('export')" class="text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white px-3.5 py-2 rounded-lg transition-all shadow-md shadow-brand-600/20 flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-code"></i> 导出 Code & Tokens
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+        <!-- Tab Controls -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <nav class="flex gap-2" id="tab-nav">
+                <button onclick="switchTab('playground')" id="tab-btn-playground" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-slate-800 text-white shadow">
+                    <i class="fa-solid fa-play text-brand-400"></i> 交互实验场 (Playground)
+                </button>
+                <button onclick="switchTab('principles')" id="tab-btn-principles" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-wand-magic-sparkles text-disney-purple"></i> 迪士尼原则 UI 对比 (Principles)
+                </button>
+                <button onclick="switchTab('studio')" id="tab-btn-studio" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-chart-line text-disney-cyan"></i> 缓动曲线与 Token 调试
+                </button>
+                <button onclick="switchTab('export')" id="tab-btn-export" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+                    <i class="fa-solid fa-file-code text-disney-gold"></i> 代码规范与交付 (Export)
+                </button>
+            </nav>
+
+            <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>当前环境: CSS Variable Web Spec</span>
+            </div>
+        </div>
+
+        <!-- TAB 1: PLAYGROUND -->
+        <section id="tab-content-playground" class="tab-content flex flex-col lg:flex-row gap-6">
+            
+            <!-- Controls Sidebar -->
+            <div class="w-full lg:w-80 space-y-5 flex-shrink-0">
+                <!-- Preset Tokens Selector -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-400"></i> 动效 Preset Token 调优
+                    </h3>
+
+                    <!-- Duration Presets -->
+                    <div>
+                        <label class="text-xs font-medium text-slate-400 mb-2 block">1. 时长 Token (Duration)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setDuration('100ms', 'instant')" class="dur-btn text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex justify-between" id="dur-btn-instant">
+                                <span>Instant</span> <span class="text-slate-500">100ms</span>
+                            </button>
+                            <button onclick="setDuration('200ms', 'fast')" class="dur-btn text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex justify-between" id="dur-btn-fast">
+                                <span>Fast</span> <span class="text-slate-500">200ms</span>
+                            </button>
+                            <button onclick="setDuration('300ms', 'normal')" class="dur-btn text-xs p-2 rounded-lg bg-brand-600/30 text-brand-300 font-mono text-left transition border border-brand-500/50 flex justify-between" id="dur-btn-normal">
+                                <span>Normal</span> <span class="text-brand-400">300ms</span>
+                            </button>
+                            <button onclick="setDuration('400ms', 'slow')" class="dur-btn text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex justify-between" id="dur-btn-slow">
+                                <span>Slow</span> <span class="text-slate-500">400ms</span>
+                            </button>
+                        </div>
+                        <button onclick="setDuration('500ms', 'expressive')" class="dur-btn w-full mt-2 text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex justify-between" id="dur-btn-expressive">
+                            <span>Expressive (Hero Transitions)</span> <span class="text-slate-500">500ms</span>
+                        </button>
+                    </div>
+
+                    <!-- Easing Presets -->
+                    <div>
+                        <label class="text-xs font-medium text-slate-400 mb-2 block">2. 缓动曲线 (Easing Curve)</label>
+                        <div class="space-y-1.5">
+                            <button onclick="setEasing('cubic-bezier(0.2, 0.0, 0.0, 1.0)', 'standard')" id="ease-btn-standard" class="ease-btn w-full text-xs p-2.5 rounded-lg bg-brand-600/30 text-brand-300 font-mono text-left transition border border-brand-500/50 flex flex-col gap-0.5">
+                                <div class="font-sans font-semibold flex justify-between">
+                                    <span>Standard (Slow In/Out)</span>
+                                    <i class="fa-solid fa-check text-brand-400 text-xs"></i>
+                                </div>
+                                <span class="text-[10px] text-slate-400">cubic-bezier(0.2, 0.0, 0.0, 1.0)</span>
+                            </button>
+                            <button onclick="setEasing('cubic-bezier(0.0, 0.0, 0.2, 1.0)', 'entrance')" id="ease-btn-entrance" class="ease-btn w-full text-xs p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex flex-col gap-0.5">
+                                <div class="font-sans font-semibold">Entrance (Ease-Out)</div>
+                                <span class="text-[10px] text-slate-500">cubic-bezier(0.0, 0.0, 0.2, 1.0)</span>
+                            </button>
+                            <button onclick="setEasing('cubic-bezier(0.4, 0.0, 1.0, 1.0)', 'exit')" id="ease-btn-exit" class="ease-btn w-full text-xs p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex flex-col gap-0.5">
+                                <div class="font-sans font-semibold">Exit (Ease-In)</div>
+                                <span class="text-[10px] text-slate-500">cubic-bezier(0.4, 0.0, 1.0, 1.0)</span>
+                            </button>
+                            <button onclick="setEasing('cubic-bezier(0.34, 1.56, 0.64, 1.0)', 'bounce')" id="ease-btn-bounce" class="ease-btn w-full text-xs p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-left transition border border-slate-700/50 flex flex-col gap-0.5">
+                                <div class="font-sans font-semibold flex items-center justify-between">
+                                    <span>Anticipation / Bounce</span>
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-disney-purple/20 text-disney-purple border border-disney-purple/30">Disney</span>
+                                </div>
+                                <span class="text-[10px] text-slate-500">cubic-bezier(0.34, 1.56, 0.64, 1.0)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stagger Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs font-medium mb-1.5">
+                            <span class="text-slate-400">3. 错相步长 (Stagger Delay)</span>
+                            <span class="font-mono text-brand-400" id="stagger-val-display">40ms</span>
+                        </div>
+                        <input type="range" min="0" max="100" step="10" value="40" oninput="updateStagger(this.value)" class="w-full accent-brand-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Principle Reference Widget -->
+                <div class="glass-panel p-4 rounded-2xl border-l-4 border-l-disney-purple space-y-2">
+                    <div class="text-xs font-bold text-disney-purple flex items-center gap-1.5">
+                        <i class="fa-solid fa-lightbulb"></i> 当前生效的迪士尼原则
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed" id="principle-tip-text">
+                        <strong>渐入渐出 (Slow In & Slow Out):</strong> UI 元素运动通过非线性缓动模拟真实物理世界的加速度与减速度。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Preview Canvas & Component Examples -->
+            <div class="flex-1 space-y-6">
+                <!-- Preview Canvas Bar -->
+                <div class="glass-panel p-6 rounded-2xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <div>
+                            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                                Component Motion Showcase
+                            </h2>
+                            <p class="text-xs text-slate-400">点击或触发下方各类组件，实时感受参数应用效果</p>
+                        </div>
+                        <button onclick="replayAllAnimations()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right"></i> 全局重放
+                        </button>
+                    </div>
+
+                    <!-- Component 1: Button Press & Anticipation -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                                1. 微交互按钮 (Anticipation / Press Scaling)
+                            </h3>
+                            <span class="text-[11px] text-slate-500">原则：预备动作 (Anticipation)</span>
+                        </div>
+                        <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-wrap items-center gap-4">
+                            <!-- Primary Button -->
+                            <button class="animate-target px-5 py-2.5 rounded-xl bg-brand-600 text-white font-medium text-sm hover:-translate-y-0.5 active:scale-95 active:translate-y-0 shadow-lg shadow-brand-600/30 hover:shadow-brand-600/50 flex items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> 点击交互 (Primary)
+                            </button>
+
+                            <!-- Secondary Bounce Button -->
+                            <button class="animate-target px-5 py-2.5 rounded-xl bg-gradient-to-r from-disney-purple to-disney-pink text-white font-medium text-sm hover:scale-105 active:scale-90 shadow-lg shadow-disney-purple/20 flex items-center gap-2">
+                                <i class="fa-solid fa-bolt"></i> 弹性微交互 (Expressive)
+                            </button>
+
+                            <!-- Toggle Switch -->
+                            <div class="flex items-center gap-3 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700/50">
+                                <span class="text-xs text-slate-300 font-medium">状态切换:</span>
+                                <button onclick="this.classList.toggle('bg-brand-600'); this.firstElementChild.classList.toggle('translate-x-5')" class="animate-target w-11 h-6 rounded-full bg-slate-700 p-0.5 flex items-center cursor-pointer">
+                                    <div class="animate-target w-5 h-5 rounded-full bg-white shadow-md"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component 2: Staggered List Entrance -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-disney-purple"></span>
+                                2. 列表错相级联加载 (Staggered Entrance)
+                            </h3>
+                            <button onclick="triggerStaggerList()" class="text-xs text-brand-400 hover:underline flex items-center gap-1">
+                                <i class="fa-solid fa-arrows-rotate"></i> 重新触发列表加载
+                            </button>
+                        </div>
+                        <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                            <div id="stagger-list-container" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <!-- Dynamic Items will be rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component 3: Modal & Drawer Transition -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-disney-cyan"></span>
+                                3. 模态框与转场 (Staging & Slow In/Out)
+                            </h3>
+                            <span class="text-[11px] text-slate-500">原则：舞台布局与层级转换</span>
+                        </div>
+                        <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800/80 flex gap-4">
+                            <button onclick="openDemoModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition flex items-center gap-2">
+                                <i class="fa-solid fa-window-restore text-disney-cyan"></i> 触发模态框 (Modal Window)
+                            </button>
+                            <button onclick="triggerToastDemo()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-disney-gold"></i> 触发 Toast 通知 (Elastic Bounce)
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PRINCIPLES COMPARISON -->
+        <section id="tab-content-principles" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl">
+                <h2 class="text-lg font-bold text-white mb-1">迪士尼 12 原则 UI 语义化映射对比</h2>
+                <p class="text-xs text-slate-400">直观感受线性 (Linear) 无脑动画与迪士尼原则映射后的现代化 UI 交互差异</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Principle 1: Slow In and Slow Out -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">原则 1</span>
+                            <span class="text-xs text-slate-400">Slow In & Slow Out</span>
+                        </div>
+                        <h3 class="text-base font-bold text-white">渐入渐出 (缓动曲线)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            UI 中绝不使用线性 (Linear) 匀速移动。从物理惯性出发，进入屏幕加速降落，停靠前平缓减速。
+                        </p>
+                    </div>
+
+                    <!-- Comparison Visualizer -->
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <div>
+                            <div class="text-[10px] text-slate-400 mb-1 flex justify-between">
+                                <span>Linear 匀速 (机械生硬)</span>
+                                <span class="font-mono text-rose-400">linear</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-8 rounded-lg overflow-hidden relative flex items-center px-1">
+                                <div class="w-6 h-6 rounded-md bg-rose-500 shadow flex items-center justify-center text-[10px] font-bold" style="animation: ballTravel 1.5s linear infinite alternate;">
+                                    L
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-[10px] text-slate-400 mb-1 flex justify-between">
+                                <span>Slow In & Out (标准自然)</span>
+                                <span class="font-mono text-emerald-400">cubic-bezier(0.2,0,0,1)</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-8 rounded-lg overflow-hidden relative flex items-center px-1">
+                                <div class="w-6 h-6 rounded-md bg-emerald-500 shadow flex items-center justify-center text-[10px] font-bold animate-target" style="animation: ballTravel 1.5s var(--motion-ease-standard) infinite alternate;">
+                                    D
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Principle 2: Anticipation -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-disney-purple bg-disney-purple/10 px-2.5 py-1 rounded-full border border-disney-purple/20">原则 2</span>
+                            <span class="text-xs text-slate-400">Anticipation</span>
+                        </div>
+                        <h3 class="text-base font-bold text-white">预备动作 (按压收缩)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            在触发主要动作（如跳转/打开Modal）前，元素先微幅下沉或缩小 (96% scale)，给予用户物理按压心理预期。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <div class="text-[10px] text-slate-400 mb-1">对比效果：按压动作</div>
+                        <div class="flex gap-3">
+                            <div class="flex-1 text-center space-y-1.5">
+                                <button class="w-full py-2 bg-slate-800 rounded-lg text-xs text-slate-400 border border-slate-700">
+                                    无预备动作
+                                </button>
+                                <span class="text-[10px] text-slate-500 block">常规硬切</span>
+                            </div>
+
+                            <div class="flex-1 text-center space-y-1.5">
+                                <button class="w-full py-2 bg-disney-purple hover:bg-disney-purple/90 text-white rounded-lg text-xs font-medium transition-all active:scale-90 active:translate-y-0.5 shadow-md shadow-disney-purple/30">
+                                    迪士尼 Anticipation
+                                </button>
+                                <span class="text-[10px] text-emerald-400 block">点击缩放回弹</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Principle 3: Follow Through & Stagger -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-disney-gold bg-disney-gold/10 px-2.5 py-1 rounded-full border border-disney-gold/20">原则 3</span>
+                            <span class="text-xs text-slate-400">Follow Through & Stagger</span>
+                        </div>
+                        <h3 class="text-base font-bold text-white">跟随与错相加载 (Stagger)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            多个列表项或组件不同时出现，而是以 30ms-50ms 极短时间差依次入场，体现清晰的视线层级。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] text-slate-400">错相级联测试</span>
+                            <button onclick="demoStaggerVsSimultaneous()" class="text-[10px] text-disney-gold hover:underline">
+                                演示对比
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2" id="stagger-demo-box">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CUBIC BEZIER STUDIO -->
+        <section id="tab-content-studio" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- SVG Canvas Curve Inspector -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bezier-curve text-disney-cyan"></i> Cubic-Bezier 曲线轨迹拟合
+                            </h2>
+                            <p class="text-xs text-slate-400">可视化缓动函数的加速度变化 ($t$ vs $f(t)$)</p>
+                        </div>
+                        <span class="font-mono text-xs px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 text-disney-cyan" id="current-curve-code">
+                            cubic-bezier(0.20, 0.00, 0.00, 1.00)
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 relative flex items-center justify-center">
+                        <svg id="bezier-svg" class="w-full h-64 overflow-visible" viewBox="0 0 300 200">
+                            <!-- Background Grid -->
+                            <defs>
+                                <pattern id="grid" width="30" height="20" patternUnits="userSpaceOnUse">
+                                    <path d="M 30 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="1"/>
+                                </pattern>
+                            </defs>
+                            <rect width="300" height="200" fill="url(#grid)" rx="8" />
+
+                            <!-- Diagonal Reference Line -->
+                            <line x1="0" y1="200" x2="300" y2="0" stroke="rgba(255,255,255,0.1)" stroke-dasharray="4,4" stroke-width="1.5" />
+
+                            <!-- Curve Path -->
+                            <path id="bezier-path" d="M 0 200 C 60 200, 0 0, 300 0" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" />
+
+                            <!-- Control Point Handle Lines -->
+                            <line id="handle-line-1" x1="0" y1="200" x2="60" y2="200" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="2,2"/>
+                            <line id="handle-line-2" x1="300" y1="0" x2="0" y2="0" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="2,2"/>
+
+                            <!-- Control Points -->
+                            <circle id="cp1" cx="60" cy="200" r="6" fill="#8b5cf6" class="cursor-pointer" />
+                            <circle id="cp2" cx="0" cy="0" r="6" fill="#ec4899" class="cursor-pointer" />
+
+                            <!-- Start & End Points -->
+                            <circle cx="0" cy="200" r="4" fill="#3b82f6" />
+                            <circle cx="300" y1="0" r="4" fill="#3b82f6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Live Curve Ball Test & Custom Slider -->
+                <div class="lg:col-span-5 space-y-5 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-slate-200">曲线动态跑道模拟</h3>
+
+                        <!-- Track Box -->
+                        <div class="space-y-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                            <div class="flex justify-between text-xs text-slate-400">
+                                <span>起点 ($t=0$)</span>
+                                <span>终点 ($t=1$)</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-10 rounded-xl overflow-hidden relative flex items-center px-2">
+                                <div id="studio-test-ball" class="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-500 to-disney-purple shadow-lg shadow-brand-500/30 flex items-center justify-center text-xs font-bold text-white animate-target" style="animation: ballTravel var(--current-duration) var(--current-ease) infinite alternate;">
+                                    <i class="fa-solid fa-play text-[10px]"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Easing Preset Quick Selector -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-slate-400">常见预设快速载入</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setEasing('cubic-bezier(0.2, 0.0, 0.0, 1.0)', 'standard')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 text-left border border-slate-700/60">
+                                    <span class="block font-semibold">Standard</span>
+                                    <span class="text-[10px] text-slate-500">0.2, 0, 0, 1</span>
+                                </button>
+                                <button onclick="setEasing('cubic-bezier(0.34, 1.56, 0.64, 1.0)', 'bounce')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 text-left border border-slate-700/60">
+                                    <span class="block font-semibold">Anticipation Bounce</span>
+                                    <span class="text-[10px] text-slate-500">0.34, 1.56, 0.64, 1</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CSS Token Generator Quick Output -->
+                    <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">CSS Variable Code</span>
+                            <button onclick="copyToClipboard(document.getElementById('studio-css-snippet').innerText)" class="text-brand-400 hover:underline">
+                                <i class="fa-regular fa-copy"></i> 复制
+                            </button>
+                        </div>
+                        <pre id="studio-css-snippet" class="font-mono text-xs text-emerald-400 bg-slate-950 p-2.5 rounded-lg overflow-x-auto">--motion-ease-custom: cubic-bezier(0.20, 0.00, 0.00, 1.00);</pre>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 4: CODE & EXPORT -->
+        <section id="tab-content-export" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white mb-1">开发者交付 Motion Specification & Code Snippets</h2>
+                    <p class="text-xs text-slate-400">包含 CSS Variables、Tailwind CSS 配置、Framer Motion (React) 与通用 Reduced Motion 降级类</p>
+                </div>
+
+                <!-- Code Section Tabs -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- CSS Variables & Reduced Motion -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-fab fa-css3-alt text-brand-400"></i> 1. CSS Design Tokens & Accessibility
+                            </h3>
+                            <button onclick="copyCode('code-css')" class="text-xs text-brand-400 hover:underline flex items-center gap-1">
+                                <i class="fa-regular fa-copy"></i> 复制代码
+                            </button>
+                        </div>
+                        <pre id="code-css" class="bg-slate-900 border border-slate-800 p-4 rounded-xl font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed">
+:root {
+  /* Disney Motion Duration Tokens */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 200ms;
+  --motion-duration-normal: 300ms;
+  --motion-duration-slow: 400ms;
+  --motion-duration-expressive: 500ms;
+
+  /* Disney Adapted Easing Tokens */
+  --motion-ease-standard: cubic-bezier(0.2, 0.0, 0.0, 1.0); /* Slow In/Out */
+  --motion-ease-entrance: cubic-bezier(0.0, 0.0, 0.2, 1.0); /* Ease Out */
+  --motion-ease-exit: cubic-bezier(0.4, 0.0, 1.0, 1.0);     /* Ease In */
+  --motion-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1.0); /* Anticipation */
+}
+
+/* Reduced Motion 无障碍统一降级 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+    scroll-behavior: auto !important;
+  }
+}</pre>
+                    </div>
+
+                    <!-- Framer Motion (React) Snippet -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-brands fa-react text-disney-cyan"></i> 2. React / Framer Motion
+                            </h3>
+                            <button onclick="copyCode('code-react')" class="text-xs text-disney-cyan hover:underline flex items-center gap-1">
+                                <i class="fa-regular fa-copy"></i> 复制代码
+                            </button>
+                        </div>
+                        <pre id="code-react" class="bg-slate-900 border border-slate-800 p-4 rounded-xl font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed">
+import { motion, useReducedMotion } from 'framer-motion';
+
+// Disney Stagger List Variants
+const listVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.04 } // 40ms stagger
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3, // 300ms
+      ease: [0.2, 0.0, 0.0, 1.0] // Slow In/Out
+    }
+  }
+};
+
+export const DisneyList = ({ items }) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    &lt;motion.ul variants={listVariants} initial="hidden" animate="visible"&gt;
+      {items.map((item) =&gt; (
+        &lt;motion.li key={item.id} variants={shouldReduceMotion ? {} : itemVariants}&gt;
+          {item.title}
+        &lt;/motion.li&gt;
+      ))}
+    &lt;/motion.ul&gt;
+  );
+};</pre>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Interactive Modal Demo Component -->
+    <div id="demo-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <!-- Backdrop -->
+        <div onclick="closeDemoModal()" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+
+        <!-- Modal Content Container -->
+        <div id="demo-modal-card" class="relative bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl scale-90 transition-transform duration-300 animate-target">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sparkles text-disney-purple"></i> 迪士尼原则 模态框 (Staging)
+                </h3>
+                <button onclick="closeDemoModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed mb-6">
+                该模态框从 90% 缩放淡入，遮罩层与内容采用 Slow In/Out 曲线。层级清晰，符合舞台布局（Staging）意图。
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeDemoModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-medium transition">
+                    取消
+                </button>
+                <button onclick="closeDemoModal()" class="px-4 py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-500 text-xs font-medium transition shadow-lg shadow-brand-600/30">
+                    确认并体验
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Motion State
+        const state = {
+            duration: '300ms',
+            durationName: 'normal',
+            ease: 'cubic-bezier(0.2, 0.0, 0.0, 1.0)',
+            easeName: 'standard',
+            stagger: 40,
+            isReducedMotionSimulated: false
+        };
+
+        const principleTips = {
+            standard: "<strong>渐入渐出 (Slow In & Slow Out):</strong> UI 元素运动通过非线性缓动模拟真实物理世界的加速度与减速度，避免硬平移。",
+            entrance: "<strong>进入屏幕 (Ease-Out):</strong> 元素进入视口时快速冲入，随后平缓停靠，提升响应敏捷度。",
+            exit: "<strong>离开屏幕 (Ease-In):</strong> 元素离开视口时平缓启动后迅速消失，不占用用户等待注意力。",
+            bounce: "<strong>预备与回弹 (Anticipation / Back Ease):</strong> 在动作到达终点时伴随微幅超越回弹，赋予 UI 实体挤压伸展感。"
+        };
+
+        // Window Onload Initialization
+        window.onload = function() {
+            renderStaggerList();
+            renderStaggerDemo();
+            updateCSSVariables();
+            updateCurveGraph();
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white', 'shadow');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-slate-800', 'text-white', 'shadow');
+                activeBtn.classList.remove('text-slate-400');
+            }
+        }
+
+        function setDuration(dur, name) {
+            state.duration = dur;
+            state.durationName = name;
+
+            document.querySelectorAll('.dur-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600/30', 'text-brand-300', 'border-brand-500/50');
+                btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700/50');
+            });
+
+            const activeBtn = document.getElementById(`dur-btn-${name}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-600/30', 'text-brand-300', 'border-brand-500/50');
+                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            }
+
+            updateCSSVariables();
+        }
+
+        function setEasing(cubic, name) {
+            state.ease = cubic;
+            state.easeName = name;
+
+            document.querySelectorAll('.ease-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600/30', 'text-brand-300', 'border-brand-500/50');
+                btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700/50');
+            });
+
+            const activeBtn = document.getElementById(`ease-btn-${name}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-600/30', 'text-brand-300', 'border-brand-500/50');
+                activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            }
+
+            document.getElementById('principle-tip-text').innerHTML = principleTips[name] || principleTips.standard;
+
+            updateCSSVariables();
+            updateCurveGraph();
+        }
+
+        function updateStagger(val) {
+            state.stagger = parseInt(val);
+            document.getElementById('stagger-val-display').innerText = `${val}ms`;
+            updateCSSVariables();
+            renderStaggerList();
+        }
+
+        function updateCSSVariables() {
+            document.documentElement.style.setProperty('--current-duration', state.duration);
+            document.documentElement.style.setProperty('--current-ease', state.ease);
+            document.documentElement.style.setProperty('--current-stagger', `${state.stagger}ms`);
+
+            const snippet = document.getElementById('studio-css-snippet');
+            if (snippet) {
+                snippet.innerText = `--motion-ease-${state.easeName}: ${state.ease};\n--motion-duration-${state.durationName}: ${state.duration};`;
+            }
+        }
+
+        function renderStaggerList() {
+            const container = document.getElementById('stagger-list-container');
+            if (!container) return;
+
+            const itemsData = [
+                { title: '数据分析看板', icon: 'fa-chart-pie', color: 'text-brand-400' },
+                { title: '迪士尼 12 原则映射', icon: 'fa-wand-magic-sparkles', color: 'text-disney-purple' },
+                { title: '无障碍 Reduced-Motion', icon: 'fa-universal-access', color: 'text-disney-gold' }
+            ];
+
+            container.innerHTML = '';
+            itemsData.forEach((item, index) => {
+                const card = document.createElement('div');
+                const delay = state.isReducedMotionSimulated ? 0 : index * state.stagger;
+                
+                card.className = 'animate-target p-4 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center gap-3 shadow-md transform opacity-0 translate-y-4';
+                card.style.transitionDelay = `${delay}ms`;
+                card.innerHTML = `
+                    <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center ${item.color}">
+                        <i class="fa-solid ${item.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-semibold text-white">${item.title}</div>
+                        <div class="text-[10px] text-slate-400">Delay: ${delay}ms</div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+
+                // Trigger reflow for transition
+                setTimeout(() => {
+                    card.classList.remove('opacity-0', 'translate-y-4');
+                    card.classList.add('opacity-100', 'translate-y-0');
+                }, 20);
+            });
+        }
+
+        function triggerStaggerList() {
+            renderStaggerList();
+            showToast('已重新触发错相列表加载动画');
+        }
+
+        function renderStaggerDemo() {
+            const box = document.getElementById('stagger-demo-box');
+            if (!box) return;
+
+            box.innerHTML = `
+                <div class="space-y-1">
+                    <div class="text-[10px] text-slate-500">齐发 (Simultaneous)</div>
+                    <div class="space-y-1">
+                        <div class="h-3 bg-rose-500/40 rounded"></div>
+                        <div class="h-3 bg-rose-500/40 rounded"></div>
+                        <div class="h-3 bg-rose-500/40 rounded"></div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <div class="text-[10px] text-emerald-400">错相 (Disney Stagger)</div>
+                    <div class="space-y-1" id="stagger-demo-right">
+                        <div class="h-3 bg-emerald-500 rounded transition-all duration-300"></div>
+                        <div class="h-3 bg-emerald-500 rounded transition-all duration-300 delay-75"></div>
+                        <div class="h-3 bg-emerald-500 rounded transition-all duration-300 delay-150"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function demoStaggerVsSimultaneous() {
+            renderStaggerDemo();
+            showToast('正在演示齐发 VS 迪士尼错相层级');
+        }
+
+        function openDemoModal() {
+            const modal = document.getElementById('demo-modal');
+            const card = document.getElementById('demo-modal-card');
+            
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-90');
+            card.classList.add('scale-100');
+        }
+
+        function closeDemoModal() {
+            const modal = document.getElementById('demo-modal');
+            const card = document.getElementById('demo-modal-card');
+
+            card.classList.remove('scale-100');
+            card.classList.add('scale-90');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function toggleReducedMotion(enabled) {
+            state.isReducedMotionSimulated = enabled;
+            if (enabled) {
+                document.body.classList.add('simulated-reduced-motion');
+                showToast('已激活 Reduced Motion 模拟模式 (大位移已禁用)');
+            } else {
+                document.body.classList.remove('simulated-reduced-motion');
+                showToast('已恢复 Disney 标准动效模式');
+            }
+            renderStaggerList();
+        }
+
+        function updateCurveGraph() {
+            const codeEl = document.getElementById('current-curve-code');
+            if (codeEl) codeEl.innerText = state.ease;
+
+            // Parse cubic bezier values
+            const match = state.ease.match(/cubic-bezier\(([^)]+)\)/);
+            if (!match) return;
+            const parts = match[1].split(',').map(v => parseFloat(v.trim()));
+            if (parts.length !== 4) return;
+
+            const [x1, y1, x2, y2] = parts;
+
+            // SVG Map Coordinates: width 300, height 200
+            // Point (0,0) is at SVG (0, 200), Point (1,1) is at SVG (300, 0)
+            const cx1 = x1 * 300;
+            const cy1 = 200 - (y1 * 200);
+            const cx2 = x2 * 300;
+            const cy2 = 200 - (y2 * 200);
+
+            const path = document.getElementById('bezier-path');
+            const cp1 = document.getElementById('cp1');
+            const cp2 = document.getElementById('cp2');
+            const line1 = document.getElementById('handle-line-1');
+            const line2 = document.getElementById('handle-line-2');
+
+            if (path && cp1 && cp2 && line1 && line2) {
+                path.setAttribute('d', `M 0 200 C ${cx1} ${cy1}, ${cx2} ${cy2}, 300 0`);
+
+                cp1.setAttribute('cx', cx1);
+                cp1.setAttribute('cy', cy1);
+
+                cp2.setAttribute('cx', cx2);
+                cp2.setAttribute('cy', cy2);
+
+                line1.setAttribute('x2', cx1);
+                line1.setAttribute('y2', cy1);
+
+                line2.setAttribute('x2', cx2);
+                line2.setAttribute('y2', cy2);
+            }
+        }
+
+        function replayAllAnimations() {
+            renderStaggerList();
+            showToast('已全屏重播放所有微交互动画');
+        }
+
+        function triggerToastDemo() {
+            showToast('✨ 迪士尼弹性 Bounce 消息通知触发成功！');
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'toast bg-slate-900 border border-brand-500/40 text-slate-100 text-xs font-medium px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 transform translate-y-4 opacity-0';
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-brand-400"></i> <span>${msg}</span>`;
+
+            container.appendChild(toast);
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            // Animate Out & Remove
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('已成功复制到剪贴板！');
+        }
+
+        function copyCode(elementId) {
+            const codeEl = document.getElementById(elementId);
+            if (codeEl) {
+                copyToClipboard(codeEl.innerText);
+            }
+        }
+    </script>
+</body>
+</html>
