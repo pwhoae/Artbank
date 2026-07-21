@@ -1,5 +1,7 @@
 [回到底部](#readme)|<br><a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>
 Godot：2d/3d/shader<br>
+3d水
+https://m.youtube.com/watch?v=jbYrpKWTlpw&feature=youtu.be
 https://share.gemini.google/pEXw4k1czWTQ
 【CSS神级网站】 https://www.bilibili.com/video/BV1Kx4y147dn/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 【CSS - 用 HTML & CSS 创造令人惊艳的动画网站！】 https://www.bilibili.com/video/BV1y6mwYgE2c/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
