@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 2D/3D 角色回血 Shader 工具包</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .code-font { font-family: 'Fira Code', 'Courier New', Courier, monospace; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .tab-btn.active { border-bottom: 2px solid #10b981; color: #10b981; }
+        /* Custom scrollbar for code blocks */
+        pre::-webkit-scrollbar { height: 8px; width: 8px; }
+        pre::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        pre::-webkit-scrollbar-track { background: #0f172a; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-filter blur-md sticky top-0 z-50 px-6 py-4 flex flex-wrap justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-bold text-xl">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white tracking-wide">Godot 4 角色回血 Shader Studio</h1>
+                <p class="text-xs text-slate-400">支持 Godot 2D (canvas_item) 与 3D (spatial) 高品质视觉特效</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 mt-2 sm:mt-0">
+            <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">Godot v4.x 兼容</span>
+            <button onclick="triggerHealEffect()" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-all shadow-lg shadow-emerald-900/40 flex items-center gap-2">
+                <i class="fa-solid fa-heart pulse"></i> 播放回血动画
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1700px] mx-auto w-full">
+
+        <!-- Left Column: Interactive Previews & Parameters (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Mode Selector Tabs -->
+            <div class="glass-panel rounded-xl p-1.5 flex gap-1">
+                <button id="mode-2d-btn" onclick="switchPreviewMode('2d')" class="flex-1 py-2.5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow">
+                    <i class="fa-solid fa-square-poll-vertical"></i> 2D Shader 预览
+                </button>
+                <button id="mode-3d-btn" onclick="switchPreviewMode('3d')" class="flex-1 py-2.5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-cube"></i> 3D Shader 预览
+                </button>
+            </div>
+
+            <!-- Canvas Viewport Box -->
+            <div class="glass-panel rounded-2xl overflow-hidden flex flex-col items-center justify-center relative min-h-[360px] bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-2xl">
+                
+                <!-- 2D Canvas Container -->
+                <div id="container-2d" class="w-full h-full flex items-center justify-center p-6 min-h-[360px] relative">
+                    <canvas id="canvas2d" width="300" height="360" class="rounded-xl shadow-lg border border-slate-800/80 bg-slate-900/50"></canvas>
+                </div>
+
+                <!-- 3D Canvas Container -->
+                <div id="container-3d" class="w-full h-full min-h-[360px] hidden relative">
+                    <div id="webgl3d-viewport" class="w-full h-[360px]"></div>
+                </div>
+
+                <!-- Viewport HUD / Status Overlay -->
+                <div class="absolute bottom-3 left-4 right-4 flex justify-between items-center pointer-events-none">
+                    <div class="text-xs font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800">
+                        进度 Progress: <span id="progress-val-hud" class="text-emerald-400 font-bold">0.00</span>
+                    </div>
+                    <div class="text-xs text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800">
+                        实时 GLSL 渲染模拟
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="glass-panel rounded-2xl p-5 space-y-4">
+                <h3 class="text-sm font-bold uppercase text-slate-300 tracking-wider flex items-center justify-between">
+                    <span><i class="fa-solid fa-sliders text-emerald-400 mr-2"></i> Shader 参数控制 (Uniforms)</span>
+                    <button onclick="resetParams()" class="text-xs font-normal text-slate-400 hover:text-emerald-400 transition"><i class="fa-solid fa-rotate-left mr-1"></i>重置</button>
+                </h3>
+
+                <div class="space-y-3 text-sm">
+                    <!-- Heal Progress Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300 font-medium">heal_progress (回血进度)</label>
+                            <span id="progress-val" class="text-emerald-400 font-mono">0.00</span>
+                        </div>
+                        <input id="slider-progress" type="range" min="0" max="1" step="0.01" value="0.0" class="w-full accent-emerald-500 bg-slate-800 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Heal Color Picker -->
+                    <div class="flex items-center justify-between">
+                        <label class="text-slate-300 font-medium text-xs">heal_color (回血光芒颜色)</label>
+                        <div class="flex items-center gap-2">
+                            <input id="picker-color" type="color" value="#34d399" class="w-8 h-8 rounded border-0 bg-transparent cursor-pointer">
+                            <span id="color-hex" class="text-xs font-mono text-slate-400">#34d399</span>
+                        </div>
+                    </div>
+
+                    <!-- Pulse Speed -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300 font-medium">pulse_speed (流动/脉冲速度)</label>
+                            <span id="speed-val" class="text-emerald-400 font-mono">4.0</span>
+                        </div>
+                        <input id="slider-speed" type="range" min="1" max="10" step="0.5" value="4.0" class="w-full accent-emerald-500 bg-slate-800 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Wave Frequency / Density -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300 font-medium">wave_density (能量波密度)</label>
+                            <span id="density-val" class="text-emerald-400 font-mono">15.0</span>
+                        </div>
+                        <input id="slider-density" type="range" min="5" max="30" step="1" value="15.0" class="w-full accent-emerald-500 bg-slate-800 rounded-lg cursor-pointer">
+                    </div>
+
+                    <!-- Glow / Rim Intensity -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300 font-medium">glow_intensity (发光强度 / 边缘光)</label>
+                            <span id="glow-val" class="text-emerald-400 font-mono">2.5</span>
+                        </div>
+                        <input id="slider-glow" type="range" min="0.5" max="5.0" step="0.1" value="2.5" class="w-full accent-emerald-500 bg-slate-800 rounded-lg cursor-pointer">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Godot Shader Code & Implementation Guide (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <div class="glass-panel rounded-2xl p-6 flex-1 flex flex-col">
+                <!-- Code Header Tabs -->
+                <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                    <div class="flex gap-2">
+                        <button id="tab-2d-code" onclick="showCodeTab('2d')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-code"></i> 2D Shader (.gdshader)
+                        </button>
+                        <button id="tab-3d-code" onclick="showCodeTab('3d')" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-1.5">
+                            <i class="fa-solid fa-cube"></i> 3D Shader (.gdshader)
+                        </button>
+                        <button id="tab-gdscript" onclick="showCodeTab('gdscript')" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-1.5">
+                            <i class="fa-solid fa-code"></i> GDScript 控制脚本
+                        </button>
+                    </div>
+
+                    <button onclick="copyCurrentCode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 transition active:scale-95">
+                        <i class="fa-regular fa-copy"></i> <span id="copy-btn-text">复制代码</span>
+                    </button>
+                </div>
+
+                <!-- Code Content Display Areas -->
+                <div class="mt-4 flex-1 relative flex flex-col min-h-[420px]">
+                    
+                    <!-- 2D Shader Code Block -->
+                    <div id="code-block-2d" class="code-container h-full flex flex-col">
+                        <p class="text-xs text-slate-400 mb-2">适用对象：Sprite2D, AnimatedSprite2D, TextureRect, ColorRect 等。</p>
+                        <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-xs text-slate-200 code-font overflow-x-auto flex-1 select-all leading-relaxed"><code id="code-2d-content">shader_type canvas_item;
+
+// Godot 4 - 2D 角色回血 Shader (2D Character Heal Shader)
+// 包含上升波纹、星光粒子 (Sparkles) 以及动态边缘闪烁效果
+
+uniform vec4 heal_color : source_color = vec4(0.2, 1.0, 0.4, 1.0);
+uniform float heal_progress : hint_range(0.0, 1.0) = 0.0; // 控制回血动画进度 (0:关闭, 1:最大)
+uniform float pulse_speed : hint_range(0.5, 10.0) = 4.0;  // 波动速度
+uniform float wave_density : hint_range(5.0, 40.0) = 15.0; // 上升波纹密度
+uniform float glow_intensity : hint_range(0.0, 5.0) = 2.5; // 发光亮度
+
+// 伪随机数生成器 (用于粒子的闪烁)
+float random(vec2 uv) {
+    return fract(sin(dot(uv.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+void fragment() {
+    vec4 tex_color = texture(TEXTURE, UV);
+    
+    // 仅在有像素Alpha透明度且在回血状态时计算
+    if (tex_color.a > 0.01 && heal_progress > 0.0) {
+        // 1. 上升的纵向波纹 (Vertical Wave)
+        float wave = sin((UV.y * wave_density) + (TIME * pulse_speed)) * 0.5 + 0.5;
+        
+        // 2. 从下往上推移的高度掩码 (Height Mask)
+        float height_mask = smoothstep(1.0 - heal_progress - 0.2, 1.0 - heal_progress, UV.y);
+        
+        // 3. 上升的星光粒子 (Sparkles Noise)
+        vec2 sparkle_uv = UV * 12.0 - vec2(0.0, TIME * (pulse_speed * 0.5));
+        float sparkle = step(0.88, random(floor(sparkle_uv)));
+        
+        // 4. 组合特效强度
+        float final_glow = (wave * 0.5 + sparkle * 0.5) * height_mask * glow_intensity;
+        
+        // 5. 整体呼吸脉冲闪光
+        float pulse = (sin(TIME * pulse_speed * 1.5) * 0.5 + 0.5) * heal_progress;
+        
+        // 混合原图颜色与绿光
+        vec3 blended_rgb = mix(tex_color.rgb, heal_color.rgb * glow_intensity, final_glow * heal_progress);
+        blended_rgb += heal_color.rgb * pulse * 0.25;
+        
+        COLOR = vec4(blended_rgb, tex_color.a);
+    } else {
+        COLOR = tex_color;
+    }
+}</code></pre>
+                    </div>
+
+                    <!-- 3D Shader Code Block -->
+                    <div id="code-block-3d" class="code-container h-full flex flex-col hidden">
+                        <p class="text-xs text-slate-400 mb-2">适用对象：MeshInstance3D, CharacterBody3D, Animated3D 等。</p>
+                        <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-xs text-slate-200 code-font overflow-x-auto flex-1 select-all leading-relaxed"><code id="code-3d-content">shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+// Godot 4 - 3D 角色回血 Shader (3D Character Heal Shader)
+// 包含 菲涅尔(Fresnel) 边缘发光、上升波纹以及 EMISSION 放射光效果
+
+uniform sampler2D albedo_texture : source_color, filter_linear_mipmap;
+uniform vec4 base_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+
+// 回血参数
+uniform vec4 heal_color : source_color = vec4(0.2, 1.0, 0.4, 1.0);
+uniform float heal_progress : hint_range(0.0, 1.0) = 0.0;
+uniform float pulse_speed : hint_range(0.5, 10.0) = 4.0;
+uniform float wave_density : hint_range(5.0, 40.0) = 15.0;
+uniform float glow_intensity : hint_range(0.0, 10.0) = 3.0;
+uniform float fresnel_power : hint_range(0.5, 8.0) = 3.0;
+
+void fragment() {
+    // 基础材质采样
+    vec4 tex = texture(albedo_texture, UV) * base_color;
+    ALBEDO = tex.rgb;
+    
+    if (heal_progress > 0.001) {
+        // 1. 3D 菲涅尔边缘光 (Fresnel Rim)
+        float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), fresnel_power);
+        
+        // 2. 沿模型 height/UV 轴上升的能量波纹
+        float wave = sin(UV.y * wave_density - TIME * pulse_speed) * 0.5 + 0.5;
+        
+        // 3. 脉冲频率
+        float pulse = sin(TIME * pulse_speed * 1.5) * 0.3 + 0.7;
+        
+        // 4. 最终回血强度的综合计算
+        float heal_factor = (fresnel * 1.5 + wave * 0.5) * pulse * heal_progress;
+        
+        // 赋予 EMISSION 自发光，在 Godot WorldEnvironment 中搭配 WorldEnvironment Glow 效果极佳
+        EMISSION = heal_color.rgb * heal_factor * glow_intensity;
+        
+        // 稍微将基础颜色向回血颜色微调
+        ALBEDO = mix(ALBEDO, heal_color.rgb, heal_factor * 0.25);
+    }
+}</code></pre>
+                    </div>
+
+                    <!-- GDScript Control Code Block -->
+                    <div id="code-block-gdscript" class="code-container h-full flex flex-col hidden">
+                        <p class="text-xs text-slate-400 mb-2">GDScript 使用说明：通过 `Tween` 平滑过渡动画控制 Shader 参数。</p>
+                        <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-xs text-slate-200 code-font overflow-x-auto flex-1 select-all leading-relaxed"><code id="code-gdscript-content"># HealEffectController.gd
+# 挂载在角色或控制脚本上，用于在玩家吃到血包或受到治疗时触发回血视觉特效
+extends Node
+
+@export_category("Heal Shader Options")
+## 角色节点 (2D: Sprite2D / 3D: MeshInstance3D)
+@export var character_node: Node2D # 如果是 3D 换为 GeometryInstance3D
+@export var heal_duration: float = 1.2 # 回血特效持续时间(秒)
+@export var heal_color: Color = Color(0.2, 1.0, 0.4, 1.0)
+
+var _material: ShaderMaterial
+var _tween: Tween
+
+func _ready() -> void:
+    if character_node:
+        # 获取节点的 ShaderMaterial
+        _material = character_node.material as ShaderMaterial
+        if _material:
+            # 初始化将 progress 设为 0
+            _material.set_shader_parameter("heal_progress", 0.0)
+            _material.set_shader_parameter("heal_color", heal_color)
+
+## 触发回血效果函数
+func play_heal_effect() -> void:
+    if not _material:
+        push_warning("未找到 ShaderMaterial，请先在 Inspecter 赋予材质！")
+        return
+        
+    # 如果上一次动画未结束，停止原 Tween
+    if _tween and _tween.is_running():
+        _tween.kill()
+        
+    _tween = create_tween().set_parallel(false)
+    
+    # 阶段 1: 瞬间迅速提升 heal_progress 至 1.0
+    _tween.tween_property(_material, "shader_parameter/heal_progress", 1.0, 0.25)\
+        .set_trans(Tween.TRANS_CUBIC)\
+        .set_ease(Tween.EASE_OUT)
+        
+    # 阶段 2: 渐隐 fading out 回 0.0
+    _tween.tween_property(_material, "shader_parameter/heal_progress", 0.0, heal_duration - 0.25)\
+        .set_trans(Tween.TRANS_QUAD)\
+        .set_ease(Tween.EASE_IN_OUT)
+
+## 演示测试：按 H 键触发回血
+func _unhandled_input(event: InputEvent) -> void:
+    if event is InputEventKey and event.pressed and event.keycode == KEY_H:
+        play_heal_effect()</code></pre>
+                    </div>
+
+                </div>
+
+                <!-- Features & Usage Tips -->
+                <div class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span>支持 Godot 4.x 语法标准</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-emerald-400"></i>
+                        <span>搭配 WorldEnvironment 开启 Glow 效果更好</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-400"></i>
+                        <span>完全通过 Tween 控制参数过渡</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // State variables
+        let currentMode = '2d'; // '2d' or '3d'
+        let animProgress = 0.0;
+        let isAnimating = false;
+        let animStartTime = 0;
+        const ANIM_DURATION = 1400; // ms
+
+        // Shader Parameters State
+        const params = {
+            progress: 0.0,
+            color: '#34d399',
+            speed: 4.0,
+            density: 15.0,
+            glow: 2.5
+        };
+
+        // DOM Elements
+        const sliderProgress = document.getElementById('slider-progress');
+        const pickerColor = document.getElementById('picker-color');
+        const sliderSpeed = document.getElementById('slider-speed');
+        const sliderDensity = document.getElementById('slider-density');
+        const sliderGlow = document.getElementById('slider-glow');
+
+        const valProgress = document.getElementById('progress-val');
+        const valProgressHud = document.getElementById('progress-val-hud');
+        const valSpeed = document.getElementById('speed-val');
+        const valDensity = document.getElementById('density-val');
+        const valGlow = document.getElementById('glow-val');
+        const valColorHex = document.getElementById('color-hex');
+
+        // Setup Event Listeners
+        sliderProgress.addEventListener('input', (e) => {
+            params.progress = parseFloat(e.target.value);
+            updateUI();
+        });
+        pickerColor.addEventListener('input', (e) => {
+            params.color = e.target.value;
+            valColorHex.innerText = params.color;
+            updateUI();
+        });
+        sliderSpeed.addEventListener('input', (e) => {
+            params.speed = parseFloat(e.target.value);
+            updateUI();
+        });
+        sliderDensity.addEventListener('input', (e) => {
+            params.density = parseFloat(e.target.value);
+            updateUI();
+        });
+        sliderGlow.addEventListener('input', (e) => {
+            params.glow = parseFloat(e.target.value);
+            updateUI();
+        });
+
+        function updateUI() {
+            valProgress.innerText = params.progress.toFixed(2);
+            valProgressHud.innerText = params.progress.toFixed(2);
+            valSpeed.innerText = params.speed.toFixed(1);
+            valDensity.innerText = params.density.toFixed(1);
+            valGlow.innerText = params.glow.toFixed(1);
+        }
+
+        function resetParams() {
+            params.progress = 0.0;
+            params.color = '#34d399';
+            params.speed = 4.0;
+            params.density = 15.0;
+            params.glow = 2.5;
+
+            sliderProgress.value = 0.0;
+            pickerColor.value = '#34d399';
+            sliderSpeed.value = 4.0;
+            sliderDensity.value = 15.0;
+            sliderGlow.value = 2.5;
+
+            valColorHex.innerText = '#34d399';
+            updateUI();
+        }
+
+        // Mode Switching (2D / 3D)
+        function switchPreviewMode(mode) {
+            currentMode = mode;
+            const btn2d = document.getElementById('mode-2d-btn');
+            const btn3d = document.getElementById('mode-3d-btn');
+            const container2d = document.getElementById('container-2d');
+            const container3d = document.getElementById('container-3d');
+
+            if (mode === '2d') {
+                btn2d.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow";
+                btn3d.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-white";
+                container2d.classList.remove('hidden');
+                container3d.classList.add('hidden');
+                showCodeTab('2d');
+            } else {
+                btn3d.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow";
+                btn2d.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-white";
+                container3d.classList.remove('hidden');
+                container2d.classList.add('hidden');
+                showCodeTab('3d');
+                if (!threeInitialized) {
+                    init3DScene();
+                }
+            }
+        }
+
+        // Code Tab Switching
+        function showCodeTab(tab) {
+            const tabs = ['2d', '3d', 'gdscript'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}-code`) || document.getElementById(`tab-${t}`);
+                const block = document.getElementById(`code-block-${t}`);
+                if (t === tab) {
+                    if (btn) btn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5";
+                    if (block) block.classList.remove('hidden');
+                } else {
+                    if (btn) btn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 flex items-center gap-1.5";
+                    if (block) block.classList.add('hidden');
+                }
+            });
+        }
+
+        // Copy Code Function
+        function copyCurrentCode() {
+            let activeCode = '';
+            if (!document.getElementById('code-block-2d').classList.contains('hidden')) {
+                activeCode = document.getElementById('code-2d-content').innerText;
+            } else if (!document.getElementById('code-block-3d').classList.contains('hidden')) {
+                activeCode = document.getElementById('code-3d-content').innerText;
+            } else {
+                activeCode = document.getElementById('code-gdscript-content').innerText;
+            }
+
+            navigator.clipboard.writeText(activeCode).then(() => {
+                const copyText = document.getElementById('copy-btn-text');
+                copyText.innerText = "已复制到剪贴板！";
+                setTimeout(() => { copyText.innerText = "复制代码"; }, 2000);
+            });
+        }
+
+        // Trigger Heal Effect Animation
+        function triggerHealEffect() {
+            isAnimating = true;
+            animStartTime = performance.now();
+        }
+
+        // -------------------------------------------------------------
+        // 2D Canvas Shader Simulation Render Loop
+        // -------------------------------------------------------------
+        const canvas2d = document.getElementById('canvas2d');
+        const ctx2d = canvas2d.getContext('2d');
+        let time2d = 0;
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 52, g: 211, b: 153 };
+        }
+
+        function render2DCanvas() {
+            time2d += 0.02;
+
+            if (isAnimating) {
+                const elapsed = performance.now() - animStartTime;
+                const normTime = elapsed / ANIM_DURATION;
+                if (normTime < 0.2) {
+                    params.progress = (normTime / 0.2); // Quick ramp up
+                } else if (normTime <= 1.0) {
+                    params.progress = 1.0 - ((normTime - 0.2) / 0.8); // Smooth fade out
+                } else {
+                    params.progress = 0.0;
+                    isAnimating = false;
+                }
+                sliderProgress.value = params.progress;
+                updateUI();
+            }
+
+            const w = canvas2d.width;
+            const h = canvas2d.height;
+            ctx2d.clearRect(0, 0, w, h);
+
+            // Draw Background Character Silhouette
+            const cx = w / 2;
+            const cy = h / 2;
+
+            // Character Body Base Path
+            ctx2d.save();
+            ctx2d.fillStyle = '#1e293b';
+            ctx2d.strokeStyle = '#334155';
+            ctx2d.lineWidth = 3;
+
+            // Draw Body Shape (Simple Hero Pose Silhouette)
+            ctx2d.beginPath();
+            // Head
+            ctx2d.arc(cx, cy - 80, 24, 0, Math.PI * 2);
+            // Shoulders & Body
+            ctx2d.moveTo(cx - 45, cy - 35);
+            ctx2d.lineTo(cx + 45, cy - 35);
+            ctx2d.lineTo(cx + 35, cy + 50);
+            ctx2d.lineTo(cx + 20, cy + 120);
+            ctx2d.lineTo(cx - 20, cy + 120);
+            ctx2d.lineTo(cx - 35, cy + 50);
+            ctx2d.closePath();
+            ctx2d.fill();
+            ctx2d.stroke();
+
+            // Inner Details (Armor lines)
+            ctx2d.strokeStyle = '#475569';
+            ctx2d.lineWidth = 1.5;
+            ctx2d.beginPath();
+            ctx2d.moveTo(cx, cy - 35);
+            ctx2d.lineTo(cx, cy + 40);
+            ctx2d.stroke();
+            ctx2d.restore();
+
+            // Apply 2D Heal Shader Effect Layer
+            if (params.progress > 0.001) {
+                ctx2d.save();
+                
+                // Clip to Character Body
+                ctx2d.beginPath();
+                ctx2d.arc(cx, cy - 80, 24, 0, Math.PI * 2);
+                ctx2d.moveTo(cx - 45, cy - 35);
+                ctx2d.lineTo(cx + 45, cy - 35);
+                ctx2d.lineTo(cx + 35, cy + 50);
+                ctx2d.lineTo(cx + 20, cy + 120);
+                ctx2d.lineTo(cx - 20, cy + 120);
+                ctx2d.lineTo(cx - 35, cy + 50);
+                ctx2d.closePath();
+                ctx2d.clip();
+
+                const rgb = hexToRgb(params.color);
+
+                // Wave scanlines simulation
+                const waveCount = params.density;
+                const waveSpeed = params.speed;
+                const progressY = h * (1.0 - params.progress);
+
+                ctx2d.globalCompositeOperation = 'screen';
+
+                for (let y = 0; y < h; y += 3) {
+                    const normY = y / h;
+                    if (y >= progressY - 40) {
+                        const waveVal = Math.sin(normY * waveCount + time2d * waveSpeed) * 0.5 + 0.5;
+                        const pulse = Math.sin(time2d * waveSpeed * 1.5) * 0.2 + 0.8;
+                        const alpha = waveVal * params.progress * (params.glow / 2.5) * pulse;
+
+                        ctx2d.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${Math.min(1.0, alpha * 0.7)})`;
+                        ctx2d.fillRect(0, y, w, 3);
+                    }
+                }
+
+                // Rising Sparkles Particles Simulation
+                const particleCount = Math.floor(params.progress * 35);
+                ctx2d.fillStyle = `rgba(255, 255, 255, ${params.progress})`;
+                for (let i = 0; i < particleCount; i++) {
+                    const px = cx + (Math.sin(i * 99 + time2d) * 45);
+                    const py = (cy + 100) - (((time2d * 60 + i * 30) % 220));
+                    const pSize = (Math.sin(i + time2d * 5) * 0.5 + 0.5) * 3 + 1;
+                    if (py > cy - 110 && py < cy + 120) {
+                        ctx2d.fillRect(px, py, pSize, pSize);
+                    }
+                }
+
+                // Outer Glowing Border Aura
+                ctx2d.restore();
+                ctx2d.save();
+                ctx2d.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${params.progress * 0.8})`;
+                ctx2d.lineWidth = 4 + Math.sin(time2d * params.speed) * 2;
+                ctx2d.shadowColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                ctx2d.shadowBlur = 15 * params.glow;
+                ctx2d.beginPath();
+                ctx2d.arc(cx, cy - 80, 24, 0, Math.PI * 2);
+                ctx2d.stroke();
+                ctx2d.restore();
+            }
+
+            requestAnimationFrame(render2DCanvas);
+        }
+
+        // -------------------------------------------------------------
+        // 3D Three.js Visualizer Engine
+        // -------------------------------------------------------------
+        let threeInitialized = false;
+        let renderer3D, scene3D, camera3D, characterMesh, customMaterial3D;
+
+        function init3DScene() {
+            threeInitialized = true;
+            const container = document.getElementById('webgl3d-viewport');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x020617);
+
+            // Camera
+            camera3D = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera3D.position.set(0, 1.2, 3.5);
+            camera3D.lookAt(0, 0.8, 0);
+
+            // Renderer
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(width, height);
+            renderer3D.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer3D.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene3D.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+            dirLight.position.set(2, 4, 3);
+            scene3D.add(dirLight);
+
+            // Custom GLSL Shader Material for 3D Character simulation
+            const customShader = {
+                uniforms: {
+                    u_time: { value: 0 },
+                    u_progress: { value: 0.0 },
+                    u_color: { value: new THREE.Color('#34d399') },
+                    u_speed: { value: 4.0 },
+                    u_density: { value: 15.0 },
+                    u_glow: { value: 2.5 }
+                },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        vNormal = normalize(normalMatrix * normal);
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        vViewPosition = -mvPosition.xyz;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform float u_time;
+                    uniform float u_progress;
+                    uniform vec3 u_color;
+                    uniform float u_speed;
+                    uniform float u_density;
+                    uniform float u_glow;
+
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    varying vec2 vUv;
+
+                    void main() {
+                        vec3 normal = normalize(vNormal);
+                        vec3 viewDir = normalize(vViewPosition);
+
+                        // Base metallic mannequin color
+                        vec3 baseColor = vec3(0.12, 0.16, 0.22);
+
+                        if (u_progress > 0.001) {
+                            // Fresnel Rim
+                            float fresnel = pow(1.0 - max(0.0, dot(normal, viewDir)), 3.0);
+                            
+                            // Upward Energy Wave
+                            float wave = sin(vUv.y * u_density - u_time * u_speed) * 0.5 + 0.5;
+                            float pulse = sin(u_time * u_speed * 1.5) * 0.3 + 0.7;
+
+                            float healEffect = (fresnel * 1.5 + wave * 0.5) * pulse * u_progress;
+                            
+                            vec3 emission = u_color * healEffect * u_glow;
+                            vec3 finalColor = mix(baseColor, u_color, healEffect * 0.3) + emission;
+
+                            gl_FragColor = vec4(finalColor, 1.0);
+                        } else {
+                            gl_FragColor = vec4(baseColor, 1.0);
+                        }
+                    }
+                `
+            };
+
+            customMaterial3D = new THREE.ShaderMaterial({
+                uniforms: customShader.uniforms,
+                vertexShader: customShader.vertexShader,
+                fragmentShader: customShader.fragmentShader
+            });
+
+            // Character Mannequin Geometry Group
+            const characterGroup = new THREE.Group();
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.25, 32, 32);
+            const headMesh = new THREE.Mesh(headGeo, customMaterial3D);
+            headMesh.position.y = 1.6;
+            characterGroup.add(headMesh);
+
+            // Torso
+            const torsoGeo = new THREE.CylinderGeometry(0.3, 0.2, 0.8, 32);
+            const torsoMesh = new THREE.Mesh(torsoGeo, customMaterial3D);
+            torsoMesh.position.y = 1.0;
+            characterGroup.add(torsoMesh);
+
+            // Limbs
+            const armGeo = new THREE.CylinderGeometry(0.08, 0.06, 0.7, 16);
+            const leftArm = new THREE.Mesh(armGeo, customMaterial3D);
+            leftArm.position.set(-0.45, 1.0, 0);
+            leftArm.rotation.z = 0.2;
+            characterGroup.add(leftArm);
+
+            const rightArm = new THREE.Mesh(armGeo, customMaterial3D);
+            rightArm.position.set(0.45, 1.0, 0);
+            rightArm.rotation.z = -0.2;
+            characterGroup.add(rightArm);
+
+            scene3D.add(characterGroup);
+            characterMesh = characterGroup;
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if (!renderer3D) return;
+                const newW = container.clientWidth;
+                const newH = container.clientHeight;
+                camera3D.aspect = newW / newH;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(newW, newH);
+            });
+
+            // Render loop
+            function animate3D(time) {
+                requestAnimationFrame(animate3D);
+
+                const t = time * 0.001;
+                characterMesh.rotation.y = Math.sin(t * 0.5) * 0.3;
+
+                // Sync uniforms
+                customMaterial3D.uniforms.u_time.value = t;
+                customMaterial3D.uniforms.u_progress.value = params.progress;
+                customMaterial3D.uniforms.u_color.value.set(params.color);
+                customMaterial3D.uniforms.u_speed.value = params.speed;
+                customMaterial3D.uniforms.u_density.value = params.density;
+                customMaterial3D.uniforms.u_glow.value = params.glow;
+
+                renderer3D.render(scene3D, camera3D);
+            }
+
+            animate3D(0);
+        }
+
+        // Initialize Canvas 2D Engine
+        render2DCanvas();
+    </script>
+</body>
+</html>
