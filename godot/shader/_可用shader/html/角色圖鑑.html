@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 角色圖鑑系統設計與預覽器</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            darkest: '#141820',
+                            dark: '#202531',
+                            panel: '#2d3548',
+                            hover: '#363f56',
+                            blue: '#478cbf',
+                            accent: '#2f9fd3',
+                            accentLight: '#5fb5e1',
+                            success: '#3ca374',
+                            warning: '#df9f3e',
+                            danger: '#e05a47'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons for nice UI elements -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar matching Godot Engine */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #202531;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #478cbf50;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbfb0;
+        }
+    </style>
+</head>
+<body class="bg-godot-darkest text-gray-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <script>
+        // Default characters configuration
+        const defaultCharacters = [
+            {
+                id: "char_alice",
+                name: "艾莉絲",
+                title: "緋紅魔導士",
+                rarity: 5,
+                element: "Fire",
+                hp: 840,
+                atk: 145,
+                def: 62,
+                spd: 104,
+                unlocked: true,
+                description: "來自炎之神殿的資深魔導士，擅長使用強大的爆裂魔法席捲戰場。個性熱情活潑，但有時會因為魔力暴走而引發小意外。",
+                icon: "🔥",
+                color: "#ff5a5a"
+            },
+            {
+                id: "char_leon",
+                name: "雷恩",
+                title: "深海守護騎士",
+                rarity: 4,
+                element: "Water",
+                hp: 1250,
+                atk: 92,
+                def: 118,
+                spd: 88,
+                unlocked: true,
+                description: "誓死守護潮汐王國的皇家衛隊長。手持冰晶重盾與流水長槍，能在戰場上築起堅不可摧的防線，保護所有盟友。",
+                icon: "💧",
+                color: "#3aafff"
+            },
+            {
+                id: "char_sylvia",
+                name: "希爾薇",
+                title: "千風追獵者",
+                rarity: 5,
+                element: "Wind",
+                hp: 760,
+                atk: 138,
+                def: 55,
+                spd: 122,
+                unlocked: false,
+                description: "隱居於世界之樹之頂的精靈射手。能將暴風化為箭矢，其速度極快，在敵人察覺她之前，勝負便已在眨眼間分曉。",
+                icon: "🍃",
+                color: "#5be37d"
+            },
+            {
+                id: "char_grom",
+                name: "格羅姆",
+                title: "裂岩泰坦之子",
+                rarity: 3,
+                element: "Earth",
+                hp: 1400,
+                atk: 80,
+                def: 130,
+                spd: 75,
+                unlocked: true,
+                description: "由大地岩石孕育出的半巨人戰士。身體擁有如鋼鐵般的硬度，個性沉穩、少言寡語，只要站在戰線上就讓人無比安心。",
+                icon: "⛰️",
+                color: "#c68d4c"
+            },
+            {
+                id: "char_olivia",
+                name: "奧莉薇亞",
+                title: "曙光之聖女",
+                rarity: 5,
+                element: "Light",
+                hp: 980,
+                atk: 75,
+                def: 82,
+                spd: 98,
+                unlocked: false,
+                description: "手持曙光十字杖，終生侍奉聖光的神殿聖女。能夠呼喚神聖力量治癒一切創傷，並為同伴加持神聖防護罩，驅散所有黑暗。",
+                icon: "✨",
+                color: "#ffdf6d"
+            }
+        ];
+
+        // System State
+        let state = {
+            characters: [...defaultCharacters],
+            activeTab: 'preview', // 'preview' | 'code' | 'docs'
+            selectedCharId: "char_alice",
+            filters: {
+                search: '',
+                element: 'all',
+                rarity: 'all',
+                unlocked: 'all' // 'all' | 'unlocked' | 'locked'
+            },
+            editingCharId: null // Used for the form to know if creating or editing
+        };
+    </script>
+
+    <!-- Header Bar -->
+    <header class="bg-godot-dark border-b border-godot-panel py-3 px-6 flex items-center justify-between shadow-lg sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-godot-blue" viewBox="0 0 128 128" fill="currentColor">
+                <path d="M109.8 45.6c-1-1.6-2.5-3.1-4.3-4.5-1.8-1.4-3.9-2.6-6.1-3.6-2.2-.9-4.5-1.7-6.9-2.1-2.3-.5-4.6-.7-6.8-.7-3.9 0-7.3.7-10.3 2-2.9 1.3-5.2 3.1-6.9 5.3h-3.4c-1.7-2.2-4-4-6.9-5.3-2.9-1.3-6.4-2-10.3-2-2.2 0-4.5.2-6.8.7-2.3.5-4.7 1.2-6.9 2.1-2.2.9-4.3 2.1-6.1 3.6-1.8 1.4-3.3 2.9-4.3 4.5-1.9 3.2-2.9 6.7-2.9 10.4 0 5.1 1.8 9.9 5.4 14.1 3.6 4.3 8.7 7.5 15.1 9.8v5.5c0 .4.1.8.4 1.1s.6.5 1 .5h1.1c.4 0 .8-.2 1.1-.4s.4-.6.4-1v-4.5c4.7 1 9.6 1.5 14.5 1.5s9.8-.5 14.5-1.5v4.5c0 .4.1.8.4 1.1s.6.5 1 .5h1.1c.4 0 .8-.2 1.1-.4s.4-.6.4-1v-5.5c6.5-2.2 11.5-5.5 15.1-9.8 3.6-4.3 5.4-9.1 5.4-14.1 0-3.7-1-7.2-2.9-10.4zm-75 16.9c-2.4 0-4.3-.8-5.9-2.4-1.5-1.6-2.3-3.6-2.3-6s.8-4.4 2.3-6 3.5-2.4 5.9-2.4 4.3.8 5.9 2.4c1.5 1.6 2.3 3.6 2.3 6s-.8 4.4-2.3 6-3.5 2.4-5.9 2.4zm50.6 0c-2.4 0-4.3-.8-5.9-2.4-1.5-1.6-2.3-3.6-2.3-6s.8-4.4 2.3-6 3.5-2.4 5.9-2.4 4.3.8 5.9 2.4c1.5 1.6 2.3 3.6 2.3 6s-.8 4.4-2.3 6-3.5 2.4-5.9 2.4z"/>
+            </svg>
+            <div>
+                <h1 class="font-bold text-lg tracking-wide flex items-center gap-2">
+                    Godot 4 角色圖鑑系統
+                    <span class="text-xs font-mono px-2 py-0.5 bg-godot-blue/20 text-godot-blue rounded border border-godot-blue/30">v1.2 Stable</span>
+                </h1>
+                <p class="text-xs text-gray-400">互動式 UI 預覽、資料庫設計與動態 GDScript 代碼生成器</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex space-x-1 bg-godot-darkest p-1 rounded-lg border border-godot-panel">
+            <button onclick="switchTab('preview')" id="btn-tab-preview" class="px-4 py-2 rounded text-sm font-medium transition duration-200 flex items-center gap-2 bg-godot-panel text-white">
+                <i data-lucide="play" class="w-4 h-4"></i> 實機 UI 預覽
+            </button>
+            <button onclick="switchTab('code')" id="btn-tab-code" class="px-4 py-2 rounded text-sm font-medium transition duration-200 flex items-center gap-2 text-gray-400 hover:text-white hover:bg-godot-hover">
+                <i data-lucide="code" class="w-4 h-4"></i> 導出 GDScript
+            </button>
+            <button onclick="switchTab('docs')" id="btn-tab-docs" class="px-4 py-2 rounded text-sm font-medium transition duration-200 flex items-center gap-2 text-gray-400 hover:text-white hover:bg-godot-hover">
+                <i data-lucide="book-open" class="w-4 h-4"></i> 實作與建置教學
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Panel: Character Database Management (Always Visible on Side) -->
+        <aside class="w-80 bg-godot-dark border-r border-godot-panel flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-godot-panel flex justify-between items-center">
+                <h2 class="font-bold text-sm tracking-wider uppercase text-godot-accentLight flex items-center gap-2">
+                    <i data-lucide="database" class="w-4 h-4"></i> 圖鑑資料庫編輯
+                </h2>
+                <button onclick="openAddCharacterForm()" class="px-2 py-1 bg-godot-success hover:bg-emerald-600 rounded text-xs font-medium flex items-center gap-1 transition">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增角色
+                </button>
+            </div>
+
+            <!-- Character Database List -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="db-character-list">
+                <!-- Character list items dynamically rendered -->
+            </div>
+
+            <!-- Footer indicator -->
+            <div class="p-3 bg-godot-darkest border-t border-godot-panel text-center text-xs text-gray-400">
+                <span>當前資料庫共 <strong class="text-white" id="db-count">0</strong> 名角色</span>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Dynamic Workspace depending on Active Tab -->
+        <section class="flex-1 flex flex-col overflow-hidden bg-godot-darkest">
+            
+            <!-- Tab 1: Interactive Playable UI Preview -->
+            <div id="panel-preview" class="flex-1 flex overflow-hidden">
+                <!-- Sandbox Filters Bar -->
+                <div class="flex-1 flex flex-col overflow-hidden">
+                    <div class="bg-godot-dark p-4 border-b border-godot-panel flex flex-wrap gap-3 items-center justify-between">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Search -->
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                    <i data-lucide="search" class="w-4 h-4"></i>
+                                </span>
+                                <input oninput="updateFilters('search', this.value)" type="text" placeholder="搜尋角色名稱..." class="bg-godot-darkest border border-godot-panel rounded px-3 py-1.5 pl-9 text-sm focus:outline-none focus:border-godot-blue text-white w-48">
+                            </div>
+
+                            <!-- Filter: Element -->
+                            <select onchange="updateFilters('element', this.value)" class="bg-godot-darkest border border-godot-panel rounded px-3 py-1.5 text-sm focus:outline-none focus:border-godot-blue text-white">
+                                <option value="all">所有屬性</option>
+                                <option value="Fire">🔥 烈火</option>
+                                <option value="Water">💧 寒冰</option>
+                                <option value="Wind">🍃 疾風</option>
+                                <option value="Earth">⛰️ 大地</option>
+                                <option value="Light">✨ 聖光</option>
+                            </select>
+
+                            <!-- Filter: Rarity -->
+                            <select onchange="updateFilters('rarity', this.value)" class="bg-godot-darkest border border-godot-panel rounded px-3 py-1.5 text-sm focus:outline-none focus:border-godot-blue text-white">
+                                <option value="all">所有稀有度</option>
+                                <option value="5">⭐⭐⭐⭐⭐ (5星)</option>
+                                <option value="4">⭐⭐⭐⭐ (4星)</option>
+                                <option value="3">⭐⭐⭐ (3星)</option>
+                            </select>
+
+                            <!-- Filter: Unlocked -->
+                            <select onchange="updateFilters('unlocked', this.value)" class="bg-godot-darkest border border-godot-panel rounded px-3 py-1.5 text-sm focus:outline-none focus:border-godot-blue text-white">
+                                <option value="all">解鎖狀態</option>
+                                <option value="unlocked">🔓 已解鎖</option>
+                                <option value="locked">🔒 未解鎖</option>
+                            </select>
+                        </div>
+
+                        <!-- Reset Stats Sandbox Simulation -->
+                        <div class="text-xs text-gray-400 flex items-center gap-2 bg-godot-darkest/50 px-3 py-1.5 rounded border border-godot-panel/40">
+                            <span>點擊卡牌檢視細節與模擬解鎖/鎖定</span>
+                        </div>
+                    </div>
+
+                    <!-- Sandbox Illustrated Grid Area -->
+                    <div class="flex-1 p-6 overflow-y-auto" id="preview-grid-container">
+                        <!-- Character Grid -->
+                        <div id="character-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <!-- Cards rendered dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Character Detail Right Panel inside Preview -->
+                <div class="w-96 bg-godot-dark border-l border-godot-panel flex flex-col overflow-y-auto" id="detail-panel">
+                    <!-- Dynamic details are injected here -->
+                </div>
+            </div>
+
+            <!-- Tab 2: Export GDScript Code -->
+            <div id="panel-code" class="hidden flex-1 flex flex-col overflow-hidden">
+                <div class="bg-godot-dark p-4 border-b border-godot-panel flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-sm text-godot-accentLight">Godot 4 模組化程式碼自動生成器</h3>
+                        <p class="text-xs text-gray-400">以下程式碼會隨著您左側編輯的資料庫即時更新，複製即可直接在 Godot 4 中使用。</p>
+                    </div>
+                    <button onclick="downloadJsonData()" class="px-3 py-1.5 bg-godot-blue hover:bg-godot-accent rounded text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i data-lucide="download" class="w-4 h-4"></i> 導出 JSON 資料集
+                    </button>
+                </div>
+
+                <!-- Inner tabs for code blocks -->
+                <div class="flex bg-godot-darkest/80 border-b border-godot-panel px-4">
+                    <button onclick="switchCodeSubTab('code-resource')" id="btn-subtab-resource" class="px-4 py-2 border-b-2 border-godot-blue text-godot-blue font-mono text-xs font-semibold">
+                        CharacterData.gd (資源定義)
+                    </button>
+                    <button onclick="switchCodeSubTab('code-manager')" id="btn-subtab-manager" class="px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-white font-mono text-xs font-semibold">
+                        EncyclopediaManager.gd (全域管理)
+                    </button>
+                    <button onclick="switchCodeSubTab('code-ui')" id="btn-subtab-ui" class="px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-white font-mono text-xs font-semibold">
+                        EncyclopediaUI.gd (UI 控制)
+                    </button>
+                    <button onclick="switchCodeSubTab('code-json')" id="btn-subtab-json" class="px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-white font-mono text-xs font-semibold">
+                        character_data.json (資料載入)
+                    </button>
+                </div>
+
+                <!-- Code Container -->
+                <div class="flex-1 overflow-auto p-4 bg-[#181b24] code-font text-sm leading-relaxed relative">
+                    <button onclick="copyCurrentCode()" class="absolute top-4 right-4 bg-godot-dark/80 hover:bg-godot-hover border border-godot-panel px-3 py-1.5 rounded text-xs flex items-center gap-1.5 text-gray-300 hover:text-white transition">
+                        <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-icon"></i>
+                        <span id="copy-btn-text">複製程式碼</span>
+                    </button>
+                    
+                    <pre class="text-green-400 select-all" id="code-content-block">
+                        <!-- Dynamically generated script code -->
+                    </pre>
+                </div>
+            </div>
+
+            <!-- Tab 3: Detailed Implementation Guide -->
+            <div id="panel-docs" class="hidden flex-1 overflow-y-auto p-8 space-y-8 bg-godot-darkest text-gray-300">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white mb-2">如何在 Godot 4 中安裝圖鑑系統</h2>
+                        <p class="text-sm text-gray-400">只要遵照以下 4 個步驟，即可在您的 Godot 專案中完美復刻此圖鑑系統。</p>
+                    </div>
+
+                    <div class="border-l-4 border-godot-blue bg-godot-dark/40 p-4 rounded-r">
+                        <h3 class="font-bold text-white mb-1">💡 系統設計理念：資料與 UI 分離</h3>
+                        <p class="text-sm">本系統採用數據驅動（Data-Driven）架構。角色設定存放於 JSON 或 Godot 專屬自定義 Resource。UI 僅負責讀取與渲染，此舉有利於後續更新、拓展大量角色或從伺服器端同步數據。</p>
+                    </div>
+
+                    <!-- Step 1 -->
+                    <div class="bg-godot-dark/30 border border-godot-panel rounded-lg p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-godot-blue text-godot-darkest flex items-center justify-center font-bold text-sm">1</span>
+                            創建角色數據結構 (Custom Resource)
+                        </h3>
+                        <p class="text-sm">在專案中新建一個名叫 <code class="bg-godot-darkest px-1.5 py-0.5 rounded text-godot-accentLight">CharacterData.gd</code> 的腳本，該類繼承自 <code class="bg-godot-darkest px-1.5 py-0.5 rounded text-godot-accentLight">Resource</code>，用來在編輯器中靈活配置各個角色的基礎數值。</p>
+                        <ul class="list-disc pl-5 text-sm space-y-1">
+                            <li>您可以在 Godot 編輯器內右鍵 -> 新建 Resource -> 搜尋您的 <code class="bg-godot-darkest px-1.5 py-0.5 rounded">CharacterData</code> 資源，手動在屬性面板編輯。</li>
+                            <li>或者，也可以將其做為動態資料結構，直接讀取本工具生成的 <code class="bg-godot-darkest px-1.5 py-0.5 rounded">character_data.json</code>。</li>
+                        </ul>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="bg-godot-dark/30 border border-godot-panel rounded-lg p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-godot-blue text-godot-darkest flex items-center justify-center font-bold text-sm">2</span>
+                            設置全域單例管理者 (Autoload Singleton)
+                        </h3>
+                        <p class="text-sm">
+                            創建 <code class="bg-godot-darkest px-1.5 py-0.5 rounded text-godot-accentLight">EncyclopediaManager.gd</code>，將其在專案設定的 **Autoload (自動載入)** 中註冊為全域單例。它負責：
+                        </p>
+                        <ul class="list-disc pl-5 text-sm space-y-1">
+                            <li>初始化載入所有角色的 Resource / JSON 設定檔案。</li>
+                            <li>維持目前玩家的「解鎖狀態字典」（儲存於 <code class="bg-godot-darkest px-1.5 py-0.5 rounded text-godot-accentLight">user://unlocked_characters.json</code>）。</li>
+                            <li>提供全局方法例如 <code class="bg-godot-darkest px-1.5 py-0.5 rounded text-godot-accentLight">unlock_character(id)</code> 以及對應的訊號傳遞，讓其餘 UI 或系統得以綁定與刷新。</li>
+                        </ul>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="bg-godot-dark/30 border border-godot-panel rounded-lg p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-godot-blue text-godot-darkest flex items-center justify-center font-bold text-sm">3</span>
+                            建置 UI 節點層級 (Scene Structure)
+                        </h3>
+                        <p class="text-sm">在您的圖鑑介面場景中，推薦以下列 Node 階層配置：</p>
+                        <div class="bg-godot-darkest p-4 rounded text-xs text-green-400 font-mono leading-relaxed border border-godot-panel/60">
+                            └─ EncyclopediaUI (Control)<br>
+                            &nbsp;&nbsp;&nbsp;├── Background (TextureRect - 漸層暗底)<br>
+                            &nbsp;&nbsp;&nbsp;├── HBoxContainer (主要左右分割佈局)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── LeftPanel (PanelContainer - 篩選網格區)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── VBoxContainer<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── SearchBar (LineEdit)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── FilterOptions (HBoxContainer with Buttons/OptionButtons)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── ScrollContainer<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── CharacterGrid (GridContainer)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── RightDetailPanel (PanelContainer - 點選角色卡展現詳情)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── VBoxContainer<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── CharName (Label)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── CharArt (TextureRect / Shader)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── StatsGrid (GridContainer with HP/ATK ProgressBars)<br>
+                            &nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── BioText (RichTextLabel)<br>
+                            &nbsp;&nbsp;&nbsp;└─ CardItem_Template (自製角色卡預製件，包含 Button/TextureRect/LockIcon)
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="bg-godot-dark/30 border border-godot-panel rounded-lg p-5 space-y-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-godot-blue text-godot-darkest flex items-center justify-center font-bold text-sm">4</span>
+                            編寫與綁定 UI 控制邏輯
+                        </h3>
+                        <p class="text-sm">將 <code class="bg-godot-darkest px-1.5 py-0.5 rounded text-godot-accentLight">EncyclopediaUI.gd</code> 掛載至最上層控制節點。它會在啟動時：</p>
+                        <ul class="list-disc pl-5 text-sm space-y-1">
+                            <li>調用全域單例，獲取目前角色列表、動態生成對應的 Character Card 場景並塞入 <code class="bg-godot-darkest px-1.5 py-0.5 rounded">GridContainer</code>。</li>
+                            <li>點選卡牌時，將資料傳遞給右側資訊欄。</li>
+                            <li>未解鎖角色會被套用**黑白灰階 Shader**，並且覆蓋一個上鎖標誌。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Modal for Adding/Editing Characters -->
+    <div id="character-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-godot-dark border border-godot-panel w-full max-w-lg rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div class="p-4 bg-godot-darkest border-b border-godot-panel flex justify-between items-center">
+                <h3 class="font-bold text-sm text-white flex items-center gap-2" id="modal-title">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i> 新增圖鑑角色
+                </h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="char-form" onsubmit="handleFormSubmit(event)" class="p-5 space-y-4 text-sm max-h-[80vh] overflow-y-auto">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">角色名稱 *</label>
+                        <input type="text" id="form-name" required placeholder="如：雷克斯" class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">角色稱號</label>
+                        <input type="text" id="form-title" placeholder="如：烈陽重裝騎士" class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">屬性分類</label>
+                        <select id="form-element" class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                            <option value="Fire">🔥 Fire</option>
+                            <option value="Water">💧 Water</option>
+                            <option value="Wind">🍃 Wind</option>
+                            <option value="Earth">⛰️ Earth</option>
+                            <option value="Light">✨ Light</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">稀有度 (星級)</label>
+                        <select id="form-rarity" class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                            <option value="5">⭐⭐⭐⭐⭐ (5星)</option>
+                            <option value="4">⭐⭐⭐⭐ (4星)</option>
+                            <option value="3">⭐⭐⭐ (3星)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">初始解鎖狀態</label>
+                        <select id="form-unlocked" class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                            <option value="true">🔓 已解鎖</option>
+                            <option value="false">🔒 未解鎖</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">生命值 (HP)</label>
+                        <input type="number" id="form-hp" min="1" max="9999" required class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">攻擊力 (ATK)</label>
+                        <input type="number" id="form-atk" min="1" max="999" required class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">防禦力 (DEF)</label>
+                        <input type="number" id="form-def" min="1" max="999" required class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">速度 (SPD)</label>
+                        <input type="number" id="form-spd" min="1" max="300" required class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">Emoji 圖標 (替代頭像)</label>
+                        <input type="text" id="form-icon" placeholder="例如：🛡️ 或 🏹" class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue text-center text-lg">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-medium mb-1">代表色 (16進位)</label>
+                        <div class="flex gap-2">
+                            <input type="color" id="form-color-picker" oninput="document.getElementById('form-color').value = this.value" class="h-10 w-12 bg-godot-darkest border border-godot-panel rounded p-0.5 cursor-pointer">
+                            <input type="text" id="form-color" placeholder="#ff0000" class="flex-1 bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-gray-400 font-medium mb-1">角色背景簡介</label>
+                    <textarea id="form-desc" rows="3" placeholder="請輸入一些有關角色的背景、性格以及生平背景..." class="w-full bg-godot-darkest border border-godot-panel rounded px-3 py-2 text-white focus:outline-none focus:border-godot-blue resize-none"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-4 border-t border-godot-panel flex justify-end gap-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-godot-hover hover:bg-godot-panel border border-godot-panel rounded font-medium text-gray-300 hover:text-white transition">
+                        取消
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-godot-success hover:bg-emerald-600 rounded font-bold text-white transition flex items-center gap-1.5">
+                        <i data-lucide="check" class="w-4 h-4"></i> 儲存角色
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification for UI -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-godot-panel border-l-4 border-godot-blue px-4 py-3 rounded shadow-2xl flex items-center gap-3 transform translate-y-24 opacity-0 transition-all duration-300">
+        <span id="toast-icon" class="text-godot-blue"><i data-lucide="info" class="w-5 h-5"></i></span>
+        <span id="toast-text" class="text-sm font-medium">通知訊息</span>
+    </div>
+
+    <!-- Script code implementing application state management -->
+    <script>
+        // Tab system for Godot script export panel
+        let activeCodeSubTab = 'code-resource';
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toastText.textContent = message;
+            
+            // Style based on type
+            toast.className = "fixed bottom-6 right-6 z-50 bg-godot-panel px-4 py-3 rounded shadow-2xl flex items-center gap-3 transform transition-all duration-300 border-l-4";
+            if (type === 'success') {
+                toast.classList.add('border-godot-success');
+                toastIcon.className = "text-godot-success";
+                toastIcon.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i>`;
+            } else if (type === 'danger') {
+                toast.classList.add('border-godot-danger');
+                toastIcon.className = "text-godot-danger";
+                toastIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i>`;
+            } else {
+                toast.classList.add('border-godot-blue');
+                toastIcon.className = "text-godot-blue";
+                toastIcon.innerHTML = `<i data-lucide="info" class="w-5 h-5"></i>`;
+            }
+            
+            lucide.createIcons();
+            
+            // Animate in
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            
+            // Hide all tabs
+            document.getElementById('panel-preview').classList.add('hidden');
+            document.getElementById('panel-code').classList.add('hidden');
+            document.getElementById('panel-docs').classList.add('hidden');
+            
+            // Remove active classes on nav buttons
+            const navButtons = ['preview', 'code', 'docs'];
+            navButtons.forEach(btn => {
+                const el = document.getElementById(`btn-tab-${btn}`);
+                el.className = "px-4 py-2 rounded text-sm font-medium transition duration-200 flex items-center gap-2 text-gray-400 hover:text-white hover:bg-godot-hover";
+            });
+
+            // Show active tab and button highlight
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+            if (tabId === 'preview') {
+                document.getElementById('panel-preview').classList.add('flex');
+            }
+            
+            const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+            activeBtn.className = "px-4 py-2 rounded text-sm font-medium transition duration-200 flex items-center gap-2 bg-godot-panel text-white";
+            
+            if (tabId === 'code') {
+                updateCodeOutput();
+            }
+        }
+
+        function renderDatabaseList() {
+            const listContainer = document.getElementById('db-character-list');
+            listContainer.innerHTML = '';
+            
+            state.characters.forEach(char => {
+                const isSelected = char.id === state.selectedCharId;
+                const activeClass = isSelected ? 'bg-godot-hover border-godot-blue text-white' : 'border-transparent text-gray-300 hover:bg-godot-hover/40';
+                
+                const item = document.createElement('div');
+                item.className = `p-3 rounded border flex items-center justify-between transition cursor-pointer ${activeClass}`;
+                item.setAttribute('onclick', `selectCharacter('${char.id}')`);
+                
+                // Rarity stars string
+                const stars = '⭐'.repeat(char.rarity);
+                
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-inner bg-godot-darkest border border-godot-panel" style="border-top: 2px solid ${char.color}">
+                            ${char.icon || '👤'}
+                        </div>
+                        <div class="overflow-hidden">
+                            <h4 class="font-bold text-xs truncate">${char.name}</h4>
+                            <p class="text-[10px] text-gray-400 truncate">${char.title || '無稱號'}</p>
+                            <p class="text-[9px] text-godot-blue">${stars}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1" onclick="event.stopPropagation()">
+                        <button onclick="editCharacter('${char.id}')" class="p-1 hover:bg-godot-panel text-gray-400 hover:text-godot-blue rounded transition" title="編輯屬性">
+                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="deleteCharacter('${char.id}')" class="p-1 hover:bg-godot-panel text-gray-400 hover:text-godot-danger rounded transition" title="刪除角色">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+            
+            document.getElementById('db-count').textContent = state.characters.length;
+            lucide.createIcons();
+        }
+
+        function updateFilters(key, value) {
+            state.filters[key] = value;
+            renderPreviewGrid();
+        }
+
+        function renderPreviewGrid() {
+            const grid = document.getElementById('character-grid');
+            grid.innerHTML = '';
+            
+            // Filter characters
+            const filteredChars = state.characters.filter(char => {
+                // Search filter
+                if (state.filters.search && !char.name.toLowerCase().includes(state.filters.search.toLowerCase())) {
+                    return false;
+                }
+                // Element filter
+                if (state.filters.element !== 'all' && char.element !== state.filters.element) {
+                    return false;
+                }
+                // Rarity filter
+                if (state.filters.rarity !== 'all' && char.rarity != state.filters.rarity) {
+                    return false;
+                }
+                // Unlock status filter
+                if (state.filters.unlocked !== 'all') {
+                    if (state.filters.unlocked === 'unlocked' && !char.unlocked) return false;
+                    if (state.filters.unlocked === 'locked' && char.unlocked) return false;
+                }
+                return true;
+            });
+            
+            if (filteredChars.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 flex flex-col items-center justify-center text-gray-500">
+                        <i data-lucide="package-open" class="w-12 h-12 mb-2"></i>
+                        <p class="text-sm">沒有符合當前篩選條件的角色數據</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filteredChars.forEach(char => {
+                const card = document.createElement('div');
+                const isSelected = char.id === state.selectedCharId;
+                
+                // Construct styles based on locked/unlocked status
+                let portraitOverlay = '';
+                let opacityClass = 'opacity-100 hover:scale-[1.03]';
+                let iconLock = '';
+                let borderStyle = isSelected ? `border-2 border-godot-blue shadow-[0_0_15px_rgba(71,140,191,0.3)]` : 'border border-godot-panel';
+                
+                if (!char.unlocked) {
+                    opacityClass = 'opacity-50 grayscale hover:grayscale-[50%] hover:scale-[1.03] hover:opacity-80';
+                    portraitOverlay = 'bg-black/45';
+                    iconLock = `
+                        <div class="absolute top-2 right-2 bg-godot-darkest/90 border border-godot-panel p-1 rounded-full text-godot-warning z-10 animate-pulse">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                        </div>
+                    `;
+                } else {
+                    iconLock = `
+                        <div class="absolute top-2 right-2 bg-godot-success/20 border border-godot-success/40 px-1.5 py-0.5 rounded text-[10px] text-godot-success font-semibold tracking-widest z-10">
+                            UNLOCKED
+                        </div>
+                    `;
+                }
+
+                card.className = `relative group rounded-lg overflow-hidden cursor-pointer bg-godot-dark flex flex-col transition-all duration-300 ${borderStyle} ${opacityClass}`;
+                card.setAttribute('onclick', `selectCharacter('${char.id}')`);
+                
+                card.innerHTML = `
+                    ${iconLock}
+                    <!-- Decorative header line -->
+                    <div class="h-1.5 w-full" style="background-color: ${char.color}"></div>
+                    
+                    <!-- Portrait Visual Area (Mock representation using beautiful layout and big text) -->
+                    <div class="h-32 bg-gradient-to-t from-godot-darkest to-godot-hover relative flex items-center justify-center overflow-hidden">
+                        <div class="absolute inset-0 ${portraitOverlay} transition duration-300 group-hover:bg-transparent"></div>
+                        <span class="text-5xl transform group-hover:scale-125 transition duration-500">${char.icon}</span>
+                        
+                        <!-- Element Badge -->
+                        <div class="absolute bottom-2 left-2 bg-godot-darkest/95 px-2 py-0.5 rounded text-[11px] font-semibold border border-godot-panel/50 flex items-center gap-1">
+                            ${getElementTag(char.element)}
+                        </div>
+                    </div>
+                    
+                    <!-- Text Details -->
+                    <div class="p-3 bg-godot-dark/95 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-bold text-sm text-white group-hover:text-godot-blue transition">${char.name}</h4>
+                                <span class="text-xs text-godot-warning font-semibold select-none">${'★'.repeat(char.rarity)}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1 truncate">${char.title || '&nbsp;'}</p>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="mt-2 pt-2 border-t border-godot-panel/40 grid grid-cols-3 gap-1 text-[10px] text-gray-500 text-center">
+                            <div>HP <span class="text-gray-300 block font-mono font-bold">${char.hp}</span></div>
+                            <div>ATK <span class="text-gray-300 block font-mono font-bold">${char.atk}</span></div>
+                            <div>DEF <span class="text-gray-300 block font-mono font-bold">${char.def}</span></div>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            lucide.createIcons();
+            renderDetailPanel();
+        }
+
+        function getElementTag(element) {
+            switch(element) {
+                case 'Fire': return '🔥 烈火';
+                case 'Water': return '💧 寒冰';
+                case 'Wind': return '🍃 疾風';
+                case 'Earth': return '⛰️ 大地';
+                case 'Light': return '✨ 聖光';
+                default: return '👤 無';
+            }
+        }
+
+        function renderDetailPanel() {
+            const container = document.getElementById('detail-panel');
+            const char = state.characters.find(c => c.id === state.selectedCharId);
+            
+            if (!char) {
+                container.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center p-6 text-gray-500">
+                        <i data-lucide="user" class="w-12 h-12 mb-2"></i>
+                        <p class="text-sm">請選擇左側或網格中的角色以檢視詳情</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            // Stat bars ratios (max levels for visualization calculation)
+            const hpPct = Math.min((char.hp / 1500) * 100, 100);
+            const atkPct = Math.min((char.atk / 200) * 100, 100);
+            const defPct = Math.min((char.def / 150) * 100, 100);
+            const spdPct = Math.min((char.spd / 150) * 100, 100);
+
+            container.innerHTML = `
+                <!-- Top full header panel with main color -->
+                <div class="relative py-8 px-6 flex flex-col items-center justify-center text-center overflow-hidden border-b border-godot-panel bg-gradient-to-b from-godot-hover/40 to-godot-dark">
+                    <div class="absolute top-4 right-4">
+                        <button onclick="toggleUnlockState('${char.id}')" class="px-2.5 py-1 text-xs rounded border flex items-center gap-1.5 transition ${char.unlocked ? 'bg-godot-danger/10 text-godot-danger border-godot-danger/30 hover:bg-godot-danger/20' : 'bg-godot-success/10 text-godot-success border-godot-success/30 hover:bg-godot-success/20'}">
+                            <i data-lucide="${char.unlocked ? 'lock' : 'unlock'}" class="w-3.5 h-3.5"></i>
+                            <span>${char.unlocked ? '鎖定此角色' : '解鎖此角色'}</span>
+                        </button>
+                    </div>
+
+                    <!-- Big visual -->
+                    <div class="w-24 h-24 rounded-2xl flex items-center justify-center text-5xl bg-godot-darkest border-2 shadow-lg mb-4 animate-bounce" style="border-color: ${char.color}">
+                        ${char.icon || '👤'}
+                    </div>
+
+                    <h3 class="text-xl font-bold text-white flex items-center gap-1.5">
+                        ${char.name}
+                    </h3>
+                    <p class="text-xs text-gray-400 mt-1">${char.title || '無稱號'}</p>
+                    <div class="mt-2 text-godot-warning flex gap-0.5 text-sm">${'★'.repeat(char.rarity)}</div>
+                </div>
+
+                <!-- Stats and Information -->
+                <div class="p-6 space-y-6">
+                    <!-- Badges -->
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-godot-darkest border border-godot-panel px-3 py-2 rounded text-center">
+                            <span class="text-gray-400 block mb-0.5">屬性</span>
+                            <span class="font-bold text-white flex justify-center items-center gap-1">${getElementTag(char.element)}</span>
+                        </div>
+                        <div class="bg-godot-darkest border border-godot-panel px-3 py-2 rounded text-center">
+                            <span class="text-gray-400 block mb-0.5">系統狀態</span>
+                            <span class="font-bold ${char.unlocked ? 'text-godot-success' : 'text-godot-danger'} flex justify-center items-center gap-1">
+                                <i data-lucide="${char.unlocked ? 'check-circle' : 'lock'}" class="w-3.5 h-3.5"></i>
+                                ${char.unlocked ? '已解鎖' : '未解鎖'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Stats Bar Group -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-godot-accentLight border-b border-godot-panel pb-1 flex items-center gap-1.5">
+                            <i data-lucide="sliders" class="w-3.5 h-3.5"></i> 屬性雷達值
+                        </h4>
+                        
+                        <!-- HP -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400 flex items-center gap-1">生命值 (HP)</span>
+                                <span class="font-bold text-white font-mono">${char.hp}</span>
+                            </div>
+                            <div class="h-2 bg-godot-darkest rounded overflow-hidden">
+                                <div class="h-full bg-emerald-500 rounded transition-all duration-500" style="width: ${hpPct}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- ATK -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400 flex items-center gap-1">攻擊力 (ATK)</span>
+                                <span class="font-bold text-white font-mono">${char.atk}</span>
+                            </div>
+                            <div class="h-2 bg-godot-darkest rounded overflow-hidden">
+                                <div class="h-full bg-rose-500 rounded transition-all duration-500" style="width: ${atkPct}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- DEF -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400 flex items-center gap-1">防禦力 (DEF)</span>
+                                <span class="font-bold text-white font-mono">${char.def}</span>
+                            </div>
+                            <div class="h-2 bg-godot-darkest rounded overflow-hidden">
+                                <div class="h-full bg-blue-500 rounded transition-all duration-500" style="width: ${defPct}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- SPD -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400 flex items-center gap-1">速度值 (SPD)</span>
+                                <span class="font-bold text-white font-mono">${char.spd}</span>
+                            </div>
+                            <div class="h-2 bg-godot-darkest rounded overflow-hidden">
+                                <div class="h-full bg-amber-500 rounded transition-all duration-500" style="width: ${spdPct}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Description / Lore -->
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-godot-accentLight border-b border-godot-panel pb-1 flex items-center gap-1.5">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5"></i> 背景檔案與故事
+                        </h4>
+                        <p class="text-xs text-gray-300 leading-relaxed bg-godot-darkest p-3 rounded border border-godot-panel/50 select-text">
+                            ${char.unlocked ? char.description : '<span class="text-gray-500 flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> [數據已加密] 解鎖角色以獲取更詳細的人物背景檔案與生平事蹟。</span>'}
+                        </p>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // Action: Toggle Character's Unlock State in the Simulator
+        function toggleUnlockState(charId) {
+            const charIndex = state.characters.findIndex(c => c.id === charId);
+            if (charIndex !== -1) {
+                const char = state.characters[charIndex];
+                char.unlocked = !char.unlocked;
+                
+                // Show notification matching state
+                if (char.unlocked) {
+                    showToast(`已解鎖圖鑑角色：${char.name}！`, 'success');
+                } else {
+                    showToast(`已將角色「${char.name}」還原為上鎖狀態。`, 'info');
+                }
+                
+                renderPreviewGrid();
+                renderDatabaseList();
+            }
+        }
+
+        // Action: Select Active Character in List
+        function selectCharacter(charId) {
+            state.selectedCharId = charId;
+            renderDatabaseList();
+            renderPreviewGrid();
+        }
+
+        // Modal management for adding/editing character records
+        function openAddCharacterForm() {
+            state.editingCharId = null;
+            document.getElementById('modal-title').innerHTML = `<i data-lucide="user-plus" class="w-4 h-4"></i> 新增圖鑑角色`;
+            
+            // Clear fields with defaults
+            document.getElementById('form-name').value = '';
+            document.getElementById('form-title').value = '';
+            document.getElementById('form-element').value = 'Fire';
+            document.getElementById('form-rarity').value = '5';
+            document.getElementById('form-unlocked').value = 'true';
+            document.getElementById('form-hp').value = '1000';
+            document.getElementById('form-atk').value = '100';
+            document.getElementById('form-def').value = '80';
+            document.getElementById('form-spd').value = '100';
+            document.getElementById('form-icon').value = '🔮';
+            document.getElementById('form-color-picker').value = '#478cbf';
+            document.getElementById('form-color').value = '#478cbf';
+            document.getElementById('form-desc').value = '';
+
+            document.getElementById('character-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function editCharacter(charId) {
+            const char = state.characters.find(c => c.id === charId);
+            if (!char) return;
+
+            state.editingCharId = charId;
+            document.getElementById('modal-title').innerHTML = `<i data-lucide="edit" class="w-4 h-4"></i> 編輯角色屬性 [${char.name}]`;
+            
+            // Fill fields
+            document.getElementById('form-name').value = char.name;
+            document.getElementById('form-title').value = char.title || '';
+            document.getElementById('form-element').value = char.element;
+            document.getElementById('form-rarity').value = char.rarity.toString();
+            document.getElementById('form-unlocked').value = char.unlocked.toString();
+            document.getElementById('form-hp').value = char.hp;
+            document.getElementById('form-atk').value = char.atk;
+            document.getElementById('form-def').value = char.def;
+            document.getElementById('form-spd').value = char.spd;
+            document.getElementById('form-icon').value = char.icon;
+            document.getElementById('form-color-picker').value = char.color || '#478cbf';
+            document.getElementById('form-color').value = char.color || '#478cbf';
+            document.getElementById('form-desc').value = char.description || '';
+
+            document.getElementById('character-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function deleteCharacter(charId) {
+            const char = state.characters.find(c => c.id === charId);
+            if (!char) return;
+            
+            // Custom dialog modal mock simulation instead of standard browser confirm
+            const deleteConfirmed = confirm(`您確定要將角色「${char.name}」從資料庫徹底移除嗎？這將重新編譯導出腳本。`);
+            if (deleteConfirmed) {
+                state.characters = state.characters.filter(c => c.id !== charId);
+                
+                // If deleted active selection, select first remaining
+                if (state.selectedCharId === charId) {
+                    state.selectedCharId = state.characters.length > 0 ? state.characters[0].id : null;
+                }
+                
+                showToast(`已自資料庫移除角色 ${char.name}。`, 'danger');
+                renderDatabaseList();
+                renderPreviewGrid();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('character-modal').classList.add('hidden');
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const rawId = state.editingCharId || "char_" + Math.random().toString(36).substring(2, 9);
+            const newChar = {
+                id: rawId,
+                name: document.getElementById('form-name').value.trim(),
+                title: document.getElementById('form-title').value.trim(),
+                element: document.getElementById('form-element').value,
+                rarity: parseInt(document.getElementById('form-rarity').value),
+                unlocked: document.getElementById('form-unlocked').value === 'true',
+                hp: parseInt(document.getElementById('form-hp').value) || 100,
+                atk: parseInt(document.getElementById('form-atk').value) || 10,
+                def: parseInt(document.getElementById('form-def').value) || 10,
+                spd: parseInt(document.getElementById('form-spd').value) || 100,
+                icon: document.getElementById('form-icon').value.trim() || '👤',
+                color: document.getElementById('form-color').value.trim() || '#478cbf',
+                description: document.getElementById('form-desc').value.trim()
+            };
+
+            if (state.editingCharId) {
+                // Edit mode
+                const index = state.characters.findIndex(c => c.id === state.editingCharId);
+                if (index !== -1) {
+                    state.characters[index] = newChar;
+                    showToast(`成功更新角色：${newChar.name}`, 'success');
+                }
+            } else {
+                // Add mode
+                state.characters.push(newChar);
+                state.selectedCharId = newChar.id;
+                showToast(`成功新增角色：${newChar.name} 至資料庫！`, 'success');
+            }
+
+            closeModal();
+            renderDatabaseList();
+            renderPreviewGrid();
+        }
+
+        // Code Exporter System
+        function switchCodeSubTab(subTabId) {
+            activeCodeSubTab = subTabId;
+            
+            const tabs = ['code-resource', 'code-manager', 'code-ui', 'code-json'];
+            tabs.forEach(t => {
+                const buttonId = `btn-subtab-${t.replace('code-', '')}`;
+                const el = document.getElementById(buttonId);
+                if (t === subTabId) {
+                    el.className = "px-4 py-2 border-b-2 border-godot-blue text-godot-blue font-mono text-xs font-semibold";
+                } else {
+                    el.className = "px-4 py-2 border-b-2 border-transparent text-gray-400 hover:text-white font-mono text-xs font-semibold";
+                }
+            });
+
+            updateCodeOutput();
+        }
+
+        function updateCodeOutput() {
+            const block = document.getElementById('code-content-block');
+            let generatedCode = "";
+
+            if (activeCodeSubTab === 'code-resource') {
+                generatedCode = `# CharacterData.gd
+# ────────────────────────────────────────────────────────
+# 繼承 Resource 的自定義角色基礎數據類別
+# 可以在 Godot 4 編輯器內直接對 Resource 填寫參數，或由 JSON 載入
+
+extends Resource
+class_name CharacterData
+
+@export var id: String = ""
+@export var name: String = ""
+@export var title: String = ""
+@export_range(1, 5) var rarity: int = 5
+@export_enum("Fire", "Water", "Wind", "Earth", "Light") var element: String = "Fire"
+@export var hp: int = 1000
+@export var atk: int = 100
+@export var def: int = 80
+@export var spd: int = 100
+@export var icon_emoji: String = "👤"
+@export var theme_color: Color = Color.WHITE
+@export_multiline var description: String = ""
+
+# 從 Dictionary 解析並填充數據 (便於結合 JSON 模組化讀取)
+func from_dict(data: Dictionary) -> void:
+\tid = data.get("id", "")
+\tname = data.get("name", "Unknown")
+\ttitle = data.get("title", "")
+\trarity = int(data.get("rarity", 5))
+\telement = data.get("element", "Fire")
+\thp = int(data.get("hp", 100))
+\tatk = int(data.get("atk", 10))
+\tdef = int(data.get("def", 10))
+\tspd = int(data.get("spd", 100))
+\ticon_emoji = data.get("icon", "👤")
+\ttheme_color = Color.from_string(data.get("color", "#ffffff"), Color.WHITE)
+\tdescription = data.get("description", "")
+`;
+            } else if (activeCodeSubTab === 'code-manager') {
+                generatedCode = `# EncyclopediaManager.gd
+# ────────────────────────────────────────────────────────
+# 【Autoload / Singleton 全域單例】
+# 負責全域資料載入、管理、存檔玩家對應角色的解鎖狀態
+
+extends Node
+
+# 訊號：當玩家成功解鎖一個新的圖鑑角色時觸發
+signal character_unlocked(char_id: String)
+signal database_loaded()
+
+const SAVE_FILE_PATH = "user://character_unlock_states.cfg"
+const DATA_FILE_PATH = "res://data/character_data.json"
+
+# 所有角色的數據字典 [char_id: CharacterData]
+var character_database: Dictionary = {}
+
+# 儲存玩家是否解鎖的進度 [char_id: bool]
+var unlocked_states: Dictionary = {}
+
+func _ready() -> void:
+\tload_character_database()
+\tload_unlocked_states()
+
+# 載入 JSON 配置並動態轉換成自定義 Resource 結構
+func load_character_database() -> void:
+\tif not FileAccess.file_exists(DATA_FILE_PATH):
+\t\tpush_error("錯誤：找不到圖鑑配置 JSON 檔: " + DATA_FILE_PATH)
+\t\treturn
+\t\t
+\tvar file := FileAccess.open(DATA_FILE_PATH, FileAccess.READ)
+\tvar json_text := file.get_as_text()
+\tfile.close()
+\t
+\tvar json = JSON.new()
+\tvar error = json.parse(json_text)
+\tif error != OK:
+\t\tpush_error("JSON 語法解析失敗，錯誤代碼: " + str(error))
+\t\treturn
+\t
+\tvar raw_array = json.data
+\tif typeof(raw_array) == TYPE_ARRAY:
+\t\tcharacter_database.clear()
+\t\tfor char_data_dict in raw_array:
+\t\t\tvar char_res = CharacterData.new()
+\t\t\tchar_res.from_dict(char_data_dict)
+\t\t\tcharacter_database[char_res.id] = char_res
+\t\t
+\t\tprint("圖鑑資料庫載入成功，共 " + str(character_database.size()) + " 個角色。")
+\t\tdatabase_loaded.emit()
+
+# 獲取單一角色是否解鎖
+func is_character_unlocked(char_id: String) -> bool:
+\treturn unlocked_states.get(char_id, false)
+
+# 解鎖角色 (可由戰利品、抽卡或任務邏輯觸發)
+func unlock_character(char_id: String) -> void:
+\tif not character_database.has(char_id):
+\t\treturn
+\t\t
+\tif not unlocked_states.get(char_id, false):
+\t\tunlocked_states[char_id] = true
+\t\tsave_unlocked_states()
+\t\tcharacter_unlocked.emit(char_id)
+\t\tprint("恭喜！解鎖圖鑑角色: " + character_database[char_id].name)
+
+# 寫入玩家解鎖紀錄
+func save_unlocked_states() -> void:
+\tvar config = ConfigFile.new()
+\tfor char_id in unlocked_states:
+\t\tconfig.set_value("unlocked_data", char_id, unlocked_states[char_id])
+\tvar error = config.save(SAVE_FILE_PATH)
+\tif error != OK:
+\t\tpush_error("無法寫入存檔檔案！")
+
+# 讀取玩家解鎖紀錄
+func load_unlocked_states() -> void:
+\tvar config = ConfigFile.new()
+\tvar error = config.load(SAVE_FILE_PATH)
+\tif error != OK:
+\t\t# 若沒有舊存檔，預設皆為鎖定，或根據 JSON 初始化
+\t\tfor char_id in character_database:
+\t\t\t# 這裡模擬初始化，先讀取 JSON 中是否自帶解鎖 (一般新遊戲除預設角色外皆鎖定)
+\t\t\tvar char_item : CharacterData = character_database[char_id]
+\t\t\tunlocked_states[char_id] = false # 默認鎖定
+\t\treturn
+\t
+\tif config.has_section("unlocked_data"):
+\t\tfor char_id in config.get_section_keys("unlocked_data"):
+\t\t\tunlocked_states[char_id] = config.get_value("unlocked_data", char_id, false)
+`;
+            } else if (activeCodeSubTab === 'code-ui') {
+                generatedCode = `# EncyclopediaUI.gd
+# ────────────────────────────────────────────────────────
+# 圖鑑主 UI 控制腳本 (掛載於 Control 頂層節點)
+# 結合 UI 更新、屬性渲染、動態卡牌列表生成與解鎖遮罩。
+
+extends Control
+
+# 指向 UI 場景節點
+@onready var character_grid: GridContainer = $SearchBar/ScrollContainer/CharacterGrid
+@onready var detail_panel: PanelContainer = $HBoxContainer/RightDetailPanel
+@onready var search_bar: LineEdit = $SearchBar/HBoxContainer/LineEdit
+
+# 指向各個詳情顯示 UI 的元件
+@onready var detail_name: Label = $HBoxContainer/RightDetailPanel/VBox/NameLabel
+@onready var detail_title: Label = $HBoxContainer/RightDetailPanel/VBox/TitleLabel
+@onready var detail_icon: Label = $HBoxContainer/RightDetailPanel/VBox/IconLabel
+@onready var detail_desc: RichTextLabel = $HBoxContainer/RightDetailPanel/VBox/DescLabel
+@onready var hp_progress_bar: ProgressBar = $HBoxContainer/RightDetailPanel/VBox/Stats/HPBar
+@onready var atk_progress_bar: ProgressBar = $HBoxContainer/RightDetailPanel/VBox/Stats/ATKBar
+@onready var def_progress_bar: ProgressBar = $HBoxContainer/RightDetailPanel/VBox/Stats/DEFBar
+
+# 您的角色卡 CardItem 預製場景
+@export var card_item_scene: PackedScene
+
+var selected_id: String = ""
+
+func _ready() -> void:
+\t# 連結全域資料庫載入與更新訊號
+\tEncyclopediaManager.database_loaded.connect(rebuild_card_grid)
+\tEncyclopediaManager.character_unlocked.connect(_on_character_unlocked_internally)
+\t
+\t# 若單例已就緒，手動建立
+\tif EncyclopediaManager.character_database.size() > 0:
+\t\trebuild_card_grid()
+
+# 動態生成與渲染網格中的所有角色卡片
+func rebuild_card_grid() -> void:
+\t# 清理舊元件
+\tfor child in character_grid.get_children():
+\t\tchild.queue_free()
+\t
+\tvar search_query = search_bar.text.to_lower()
+\t
+\tfor char_id in EncyclopediaManager.character_database:
+\t\tvar char_res: CharacterData = EncyclopediaManager.character_database[char_id]
+\t\t
+\t\t# 關鍵字過濾
+\t\tif search_query != "" and not char_res.name.to_lower().contains(search_query):
+\t\t\tcontinue
+\t\t\t
+\t\tvar is_unlocked = EncyclopediaManager.is_character_unlocked(char_id)
+\t\tvar card = card_item_scene.instantiate()
+\t\tcharacter_grid.add_child(card)
+\t\t
+\t\t# 調用角色卡內置的設定函數 (包含套用遮罩或星級)
+\t\tcard.setup_card(char_res, is_unlocked)
+\t\t
+\t\t# 綁定卡牌按鈕點擊訊號
+\t\tcard.pressed.connect(func(): _on_card_selected(char_id))
+
+# 選中某一卡牌並渲染詳情
+func _on_card_selected(char_id: String) -> void:
+\tselected_id = char_id
+\tvar char_res: CharacterData = EncyclopediaManager.character_database[char_id]
+\tvar is_unlocked = EncyclopediaManager.is_character_unlocked(char_id)
+\t
+\tdetail_name.text = char_res.name
+\tdetail_title.text = char_res.title
+\tdetail_icon.text = char_res.icon_emoji
+\t
+\t# 處理鎖定狀態：若未解鎖，則將背景故事、關鍵字打碼或遮罩
+\tif is_unlocked:
+\t\tdetail_desc.text = char_res.description
+\t\thp_progress_bar.value = char_res.hp
+\t\tatk_progress_bar.value = char_res.atk
+\t\tdef_progress_bar.value = char_res.def
+\telse:
+\t\tdetail_desc.text = "[color=gray][上鎖] 該角色尚未解鎖，故事已加密。[/color]"
+\t\thp_progress_bar.value = 0
+\t\tatk_progress_bar.value = 0
+\t\tdef_progress_bar.value = 0
+
+# 全域解鎖訊號回調
+func _on_character_unlocked_internally(char_id: String) -> void:
+\trebuild_card_grid()
+\tif selected_id == char_id:
+\t\t_on_card_selected(char_id)
+`;
+            } else if (activeCodeSubTab === 'code-json') {
+                // Generate Dynamic JSON based on current State characters
+                const formattedJson = JSON.stringify(state.characters.map(c => {
+                    return {
+                        id: c.id,
+                        name: c.name,
+                        title: c.title,
+                        rarity: c.rarity,
+                        element: c.element,
+                        hp: c.hp,
+                        atk: c.atk,
+                        def: c.def,
+                        spd: c.spd,
+                        icon: c.icon,
+                        color: c.color,
+                        description: c.description
+                    };
+                }), null, 4);
+
+                generatedCode = `# JSON 資料 (res://data/character_data.json)
+# ────────────────────────────────────────────────────────
+# 根據您在左側建立/編輯的資料庫所實時編譯出的最新 JSON
+# 複製並在 Godot 4 專案 data 資料夾中儲存，可免去手動配置 Resource。
+
+${formattedJson}
+`;
+            }
+
+            // Highlighting and escaping HTML entities safely
+            block.textContent = generatedCode;
+        }
+
+        function copyCurrentCode() {
+            const pre = document.getElementById('code-content-block');
+            navigator.clipboard.writeText(pre.textContent).then(() => {
+                const copyBtnText = document.getElementById('copy-btn-text');
+                const copyIcon = document.getElementById('copy-icon');
+                
+                copyBtnText.textContent = "已成功複製！";
+                copyIcon.setAttribute('data-lucide', 'check-check');
+                lucide.createIcons();
+                
+                showToast("程式碼已複製至您的剪貼簿！", "success");
+                
+                setTimeout(() => {
+                    copyBtnText.textContent = "複製程式碼";
+                    copyIcon.setAttribute('data-lucide', 'copy');
+                    lucide.createIcons();
+                }, 2000);
+            }).catch(err => {
+                showToast("複製失敗，請手動複製。", "danger");
+            });
+        }
+
+        function downloadJsonData() {
+            const listToExport = state.characters.map(c => {
+                return {
+                    id: c.id,
+                    name: c.name,
+                    title: c.title,
+                    rarity: c.rarity,
+                    element: c.element,
+                    hp: c.hp,
+                    atk: c.atk,
+                    def: c.def,
+                    spd: c.spd,
+                    icon: c.icon,
+                    color: c.color,
+                    description: c.description
+                };
+            });
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(listToExport, null, 4));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "character_data.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("JSON 檔案已開始下載！", "success");
+        }
+
+        // Initialize App UI and render state
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDatabaseList();
+            renderPreviewGrid();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
