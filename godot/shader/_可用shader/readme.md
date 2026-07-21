@@ -19,3 +19,46 @@
 
 
 waste:分析热扭曲 godot shader code:https://share.gemini.google/Y6d8CuN0ijp5 
+
+shader demo
+1. 像素化消散
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%83%8F%E7%B4%A0%E5%8C%96%E6%B6%88%E6%95%A3.gif" width="200" height="200"></img>
+2. 全息投影_Holographic_Projection
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%85%A8%E6%81%AF%E6%8A%95%E5%BD%B1.PNG" width="200" height="200"></img>
+3. 輪廓邊界 https://gemini.google.com/share/5a18ce72893b?skid=67ebcd64-9a6e-4bc5-b5e1-34aebb8bcfcf
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E8%BC%AA%E5%BB%93%E9%82%8A%E7%95%8C.PNG" width="200" height="200"></img>
+4. 
+5.   
+6.
+
+3D
+1. 場景_3D_water
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/%E5%A0%B4%E6%99%AF_3D_water.gif"></img>
+2. 黑洞
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo_res/blackhole.PNG" width="200" height="200"></img>
+5.
+6.
+7.
+
+
+
+
+8.   tt
+
+9.    
+
+<h1>shader code不要研究</h1>
+有可視化設定 但碼code直接點
+vertex
+uv
+shader庫
+shader找簡單的
+seamless 無縫
+
+【【Godot4】快速实现简易真实的3D水面】 https://www.bilibili.com/video/BV11b421e7xQ/?share_source=copy_web material seamless uv1 time*0.02
+Aurora shader effect:https://www.youtube.com/watch?v=cCu-TwZItUo
+像素化傳送門:https://godotshaders.com/shader/pixelated-portal/
+
+shader 不考慮手寫 用ai寫 **不好用** https://godotshaders.com
+
+
