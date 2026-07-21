@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot Caution Tape Shader Interactive Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .code-container {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            background-color: #161b22;
+        }
+        input[type="range"] {
+            accent-color: #eab308;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
+    <div class="max-w-6xl w-full flex flex-col gap-6">
+        
+        <!-- Header -->
+        <header class="border-b border-gray-800 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-yellow-400 flex items-center gap-2">
+                    <svg class="w-8 h-8 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Godot 警戒線 Shader 互動實測與生成器
+                </h1>
+                <p class="text-sm text-gray-400 mt-1">上下斜紋順方向移動，中間文字反方向動 (Dual-Directional Motion Shader)</p>
+            </div>
+            <span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 px-3 py-1 rounded-full text-xs font-semibold">
+                Godot 4.x Compatible
+            </span>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Controls & Preview Column -->
+            <div class="lg:col-span-6 flex flex-col gap-6">
+                
+                <!-- Live Canvas Preview Container -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 即時 Shader 預覽 (Live Canvas Preview)
+                        </span>
+                        <button id="resetBtn" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2 py-1 rounded border border-gray-700 transition">
+                            重置參數
+                        </button>
+                    </div>
+
+                    <!-- Canvas -->
+                    <div class="relative w-full h-48 sm:h-64 bg-black rounded-lg overflow-hidden border border-gray-800 flex items-center justify-center">
+                        <canvas id="tapeCanvas" class="w-full h-full object-contain cursor-grab active:cursor-grabbing"></canvas>
+                    </div>
+                </div>
+
+                <!-- Interactive Parameter Controls -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl space-y-4">
+                    <h2 class="text-base font-semibold text-gray-200 border-b border-gray-800 pb-2"> Shader 動態與視覺控制</h2>
+
+                    <!-- Stripe Motion Speed -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-gray-300">上下條紋移動速度 (Stripe Speed)</label>
+                            <span id="stripeSpeedVal" class="text-yellow-400 font-mono">0.50</span>
+                        </div>
+                        <input type="range" id="stripeSpeed" min="-2.0" max="2.0" step="0.05" value="0.5" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Text Motion Speed -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-gray-300">中間文字移動速度 (Text Speed - 反方向)</label>
+                            <span id="textSpeedVal" class="text-yellow-400 font-mono">-0.50</span>
+                        </div>
+                        <input type="range" id="textSpeed" min="-2.0" max="2.0" step="0.05" value="-0.5" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Custom Text Input -->
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">警示標語內容 (Tape Text)</label>
+                        <input type="text" id="tapeText" value="CRIME SCENE DO NOT CROSS" class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-yellow-400 font-bold focus:outline-none focus:border-yellow-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Border Height Ratio -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <label class="text-gray-300">上下斜紋高度</label>
+                                <span id="borderHeightVal" class="text-yellow-400 font-mono">0.22</span>
+                            </div>
+                            <input type="range" id="borderHeight" min="0.05" max="0.35" step="0.01" value="0.22" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- Stripe Count Density -->
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <label class="text-gray-300">斜紋密度</label>
+                                <span id="stripeDensityVal" class="text-yellow-400 font-mono">16.0</span>
+                            </div>
+                            <input type="range" id="stripeDensity" min="5.0" max="40.0" step="1.0" value="16.0" class="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Tape Background Color -->
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">底色 (Tape Base)</label>
+                            <input type="color" id="tapeColor" value="#facc15" class="w-full h-8 bg-gray-800 border border-gray-700 rounded cursor-pointer p-0.5">
+                        </div>
+
+                        <!-- Pattern / Text Color -->
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">紋路與文字顏色</label>
+                            <input type="color" id="patternColor" value="#111111" class="w-full h-8 bg-gray-800 border border-gray-700 rounded cursor-pointer p-0.5">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Code Viewer Column -->
+            <div class="lg:col-span-6 flex flex-col gap-4">
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-xl flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z"/></svg>
+                            Godot 4 GDShader 程式碼
+                        </span>
+                        <button id="copyCodeBtn" class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold px-3 py-1.5 rounded transition flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            複製 Shader 碼
+                        </button>
+                    </div>
+
+                    <!-- Shader Code Display -->
+                    <pre class="code-container p-4 rounded-lg border border-gray-800 text-xs text-green-400 overflow-x-auto flex-1 font-mono leading-relaxed" id="codeBlock"></pre>
+                </div>
+
+                <!-- Integration Instructions -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs text-gray-400 space-y-2">
+                    <h3 class="font-bold text-gray-200 text-sm mb-1 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Godot 使用指南 (Usage Guide)
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-1 text-gray-300">
+                        <li>在 Godot 中新建一個 <code class="bg-gray-800 px-1 py-0.5 rounded text-yellow-300">ColorRect</code> 或 <code class="bg-gray-800 px-1 py-0.5 rounded text-yellow-300">Sprite2D</code> 節點。</li>
+                        <li>在 Inspect 視窗中點擊 <b>Material -> New ShaderMaterial</b>。</li>
+                        <li>新建一個 Shader 檔案，將上方複製的程式碼貼入。</li>
+                        <li>如果在 Godot 中使用<b>貼圖模式</b>，可將文字 Texture 指定給 <code class="bg-gray-800 px-1 py-0.5 rounded text-yellow-300">text_texture</code> uniform。 Shader 內建純程序寫法（Procedural Mode），無需額外圖檔即可使用！</li>
+                    </ol>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('tapeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Inputs
+        const stripeSpeedInput = document.getElementById('stripeSpeed');
+        const textSpeedInput = document.getElementById('textSpeed');
+        const tapeTextInput = document.getElementById('tapeText');
+        const borderHeightInput = document.getElementById('borderHeight');
+        const stripeDensityInput = document.getElementById('stripeDensity');
+        const tapeColorInput = document.getElementById('tapeColor');
+        const patternColorInput = document.getElementById('patternColor');
+
+        // Val Displays
+        const stripeSpeedVal = document.getElementById('stripeSpeedVal');
+        const textSpeedVal = document.getElementById('textSpeedVal');
+        const borderHeightVal = document.getElementById('borderHeightVal');
+        const stripeDensityVal = document.getElementById('stripeDensityVal');
+        const codeBlock = document.getElementById('codeBlock');
+        const copyCodeBtn = document.getElementById('copyCodeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let animationTime = 0;
+
+        function generateGodotShaderCode() {
+            const stripeSpd = parseFloat(stripeSpeedInput.value).toFixed(2);
+            const textSpd = parseFloat(textSpeedInput.value).toFixed(2);
+            const bHeight = parseFloat(borderHeightInput.value).toFixed(2);
+            const sDensity = parseFloat(stripeDensityInput.value).toFixed(1);
+
+            return `shader_type canvas_item;
+
+// ===== 警戒線雙向移動 Shader (Godot 4.x) =====
+// 上下斜紋往順方向移動，中間文字往反方向移動
+
+uniform vec4 tape_color : source_color = vec4(0.98, 0.80, 0.08, 1.0);   // 警戒線黃色底色
+uniform vec4 stripe_color : source_color = vec4(0.07, 0.07, 0.07, 1.0); // 斜紋與文字顏色
+
+// 移動速度參數
+uniform float stripe_speed : hint_range(-5.0, 5.0) = ${stripeSpd}; // 上下斜紋移動速度 (順方向)
+uniform float text_speed : hint_range(-5.0, 5.0) = ${textSpd};    // 中間文字移動速度 (反方向)
+
+// 結構參數
+uniform float border_height : hint_range(0.05, 0.45) = ${bHeight}; // 上下斜紋區域高度比例
+uniform float stripe_count : hint_range(1.0, 100.0) = ${sDensity}; // 斜紋密集度
+uniform float stripe_slant : hint_range(-2.0, 2.0) = 0.8;      // 斜紋傾斜角度
+
+// 文字貼圖與重複率
+uniform sampler2D text_texture : hint_default_black;
+uniform bool use_text_texture = false; // 是否啟用文字貼圖 (若為 false 則為程序化渲染)
+uniform float text_repeat_x : hint_range(1.0, 20.0) = 4.0;
+
+// 簡易偽隨機雜訊 (增加舊化質感)
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void fragment() {
+    vec2 uv = UV;
+    float time = TIME;
+
+    // 定義最終顏色
+    vec4 final_color = tape_color;
+    
+    // 判定點擊位置是在頂部/底部斜紋區塊，或是中間文字區塊
+    bool is_top_stripe = uv.y < border_height;
+    bool is_bottom_stripe = uv.y > (1.0 - border_height);
+
+    if (is_top_stripe || is_bottom_stripe) {
+        // === 1. 上下斜紋區域：順方向移動 ===
+        vec2 stripe_uv = uv;
+        
+        // 加上順方向位移 (X軸加上 stripe_speed * TIME)
+        stripe_uv.x += time * stripe_speed;
+
+        // 計算斜向條紋 (Diagonal Stripes Pattern)
+        float stripe_pos = (stripe_uv.x + stripe_uv.y * stripe_slant) * stripe_count;
+        float stripe_pattern = step(0.5, fract(stripe_pos));
+
+        // 混合斜紋顏色
+        final_color = mix(tape_color, stripe_color, stripe_pattern);
+
+    } else {
+        // === 2. 中間文字區域：反方向移動 ===
+        vec2 text_uv = uv;
+
+        // 重新歸一化中間區域的 Y 軸 UV (0.0 ~ 1.0)
+        text_uv.y = (uv.y - border_height) / (1.0 - 2.0 * border_height);
+
+        // 加上反方向位移 (X軸加上 text_speed * TIME)
+        text_uv.x += time * text_speed;
+
+        if (use_text_texture) {
+            // 使用外部指定文字 Texture
+            vec2 tex_uv = vec2(fract(text_uv.x * text_repeat_x), text_uv.y);
+            vec4 tex_col = texture(text_texture, tex_uv);
+            final_color = mix(tape_color, stripe_color, tex_col.a);
+        } else {
+            // 程序化預設文字區域 (Procedural Text Fallback)
+            // 可替換為Godot內建Label渲染至SubViewport或指定Texture
+            float text_x = fract(text_uv.x * 4.0);
+            if (text_x > 0.1 && text_x < 0.9 && text_uv.y > 0.25 && text_uv.y < 0.75) {
+                // 程序模擬區塊，建議在 Godot 中開啟 use_text_texture 綁定文字圖檔
+                final_color = mix(tape_color, stripe_color, 0.85);
+            }
+        }
+    }
+
+    // 微弱微粒老舊效果 (Grunge Noise)
+    float noise = rand(uv * 100.0 + floor(time * 10.0)) * 0.08;
+    final_color.rgb = max(vec3(0.0), final_color.rgb - noise);
+
+    COLOR = final_color;
+}`;
+        }
+
+        function renderCanvas() {
+            // Resize canvas resolution
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Tape dimensions & transformation (angle)
+            const tapeH = Math.min(height * 0.45, 90);
+            const centerY = height / 2;
+
+            ctx.save();
+            ctx.translate(width / 2, centerY);
+            ctx.rotate(-0.08); // Slight rotation like real crime scene tape
+
+            const tapeW = width * 1.5;
+            const startX = -tapeW / 2;
+            const startY = -tapeH / 2;
+
+            const stripeSpeed = parseFloat(stripeSpeedInput.value);
+            const textSpeed = parseFloat(textSpeedInput.value);
+            const borderH = parseFloat(borderHeightInput.value);
+            const stripeDensity = parseFloat(stripeDensityInput.value);
+            const bColor = tapeColorInput.value;
+            const pColor = patternColorInput.value;
+            const labelText = tapeTextInput.value.trim() || "CRIME SCENE DO NOT CROSS";
+
+            // 1. Draw Base Tape Color
+            ctx.fillStyle = bColor;
+            ctx.fillRect(startX, startY, tapeW, tapeH);
+
+            const borderPixelH = tapeH * borderH;
+
+            // 2. Draw Top Hazard Stripes (Forward Motion)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(startX, startY, tapeW, borderPixelH);
+            ctx.clip();
+
+            ctx.fillStyle = pColor;
+            const stripeW = tapeH * (1.0 / stripeDensity) * 12;
+            const stripeOffset = (animationTime * stripeSpeed * 120) % (stripeW * 2);
+
+            for (let x = startX - stripeW * 4; x < startX + tapeW + stripeW * 4; x += stripeW * 2) {
+                ctx.beginPath();
+                ctx.moveTo(x + stripeOffset, startY);
+                ctx.lineTo(x + stripeW + stripeOffset, startY);
+                ctx.lineTo(x + stripeW - borderPixelH * 0.8 + stripeOffset, startY + borderPixelH);
+                ctx.lineTo(x - borderPixelH * 0.8 + stripeOffset, startY + borderPixelH);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 3. Draw Bottom Hazard Stripes (Forward Motion - Same as top)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(startX, startY + tapeH - borderPixelH, tapeW, borderPixelH);
+            ctx.clip();
+
+            ctx.fillStyle = pColor;
+            for (let x = startX - stripeW * 4; x < startX + tapeW + stripeW * 4; x += stripeW * 2) {
+                ctx.beginPath();
+                ctx.moveTo(x + stripeOffset, startY + tapeH - borderPixelH);
+                ctx.lineTo(x + stripeW + stripeOffset, startY + tapeH - borderPixelH);
+                ctx.lineTo(x + stripeW - borderPixelH * 0.8 + stripeOffset, startY + tapeH);
+                ctx.lineTo(x - borderPixelH * 0.8 + stripeOffset, startY + tapeH);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 4. Draw Middle Text (Reverse Motion)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(startX, startY + borderPixelH, tapeW, tapeH - 2 * borderPixelH);
+            ctx.clip();
+
+            ctx.fillStyle = pColor;
+            ctx.font = `900 ${Math.floor(tapeH * 0.42)}px Impact, sans-serif`;
+            ctx.textBaseline = 'middle';
+
+            const textMetrics = ctx.measureText(labelText + "   ★   ");
+            const textBlockW = Math.max(textMetrics.width, 200);
+
+            const textOffset = (animationTime * textSpeed * 120) % textBlockW;
+            const middleY = startY + tapeH / 2;
+
+            for (let x = startX - textBlockW * 2; x < startX + tapeW + textBlockW * 2; x += textBlockW) {
+                ctx.fillText(labelText + "   ★   ", x + textOffset, middleY);
+            }
+            ctx.restore();
+
+            // 5. Grunge Dirt Overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            for (let i = 0; i < 40; i++) {
+                const rx = startX + Math.random() * tapeW;
+                const ry = startY + Math.random() * tapeH;
+                const rs = Math.random() * 3 + 1;
+                ctx.fillRect(rx, ry, rs, rs);
+            }
+
+            ctx.restore();
+        }
+
+        function animate() {
+            animationTime += 0.016;
+            renderCanvas();
+            requestAnimationFrame(animate);
+        }
+
+        function updateUI() {
+            stripeSpeedVal.textContent = parseFloat(stripeSpeedInput.value).toFixed(2);
+            textSpeedVal.textContent = parseFloat(textSpeedInput.value).toFixed(2);
+            borderHeightVal.textContent = parseFloat(borderHeightInput.value).toFixed(2);
+            stripeDensityVal.textContent = parseFloat(stripeDensityInput.value).toFixed(1);
+
+            codeBlock.textContent = generateGodotShaderCode();
+        }
+
+        // Event Listeners
+        [stripeSpeedInput, textSpeedInput, borderHeightInput, stripeDensityInput, tapeColorInput, patternColorInput].forEach(elem => {
+            elem.addEventListener('input', updateUI);
+        });
+        tapeTextInput.addEventListener('input', updateUI);
+
+        resetBtn.addEventListener('click', () => {
+            stripeSpeedInput.value = 0.5;
+            textSpeedInput.value = -0.5;
+            borderHeightInput.value = 0.22;
+            stripeDensityInput.value = 16.0;
+            tapeColorInput.value = "#facc15";
+            patternColorInput.value = "#111111";
+            tapeTextInput.value = "CRIME SCENE DO NOT CROSS";
+            updateUI();
+        });
+
+        copyCodeBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+                const originalText = copyCodeBtn.innerHTML;
+                copyCodeBtn.innerHTML = `✓ 已複製！`;
+                copyCodeBtn.classList.replace('bg-yellow-500', 'bg-green-500');
+                copyCodeBtn.classList.replace('text-black', 'text-white');
+                setTimeout(() => {
+                    copyCodeBtn.innerHTML = originalText;
+                    copyCodeBtn.classList.replace('bg-green-500', 'bg-yellow-500');
+                    copyCodeBtn.classList.replace('text-white', 'text-black');
+                }, 2000);
+            });
+        });
+
+        // Initialize
+        updateUI();
+        animate();
+    </script>
+</body>
+</html>
