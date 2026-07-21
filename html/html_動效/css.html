@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 视觉特效与前端交互案例全景展台</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b',
+                        },
+                        darkbg: '#0f172a',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- 1. CSS 自定义属性与渐变旋转边框 (@property) --- */
+        @property --border-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+
+        .gradient-rotate-border {
+            background: linear-gradient(#1e293b, #0f172a) padding-box,
+                        conic-gradient(from var(--border-angle), #ff007f, #7928ca, #00dfd8, #ff007f) border-box;
+            border: 3px solid transparent;
+            animation: spinBorder 4s linear infinite;
+        }
+
+        .gradient-rotate-border:hover {
+            animation-play-state: paused;
+            box-shadow: 0 0 25px rgba(0, 223, 216, 0.4);
+        }
+
+        @keyframes spinBorder {
+            0% { --border-angle: 0deg; }
+            100% { --border-angle: 360deg; }
+        }
+
+        /* --- 2. 玻璃反光光效导航栏 (Glassmorphism & Reflect Shine) --- */
+        .glass-nav {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .reflect-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reflect-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -150%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(60deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: rotate(30deg);
+            transition: all 0.7s ease;
+        }
+
+        .reflect-btn:hover::after {
+            left: 200%;
+        }
+
+        /* --- 3. Clip-Path 擦除 Wipe 动画 --- */
+        @keyframes clipWipeLoop {
+            0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }
+            50% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+            100% { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); }
+        }
+
+        .animated-wipe-text {
+            display: inline-block;
+            position: relative;
+        }
+
+        .animated-wipe-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: clipWipeLoop 3.5s ease-in-out infinite;
+        }
+
+        /* --- 4. 百叶窗切片 Hover 特效 (Louvre / Shutter Effect) --- */
+        .shutter-box {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shutter-slice {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(59, 130, 246, 0.25);
+            transform: scaleY(0);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: top;
+        }
+
+        .shutter-box:hover .shutter-slice {
+            transform: scaleY(1);
+        }
+
+        /* 给各切片加错开的延迟 */
+        .shutter-slice:nth-child(1) { left: 0%; width: 20%; transition-delay: 0.0s; }
+        .shutter-slice:nth-child(2) { left: 20%; width: 20%; transition-delay: 0.08s; }
+        .shutter-slice:nth-child(3) { left: 40%; width: 20%; transition-delay: 0.16s; }
+        .shutter-slice:nth-child(4) { left: 60%; width: 20%; transition-delay: 0.24s; }
+        .shutter-slice:nth-child(5) { left: 80%; width: 20%; transition-delay: 0.32s; }
+
+        /* --- 5. 堆叠卡片轮播图样式 (Stacked Carousel) --- */
+        .stacked-card {
+            position: absolute;
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- 6. 3D 视差透视容器 --- */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+
+        /* 隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white min-h-screen flex flex-col">
+
+    <!-- 1. 玻璃反光导航栏 -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid font-bold text-white text-xl">CSS</i>
+                </div>
+                <span class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300 tracking-tight">
+                    CSS 动效全景展台
+                </span>
+            </div>
+
+            <!-- 导航项 (附带玻璃反光 hover 效果) -->
+            <nav class="hidden md:flex items-center space-x-2">
+                <a href="#parallax-hero" class="reflect-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">3D视差首屏</a>
+                <a href="#demos-grid" class="reflect-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">组件特效</a>
+                <a href="#forest-parallax" class="reflect-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">魔法森林视差</a>
+                <a href="#code-inspector" class="reflect-btn px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition">源码实验室</a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <a href="#code-inspector" class="reflect-btn bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl shadow-lg shadow-indigo-600/30 text-sm flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-code"></i>
+                    <span>速查手册</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow pt-20">
+        <!-- 2. 3D 效果视差网页 Banner (张家界旅游主题概念) -->
+        <section id="parallax-hero" class="relative h-[85vh] min-h-[600px] overflow-hidden flex items-center justify-center bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 border-b border-slate-800">
+            <!-- 视差多图层容器 -->
+            <div id="parallax-container" class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <!-- 背景深山图层 (移动慢) -->
+                <div id="layer-bg" class="absolute inset-0 bg-cover bg-center transition-transform duration-100 ease-out scale-110 opacity-40" 
+                     style="background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80');"></div>
+                
+                <!-- 中景云雾/张家界奇峰图层 -->
+                <div id="layer-mid" class="absolute inset-0 bg-cover bg-center transition-transform duration-100 ease-out scale-105 opacity-60 mix-blend-screen"
+                     style="background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80');"></div>
+
+                <!-- 巨型 3D 立体文字 -->
+                <div id="layer-text" class="relative z-10 text-center px-4 transition-transform duration-100 ease-out">
+                    <span class="inline-block text-xs uppercase tracking-[0.4em] text-indigo-400 font-semibold mb-3 px-3 py-1 bg-indigo-950/80 border border-indigo-500/30 rounded-full">
+                        3D Parallax Travel Experience
+                    </span>
+                    <h1 class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-wider uppercase drop-shadow-2xl">
+                        ZHANGJIAJIE
+                    </h1>
+                    <p class="text-lg sm:text-2xl font-light text-slate-300 mt-2 tracking-widest">
+                        中 国 · 张 家 界 奇 观 视 差 探 索
+                    </p>
+                </div>
+
+                <!-- 前景图层 (移动快) -->
+                <div id="layer-fore" class="absolute inset-0 pointer-events-none transition-transform duration-75 ease-out opacity-25 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-slate-950/40 to-slate-950"></div>
+            </div>
+
+            <!-- 鼠标悬停交互提示 -->
+            <div class="absolute bottom-8 z-20 flex flex-col items-center animate-bounce text-slate-400 text-sm">
+                <span class="mb-2 text-xs tracking-widest text-slate-400">移动鼠标体验 3D 深度视差</span>
+                <i class="fa-solid fa-chevron-down text-indigo-400"></i>
+            </div>
+        </section>
+
+        <!-- 3. 特效与案例核心展示区 (Grid Demos) -->
+        <section id="demos-grid" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+                    CSS3 & JS 核心动效交互组件
+                </h2>
+                <p class="text-slate-400 mt-3 max-w-2xl mx-auto text-sm sm:text-base">
+                    根据教程总结精心重构的 6 大主流视觉特效实机演示，支持实时交互与参数体验。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- DEMO 1: 堆叠式自动播放图片轮播图 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs rounded-lg font-mono">01. Stacked Carousel</span>
+                            <div class="flex space-x-2 text-xs text-slate-400">
+                                <button id="carousel-prev" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition"><i class="fa-solid fa-chevron-left"></i></button>
+                                <button id="carousel-next" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">堆叠式 3D 卡片自动轮播</h3>
+                        <p class="text-xs text-slate-400 mb-6">采用层级 z-index 与 translate3d 缩放比例重叠卡片，支持自动定时与手动切换。</p>
+                    </div>
+
+                    <!-- 轮播视窗 -->
+                    <div class="relative h-64 w-full flex items-center justify-center overflow-hidden rounded-xl bg-slate-950/60 border border-slate-800/80">
+                        <div id="stacked-carousel-container" class="relative w-48 h-56">
+                            <!-- 动态加载的堆叠卡片组 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DEMO 2: 渐变旋转边框 (Gradient Rotating Border) -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 bg-pink-500/10 text-pink-400 border border-pink-500/20 text-xs rounded-lg font-mono">02. Rotating Border</span>
+                            <span class="text-xs text-slate-500"><i class="fa-solid fa-fire text-amber-500 mr-1"></i>CSS @property</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">渐变流光旋转发光边框</h3>
+                        <p class="text-xs text-slate-400 mb-6">利用 CSS 自定义属性与 <code>conic-gradient</code> 锥形渐变打造科技感流光外发光。</p>
+                    </div>
+
+                    <!-- 渐变边框卡片展示 -->
+                    <div class="gradient-rotate-border rounded-2xl p-6 text-center cursor-pointer transition">
+                        <div class="w-12 h-12 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                        </div>
+                        <h4 class="text-base font-bold text-white">Animate Borders</h4>
+                        <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                            Hover 悬停可暂停旋转动画，呈现高亮 Neon 发光扩散效果。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- DEMO 3: Hover 百叶窗与系统图标切片效果 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs rounded-lg font-mono">03. Shutter Louvre</span>
+                            <span class="text-xs text-slate-400">多层延迟 Transition</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">百叶窗 Hover 切片动画</h3>
+                        <p class="text-xs text-slate-400 mb-6">鼠标悬停时，各垂直切片以不同延迟时间展开，呈现优雅百叶窗掩膜。</p>
+                    </div>
+
+                    <!-- 图标按钮组 (对应 PDF 第5页 系统图标组) -->
+                    <div class="grid grid-cols-5 gap-2">
+                        <!-- Apple -->
+                        <div class="shutter-box bg-slate-950 border border-slate-800 rounded-xl p-3 text-center cursor-pointer hover:border-indigo-500 transition">
+                            <div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div>
+                            <i class="fa-brands fa-apple text-xl text-slate-200"></i>
+                        </div>
+                        <!-- Windows -->
+                        <div class="shutter-box bg-slate-950 border border-slate-800 rounded-xl p-3 text-center cursor-pointer hover:border-cyan-500 transition">
+                            <div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div>
+                            <i class="fa-brands fa-windows text-xl text-cyan-400"></i>
+                        </div>
+                        <!-- Ubuntu -->
+                        <div class="shutter-box bg-slate-950 border border-slate-800 rounded-xl p-3 text-center cursor-pointer hover:border-orange-500 transition">
+                            <div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div>
+                            <i class="fa-brands fa-ubuntu text-xl text-orange-500"></i>
+                        </div>
+                        <!-- Linux / SUSE -->
+                        <div class="shutter-box bg-slate-950 border border-slate-800 rounded-xl p-3 text-center cursor-pointer hover:border-emerald-500 transition">
+                            <div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div>
+                            <i class="fa-brands fa-suse text-xl text-emerald-400"></i>
+                        </div>
+                        <!-- RedHat -->
+                        <div class="shutter-box bg-slate-950 border border-slate-800 rounded-xl p-3 text-center cursor-pointer hover:border-red-500 transition">
+                            <div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div><div class="shutter-slice"></div>
+                            <i class="fa-brands fa-redhat text-xl text-red-500"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DEMO 4: Clip-Path 独特裁切与擦除动画 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs rounded-lg font-mono">04. Clip-Path Shapes</span>
+                            <button id="toggle-clip-shape" class="text-xs text-purple-400 hover:underline">切换裁切形状</button>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Clip-Path 多边形与擦除</h3>
+                        <p class="text-xs text-slate-400 mb-6">利用 <code>clip-path: polygon()</code> 对文本与卡片进行非规则图形裁切与 Wipe 动画。</p>
+                    </div>
+
+                    <div class="bg-slate-950 rounded-xl p-6 border border-slate-800 text-center flex flex-col items-center justify-center min-h-[140px]">
+                        <div id="clip-demo-box" class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg text-white font-black text-xl tracking-wider transition-all duration-500">
+                            CLIP SHAPE
+                        </div>
+                        <div class="mt-4 text-xs font-mono text-slate-400">
+                            Animated <span class="animated-wipe-text font-bold text-white">Wipe Effect<span class="animated-wipe-overlay">Wipe Effect</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DEMO 5: 响应式跑车网站展台卡片 (RAC / Let's Race) -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs rounded-lg font-mono">05. Car Landing Card</span>
+                            <span class="text-xs text-slate-400">暗黑科技风格</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">响应式超跑首页预览</h3>
+                        <p class="text-xs text-slate-400 mb-4">包含侧边栏菜单、大图对比排版与 Hover 悬浮缩放。</p>
+                    </div>
+
+                    <!-- 汽车卡片模拟界面 (对应 PDF 第3页) -->
+                    <div class="relative rounded-xl overflow-hidden border border-slate-800 bg-amber-500 group cursor-pointer">
+                        <div class="p-4 bg-gradient-to-r from-amber-500 via-amber-500/90 to-slate-950 flex justify-between items-center text-slate-950">
+                            <div>
+                                <p class="text-xs font-serif italic">Let's</p>
+                                <h4 class="text-2xl font-black tracking-tighter">RACE</h4>
+                            </div>
+                            <div class="text-right text-xs text-white bg-slate-900/80 px-2.5 py-1 rounded-md border border-amber-500/30">
+                                超级跑车
+                            </div>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=800&q=80" 
+                             alt="Luxury Race Car" 
+                             class="w-full h-36 object-cover transform group-hover:scale-105 transition duration-500">
+                    </div>
+                </div>
+
+                <!-- DEMO 6: Apple AirPods Max 极简动效产品卡片 -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-700 transition shadow-xl">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="px-2.5 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs rounded-lg font-mono">06. Apple AirPods Max</span>
+                            <div class="flex space-x-1" id="airpods-color-picker">
+                                <button data-color="spacegray" class="w-3.5 h-3.5 rounded-full bg-slate-600 ring-2 ring-white/20 hover:scale-125 transition"></button>
+                                <button data-color="skyblue" class="w-3.5 h-3.5 rounded-full bg-sky-400 ring-2 ring-white/20 hover:scale-125 transition"></button>
+                                <button data-color="pink" class="w-3.5 h-3.5 rounded-full bg-pink-400 ring-2 ring-white/20 hover:scale-125 transition"></button>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">AirPods Max 极简产品展示</h3>
+                        <p class="text-xs text-slate-400 mb-4">结合渐变发光底色与流畅配色切换。</p>
+                    </div>
+
+                    <!-- 耳机产品可视化 -->
+                    <div id="airpods-bg" class="relative rounded-xl p-6 bg-slate-950 border border-slate-800 flex flex-col items-center justify-center transition-colors duration-500">
+                        <div class="w-20 h-20 rounded-full bg-indigo-500/20 blur-xl absolute"></div>
+                        <i id="airpods-icon" class="fa-solid fa-headphones-simple text-6xl text-slate-200 relative z-10 transform hover:rotate-12 transition duration-300"></i>
+                        <span class="text-xs font-semibold text-slate-300 mt-3 relative z-10">High-Fidelity Audio</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 4. 魔法森林 - GSAP 风格垂直视差滚动体验区 -->
+        <section id="forest-parallax" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="bg-gradient-to-br from-slate-900 to-emerald-950 rounded-3xl border border-emerald-900/40 p-8 shadow-2xl overflow-hidden relative">
+                <div class="max-w-xl mb-8">
+                    <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs rounded-full font-mono">
+                        GSAP ScrollTrigger Simulation
+                    </span>
+                    <h2 class="text-3xl font-bold text-white mt-3">“魔法森林” 垂直视差沉浸体验区</h2>
+                    <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+                        在下方控制框内滚动，体验由 GSAP / ScrollTrigger 驱动的多图层分层位移与景深缩放效果。
+                    </p>
+                </div>
+
+                <!-- 视差模拟内部滚动视窗 -->
+                <div id="forest-scroll-viewport" class="h-96 w-full rounded-2xl bg-slate-950 overflow-y-scroll border border-slate-800 relative no-scrollbar">
+                    <!-- 视差图层容器 (高度设置很大以供滚动) -->
+                    <div class="h-[800px] relative w-full">
+                        <!-- 背景树林 -->
+                        <div id="f-bg" class="sticky top-0 h-96 w-full bg-cover bg-center opacity-30 transition-transform" 
+                             style="background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80');"></div>
+                        
+                        <!-- 树林中层文案 -->
+                        <div class="absolute top-48 left-0 right-0 text-center z-10 px-4">
+                            <h3 class="text-4xl font-black text-emerald-400 tracking-wider drop-shadow-md">THE MAGIC FOREST</h3>
+                            <p class="text-xs text-slate-300 mt-2">垂直深度驱动 · 渐进式图层展开</p>
+                        </div>
+
+                        <!-- 滚动深度装饰标尺 -->
+                        <div class="absolute top-[500px] left-1/2 -translate-x-1/2 text-center text-slate-400 text-sm z-20">
+                            <div class="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center mx-auto mb-2 animate-pulse">
+                                <i class="fa-solid fa-tree text-emerald-400"></i>
+                            </div>
+                            <span>已深入森林核心 1000m</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. 源码实验室与关键技术速查中心 (Code Inspector) -->
+        <section id="code-inspector" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-800">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white">CSS & JS 核心代码实现解析</h2>
+                    <p class="text-slate-400 text-sm mt-1">选择下方特效模块，直接预览并一键复制源码。</p>
+                </div>
+                <!-- 切换标签组 -->
+                <div class="flex flex-wrap gap-2" id="code-tabs">
+                    <button data-tab="border" class="tab-btn active px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white transition">渐变旋转边框</button>
+                    <button data-tab="carousel" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">堆叠轮播图</button>
+                    <button data-tab="shutter" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">百叶窗Hover</button>
+                    <button data-tab="clippath" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Clip-Path 裁切</button>
+                    <button data-tab="glass" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition">毛玻璃反光</button>
+                </div>
+            </div>
+
+            <!-- 代码编辑与展示框 -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                <div class="bg-slate-950 px-6 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                        <span id="code-filename" class="text-xs font-mono text-slate-400 ml-2">border-gradient.css</span>
+                    </div>
+                    <button id="copy-code-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>复制源码</span>
+                    </button>
+                </div>
+                <pre class="p-6 text-sm font-mono overflow-x-auto text-indigo-300 bg-slate-950/70 leading-relaxed"><code id="code-block">/* CSS 自定义属性 @property 实现渐变边框旋转 */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.gradient-rotate-border {
+  background: linear-gradient(#1e293b, #0f172a) padding-box,
+              conic-gradient(from var(--border-angle), #ff007f, #7928ca, #00dfd8, #ff007f) border-box;
+  border: 3px solid transparent;
+  animation: spinBorder 4s linear infinite;
+}
+
+@keyframes spinBorder {
+  0% { --border-angle: 0deg; }
+  100% { --border-angle: 360deg; }
+}</code></pre>
+            </div>
+        </section>
+    </main>
+
+    <!-- 全局 Toast 提示组件 -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-indigo-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-lg"></i>
+        <span id="toast-message" class="text-sm font-medium">代码已成功复制至剪贴板！</span>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-8 text-center text-xs text-slate-500">
+        <p>CSS 视觉特效与前端动效案例总结 &copy; 2026 前端案例研习所</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            /* --- 1. 3D 视差 Hero 屏鼠标跟随逻辑 --- */
+            const hero = document.getElementById('parallax-hero');
+            const layerBg = document.getElementById('layer-bg');
+            const layerMid = document.getElementById('layer-mid');
+            const layerText = document.getElementById('layer-text');
+
+            if (hero) {
+                hero.addEventListener('mousemove', (e) => {
+                    const rect = hero.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+
+                    layerBg.style.transform = `scale(1.1) translate(${x * 0.015}px, ${y * 0.015}px)`;
+                    layerMid.style.transform = `scale(1.05) translate(${x * 0.03}px, ${y * 0.03}px)`;
+                    layerText.style.transform = `translate(${x * 0.05}px, ${y * 0.05}px)`;
+                });
+
+                hero.addEventListener('mouseleave', () => {
+                    layerBg.style.transform = 'scale(1.1) translate(0px, 0px)';
+                    layerMid.style.transform = 'scale(1.05) translate(0px, 0px)';
+                    layerText.style.transform = 'translate(0px, 0px)';
+                });
+            }
+
+            /* --- 2. 堆叠卡片轮播图 (Stacked Card Carousel) --- */
+            const carouselContainer = document.getElementById('stacked-carousel-container');
+            const cardData = [
+                { img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=400&q=80', title: '动漫潮流风' },
+                { img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=400&q=80', title: '赛博朋克' },
+                { img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80', title: '复古插画' },
+                { img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80', title: '抽象几何' }
+            ];
+
+            let currentIndex = 0;
+
+            function renderCarousel() {
+                if (!carouselContainer) return;
+                carouselContainer.innerHTML = '';
+
+                cardData.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'stacked-card w-48 h-56 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 cursor-pointer';
+                    
+                    // 计算相对当前索引的位置 Offset
+                    const total = cardData.length;
+                    const offset = (index - currentIndex + total) % total;
+
+                    if (offset === 0) {
+                        // 最前面的层级
+                        card.style.transform = 'translate3d(0, 0, 0) scale(1)';
+                        card.style.zIndex = '30';
+                        card.style.opacity = '1';
+                    } else if (offset === 1) {
+                        // 右侧第 1 张
+                        card.style.transform = 'translate3d(30px, 0, -50px) scale(0.88)';
+                        card.style.zIndex = '20';
+                        card.style.opacity = '0.7';
+                    } else if (offset === total - 1) {
+                        // 左侧第 1 张
+                        card.style.transform = 'translate3d(-30px, 0, -50px) scale(0.88)';
+                        card.style.zIndex = '20';
+                        card.style.opacity = '0.7';
+                    } else {
+                        // 隐藏在后方的卡片
+                        card.style.transform = 'translate3d(0, 0, -100px) scale(0.7)';
+                        card.style.zIndex = '10';
+                        card.style.opacity = '0';
+                    }
+
+                    card.innerHTML = `
+                        <img src="${item.img}" alt="${item.title}" class="w-full h-full object-cover">
+                        <div class="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent">
+                            <span class="text-xs font-bold text-white">${item.title}</span>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        currentIndex = index;
+                        renderCarousel();
+                    });
+
+                    carouselContainer.appendChild(card);
+                });
+            }
+
+            renderCarousel();
+
+            // 自动播放与控制按钮
+            let timer = setInterval(() => {
+                currentIndex = (currentIndex + 1) % cardData.length;
+                renderCarousel();
+            }, 3000);
+
+            document.getElementById('carousel-next')?.addEventListener('click', () => {
+                currentIndex = (currentIndex + 1) % cardData.length;
+                renderCarousel();
+            });
+
+            document.getElementById('carousel-prev')?.addEventListener('click', () => {
+                currentIndex = (currentIndex - 1 + cardData.length) % cardData.length;
+                renderCarousel();
+            });
+
+            /* --- 3. Clip-Path 形状切换 --- */
+            const clipDemoBox = document.getElementById('clip-demo-box');
+            const shapes = [
+                'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
+                'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
+                'circle(50% at 50% 50%)'
+            ];
+            let shapeIdx = 0;
+
+            document.getElementById('toggle-clip-shape')?.addEventListener('click', () => {
+                shapeIdx = (shapeIdx + 1) % shapes.length;
+                if (clipDemoBox) {
+                    clipDemoBox.style.clipPath = shapes[shapeIdx];
+                }
+            });
+
+            /* --- 4. AirPods Max 配色切换 --- */
+            const airpodsBg = document.getElementById('airpods-bg');
+            const airpodsIcon = document.getElementById('airpods-icon');
+            const colorPicker = document.getElementById('airpods-color-picker');
+
+            colorPicker?.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const color = btn.dataset.color;
+                if (color === 'spacegray') {
+                    airpodsBg.className = 'relative rounded-xl p-6 bg-slate-950 border border-slate-800 flex flex-col items-center justify-center transition-colors duration-500';
+                    airpodsIcon.className = 'fa-solid fa-headphones-simple text-6xl text-slate-200 relative z-10 transform hover:rotate-12 transition duration-300';
+                } else if (color === 'skyblue') {
+                    airpodsBg.className = 'relative rounded-xl p-6 bg-sky-950/80 border border-sky-800/50 flex flex-col items-center justify-center transition-colors duration-500';
+                    airpodsIcon.className = 'fa-solid fa-headphones-simple text-6xl text-sky-400 relative z-10 transform hover:rotate-12 transition duration-300';
+                } else if (color === 'pink') {
+                    airpodsBg.className = 'relative rounded-xl p-6 bg-pink-950/80 border border-pink-800/50 flex flex-col items-center justify-center transition-colors duration-500';
+                    airpodsIcon.className = 'fa-solid fa-headphones-simple text-6xl text-pink-400 relative z-10 transform hover:rotate-12 transition duration-300';
+                }
+            });
+
+            /* --- 5. 魔法森林垂直视差滚动模拟 --- */
+            const forestViewport = document.getElementById('forest-scroll-viewport');
+            const fBg = document.getElementById('f-bg');
+
+            if (forestViewport && fBg) {
+                forestViewport.addEventListener('scroll', () => {
+                    const st = forestViewport.scrollTop;
+                    fBg.style.transform = `scale(${1 + st * 0.001}) translateY(${st * 0.3}px)`;
+                });
+            }
+
+            /* --- 6. 代码实验室 Tab 切换与复制代码 --- */
+            const snippets = {
+                border: {
+                    filename: 'border-gradient.css',
+                    code: `/* CSS 自定义属性 @property 实现渐变边框旋转 */\n@property --border-angle {\n  syntax: '<angle>';\n  initial-value: 0deg;\n  inherits: false;\n}\n\n.gradient-rotate-border {\n  background: linear-gradient(#1e293b, #0f172a) padding-box,\n              conic-gradient(from var(--border-angle), #ff007f, #7928ca, #00dfd8, #ff007f) border-box;\n  border: 3px solid transparent;\n  animation: spinBorder 4s linear infinite;\n}\n\n@keyframes spinBorder {\n  0% { --border-angle: 0deg; }\n  100% { --border-angle: 360deg; }\n}`
+                },
+                carousel: {
+                    filename: 'stacked-carousel.js',
+                    code: `// 堆叠卡片缩放与 Transform 位移算法\nfunction updateCardTransform(offset) {\n  if (offset === 0) {\n    return 'translate3d(0, 0, 0) scale(1)'; // 正中焦点卡片\n  } else if (offset === 1) {\n    return 'translate3d(30px, 0, -50px) scale(0.88)'; // 右侧层级\n  } else if (offset === -1) {\n    return 'translate3d(-30px, 0, -50px) scale(0.88)'; // 左侧层级\n  }\n}`
+                },
+                shutter: {
+                    filename: 'shutter-louvre.css',
+                    code: `/* 百叶窗多图层分级延迟 Transition */\n.shutter-slice {\n  position: absolute;\n  top: 0; height: 100%; width: 20%;\n  background: rgba(59, 130, 246, 0.3);\n  transform: scaleY(0);\n  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.shutter-box:hover .shutter-slice { transform: scaleY(1); }\n.shutter-slice:nth-child(1) { left: 0%;  transition-delay: 0.0s; }\n.shutter-slice:nth-child(2) { left: 20%; transition-delay: 0.08s; }\n.shutter-slice:nth-child(3) { left: 40%; transition-delay: 0.16s; }`
+                },
+                clippath: {
+                    filename: 'clip-path-wipe.css',
+                    code: `/* Clip-Path 多边形裁切与文本擦除 Wipe */\n@keyframes clipWipeLoop {\n  0% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }\n  50% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }\n  100% { clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%); }\n}`
+                },
+                glass: {
+                    filename: 'glass-shine.css',
+                    code: `/* 玻璃毛玻璃 (Glassmorphism) 与扫光悬停 */\n.glass-nav {\n  background: rgba(15, 23, 42, 0.75);\n  backdrop-filter: blur(16px);\n  border-bottom: 1px solid rgba(255, 255, 255, 0.1);\n}\n.reflect-btn::after {\n  content: ''; position: absolute;\n  left: -150%; width: 50%; height: 200%;\n  background: linear-gradient(60deg, transparent, rgba(255,255,255,0.4), transparent);\n  transition: all 0.7s;\n}\n.reflect-btn:hover::after { left: 200%; }`
+                }
+            };
+
+            const codeTabs = document.getElementById('code-tabs');
+            const codeFilename = document.getElementById('code-filename');
+            const codeBlock = document.getElementById('code-block');
+
+            codeTabs?.addEventListener('click', (e) => {
+                const btn = e.target.closest('.tab-btn');
+                if (!btn) return;
+
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white', 'active');
+                    b.classList.add('bg-slate-800', 'text-slate-300');
+                });
+
+                btn.classList.remove('bg-slate-800', 'text-slate-300');
+                btn.classList.add('bg-indigo-600', 'text-white', 'active');
+
+                const tabKey = btn.dataset.tab;
+                if (snippets[tabKey]) {
+                    codeFilename.textContent = snippets[tabKey].filename;
+                    codeBlock.textContent = snippets[tabKey].code;
+                }
+            });
+
+            // 复制代码到剪贴板功能
+            const copyBtn = document.getElementById('copy-code-btn');
+            const toast = document.getElementById('toast');
+
+            copyBtn?.addEventListener('click', () => {
+                const codeText = codeBlock.textContent;
+                
+                // 执行标准兼容性复制指令
+                const textArea = document.createElement('textarea');
+                textArea.value = codeText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('代码已成功复制至剪贴板！');
+                } catch (err) {
+                    showToast('复制失败，请手动选择代码');
+                }
+                document.body.removeChild(textArea);
+            });
+
+            function showToast(msg) {
+                if (!toast) return;
+                document.getElementById('toast-message').textContent = msg;
+                toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                }, 2500);
+            }
+        });
+    </script>
+</body>
+</html>
