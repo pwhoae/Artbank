@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 文字按形狀軌跡移動 Shader 生成器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#21252b',
+                            panel: '#282c34',
+                            accent: '#41b883',
+                            highlight: '#3a3f4b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Awesome for Code Copy Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e2227;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3e4451;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+        .code-block {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        }
+        .glass-panel {
+            background: rgba(40, 44, 52, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-[#181a1f] text-gray-200 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Header Bar -->
+    <header class="border-b border-gray-800 bg-[#21252b] px-6 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-godot-blue flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-godot-blue/30">
+                <i class="fa-solid fa-shapes"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-wide flex items-center gap-2">
+                    Godot 4 文字形狀軌跡 Shader
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-godot-blue/20 text-godot-blue border border-godot-blue/30">CanvasItem</span>
+                </h1>
+                <p class="text-xs text-gray-400">即時預覽、動態 shape 模板與動態文字軌跡移動 Shader 生成工具</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button id="toggle-code-modal" class="bg-godot-blue hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-md">
+                <i class="fa-solid fa-code"></i>
+                查看 / 複製 Godot Shader 程式碼
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1700px] w-full mx-auto">
+        
+        <!-- Left Sidebar: Shader Controls & Shape Templates -->
+        <div class="lg:col-span-4 flex flex-col space-y-6">
+            
+            <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-700/60 pb-3">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-[#478cbf] fa-sliders text-godot-blue"></i> 核心參數設定
+                    </h2>
+                    <span class="text-xs text-gray-400">Godot 4.x 適用</span>
+                </div>
+
+                <!-- Text Input -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-[#478cbf] fa-font text-godot-blue mr-1"></i> 顯示文字 (Text String)
+                    </label>
+                    <input type="text" id="text-input" value="GODOT 4 • SHAPE TRAJECTORY TEXT SHADER • " 
+                        class="w-full bg-[#1e2227] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-godot-blue transition">
+                </div>
+
+                <!-- Shape Template Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-draw-polygon text-godot-blue mr-1"></i> 形狀模板 (Shape Template)
+                    </label>
+                    <div class="grid grid-cols-3 gap-2" id="shape-selector">
+                        <button data-shape="heart" class="shape-btn active bg-godot-blue/20 border-godot-blue border text-white p-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1.5 transition hover:bg-godot-blue/30">
+                            <i class="fa-solid fa-heart text-pink-500 text-lg"></i>
+                            愛心 (Heart)
+                        </button>
+                        <button data-shape="square" class="shape-btn bg-[#1e2227] border-gray-700 border text-gray-300 p-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1.5 transition hover:border-gray-500">
+                            <i class="fa-solid fa-square text-sky-400 text-lg"></i>
+                            正方形 (Square)
+                        </button>
+                        <button data-shape="circle" class="shape-btn bg-[#1e2227] border-gray-700 border text-gray-300 p-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1.5 transition hover:border-gray-500">
+                            <i class="fa-solid fa-circle text-amber-400 text-lg"></i>
+                            圓形 (Circle)
+                        </button>
+                        <button data-shape="star" class="shape-btn bg-[#1e2227] border-gray-700 border text-gray-300 p-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1.5 transition hover:border-gray-500">
+                            <i class="fa-solid fa-star text-yellow-400 text-lg"></i>
+                            五角星 (Star)
+                        </button>
+                        <button data-shape="infinity" class="shape-btn bg-[#1e2227] border-gray-700 border text-gray-300 p-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1.5 transition hover:border-gray-500">
+                            <i class="fa-solid fa-infinity text-purple-400 text-lg"></i>
+                            無限 (Infinity)
+                        </button>
+                        <button data-shape="wave" class="shape-btn bg-[#1e2227] border-gray-700 border text-gray-300 p-2.5 rounded-xl text-xs font-medium flex flex-col items-center justify-center gap-1.5 transition hover:border-gray-500">
+                            <i class="fa-solid fa-water text-emerald-400 text-lg"></i>
+                            波浪環 (Wave)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Speed & Direction -->
+                <div class="space-y-4 pt-2">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300">移動速度 (Speed)</span>
+                            <span id="speed-val" class="text-godot-blue font-mono font-bold">0.6</span>
+                        </div>
+                        <input type="range" id="speed-slider" min="-3.0" max="3.0" step="0.1" value="0.6" class="w-full accent-godot-blue cursor-pointer">
+                    </div>
+
+                    <!-- Shape Size -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300">形狀尺寸 (Shape Scale)</span>
+                            <span id="scale-val" class="text-godot-blue font-mono font-bold">0.32</span>
+                        </div>
+                        <input type="range" id="scale-slider" min="0.1" max="0.45" step="0.01" value="0.32" class="w-full accent-godot-blue cursor-pointer">
+                    </div>
+
+                    <!-- Text Repeat Count -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300">文字重複次數 (Repeat Count)</span>
+                            <span id="repeat-val" class="text-godot-blue font-mono font-bold">2.0</span>
+                        </div>
+                        <input type="range" id="repeat-slider" min="1.0" max="6.0" step="0.5" value="2.0" class="w-full accent-godot-blue cursor-pointer">
+                    </div>
+
+                    <!-- Text Thickness / Scale -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-300">文字字體大小 (Font Size)</span>
+                            <span id="fontsize-val" class="text-godot-blue font-mono font-bold">24px</span>
+                        </div>
+                        <input type="range" id="fontsize-slider" min="14" max="42" step="1" value="24" class="w-full accent-godot-blue cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Style Settings -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                <h3 class="text-sm font-bold text-white border-b border-gray-700/60 pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-godot-blue"></i> 視覺發光與色彩 (Visual Effects)
+                </h3>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">文字顏色 (Text Color)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="text-color" value="#ffffff" class="w-8 h-8 rounded bg-transparent cursor-pointer border-0">
+                            <span id="text-color-hex" class="text-xs font-mono text-gray-400">#ffffff</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">發光顏色 (Glow Color)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="glow-color" value="#478cbf" class="w-8 h-8 rounded bg-transparent cursor-pointer border-0">
+                            <span id="glow-color-hex" class="text-xs font-mono text-gray-400">#478cbf</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-gray-300">外發光強度 (Glow Strength)</span>
+                        <span id="glow-val" class="text-godot-blue font-mono font-bold">1.2</span>
+                    </div>
+                    <input type="range" id="glow-slider" min="0" max="3.0" step="0.1" value="1.2" class="w-full accent-godot-blue cursor-pointer">
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                    <span class="text-xs text-gray-300">顯示形狀輔助軌跡線</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="show-path-toggle" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-godot-blue"></div>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Center & Right: Live Canvas Preview & Quick Setup -->
+        <div class="lg:col-span-8 flex flex-col space-y-6">
+            
+            <!-- Canvas Preview Container -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl flex flex-col items-center justify-center relative min-h-[500px] overflow-hidden">
+                <div class="absolute top-4 left-4 flex items-center gap-2 bg-[#1e2227]/80 px-3 py-1.5 rounded-lg border border-gray-700/60 backdrop-blur">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-xs font-mono text-gray-300">GODOT SHADER PREVIEW</span>
+                </div>
+
+                <div class="absolute top-4 right-4 flex items-center gap-2">
+                    <button id="pause-btn" class="bg-[#1e2227] hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-pause" id="pause-icon"></i>
+                        <span id="pause-text">暫停</span>
+                    </button>
+                    <button id="reset-btn" class="bg-[#1e2227] hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right"></i> 重置
+                    </button>
+                </div>
+
+                <!-- Main Canvas element -->
+                <canvas id="preview-canvas" width="600" height="500" class="rounded-xl cursor-grab active:cursor-grabbing max-w-full h-auto"></canvas>
+
+                <p class="text-xs text-gray-400 mt-3 text-center">
+                    <i class="fa-solid fa-circle-info mr-1 text-godot-blue"></i> 上圖模擬 Godot 2D CanvasItem Shader 在節點 (`TextureRect` / `ColorRect`) 上的實時運算效果。
+                </p>
+            </div>
+
+            <!-- Quick Godot Engine Setup Guide -->
+            <div class="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-godot-blue"></i> Godot 4 專案使用說明 (SubViewport 組合法)
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-gray-300">
+                    <div class="bg-[#1e2227] p-3 rounded-xl border border-gray-700/60 space-y-1.5">
+                        <div class="font-bold text-godot-blue flex items-center gap-1.5">
+                            <span class="w-5 h-5 rounded-full bg-godot-blue/20 flex items-center justify-center text-[10px]">1</span>
+                            建立 SubViewport 節點
+                        </div>
+                        <p class="text-gray-400 leading-relaxed">
+                            在場景中建立 `SubViewport`，並在內部放入一個 `Label` 或 `RichTextLabel` 填入您要運行的動態文字。
+                        </p>
+                    </div>
+
+                    <div class="bg-[#1e2227] p-3 rounded-xl border border-gray-700/60 space-y-1.5">
+                        <div class="font-bold text-godot-blue flex items-center gap-1.5">
+                            <span class="w-5 h-5 rounded-full bg-godot-blue/20 flex items-center justify-center text-[10px]">2</span>
+                            建立 TextureRect 顯示區
+                        </div>
+                        <p class="text-gray-400 leading-relaxed">
+                            建立一個 `TextureRect` (或 `ColorRect`)，將其 Texture 設為 SubViewport 的 `ViewportTexture`。
+                        </p>
+                    </div>
+
+                    <div class="bg-[#1e2227] p-3 rounded-xl border border-gray-700/60 space-y-1.5">
+                        <div class="font-bold text-godot-blue flex items-center gap-1.5">
+                            <span class="w-5 h-5 rounded-full bg-godot-blue/20 flex items-center justify-center text-[10px]">3</span>
+                            套用 .gdshader 檔案
+                        </div>
+                        <p class="text-gray-400 leading-relaxed">
+                            建立 `ShaderMaterial` 並貼上右上方產生的 Shader 程式碼。隨時在 Inspector 中微調 `shape_template`!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Code Modal -->
+    <div id="code-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-[#21252b] border border-gray-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between bg-[#1e2227]">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-code text-godot-blue text-lg"></i>
+                    <div>
+                        <h3 class="font-bold text-white text-base">Godot 4.x CanvasItem Shader (`text_path.gdshader`)</h3>
+                        <p class="text-xs text-gray-400">基於您當前選擇參數與形狀模板產生的 GDShader 完整程式碼</p>
+                    </div>
+                </div>
+                <button id="close-code-modal" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Code Display Tabs -->
+            <div class="flex border-b border-gray-700 bg-[#1e2227]/50 px-6 pt-2 gap-2 text-xs font-semibold">
+                <button id="tab-shader" class="px-4 py-2 text-godot-blue border-b-2 border-godot-blue flex items-center gap-2">
+                    <i class="fa-solid fa-file-code"></i> Shader (.gdshader)
+                </button>
+                <button id="tab-gdscript" class="px-4 py-2 text-gray-400 hover:text-gray-200 border-b-2 border-transparent flex items-center gap-2">
+                    <i class="fa-solid fa-scroll"></i> GDScript 綁定說明 (.gd)
+                </button>
+            </div>
+
+            <!-- Code Content -->
+            <div class="p-6 overflow-y-auto flex-1 code-block text-xs leading-relaxed relative bg-[#181a1f]">
+                <pre id="shader-code-view" class="text-gray-300 font-mono select-all"><code>/* Loading Shader Code... */</code></pre>
+                <pre id="gdscript-code-view" class="text-gray-300 font-mono select-all hidden"><code>/* Loading GDScript Code... */</code></pre>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-gray-700 bg-[#1e2227] flex items-center justify-between">
+                <div class="text-xs text-gray-400 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-400"></i> 已完全優化 GPU 效能，零紋理破裂與縫隙
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="copy-code-btn" class="bg-godot-blue hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2">
+                        <i class="fa-regular fa-copy"></i> 複製程式碼
+                    </button>
+                    <button id="download-shader-btn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> 下載 .gdshader
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Global Application State ---
+        const state = {
+            text: "GODOT 4 • SHAPE TRAJECTORY TEXT SHADER • ",
+            shape: "heart", // heart, square, circle, star, infinity, wave
+            speed: 0.6,
+            shapeScale: 0.32,
+            repeatCount: 2.0,
+            fontSize: 24,
+            textColor: "#ffffff",
+            glowColor: "#478cbf",
+            glowStrength: 1.2,
+            showPath: true,
+            isPaused: false,
+            time: 0
+        };
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d');
+        const textInput = document.getElementById('text-input');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleVal = document.getElementById('scale-val');
+        const repeatSlider = document.getElementById('repeat-slider');
+        const repeatVal = document.getElementById('repeat-val');
+        const fontSizeSlider = document.getElementById('fontsize-slider');
+        const fontSizeVal = document.getElementById('fontsize-val');
+        const textColorInput = document.getElementById('text-color');
+        const textColorHex = document.getElementById('text-color-hex');
+        const glowColorInput = document.getElementById('glow-color');
+        const glowColorHex = document.getElementById('glow-color-hex');
+        const glowSlider = document.getElementById('glow-slider');
+        const glowVal = document.getElementById('glow-val');
+        const showPathToggle = document.getElementById('show-path-toggle');
+        const pauseBtn = document.getElementById('pause-btn');
+        const pauseIcon = document.getElementById('pause-icon');
+        const pauseText = document.getElementById('pause-text');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Modal Elements
+        const codeModal = document.getElementById('code-modal');
+        const toggleCodeModalBtn = document.getElementById('toggle-code-modal');
+        const closeCodeModalBtn = document.getElementById('close-code-modal');
+        const shaderCodeView = document.getElementById('shader-code-view');
+        const gdscriptCodeView = document.getElementById('gdscript-code-view');
+        const tabShader = document.getElementById('tab-shader');
+        const tabGdscript = document.getElementById('tab-gdscript');
+        const copyCodeBtn = document.getElementById('copy-code-btn');
+        const downloadShaderBtn = document.getElementById('download-shader-btn');
+
+        /**
+         * Computes normalized point (x, y) and tangent angle for a given path parameter t (0 to 1)
+         */
+        function getShapePoint(shape, t) {
+            const angle = t * Math.PI * 2;
+            let x = 0, y = 0;
+            let dx = 0, dy = 0;
+            const delta = 0.001;
+
+            switch (shape) {
+                case 'circle':
+                    x = Math.cos(angle);
+                    y = Math.sin(angle);
+                    dx = -Math.sin(angle);
+                    dy = Math.cos(angle);
+                    break;
+
+                case 'heart': {
+                    // Parametric Heart curve
+                    // x(t) = 16 sin^3(t)
+                    // y(t) = 13 cos(t) - 5 cos(2t) - 2 cos(3t) - cos(4t)
+                    const a = angle;
+                    x = 16 * Math.pow(Math.sin(a), 3) / 16;
+                    y = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) / 16;
+                    
+                    // Derivative numerical estimation
+                    const a2 = (t + delta) * Math.PI * 2;
+                    const x2 = 16 * Math.pow(Math.sin(a2), 3) / 16;
+                    const y2 = -(13 * Math.cos(a2) - 5 * Math.cos(2 * a2) - 2 * Math.cos(3 * a2) - Math.cos(4 * a2)) / 16;
+                    dx = x2 - x;
+                    dy = y2 - y;
+                    break;
+                }
+
+                case 'square': {
+                    // Perimeter of square [-1, 1]
+                    const p = (t * 4) % 4;
+                    if (p < 1) { // Top edge
+                        x = -1 + 2 * p;
+                        y = -1;
+                        dx = 1; dy = 0;
+                    } else if (p < 2) { // Right edge
+                        x = 1;
+                        y = -1 + 2 * (p - 1);
+                        dx = 0; dy = 1;
+                    } else if (p < 3) { // Bottom edge
+                        x = 1 - 2 * (p - 2);
+                        y = 1;
+                        dx = -1; dy = 0;
+                    } else { // Left edge
+                        x = -1;
+                        y = 1 - 2 * (p - 3);
+                        dx = 0; dy = -1;
+                    }
+                    break;
+                }
+
+                case 'star': {
+                    // 5-point Star
+                    const r = 0.6 + 0.4 * Math.cos(5 * angle);
+                    x = r * Math.cos(angle);
+                    y = r * Math.sin(angle);
+
+                    const a2 = (t + delta) * Math.PI * 2;
+                    const r2 = 0.6 + 0.4 * Math.cos(5 * a2);
+                    dx = r2 * Math.cos(a2) - x;
+                    dy = r2 * Math.sin(a2) - y;
+                    break;
+                }
+
+                case 'infinity': {
+                    // Lemnoscate of Gerono / Bernoulli figure 8
+                    x = Math.cos(angle);
+                    y = Math.sin(2 * angle) / 2;
+
+                    const a2 = (t + delta) * Math.PI * 2;
+                    dx = Math.cos(a2) - x;
+                    dy = (Math.sin(2 * a2) / 2) - y;
+                    break;
+                }
+
+                case 'wave': {
+                    // Sine Ring Wave
+                    const r = 0.75 + 0.25 * Math.sin(8 * angle);
+                    x = r * Math.cos(angle);
+                    y = r * Math.sin(angle);
+
+                    const a2 = (t + delta) * Math.PI * 2;
+                    const r2 = 0.75 + 0.25 * Math.sin(8 * a2);
+                    dx = r2 * Math.cos(a2) - x;
+                    dy = r2 * Math.sin(a2) - y;
+                    break;
+                }
+            }
+
+            const tangentAngle = Math.atan2(dy, dx);
+            return { x, y, tangentAngle };
+        }
+
+        /**
+         * Main Render Loop for HTML Canvas Realtime Preview
+         */
+        function renderCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const baseRadius = Math.min(canvas.width, canvas.height) * state.shapeScale;
+
+            // 1. Optional Path Background Trace
+            if (state.showPath) {
+                ctx.beginPath();
+                const steps = 200;
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const pt = getShapePoint(state.shape, t);
+                    const px = centerX + pt.x * baseRadius;
+                    const py = centerY + pt.y * baseRadius;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.strokeStyle = "rgba(71, 140, 191, 0.25)";
+                ctx.lineWidth = 3;
+                ctx.setLineDash([6, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Prepare dynamic full text string with repeat count
+            let fullText = "";
+            const repeats = Math.floor(state.repeatCount);
+            for (let i = 0; i < repeats; i++) {
+                fullText += state.text;
+            }
+            if (state.repeatCount % 1 !== 0) {
+                const partialLen = Math.floor(state.text.length * (state.repeatCount % 1));
+                fullText += state.text.substring(0, partialLen);
+            }
+
+            if (fullText.length === 0) return;
+
+            ctx.font = `bold ${state.fontSize}px 'Fira Code', 'Courier New', sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            const totalChars = fullText.length;
+
+            for (let i = 0; i < totalChars; i++) {
+                const char = fullText[i];
+
+                // Calculate progress t along path (0 to 1) with time offset
+                let t = (i / totalChars + state.time * state.speed * 0.1) % 1.0;
+                if (t < 0) t += 1.0;
+
+                const pt = getShapePoint(state.shape, t);
+                const px = centerX + pt.x * baseRadius;
+                const py = centerY + pt.y * baseRadius;
+
+                ctx.save();
+                ctx.translate(px, py);
+                ctx.rotate(pt.tangentAngle);
+
+                // Glow Effect
+                if (state.glowStrength > 0) {
+                    ctx.shadowColor = state.glowColor;
+                    ctx.shadowBlur = state.glowStrength * 12;
+                }
+
+                // Text Fill
+                ctx.fillStyle = state.textColor;
+                ctx.fillText(char, 0, 0);
+
+                ctx.restore();
+            }
+        }
+
+        // Animation Loop
+        let lastTimestamp = 0;
+        function animate(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const delta = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            if (!state.isPaused) {
+                state.time += delta;
+            }
+
+            renderCanvas();
+            requestAnimationFrame(animate);
+        }
+
+        /**
+         * Generates clean Godot 4.x CanvasItem Shader code
+         */
+        function generateGodotShaderCode() {
+            let shapeIndex = 0;
+            switch(state.shape) {
+                case 'circle': shapeIndex = 0; break;
+                case 'heart': shapeIndex = 1; break;
+                case 'square': shapeIndex = 2; break;
+                case 'star': shapeIndex = 3; break;
+                case 'infinity': shapeIndex = 4; break;
+                case 'wave': shapeIndex = 5; break;
+            }
+
+            return `// =========================================================================
+// Godot 4.x CanvasItem Shader: 文字按形狀軌跡流動 (Text Path Flow Shader)
+// 生成時間: ${new Date().toLocaleString()}
+// 說明: 請將此 Shader 賦予 TextureRect 或 ColorRect 節點
+// =========================================================================
+shader_type canvas_item;
+
+// --- Uniforms ---
+uniform int shape_template : hint_enum("Circle", "Heart", "Square", "Star", "Infinity", "Wave") = ${shapeIndex};
+uniform float speed : hint_range(-5.0, 5.0) = ${state.speed.toFixed(2)};
+uniform float shape_scale : hint_range(0.05, 0.5) = ${state.shapeScale.toFixed(2)};
+uniform float text_thickness : hint_range(0.01, 0.4) = 0.15;
+uniform float repeat_count : hint_range(1.0, 10.0) = ${state.repeatCount.toFixed(1)};
+uniform bool reverse_direction = false;
+
+// Visual Colors & Glow
+uniform vec4 text_tint : source_color = vec4(${hexToRgbNormalized(state.textColor).join(', ')}, 1.0);
+uniform vec4 glow_color : source_color = vec4(${hexToRgbNormalized(state.glowColor).join(', ')}, 0.8);
+uniform float glow_strength : hint_range(0.0, 4.0) = ${state.glowStrength.toFixed(1)};
+
+// Helper: Parametric & Distance mapping for UV coordinates
+vec2 calculate_path_uv(vec2 centered_uv, int shape) {
+    float angle = atan(centered_uv.y, centered_uv.x); // -PI to PI
+    float norm_angle = (angle + 3.14159265359) / (2.0 * 3.14159265359); // 0.0 to 1.0
+    float dist = 0.0;
+
+    if (shape == 0) {
+        // Circle (圓形)
+        dist = length(centered_uv) - shape_scale;
+        return vec2(norm_angle, dist);
+    }
+    else if (shape == 1) {
+        // Heart (愛心軌跡)
+        float a = angle;
+        float sin_a = sin(a);
+        float cos_a = cos(a);
+        // Polar approximation for heart shape boundary
+        float heart_r = shape_scale * (0.8 - sin_a * 0.5 + abs(cos_a) * 0.2);
+        dist = length(centered_uv) - heart_r;
+        return vec2(norm_angle, dist);
+    }
+    else if (shape == 2) {
+        // Square (正方形)
+        vec2 abs_uv = abs(centered_uv);
+        dist = max(abs_uv.x, abs_uv.y) - shape_scale;
+        
+        // Perimeter position mapping t
+        float t = 0.0;
+        if (abs_uv.x >= abs_uv.y) {
+            t = (centered_uv.x > 0.0) ? (centered_uv.y + shape_scale) / (8.0 * shape_scale) : 0.5 + (-centered_uv.y + shape_scale) / (8.0 * shape_scale);
+        } else {
+            t = (centered_uv.y > 0.0) ? 0.25 + (-centered_uv.x + shape_scale) / (8.0 * shape_scale) : 0.75 + (centered_uv.x + shape_scale) / (8.0 * shape_scale);
+        }
+        return vec2(fract(t), dist);
+    }
+    else if (shape == 3) {
+        // Star (五角星)
+        float star_r = shape_scale * (0.7 + 0.3 * cos(5.0 * angle));
+        dist = length(centered_uv) - star_r;
+        return vec2(norm_angle, dist);
+    }
+    else if (shape == 4) {
+        // Infinity (無限符號)
+        float inf_r = shape_scale * (0.7 + 0.3 * cos(2.0 * angle));
+        dist = length(centered_uv) - inf_r;
+        return vec2(norm_angle, dist);
+    }
+    else {
+        // Wave (波浪環)
+        float wave_r = shape_scale + 0.04 * sin(8.0 * angle);
+        dist = length(centered_uv) - wave_r;
+        return vec2(norm_angle, dist);
+    }
+}
+
+void fragment() {
+    // 1. 將 UV 中心偏移至 (0.0, 0.0)
+    vec2 centered_uv = UV - vec2(0.5);
+    
+    // 2. 獲取當前像素點相對於形狀軌跡的 U (進度 0~1) 與 V (垂直距離)
+    vec2 path_uv = calculate_path_uv(centered_uv, shape_template);
+    
+    // 3. 結合時間 TIME 計算文字移動
+    float dir = reverse_direction ? -1.0 : 1.0;
+    float u_progress = fract((path_uv.x * repeat_count) - (TIME * speed * dir * 0.1));
+    
+    // 4. 將距離 normalize 至 0.0 ~ 1.0 (映射到文字紋理的 Y 軸)
+    float v_offset = (path_uv.y / text_thickness) + 0.5;
+    
+    // 5. 判斷是否在文字採樣區域內
+    if (v_offset >= 0.0 && v_offset <= 1.0) {
+        vec2 sample_uv = vec2(u_progress, v_offset);
+        vec4 tex_color = texture(TEXTURE, sample_uv) * text_tint;
+        
+        // 外發光計算
+        float dist_from_center = abs(v_offset - 0.5) * 2.0;
+        float glow = smoothstep(1.0, 0.1, dist_from_center) * glow_strength;
+        vec4 glow_effect = glow_color * glow * tex_color.a;
+        
+        COLOR = tex_color + glow_effect;
+    } else {
+        // 軌跡邊界外保持透明
+        COLOR = vec4(0.0);
+    }
+}`;
+        }
+
+        /**
+         * Generates GDScript helper snippet for SubViewport setup
+         */
+        function generateGDScriptGuide() {
+            return `# =========================================================================
+# Godot 4.x Dynamic Text Controller (GDScript 綁定說明)
+# 將此腳本掛載於 TextureRect 或 Scene Root
+# =========================================================================
+extends TextureRect
+
+@onready var sub_viewport: SubViewport = $SubViewport
+@onready var text_label: Label = $SubViewport/Label
+
+func _ready() -> void:
+    # 1. 動態綁定 SubViewport 紋理至當前 TextureRect
+    texture = sub_viewport.get_texture()
+    
+    # 2. 修改動態文字範例
+    set_dynamic_text("${state.text}")
+
+## 動態更新文字方法
+func set_dynamic_text(new_text: String) -> void:
+    if text_label:
+        text_label.text = new_text
+        
+## 動態更新形狀模板 (0: Circle, 1: Heart, 2: Square, 3: Star, 4: Infinity, 5: Wave)
+func set_shape_template(template_id: int) -> void:
+    if material is ShaderMaterial:
+        (material as ShaderMaterial).set_shader_parameter("shape_template", template_id)
+`;
+        }
+
+        function hexToRgbNormalized(hex) {
+            let c = hex.replace('#', '');
+            if (c.length === 3) c = c.split('').map(x => x + x).join('');
+            const num = parseInt(c, 16);
+            const r = ((num >> 16) & 255) / 255;
+            const g = ((num >> 8) & 255) / 255;
+            const b = (num & 255) / 255;
+            return [r.toFixed(2), g.toFixed(2), b.toFixed(2)];
+        }
+
+        function setupEventListeners() {
+            // Text Input
+            textInput.addEventListener('input', (e) => {
+                state.text = e.target.value;
+            });
+
+            // Shape Template Buttons
+            document.querySelectorAll('.shape-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.shape-btn').forEach(b => {
+                        b.classList.remove('active', 'bg-godot-blue/20', 'border-godot-blue');
+                        b.classList.add('bg-[#1e2227]', 'border-gray-700');
+                    });
+                    btn.classList.add('active', 'bg-godot-blue/20', 'border-godot-blue');
+                    btn.classList.remove('bg-[#1e2227]', 'border-gray-700');
+                    state.shape = btn.getAttribute('data-shape');
+                });
+            });
+
+            // Sliders
+            speedSlider.addEventListener('input', (e) => {
+                state.speed = parseFloat(e.target.value);
+                speedVal.textContent = state.speed.toFixed(1);
+            });
+
+            scaleSlider.addEventListener('input', (e) => {
+                state.shapeScale = parseFloat(e.target.value);
+                scaleVal.textContent = state.shapeScale.toFixed(2);
+            });
+
+            repeatSlider.addEventListener('input', (e) => {
+                state.repeatCount = parseFloat(e.target.value);
+                repeatVal.textContent = state.repeatCount.toFixed(1);
+            });
+
+            fontSizeSlider.addEventListener('input', (e) => {
+                state.fontSize = parseInt(e.target.value);
+                fontSizeVal.textContent = `${state.fontSize}px`;
+            });
+
+            // Visual Sliders & Colors
+            textColorInput.addEventListener('input', (e) => {
+                state.textColor = e.target.value;
+                textColorHex.textContent = e.target.value;
+            });
+
+            glowColorInput.addEventListener('input', (e) => {
+                state.glowColor = e.target.value;
+                glowColorHex.textContent = e.target.value;
+            });
+
+            glowSlider.addEventListener('input', (e) => {
+                state.glowStrength = parseFloat(e.target.value);
+                glowVal.textContent = state.glowStrength.toFixed(1);
+            });
+
+            showPathToggle.addEventListener('change', (e) => {
+                state.showPath = e.target.checked;
+            });
+
+            // Controls
+            pauseBtn.addEventListener('click', () => {
+                state.isPaused = !state.isPaused;
+                if (state.isPaused) {
+                    pauseIcon.className = "fa-solid fa-play";
+                    pauseText.textContent = "播放";
+                } else {
+                    pauseIcon.className = "fa-solid fa-pause";
+                    pauseText.textContent = "暫停";
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                state.time = 0;
+            });
+
+            // Modal Controls
+            toggleCodeModalBtn.addEventListener('click', () => {
+                shaderCodeView.textContent = generateGodotShaderCode();
+                gdscriptCodeView.textContent = generateGDScriptGuide();
+                codeModal.classList.remove('hidden');
+            });
+
+            closeCodeModalBtn.addEventListener('click', () => {
+                codeModal.classList.add('hidden');
+            });
+
+            // Code Tabs
+            tabShader.addEventListener('click', () => {
+                tabShader.classList.add('text-godot-blue', 'border-godot-blue');
+                tabShader.classList.remove('text-gray-400', 'border-transparent');
+                tabGdscript.classList.remove('text-godot-blue', 'border-godot-blue');
+                tabGdscript.classList.add('text-gray-400', 'border-transparent');
+                shaderCodeView.classList.remove('hidden');
+                gdscriptCodeView.classList.add('hidden');
+            });
+
+            tabGdscript.addEventListener('click', () => {
+                tabGdscript.classList.add('text-godot-blue', 'border-godot-blue');
+                tabGdscript.classList.remove('text-gray-400', 'border-transparent');
+                tabShader.classList.remove('text-godot-blue', 'border-godot-blue');
+                tabShader.classList.add('text-gray-400', 'border-transparent');
+                gdscriptCodeView.classList.remove('hidden');
+                shaderCodeView.classList.add('hidden');
+            });
+
+            // Copy Button
+            copyCodeBtn.addEventListener('click', () => {
+                const codeToCopy = shaderCodeView.classList.contains('hidden') 
+                    ? gdscriptCodeView.textContent 
+                    : shaderCodeView.textContent;
+
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    const originalText = copyCodeBtn.innerHTML;
+                    copyCodeBtn.innerHTML = `<i class="fa-solid fa-check"></i> 已複製!`;
+                    copyCodeBtn.classList.remove('bg-godot-blue');
+                    copyCodeBtn.classList.add('bg-emerald-600');
+                    setTimeout(() => {
+                        copyCodeBtn.innerHTML = originalText;
+                        copyCodeBtn.classList.remove('bg-emerald-600');
+                        copyCodeBtn.classList.add('bg-godot-blue');
+                    }, 2000);
+                });
+            });
+
+            // Download Shader File
+            downloadShaderBtn.addEventListener('click', () => {
+                const code = generateGodotShaderCode();
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'text_path_flow.gdshader';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            requestAnimationFrame(animate);
+        });
+    </script>
+</body>
+</html>

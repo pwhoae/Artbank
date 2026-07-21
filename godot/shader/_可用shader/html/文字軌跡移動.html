@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 Text Shader Generator & Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #18181b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col">
+
+    <!-- Top Header -->
+    <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="bg-sky-500/10 p-2 rounded-lg border border-sky-500/20 text-sky-400">
+                <i data-lucide="sparkles" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-zinc-100 flex items-center gap-2">
+                    Godot 2D Text Shader Studio
+                    <span class="text-xs bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full">Godot 4.x</span>
+                </h1>
+                <p class="text-xs text-zinc-400">文字轨迹移动 + 渐变/Shiny/Type/Pressure/Fuzzy/Glitch/Orbit 效果生成器</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="btn-copy-code" class="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-lg shadow-sky-600/20 active:scale-95">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                复制代码 (.gdshader)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- Left Sidebar: Shader Preset Selector -->
+        <aside class="w-full lg:w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col flex-shrink-0">
+            <div class="p-4 border-b border-zinc-800">
+                <span class="text-xs font-semibold uppercase tracking-wider text-zinc-400">选择着色器类型 (Shaders)</span>
+            </div>
+            <nav class="p-3 space-y-1 overflow-y-auto flex-1" id="shader-list">
+                <!-- Buttons injected dynamically -->
+            </nav>
+            <div class="p-4 border-t border-zinc-800 bg-zinc-900/50">
+                <div class="text-xs text-zinc-400 space-y-1">
+                    <p class="flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-sky-400"></i> 适用节点：<code>Label</code>, <code>RichTextLabel</code>, <code>Sprite2D</code></p>
+                    <p>在 Godot 中新建 <b>ShaderMaterial</b> 并黏贴右侧代码即可使用。</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Panel: Interactive Live Preview & Controls -->
+        <main class="flex-1 flex flex-col bg-zinc-950 overflow-y-auto border-r border-zinc-800">
+            <!-- Canvas Preview Container -->
+            <div class="relative bg-gradient-to-b from-zinc-900 to-zinc-950 p-8 flex flex-col items-center justify-center min-h-[320px] border-b border-zinc-800 select-none overflow-hidden">
+                <!-- Checkered Canvas BG to show transparency -->
+                <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                
+                <!-- Live HTML5 Canvas Simulation -->
+                <div class="relative z-10 flex flex-col items-center">
+                    <canvas id="preview-canvas" width="640" height="200" class="rounded-xl border border-zinc-800 bg-zinc-900/80 shadow-2xl max-w-full"></canvas>
+                    <div class="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        实时 Canvas 着色器效果模拟 (Web Realtime Preview)
+                    </div>
+                </div>
+
+                <!-- Live Text Input floating overlay -->
+                <div class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-auto">
+                    <div class="flex items-center gap-2 bg-zinc-900/90 border border-zinc-700/60 rounded-lg px-3 py-1.5 backdrop-blur shadow">
+                        <span class="text-xs text-zinc-400 font-medium">预览文本:</span>
+                        <input type="text" id="custom-text-input" value="GODOT SHADER 2D" class="bg-transparent text-sm text-zinc-100 focus:outline-none w-44 font-semibold">
+                    </div>
+                    <button id="btn-reset-params" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs px-3 py-1.5 rounded-lg border border-zinc-700 transition flex items-center gap-1">
+                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> 重置参数
+                    </button>
+                </div>
+            </div>
+
+            <!-- Parameters Adjuster Panel -->
+            <div class="p-6 space-y-6 flex-1">
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <h2 class="font-semibold text-zinc-200 text-base flex items-center gap-2" id="current-shader-title">
+                        <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+                        动态 Uniform 参数调节 (Realtime Tuning)
+                    </h2>
+                    <span class="text-xs text-zinc-500" id="current-shader-desc">实时微调 preview 效果</span>
+                </div>
+
+                <div id="controls-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic slider controls will be generated here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Code Editor & Godot Code Viewer -->
+        <section class="w-full lg:w-[480px] bg-zinc-900 flex flex-col flex-shrink-0">
+            <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/90">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="code-2" class="w-4 h-4 text-sky-400"></i>
+                    <span class="text-sm font-semibold text-zinc-200">Godot 着色器代码 (.gdshader)</span>
+                </div>
+                <div class="flex items-center gap-1 bg-zinc-800 p-0.5 rounded-md text-xs">
+                    <button class="px-2 py-1 rounded text-zinc-200 font-medium bg-zinc-700 shadow-sm" id="tab-gd4">Godot 4</button>
+                </div>
+            </div>
+
+            <div class="flex-1 relative overflow-hidden bg-zinc-950">
+                <pre class="h-full p-4 overflow-auto text-xs text-sky-300/90 leading-relaxed font-mono select-text" id="shader-code-display"><code>// Generating shader code...</code></pre>
+            </div>
+
+            <!-- Quick Tutorial Footer -->
+            <div class="p-4 border-t border-zinc-800 bg-zinc-900/90 text-xs space-y-2">
+                <div class="font-semibold text-zinc-300 flex items-center gap-1">
+                    <i data-lucide="book-open" class="w-3.5 h-3.5 text-sky-400"></i> Godot 4 使用方法:
+                </div>
+                <ol class="list-decimal list-inside text-zinc-400 space-y-1 pl-1">
+                    <li>在 Godot 中选中 <code>Label</code> 或 <code>RichTextLabel</code> 节点。</li>
+                    <li>在 <b>Inspector</b> 中找到 <b>CanvasItem -> Material</b>。</li>
+                    <li>新建 <b>ShaderMaterial</b>，点击并在 <b>Shader</b> 处新建 <b>New Shader</b>。</li>
+                    <li>将上方代码黏贴保存，即可在属性面板调整 uniform 参数！</li>
+                </ol>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-sky-600 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-sky-400/30 flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50 text-sm font-medium">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span>代码已成功复制到剪贴板！</span>
+    </div>
+
+    <script>
+        const SHADER_PRESETS = {
+            trajectory: {
+                id: "trajectory",
+                title: "1. 轨迹直线移动 (Trajectory Motion)",
+                icon: "move-right",
+                desc: "文字按任意角度与速度沿着直线轨迹持续平移滚动，支持循环/PingPong Bounce",
+                params: {
+                    speed: { name: "移动速度 (Speed)", min: 0, max: 5, step: 0.1, value: 1.2 },
+                    angle: { name: "移动角度 (Angle Degree)", min: 0, max: 360, step: 1, value: 0 },
+                    mode: { name: "模式 (0: 循环Wrap, 1: 乒乓PingPong)", min: 0, max: 1, step: 1, value: 0 },
+                    color: { name: "文字颜色", type: "color", value: "#38bdf8" }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === 直线轨迹移动着色器 (Linear Trajectory Motion) ===
+uniform float speed : hint_range(0.0, 10.0) = ${p.speed.value.toFixed(1)};
+uniform float angle_degrees : hint_range(0.0, 360.0) = ${p.angle.value.toFixed(1)};
+uniform int move_mode : hint_range(0, 1) = ${p.mode.value}; // 0 = Repeat Loop, 1 = Ping-Pong Bounce
+uniform vec4 text_color : source_color = vec4(${hexToRgbNorm(p.color.value).join(', ')}, 1.0);
+
+void fragment() {
+    float rad = radians(angle_degrees);
+    vec2 dir = vec2(cos(rad), sin(rad));
+    
+    // 计算随时间变化的位移 (Offset calculated over time)
+    vec2 offset = dir * TIME * speed;
+    vec2 moved_uv = UV;
+    
+    if (move_mode == 0) {
+        // 循环滚动
+        moved_uv = fract(UV - offset);
+    } else {
+        // 乒乓来回平移
+        vec2 p = pingpong(UV - offset, vec2(1.0));
+        moved_uv = p;
+    }
+    
+    vec4 tex = texture(TEXTURE, moved_uv);
+    COLOR = tex * text_color;
+}`
+            },
+
+            gradient: {
+                id: "gradient",
+                title: "2. 渐变文字 (Gradient Text)",
+                icon: "palette",
+                desc: "支持自定义角度、双色渐变与透明度平滑过渡",
+                params: {
+                    angle: { name: "渐变角度 (Gradient Angle)", min: 0, max: 360, step: 1, value: 45 },
+                    color1: { name: "起始颜色 (Color 1)", type: "color", value: "#06b6d4" },
+                    color2: { name: "结束颜色 (Color 2)", type: "color", value: "#a855f7" },
+                    smoothness: { name: "过渡平滑度 (Smoothness)", min: 0.1, max: 2.0, step: 0.1, value: 1.0 }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === 渐变文字着色器 (Gradient Text Shader) ===
+uniform float gradient_angle : hint_range(0.0, 360.0) = ${p.angle.value.toFixed(1)};
+uniform vec4 color_start : source_color = vec4(${hexToRgbNorm(p.color1.value).join(', ')}, 1.0);
+uniform vec4 color_end : source_color = vec4(${hexToRgbNorm(p.color2.value).join(', ')}, 1.0);
+uniform float smoothness : hint_range(0.1, 3.0) = ${p.smoothness.value.toFixed(1)};
+
+void fragment() {
+    vec4 tex = texture(TEXTURE, UV);
+    
+    // 旋转向量计算渐变方向
+    float rad = radians(gradient_angle);
+    vec2 dir = vec2(cos(rad), sin(rad));
+    
+    // UV 坐标投影到渐变方向
+    float t = dot(UV - vec2(0.5), dir) + 0.5;
+    t = clamp(pow(clamp(t, 0.0, 1.0), smoothness), 0.0, 1.0);
+    
+    vec4 grad_color = mix(color_start, color_end, t);
+    
+    COLOR = vec4(grad_color.rgb, tex.a * grad_color.a);
+}`
+            },
+
+            shiny: {
+                id: "shiny",
+                title: "3. Shiny / 扫光金属质感 (Shiny Text)",
+                icon: "sparkle",
+                desc: "一道醒目的金属高光光泽沿文字表面斜向划过",
+                params: {
+                    speed: { name: "扫光速度 (Speed)", min: 0.2, max: 4.0, step: 0.1, value: 1.2 },
+                    shine_width: { name: "光束宽度 (Width)", min: 0.05, max: 0.5, step: 0.01, value: 0.15 },
+                    angle: { name: "斜角 (Angle)", min: 0, max: 90, step: 5, value: 30 },
+                    shine_color: { name: "高光颜色", type: "color", value: "#ffffff" },
+                    base_color: { name: "基础文字颜色", type: "color", value: "#2563eb" }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === Shiny 扫光着色器 (Shiny Gold Sheen Shader) ===
+uniform float shine_speed : hint_range(0.1, 5.0) = ${p.speed.value.toFixed(1)};
+uniform float shine_width : hint_range(0.01, 0.5) = ${p.shine_width.value.toFixed(2)};
+uniform float shine_angle : hint_range(0.0, 90.0) = ${p.angle.value.toFixed(1)};
+uniform vec4 shine_color : source_color = vec4(${hexToRgbNorm(p.shine_color.value).join(', ')}, 1.0);
+uniform vec4 base_color : source_color = vec4(${hexToRgbNorm(p.base_color.value).join(', ')}, 1.0);
+
+void fragment() {
+    vec4 tex = texture(TEXTURE, UV);
+    if (tex.a < 0.01) {
+        discard;
+    }
+    
+    float rad = radians(shine_angle);
+    float pos = mod(TIME * shine_speed, 2.5) - 0.75;
+    
+    // 计算倾斜光线位置
+    float current_pos = UV.x * cos(rad) + UV.y * sin(rad);
+    float diff = abs(current_pos - pos);
+    float shine = smoothstep(shine_width, 0.0, diff);
+    
+    vec3 final_rgb = mix(base_color.rgb, shine_color.rgb, shine * shine_color.a);
+    COLOR = vec4(final_rgb, tex.a * base_color.a);
+}`
+            },
+
+            typewriter: {
+                id: "typewriter",
+                title: "4. Text Type / 打字机显现 (Text Typewriter)",
+                icon: "type",
+                desc: "字符按时间台阶逐个显现，并带有前缀光标闪烁效果",
+                params: {
+                    speed: { name: "打字速度 (Type Speed)", min: 0.5, max: 10.0, step: 0.5, value: 3.5 },
+                    cursor: { name: "显示光标 (0: 关, 1: 开)", min: 0, max: 1, step: 1, value: 1 },
+                    text_color: { name: "文字颜色", type: "color", value: "#22c55e" }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === 打字机逐步显现着色器 (Typewriter Effect) ===
+uniform float type_speed : hint_range(0.1, 20.0) = ${p.speed.value.toFixed(1)};
+uniform bool show_cursor = ${p.cursor.value === 1 ? 'true' : 'false'};
+uniform vec4 text_color : source_color = vec4(${hexToRgbNorm(p.text_color.value).join(', ')}, 1.0);
+
+void fragment() {
+    vec4 tex = texture(TEXTURE, UV);
+    
+    // 计算已揭示的 UV.x 阈值
+    float progress = fract(TIME * type_speed * 0.1);
+    
+    // 阶梯状打字效果
+    float steps = 20.0; // 假设对应字符数量
+    float current_step = floor(progress * steps) / steps;
+    
+    float alpha = step(UV.x, current_step);
+    
+    // 光标闪烁
+    if (show_cursor && abs(UV.x - current_step) < 0.015) {
+        float blink = step(0.5, sin(TIME * 15.0));
+        alpha = max(alpha, blink);
+    }
+    
+    COLOR = vec4(text_color.rgb, tex.a * alpha * text_color.a);
+}`
+            },
+
+            pressure: {
+                id: "pressure",
+                title: "5. Text Pressure / 动态挤压膨胀",
+                icon: "activity",
+                desc: "弹性压感形变，如同有生命的脉动或有弹性的按压感",
+                params: {
+                    freq: { name: "挤压频率 (Frequency)", min: 1.0, max: 15.0, step: 0.5, value: 6.0 },
+                    strength: { name: "变形强度 (Strength)", min: 0.01, max: 0.2, step: 0.01, value: 0.06 },
+                    text_color: { name: "文字颜色", type: "color", value: "#f43f5e" }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === 动态挤压膨胀着色器 (Text Dynamic Pressure) ===
+uniform float pressure_freq : hint_range(1.0, 20.0) = ${p.freq.value.toFixed(1)};
+uniform float pressure_strength : hint_range(0.0, 0.3) = ${p.strength.value.toFixed(2)};
+uniform vec4 text_color : source_color = vec4(${hexToRgbNorm(p.text_color.value).join(', ')}, 1.0);
+
+void fragment() {
+    vec2 center = vec2(0.5);
+    vec2 uv = UV - center;
+    
+    // 正弦动态压力波
+    float wave = sin(TIME * pressure_freq + UV.x * 6.28);
+    vec2 pressure_offset = uv * (wave * pressure_strength);
+    
+    vec2 distorted_uv = UV + pressure_offset;
+    vec4 tex = texture(TEXTURE, distorted_uv);
+    
+    COLOR = tex * text_color;
+}`
+            },
+
+            fuzzy: {
+                id: "fuzzy",
+                title: "6. Fuzzy Text / 幽灵毛躁模糊",
+                icon: "cloud-fog",
+                desc: "结合多重采样与伪随机噪声 jitter，生成梦幻毛躁与模糊边缘",
+                params: {
+                    fuzzy_amount: { name: "毛躁程度 (Fuzziness)", min: 0.001, max: 0.03, step: 0.001, value: 0.012 },
+                    noise_speed: { name: "噪点抖动速度", min: 0.0, max: 10.0, step: 0.5, value: 4.0 },
+                    text_color: { name: "文字颜色", type: "color", value: "#e0e7ff" }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === 毛躁模糊着色器 (Fuzzy Ghostly Blur Text) ===
+uniform float fuzzy_amount : hint_range(0.001, 0.05) = ${p.fuzzy_amount.value.toFixed(3)};
+uniform float noise_speed : hint_range(0.0, 20.0) = ${p.noise_speed.value.toFixed(1)};
+uniform vec4 text_color : source_color = vec4(${hexToRgbNorm(p.text_color.value).join(', ')}, 1.0);
+
+// 伪随机生成器
+float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+void fragment() {
+    float n = random(UV + vec2(floor(TIME * noise_speed)));
+    vec2 jitter = (vec2(n) - 0.5) * fuzzy_amount;
+    
+    // 4-Tap 多重模糊采样
+    vec4 col1 = texture(TEXTURE, UV + jitter);
+    vec4 col2 = texture(TEXTURE, UV - jitter);
+    vec4 col3 = texture(TEXTURE, UV + vec2(jitter.y, -jitter.x));
+    vec4 col4 = texture(TEXTURE, UV + vec2(-jitter.y, jitter.x));
+    
+    vec4 avg_col = (col1 + col2 + col3 + col4) * 0.25;
+    COLOR = avg_col * text_color;
+}`
+            },
+
+            glitch: {
+                id: "glitch",
+                title: "7. Glitch Text / 赛博故障风",
+                icon: "zap",
+                desc: "横向切片错位、色散 RGB Split 分离以及随机抖动故障",
+                params: {
+                    glitch_rate: { name: "故障频率 (Frequency)", min: 0.1, max: 5.0, step: 0.1, value: 2.0 },
+                    rgb_split: { name: "RGB 色散偏移 (Split)", min: 0.001, max: 0.03, step: 0.001, value: 0.012 },
+                    block_size: { name: "故障块大小 (Block Size)", min: 5.0, max: 50.0, step: 1.0, value: 20.0 }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === Cyberpunk Glitch 故障着色器 ===
+uniform float glitch_rate : hint_range(0.1, 10.0) = ${p.glitch_rate.value.toFixed(1)};
+uniform float rgb_split : hint_range(0.0, 0.05) = ${p.rgb_split.value.toFixed(3)};
+uniform float block_size : hint_range(2.0, 100.0) = ${p.block_size.value.toFixed(1)};
+
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453);
+}
+
+void fragment() {
+    vec2 uv = UV;
+    float time_step = floor(TIME * glitch_rate * 10.0);
+    
+    // 离散块切片偏移
+    float slice = floor(uv.y * block_size);
+    float noise = rand(vec2(slice, time_step));
+    
+    if (noise > 0.75) {
+        uv.x += (rand(vec2(time_step, slice)) - 0.5) * 0.08;
+    }
+    
+    // RGB 分离采样 (Chromatic Aberration)
+    float r = texture(TEXTURE, uv + vec2(rgb_split, 0.0)).r;
+    float g = texture(TEXTURE, uv).g;
+    float b = texture(TEXTURE, uv - vec2(rgb_split, 0.0)).b;
+    float a = texture(TEXTURE, uv).a;
+    
+    COLOR = vec4(r, g, b, a);
+}`
+            },
+
+            orbit: {
+                id: "orbit",
+                title: "8. Orbit / 轨道旋涡旋转",
+                icon: "orbit",
+                desc: "文字按圆弧轨道扭曲或围绕中心轴漩涡式旋转",
+                params: {
+                    orbit_speed: { name: "旋转速度 (Orbit Speed)", min: -5.0, max: 5.0, step: 0.2, value: 1.5 },
+                    radius: { name: "弯曲扭曲幅度 (Radius)", min: 0.0, max: 1.0, step: 0.05, value: 0.35 },
+                    text_color: { name: "文字颜色", type: "color", value: "#fbbf24" }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// === 轨道漩涡旋转着色器 (Orbit Vortex Shader) ===
+uniform float orbit_speed : hint_range(-10.0, 10.0) = ${p.orbit_speed.value.toFixed(1)};
+uniform float twist_radius : hint_range(0.0, 2.0) = ${p.radius.value.toFixed(2)};
+uniform vec4 text_color : source_color = vec4(${hexToRgbNorm(p.text_color.value).join(', ')}, 1.0);
+
+void fragment() {
+    vec2 center = vec2(0.5);
+    vec2 uv = UV - center;
+    
+    float dist = length(uv);
+    float angle = TIME * orbit_speed + dist * twist_radius * 6.28;
+    
+    // 2D 旋转矩阵 (Rotation Matrix)
+    mat2 rot = mat2(vec2(cos(angle), -sin(angle)), vec2(sin(angle), cos(angle)));
+    vec2 rotated_uv = center + rot * uv;
+    
+    vec4 tex = texture(TEXTURE, rotated_uv);
+    COLOR = tex * text_color;
+}`
+            },
+
+            master: {
+                id: "master",
+                title: "9. All-in-One 全能模组 Shader",
+                icon: "layers",
+                desc: "整合包含轨迹平移 + 渐变 + 扫光 + 故障 + 打字机 + 挤压的 Godot 4 CanvasItem Master Shader",
+                params: {
+                    move_speed: { name: "轨迹移动速度", min: 0.0, max: 4.0, step: 0.1, value: 0.5 },
+                    shine_enable: { name: "开启扫光 (0: 关, 1: 开)", min: 0, max: 1, step: 1, value: 1 },
+                    glitch_enable: { name: "开启故障 (0: 关, 1: 开)", min: 0, max: 1, step: 1, value: 0 }
+                },
+                getCode: (p) => `shader_type canvas_item;
+
+// ===================================================
+// === GODOT 4 ALL-IN-ONE MASTER TEXT SHADER ===
+// ===================================================
+
+group_uniforms Trajectory_Motion;
+uniform bool enable_motion = true;
+uniform float motion_speed : hint_range(0.0, 5.0) = ${p.move_speed.value.toFixed(1)};
+uniform float motion_angle_deg : hint_range(0.0, 360.0) = 0.0;
+
+group_uniforms Gradient;
+uniform bool enable_gradient = true;
+uniform vec4 gradient_color1 : source_color = vec4(0.2, 0.7, 1.0, 1.0);
+uniform vec4 gradient_color2 : source_color = vec4(0.8, 0.2, 1.0, 1.0);
+
+group_uniforms Shiny_Sweep;
+uniform bool enable_shiny = ${p.shine_enable.value === 1 ? 'true' : 'false'};
+uniform float shine_speed = 1.5;
+uniform vec4 shine_color : source_color = vec4(1.0, 1.0, 1.0, 0.8);
+
+group_uniforms Glitch_Effect;
+uniform bool enable_glitch = ${p.glitch_enable.value === 1 ? 'true' : 'false'};
+uniform float glitch_strength : hint_range(0.0, 0.05) = 0.01;
+
+void fragment() {
+    vec2 uv = UV;
+    
+    // 1. 直线轨迹移动 (Trajectory Motion)
+    if (enable_motion) {
+        float rad = radians(motion_angle_deg);
+        vec2 dir = vec2(cos(rad), sin(rad));
+        uv = fract(uv - dir * TIME * motion_speed);
+    }
+    
+    // 2. Glitch 故障切片 (Glitch)
+    if (enable_glitch) {
+        float slice = floor(uv.y * 20.0);
+        float noise = fract(sin(dot(vec2(slice, floor(TIME * 10.0)), vec2(12.9898, 78.233))) * 43758.5453);
+        if (noise > 0.8) {
+            uv.x += (noise - 0.5) * glitch_strength * 4.0;
+        }
+    }
+    
+    vec4 tex = texture(TEXTURE, uv);
+    if (tex.a < 0.01) discard;
+    
+    // 3. 渐变底色 (Gradient)
+    vec4 base_col = tex;
+    if (enable_gradient) {
+        base_col *= mix(gradient_color1, gradient_color2, uv.x);
+    }
+    
+    // 4. Shiny 扫光 (Shiny Sweep)
+    if (enable_shiny) {
+        float pos = mod(TIME * shine_speed, 2.0) - 0.5;
+        float shine = smoothstep(0.1, 0.0, abs(uv.x + uv.y * 0.3 - pos));
+        base_col.rgb = mix(base_col.rgb, shine_color.rgb, shine * shine_color.a);
+    }
+    
+    COLOR = base_col;
+}`
+            }
+        };
+
+        // Helper: Hex color to Normalized RGB array
+        function hexToRgbNorm(hex) {
+            let c = hex.replace('#', '');
+            if (c.length === 3) c = c.split('').map(x => x + x).join('');
+            const num = parseInt(c, 16);
+            return [
+                ((num >> 16) & 255) / 255,
+                ((num >> 8) & 255) / 255,
+                (num & 255) / 255
+            ].map(v => v.toFixed(2));
+        }
+
+        let currentPresetId = 'trajectory';
+        let currentText = "GODOT SHADER 2D";
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPresetList();
+            selectPreset('trajectory');
+            lucide.createIcons();
+
+            // Handle custom text input
+            document.getElementById('custom-text-input').addEventListener('input', (e) => {
+                currentText = e.target.value.trim() || "GODOT SHADER";
+            });
+
+            // Copy Shader Code Button
+            document.getElementById('btn-copy-code').addEventListener('click', copyShaderCode);
+
+            // Reset Parameters Button
+            document.getElementById('btn-reset-params').addEventListener('click', () => {
+                // reload current preset
+                selectPreset(currentPresetId);
+            });
+
+            // Start Canvas Animation Loop
+            requestAnimationFrame(animateCanvas);
+        });
+
+        function renderPresetList() {
+            const container = document.getElementById('shader-list');
+            container.innerHTML = '';
+
+            Object.values(SHADER_PRESETS).forEach(preset => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-3 rounded-lg border transition-all flex items-center gap-3 ${
+                    preset.id === currentPresetId 
+                    ? 'bg-sky-500/10 border-sky-500/40 text-sky-300 font-medium shadow-sm' 
+                    : 'bg-zinc-900/40 border-zinc-800/80 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+                }`;
+                btn.id = `btn-preset-${preset.id}`;
+                btn.onclick = () => selectPreset(preset.id);
+
+                btn.innerHTML = `
+                    <div class="p-2 rounded-md ${preset.id === currentPresetId ? 'bg-sky-500/20 text-sky-400' : 'bg-zinc-800 text-zinc-400'}">
+                        <i data-lucide="${preset.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-xs font-semibold truncate">${preset.title}</div>
+                        <div class="text-[10px] text-zinc-500 truncate mt-0.5">${preset.desc}</div>
+                    </div>
+                `;
+                container.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function selectPreset(id) {
+            currentPresetId = id;
+            renderPresetList();
+
+            const preset = SHADER_PRESETS[id];
+            document.getElementById('current-shader-title').innerHTML = `
+                <i data-lucide="${preset.icon}" class="w-4 h-4 text-sky-400"></i> ${preset.title}
+            `;
+            document.getElementById('current-shader-desc').innerText = preset.desc;
+
+            // Generate Control Inputs
+            renderControls(preset);
+            // Update Code Display
+            updateCodeDisplay();
+            lucide.createIcons();
+        }
+
+        function renderControls(preset) {
+            const grid = document.getElementById('controls-grid');
+            grid.innerHTML = '';
+
+            Object.entries(preset.params).forEach(([key, param]) => {
+                const card = document.createElement('div');
+                card.className = "bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-xl space-y-2";
+
+                if (param.type === 'color') {
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-medium text-zinc-300">${param.name}</label>
+                            <span class="text-xs font-mono text-zinc-400" id="val-${key}">${param.value}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" value="${param.value}" class="w-8 h-8 rounded border border-zinc-700 bg-transparent cursor-pointer" onchange="updateParam('${key}', this.value)">
+                            <span class="text-xs text-zinc-500">点击拾取 RGB 颜色</span>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-medium text-zinc-300">${param.name}</label>
+                            <span class="text-xs font-mono text-sky-400 font-semibold" id="val-${key}">${param.value}</span>
+                        </div>
+                        <input type="range" min="${param.min}" max="${param.max}" step="${param.step}" value="${param.value}" 
+                            class="w-full accent-sky-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer"
+                            oninput="updateParam('${key}', parseFloat(this.value))">
+                    `;
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        function updateParam(key, val) {
+            SHADER_PRESETS[currentPresetId].params[key].value = val;
+            const valLabel = document.getElementById(`val-${key}`);
+            if (valLabel) valLabel.innerText = val;
+            updateCodeDisplay();
+        }
+
+        function updateCodeDisplay() {
+            const preset = SHADER_PRESETS[currentPresetId];
+            const code = preset.getCode(preset.params);
+            document.getElementById('shader-code-display').textContent = code;
+        }
+
+        function copyShaderCode() {
+            const code = document.getElementById('shader-code-display').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 2500);
+            });
+        }
+
+        function animateCanvas(timestamp) {
+            const time = timestamp * 0.001;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw Background Grid
+            ctx.fillStyle = "#18181b";
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.save();
+            ctx.font = "bold 38px 'Fira Code', sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            const preset = SHADER_PRESETS[currentPresetId];
+            const p = preset.params;
+
+            // Render Shader Simulation based on active mode
+            switch (currentPresetId) {
+                case 'trajectory': {
+                    const spd = p.speed.value * 80;
+                    const rad = p.angle.value * (Math.PI / 180);
+                    let dx = Math.cos(rad) * time * spd;
+                    let dy = Math.sin(rad) * time * spd;
+
+                    if (p.mode.value === 0) {
+                        dx = (dx % w + w) % w - w/2;
+                        dy = (dy % h + h) % h - h/2;
+                    } else {
+                        const ping = Math.abs((time * spd) % (w) - w/2);
+                        dx = Math.cos(rad) * ping;
+                        dy = Math.sin(rad) * ping;
+                    }
+
+                    ctx.fillStyle = p.color.value;
+                    ctx.fillText(currentText, w/2 + dx, h/2 + dy);
+                    break;
+                }
+
+                case 'gradient': {
+                    const rad = p.angle.value * (Math.PI / 180);
+                    const x1 = w/2 - Math.cos(rad) * 100;
+                    const y1 = h/2 - Math.sin(rad) * 100;
+                    const x2 = w/2 + Math.cos(rad) * 100;
+                    const y2 = h/2 + Math.sin(rad) * 100;
+
+                    const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+                    grad.addColorStop(0, p.color1.value);
+                    grad.addColorStop(1, p.color2.value);
+
+                    ctx.fillStyle = grad;
+                    ctx.fillText(currentText, w/2, h/2);
+                    break;
+                }
+
+                case 'shiny': {
+                    ctx.fillStyle = p.base_color.value;
+                    ctx.fillText(currentText, w/2, h/2);
+
+                    // Overlay Sheen Sweep
+                    ctx.globalCompositeOperation = 'source-atop';
+                    const sweepPos = ((time * p.speed.value * 200) % (w + 200)) - 100;
+                    const shineGrad = ctx.createLinearGradient(sweepPos - 40, h/2, sweepPos + 40, h/2);
+                    shineGrad.addColorStop(0, 'transparent');
+                    shineGrad.addColorStop(0.5, p.shine_color.value);
+                    shineGrad.addColorStop(1, 'transparent');
+
+                    ctx.fillStyle = shineGrad;
+                    ctx.fillRect(0, 0, w, h);
+                    break;
+                }
+
+                case 'typewriter': {
+                    ctx.fillStyle = p.text_color.value;
+                    const progress = (time * p.speed.value * 0.2) % 1.2;
+                    const visibleChars = Math.floor(progress * currentText.length);
+                    const displayText = currentText.substring(0, visibleChars);
+
+                    let cursorStr = "";
+                    if (p.cursor.value === 1 && Math.sin(time * 12) > 0) cursorStr = "▌";
+
+                    ctx.fillText(displayText + cursorStr, w/2, h/2);
+                    break;
+                }
+
+                case 'pressure': {
+                    ctx.fillStyle = p.text_color.value;
+                    const scaleY = 1 + Math.sin(time * p.freq.value) * p.strength.value;
+                    const scaleX = 1 - Math.sin(time * p.freq.value) * p.strength.value * 0.5;
+
+                    ctx.translate(w/2, h/2);
+                    ctx.scale(scaleX, scaleY);
+                    ctx.fillText(currentText, 0, 0);
+                    break;
+                }
+
+                case 'fuzzy': {
+                    ctx.fillStyle = p.text_color.value;
+                    const fuzzy = p.fuzzy_amount.value * 500;
+                    ctx.shadowColor = p.text_color.value;
+                    ctx.shadowBlur = 10 + Math.random() * fuzzy;
+
+                    // Multi-tap jitter offset
+                    const jx = (Math.random() - 0.5) * fuzzy;
+                    const jy = (Math.random() - 0.5) * fuzzy;
+                    ctx.fillText(currentText, w/2 + jx, h/2 + jy);
+                    break;
+                }
+
+                case 'glitch': {
+                    const isGlitching = Math.random() < (p.glitch_rate.value * 0.2);
+                    const split = p.rgb_split.value * 300;
+
+                    if (isGlitching) {
+                        // Red Channel Shift
+                        ctx.fillStyle = 'rgba(255, 0, 80, 0.8)';
+                        ctx.fillText(currentText, w/2 + split, h/2);
+
+                        // Cyan Channel Shift
+                        ctx.fillStyle = 'rgba(0, 240, 255, 0.8)';
+                        ctx.fillText(currentText, w/2 - split, h/2 + (Math.random() - 0.5) * 6);
+                    }
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(currentText, w/2, h/2);
+                    break;
+                }
+
+                case 'orbit': {
+                    ctx.fillStyle = p.text_color.value;
+                    const angle = time * p.orbit_speed.value;
+
+                    ctx.translate(w/2, h/2);
+                    ctx.rotate(angle * 0.2);
+                    ctx.fillText(currentText, 0, 0);
+                    break;
+                }
+
+                case 'master': {
+                    ctx.fillStyle = '#38bdf8';
+                    const moveX = Math.cos(time * p.move_speed.value) * 30;
+                    ctx.fillText(currentText, w/2 + moveX, h/2);
+                    break;
+                }
+            }
+
+            ctx.restore();
+            requestAnimationFrame(animateCanvas);
+        }
+    </script>
+</body>
+</html>
