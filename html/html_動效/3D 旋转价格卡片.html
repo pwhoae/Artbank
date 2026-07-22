@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D 旋转价格卡片效果演示与生成器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D web preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .canvas-bg {
+            background: radial-gradient(circle at center, #eef78b 0%, #cde855 100%);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-2 rounded-lg font-bold flex items-center justify-center w-10 h-10 shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-cube text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white flex items-center gap-2">
+                    Godot 3D 旋转价格卡片效果
+                    <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">Godot 4.x 适用</span>
+                </h1>
+                <p class="text-xs text-slate-400">支持 360° 自转、双面卡片、卡片切换与 GDScript / Shader 代码导出</p>
+            </div>
+        </div>
+
+        <!-- Mode Select Tabs -->
+        <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+            <button id="btn-preview-mode" onclick="switchMainTab('preview')" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-md">
+                <i class="fa-solid fa-eye mr-1.5"></i> 3D 实时效果预览
+            </button>
+            <button id="btn-code-mode" onclick="switchMainTab('code')" class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white">
+                <i class="fa-solid fa-code mr-1.5"></i> Godot 源码 & 教程
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- PREVIEW CONTAINER (Shown by default) -->
+        <div id="preview-section" class="lg:col-span-8 flex flex-col gap-4">
+
+            <!-- Top Segment Switcher (Replicating image design) -->
+            <div class="flex justify-center my-2">
+                <div class="bg-white/90 backdrop-blur-md border-2 border-indigo-900 rounded-full p-1.5 flex gap-2 shadow-xl">
+                    <button id="cat-btn-0" onclick="selectCategory(0)" class="px-6 py-2 rounded-full font-bold text-sm transition-all bg-indigo-900 text-white shadow-md">
+                        <i class="fa-solid fa-water mr-1"></i> 皮划艇
+                    </button>
+                    <button id="cat-btn-1" onclick="selectCategory(1)" class="px-6 py-2 rounded-full font-bold text-sm transition-all text-indigo-900 hover:bg-indigo-100">
+                        <i class="fa-solid fa-campground mr-1"></i> 露营
+                    </button>
+                    <button id="cat-btn-2" onclick="selectCategory(2)" class="px-6 py-2 rounded-full font-bold text-sm transition-all text-indigo-900 hover:bg-indigo-100">
+                        <i class="fa-solid fa-person-skiing mr-1"></i> 滑雪
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3D Canvas Stage -->
+            <div class="relative w-full h-[520px] rounded-2xl canvas-bg overflow-hidden border-2 border-slate-700 shadow-2xl flex items-center justify-center">
+                <!-- Three.js Canvas mount -->
+                <div id="three-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+                <!-- Overlay Hints & Controls -->
+                <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-700/50 text-xs text-slate-300 pointer-events-none">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-hand-pointer text-indigo-400 animate-bounce"></i>
+                        <span>按住鼠标拖拽手动旋转 | 双击卡片快速翻转正反面</span>
+                    </div>
+                    <div class="flex items-center gap-3 pointer-events-auto">
+                        <button onclick="toggleAutoRotate()" id="autorotate-toggle-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-pause" id="autorotate-icon"></i> <span id="autorotate-text">暂停自转</span>
+                        </button>
+                        <button onclick="resetCamera()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-rotate-left"></i> 重置视角
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Floating Info Badge -->
+                <div class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/50 text-xs font-medium text-slate-300">
+                    当前选定套餐: <span id="current-package-title" class="text-lime-400 font-bold">皮划艇双人特惠</span>
+                </div>
+            </div>
+        </div>
+
+        <aside id="controls-sidebar" class="lg:col-span-4 bg-slate-800/80 backdrop-blur-lg border border-slate-700 rounded-2xl p-5 flex flex-col gap-5 shadow-xl">
+            <div class="border-b border-slate-700 pb-3 flex items-center justify-between">
+                <h2 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i> 3D 旋转参数微调
+                </h2>
+                <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">实时生效</span>
+            </div>
+
+            <!-- Auto Rotate Speed -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <label class="text-slate-300 font-medium">360° 自转速度 (RPM)</label>
+                    <span id="val-speed" class="text-indigo-400 font-mono">1.5</span>
+                </div>
+                <input type="range" id="param-speed" min="0" max="5" step="0.1" value="1.5" class="w-full accent-indigo-500 cursor-pointer">
+            </div>
+
+            <!-- Card Tilt Angle (X Axis) -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <label class="text-slate-300 font-medium">卡片俯仰角度 (Pitch)</label>
+                    <span id="val-pitch" class="text-indigo-400 font-mono">10°</span>
+                </div>
+                <input type="range" id="param-pitch" min="-30" max="30" step="1" value="10" class="w-full accent-indigo-500 cursor-pointer">
+            </div>
+
+            <!-- Perspective Depth -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <label class="text-slate-300 font-medium">透视感强度 (FOV / Camera Distance)</label>
+                    <span id="val-fov" class="text-indigo-400 font-mono">45</span>
+                </div>
+                <input type="range" id="param-fov" min="20" max="75" step="1" value="45" class="w-full accent-indigo-500 cursor-pointer">
+            </div>
+
+            <!-- Card Thickness -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <label class="text-slate-300 font-medium">3D 卡片厚度 (Thickness)</label>
+                    <span id="val-thickness" class="text-indigo-400 font-mono">0.08</span>
+                </div>
+                <input type="range" id="param-thickness" min="0.01" max="0.2" step="0.01" value="0.08" class="w-full accent-indigo-500 cursor-pointer">
+            </div>
+
+            <!-- Card Style Preset Selection -->
+            <div class="space-y-2">
+                <label class="text-xs text-slate-300 font-medium block">卡片视觉风格 Preset</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('purple')" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white text-xs py-2 rounded-lg font-semibold shadow">
+                        经典高亮紫
+                    </button>
+                    <button onclick="applyPreset('emerald')" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white text-xs py-2 rounded-lg font-semibold shadow">
+                        自然露营绿
+                    </button>
+                    <button onclick="applyPreset('cyan')" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white text-xs py-2 rounded-lg font-semibold shadow">
+                        冰雪极光蓝
+                    </button>
+                    <button onclick="applyPreset('amber')" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white text-xs py-2 rounded-lg font-semibold shadow">
+                        暖阳落日橙
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Action Box -->
+            <div class="mt-auto pt-4 border-t border-slate-700 space-y-2">
+                <button onclick="switchMainTab('code')" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm transition">
+                    <i class="fa-solid fa-download"></i> 获取完整 Godot 4 工程代码
+                </button>
+            </div>
+        </aside>
+
+        <!-- CODE GENERATOR & TUTORIAL CONTAINER (Hidden by default) -->
+        <div id="code-section" class="hidden lg:col-span-12 space-y-6">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
+                
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-code text-indigo-400"></i> Godot 4 3D 旋转卡片完整实现方案
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1">包含 3D Viewport 贴图与 2D Shader 两种方法，复制即可直接投入生产项目使用。</p>
+                    </div>
+
+                    <!-- Godot Method Selector -->
+                    <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700">
+                        <button id="subtab-3d" onclick="switchCodeTab('3d')" class="px-4 py-1.5 rounded-md text-xs font-bold transition bg-indigo-600 text-white">
+                            方案一：Node3D + SubViewport (官方推荐)
+                        </button>
+                        <button id="subtab-2d" onclick="switchCodeTab('2d')" class="px-4 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white">
+                            方案二：2D CanvasItem Shader (超轻量)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CODE CONTENT: 3D VIEWPORT METHOD -->
+                <div id="code-content-3d" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 bg-slate-900/60 p-4 rounded-xl border border-slate-700/50">
+                        <div class="flex items-start gap-2">
+                            <span class="bg-indigo-500/20 text-indigo-400 font-bold px-2 py-0.5 rounded">1</span>
+                            <span>建立 `Node3D` 作为根节点，添加 `MeshInstance3D` (设置为 QuadMesh)。</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="bg-indigo-500/20 text-indigo-400 font-bold px-2 py-0.5 rounded">2</span>
+                            <span>创建 `SubViewport` 节点，里面放入你用 Godot Control (Button/Label) 画好的 2D 卡片。</span>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="bg-indigo-500/20 text-indigo-400 font-bold px-2 py-0.5 rounded">3</span>
+                            <span>在 Mesh3D 材质的 `Albedo Texture` 中指定 `ViewportTexture` 绑定到 SubViewport！</span>
+                        </div>
+                    </div>
+
+                    <!-- GDScript Block -->
+                    <div class="relative group">
+                        <div class="flex items-center justify-between bg-slate-900 px-4 py-2 border-b border-slate-700 rounded-t-xl text-xs text-slate-400">
+                            <span class="font-mono flex items-center gap-2"><i class="fa-solid fa-file-code text-indigo-400"></i> RotatingCard3D.gd (Godot 4.x)</span>
+                            <button onclick="copyCode('gdscript-3d-code')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 flex items-center gap-1.5 text-xs transition">
+                                <i class="fa-regular fa-copy"></i> 复制代码
+                            </button>
+                        </div>
+                        <pre id="gdscript-3d-code" class="bg-slate-950 p-4 rounded-b-xl font-mono text-xs text-emerald-400 overflow-x-auto border border-slate-700 border-t-0 leading-relaxed">
+# ==============================================================================
+# Godot 4.x - 3D 旋转卡片逻辑控制脚本
+# 附加节点: Node3D (卡片容器)
+# ==============================================================================
+extends Node3D
+
+@export_category("3D 旋转参数")
+@export var auto_rotate: bool = true          # 是否开启 360° 自转
+@export var rotate_speed: float = 1.5         # 旋转速度 (rad/s)
+@export var tilt_angle_deg: float = 8.0        # X 轴倾斜角度
+@export var enable_hover_pause: bool = true   # 鼠标悬停时暂停自转
+
+@onready var mesh_instance_3d: MeshInstance3D = $MeshInstance3D
+@onready var sub_viewport: SubViewport = $SubViewport
+
+var is_hovered: bool = false
+var target_rotation_y: float = 0.0
+
+func _ready() -> void:
+	# 确保材质设置为双面渲染 (Cull Mode = Disabled)，以便能看到背面
+	var mat = mesh_instance_3d.get_active_material(0) as StandardMaterial3D
+	if mat:
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# 关联 SubViewport 动态纹理
+		var vp_tex = sub_viewport.get_texture()
+		mat.albedo_texture = vp_tex
+
+	# 设置初始倾斜角
+	rotation_degrees.x = tilt_angle_deg
+
+func _process(delta: float) -> void:
+	if auto_rotate and not (enable_hover_pause and is_hovered):
+		# 持续 360 度自转
+		rotate_y(rotate_speed * delta)
+
+# 响应外部卡片切换或点击翻转命令
+func flip_to_back() -> void:
+	var tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "rotation_degrees:y", rotation_degrees.y + 180.0, 0.6)
+
+func set_category_index(index: int) -> void:
+	# 播放转圈动画并更新 SubViewport 内的 2D 文本
+	var tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "rotation_degrees:y", rotation_degrees.y + 360.0, 0.8)
+	
+	# 更新 2D 界面内容
+	if sub_viewport.has_node("PriceCard2D"):
+		sub_viewport.get_node("PriceCard2D").update_content(index)
+</pre>
+                    </div>
+                </div>
+
+                <!-- CODE CONTENT: 2D SHADER METHOD -->
+                <div id="code-content-2d" class="hidden space-y-4">
+                    <div class="text-xs text-slate-300 bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 leading-relaxed">
+                        <strong class="text-indigo-400">2D Shader 方案优点：</strong> 不需要创建 3D 场景与 Viewport，直接在普通 CanvasItem (TextureRect / Control) 上添加 Shader 即可渲染 3D 透视旋转，极大节约 DrawCall 与显存！
+                    </div>
+
+                    <!-- Shader Code Block -->
+                    <div class="relative group">
+                        <div class="flex items-center justify-between bg-slate-900 px-4 py-2 border-b border-slate-700 rounded-t-xl text-xs text-slate-400">
+                            <span class="font-mono flex items-center gap-2"><i class="fa-solid fa-microchip text-indigo-400"></i> Card3DRotation2D.gdshader (Godot 4.x)</span>
+                            <button onclick="copyCode('gdshader-code')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded border border-slate-600 flex items-center gap-1.5 text-xs transition">
+                                <i class="fa-regular fa-copy"></i> 复制 Shader 代码
+                            </button>
+                        </div>
+                        <pre id="gdshader-code" class="bg-slate-950 p-4 rounded-b-xl font-mono text-xs text-cyan-400 overflow-x-auto border border-slate-700 border-t-0 leading-relaxed">
+// ==============================================================================
+// Godot 4.x CanvasItem Shader: 2D 控件的 3D 透视 360° 旋转
+// ==============================================================================
+shader_type canvas_item;
+
+uniform float y_rot : hint_range(-180.0, 180.0) = 0.0; // Y 轴旋转角度
+uniform float x_rot : hint_range(-90.0, 90.0) = 10.0;   // X 轴倾斜角度
+uniform float inset : hint_range(0.0, 1.0) = 0.0;      // 缩放边距
+uniform float fov : hint_range(1.0, 179.0) = 90.0;     // 视角场强
+
+// 3D 旋转矩阵计算
+mat4 rotation_matrix(vec3 axis, float angle) {
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    
+    return mat4(
+        vec4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0.0),
+        vec4(oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s, 0.0),
+        vec4(oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c,           0.0),
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+}
+
+void vertex() {
+	float rad_y = radians(y_rot);
+	float rad_x = radians(x_rot);
+	
+	// 将 2D 顶点坐标转换为以中心点为原点的 3D 空间坐标
+	vec3 p = vec3(VERTEX - (1.0 / TEXTURE_PIXEL_SIZE) * 0.5, 0.0);
+	
+	mat4 rot = rotation_matrix(vec3(0.0, 1.0, 0.0), rad_y) * rotation_matrix(vec3(1.0, 0.0, 0.0), rad_x);
+	p = (rot * vec4(p, 1.0)).xyz;
+	
+	// 透视投影矩阵收缩计算
+	float z_dist = 500.0 / tan(radians(fov * 0.5));
+	p.xy *= z_dist / (z_dist - p.z);
+	
+	VERTEX = p.xy + (1.0 / TEXTURE_PIXEL_SIZE) * 0.5;
+}
+
+void fragment() {
+	// 背面剔除逻辑，防止镜像文本
+	float rad_y = radians(y_rot);
+	if (cos(rad_y) < 0.0) {
+		// 当旋转到背面时隐藏或替换贴图
+		COLOR.a = 0.0;
+	} else {
+		COLOR = texture(TEXTURE, UV);
+	}
+}
+</pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500">
+        Godot 3D 旋转卡片视觉效果生成器 | 遵循 Godot 4.x Engine 引擎规范
+    </footer>
+
+    <script>
+        // Preset Package Datasets
+        const packages = [
+            {
+                name: "皮划艇双人特惠套餐",
+                tag: "热销体验",
+                price: "¥ 299",
+                original: "¥ 480",
+                features: ["专业教练随队指导", "全套救生设备提供", "2小时畅游绿水峡谷", "精美水下摄影赠送"],
+                color: 0x6366f1, // Indigo
+                bgGradient: ['#4f46e5', '#312e81'],
+                badgeBg: '#4338ca'
+            },
+            {
+                name: "奢华精致露营套餐",
+                tag: "周末首选",
+                price: "¥ 588",
+                original: "¥ 880",
+                features: ["双人星空帐篷住宿", "精致手冲咖啡+下午茶", "篝火晚会+户外烧烤", "免费停车场与淋浴"],
+                color: 0x10b981, // Emerald
+                bgGradient: ['#059669', '#064e3b'],
+                badgeBg: '#047857'
+            },
+            {
+                name: "高山滑雪全能日票",
+                tag: "酷爽推荐",
+                price: "¥ 399",
+                original: "¥ 650",
+                features: ["高级雪道全天畅滑", "包含雪板+雪靴租赁", "缆车不限次数乘坐", "免费安全保险"],
+                color: 0x06b6d4, // Cyan
+                bgGradient: ['#0891b2', '#164e63'],
+                badgeBg: '#0e7490'
+            }
+        ];
+
+        let currentPkgIndex = 0;
+        let scene, camera, renderer, cardGroup;
+        let cardFrontMesh, cardBackMesh, cardEdgeMesh;
+        let isAutoRotating = true;
+        let autoRotateSpeed = 0.015;
+        let tiltPitch = 0.17; // rad
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        // Initialize Three.js 3D Environment
+        function init3D() {
+            const container = document.getElementById('three-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 0, 8);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            container.appendChild(renderer.domElement);
+
+            // Lighting Setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(5, 8, 5);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x818cf8, 1, 10);
+            pointLight.position.set(-4, -2, 3);
+            scene.add(pointLight);
+
+            // Card Parent Group
+            cardGroup = new THREE.Group();
+            cardGroup.rotation.x = tiltPitch;
+            scene.add(cardGroup);
+
+            // Create 3D Card Object
+            buildCardMesh();
+
+            // Handle Mouse Interactions
+            setupInteractions(container);
+
+            // Resize Observer
+            window.addEventListener('resize', onWindowResize);
+
+            // Animation Loop
+            animate();
+        }
+
+        function createCardCanvasTexture(isBack = false) {
+            const pkg = packages[currentPkgIndex];
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 720;
+            const ctx = canvas.getContext('2d');
+
+            // Rounded Rect Path Helper
+            function roundRect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            }
+
+            // Card Background Gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 720);
+            gradient.addColorStop(0, pkg.bgGradient[0]);
+            gradient.addColorStop(1, pkg.bgGradient[1]);
+
+            ctx.fillStyle = gradient;
+            roundRect(0, 0, 512, 720, 32);
+            ctx.fill();
+
+            // Card Border
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 8;
+            roundRect(4, 4, 504, 712, 28);
+            ctx.stroke();
+
+            if (!isBack) {
+                // --- FRONT SIDE UI ---
+                // Header Badge
+                ctx.fillStyle = pkg.badgeBg;
+                roundRect(40, 40, 140, 44, 22);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText(pkg.tag, 60, 69);
+
+                // Package Title
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 34px sans-serif';
+                ctx.fillText(pkg.name, 40, 130);
+
+                // Price Tag Section
+                ctx.fillStyle = '#facc15';
+                ctx.font = 'bold 54px sans-serif';
+                ctx.fillText(pkg.price, 40, 210);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.font = '24px sans-serif';
+                ctx.fillText('原价 ' + pkg.original, 260, 205);
+
+                // Divider Line
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(40, 250);
+                ctx.lineTo(472, 250);
+                ctx.stroke();
+
+                // Feature List
+                ctx.font = '22px sans-serif';
+                pkg.features.forEach((feat, idx) => {
+                    const yPos = 310 + (idx * 55);
+                    // Check mark circle
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(60, yPos - 8, 14, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = 'bold 18px sans-serif';
+                    ctx.fillText('✓', 54, yPos - 1);
+
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.font = '22px sans-serif';
+                    ctx.fillText(feat, 90, yPos);
+                });
+
+                // CTA Button
+                const btnGradient = ctx.createLinearGradient(40, 580, 472, 660);
+                btnGradient.addColorStop(0, '#f59e0b');
+                btnGradient.addColorStop(1, '#d97706');
+                ctx.fillStyle = btnGradient;
+                roundRect(40, 580, 432, 80, 40);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('立即预订套餐', 256, 630);
+                ctx.textAlign = 'left';
+
+            } else {
+                // --- BACK SIDE UI ---
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 32px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('预订须知与特权', 256, 80);
+
+                ctx.font = '20px sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.fillText('扫码即可完成核销与退订', 256, 120);
+
+                // Simulated QR Code Area
+                ctx.fillStyle = '#ffffff';
+                roundRect(146, 160, 220, 220, 20);
+                ctx.fill();
+
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('[ 模拟二维码 ]', 256, 275);
+
+                // Back Details
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = '20px sans-serif';
+                ctx.fillText('• 提前24小时取消可全额退款', 256, 430);
+                ctx.fillText('• 包含投保额度 50 万元意外险', 256, 470);
+                ctx.fillText('• 凭电子券号随时兑换入场', 256, 510);
+
+                // Secondary CTA
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                roundRect(80, 570, 352, 60, 30);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px sans-serif';
+                ctx.fillText('返回卡片正面', 256, 608);
+                ctx.textAlign = 'left';
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function buildCardMesh() {
+            if (cardFrontMesh) cardGroup.remove(cardFrontMesh);
+
+            const cardWidth = 2.4;
+            const cardHeight = 3.37;
+            const thickness = parseFloat(document.getElementById('param-thickness').value);
+
+            // Front Side Plane
+            const frontTex = createCardCanvasTexture(false);
+            const frontMat = new THREE.MeshStandardMaterial({
+                map: frontTex,
+                roughness: 0.3,
+                metalness: 0.1,
+                side: THREE.FrontSide
+            });
+
+            // Back Side Plane
+            const backTex = createCardCanvasTexture(true);
+            const backMat = new THREE.MeshStandardMaterial({
+                map: backTex,
+                roughness: 0.3,
+                metalness: 0.1,
+                side: THREE.FrontSide
+            });
+
+            // Edge Material (Gold/White Metallic border)
+            const edgeMat = new THREE.MeshStandardMaterial({
+                color: 0xe2e8f0,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+
+            // Create Thin Box Mesh for 3D depth
+            const geometry = new THREE.BoxGeometry(cardWidth, cardHeight, thickness);
+
+            // Materials array: Right, Left, Top, Bottom, Front, Back
+            const materials = [
+                edgeMat, edgeMat, edgeMat, edgeMat,
+                frontMat, backMat
+            ];
+
+            cardFrontMesh = new THREE.Mesh(geometry, materials);
+            cardFrontMesh.castShadow = true;
+            cardFrontMesh.receiveShadow = true;
+            cardGroup.add(cardFrontMesh);
+        }
+
+        // Setup Drag & Orbit Interaction
+        function setupInteractions(container) {
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                cardGroup.rotation.y += deltaX * 0.01;
+                cardGroup.rotation.x += deltaY * 0.005;
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            // Double Click to Flip 180 Degrees
+            container.addEventListener('dblclick', () => {
+                const targetY = cardGroup.rotation.y + Math.PI;
+                animateFlip(targetY);
+            });
+        }
+
+        function animateFlip(targetY) {
+            const startY = cardGroup.rotation.y;
+            const startTime = performance.now();
+            const duration = 600; // ms
+
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease out cubic
+                const ease = 1 - Math.pow(1 - progress, 3);
+                cardGroup.rotation.y = startY + (targetY - startY) * ease;
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isAutoRotating && !isDragging) {
+                cardGroup.rotation.y += autoRotateSpeed;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('three-container');
+            if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // Category Switch Action
+        function selectCategory(index) {
+            currentPkgIndex = index;
+
+            // Highlight buttons
+            for (let i = 0; i < 3; i++) {
+                const btn = document.getElementById(`cat-btn-${i}`);
+                if (i === index) {
+                    btn.className = "px-6 py-2 rounded-full font-bold text-sm transition-all bg-indigo-900 text-white shadow-md";
+                } else {
+                    btn.className = "px-6 py-2 rounded-full font-bold text-sm transition-all text-indigo-900 hover:bg-indigo-100";
+                }
+            }
+
+            document.getElementById('current-package-title').innerText = packages[index].name;
+
+            // Rebuild texture & trigger spin animation
+            buildCardMesh();
+            animateFlip(cardGroup.rotation.y + Math.PI * 2);
+        }
+
+        // Toggle Auto Rotate
+        function toggleAutoRotate() {
+            isAutoRotating = !isAutoRotating;
+            const icon = document.getElementById('autorotate-icon');
+            const text = document.getElementById('autorotate-text');
+
+            if (isAutoRotating) {
+                icon.className = "fa-solid fa-pause";
+                text.innerText = "暂停自转";
+            } else {
+                icon.className = "fa-solid fa-play";
+                text.innerText = "开启自转";
+            }
+        }
+
+        function resetCamera() {
+            cardGroup.rotation.x = tiltPitch;
+            cardGroup.rotation.y = 0;
+        }
+
+        // Presets Quick Switch
+        function applyPreset(preset) {
+            if (preset === 'purple') selectCategory(0);
+            if (preset === 'emerald') selectCategory(1);
+            if (preset === 'cyan') selectCategory(2);
+            if (preset === 'amber') {
+                packages[0].bgGradient = ['#f59e0b', '#7c2d12'];
+                packages[0].badgeBg = '#b45309';
+                selectCategory(0);
+            }
+        }
+
+        function switchMainTab(tab) {
+            const previewSec = document.getElementById('preview-section');
+            const codeSec = document.getElementById('code-section');
+            const sidebar = document.getElementById('controls-sidebar');
+            const btnPreview = document.getElementById('btn-preview-mode');
+            const btnCode = document.getElementById('btn-code-mode');
+
+            if (tab === 'preview') {
+                previewSec.classList.remove('hidden');
+                sidebar.classList.remove('hidden');
+                codeSec.classList.add('hidden');
+                btnPreview.className = "px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-md";
+                btnCode.className = "px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white";
+                onWindowResize();
+            } else {
+                previewSec.classList.add('hidden');
+                sidebar.classList.add('hidden');
+                codeSec.classList.remove('hidden');
+                btnPreview.className = "px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white";
+                btnCode.className = "px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-md";
+            }
+        }
+
+        function switchCodeTab(method) {
+            const code3d = document.getElementById('code-content-3d');
+            const code2d = document.getElementById('code-content-2d');
+            const btn3d = document.getElementById('subtab-3d');
+            const btn2d = document.getElementById('subtab-2d');
+
+            if (method === '3d') {
+                code3d.classList.remove('hidden');
+                code2d.classList.add('hidden');
+                btn3d.className = "px-4 py-1.5 rounded-md text-xs font-bold transition bg-indigo-600 text-white";
+                btn2d.className = "px-4 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
+            } else {
+                code3d.classList.add('hidden');
+                code2d.classList.remove('hidden');
+                btn3d.className = "px-4 py-1.5 rounded-md text-xs font-bold transition text-slate-400 hover:text-white";
+                btn2d.className = "px-4 py-1.5 rounded-md text-xs font-bold transition bg-indigo-600 text-white";
+            }
+        }
+
+        function copyCode(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            // Toast feedback
+            const toast = document.createElement('div');
+            toast.className = "fixed bottom-8 right-8 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-2xl z-50 animate-bounce";
+            toast.innerHTML = '<i class="fa-solid fa-check mr-2"></i> 代码已成功复制到剪贴板！';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        // Connect Input Ranges
+        document.getElementById('param-speed').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            autoRotateSpeed = val * 0.01;
+            document.getElementById('val-speed').innerText = val.toFixed(1);
+        });
+
+        document.getElementById('param-pitch').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            tiltPitch = THREE.MathUtils.degToRad(val);
+            cardGroup.rotation.x = tiltPitch;
+            document.getElementById('val-pitch').innerText = val + '°';
+        });
+
+        document.getElementById('param-fov').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            camera.fov = val;
+            camera.updateProjectionMatrix();
+            document.getElementById('val-fov').innerText = val;
+        });
+
+        document.getElementById('param-thickness').addEventListener('input', (e) => {
+            document.getElementById('val-thickness').innerText = e.target.value;
+            buildCardMesh();
+        });
+
+        // Initialize 3D Engine on load
+        window.onload = function() {
+            init3D();
+        };
+    </script>
+</body>
+</html>
