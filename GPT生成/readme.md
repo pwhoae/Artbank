@@ -1,5 +1,6 @@
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
-godot game player 一筆畫 畫面震動（Screenshake）
+godot game player 一筆畫 畫面震動（Screenshake）<br>
+3d 像素化shader 
 <br>站酷/reactbit/https://uiverse.io/navnav(half free) 
 【CSS - (附源码)渐变彩色文字擦拭动画】 https://www.bilibili.com/video/BV1AkaZeVEY4/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 【不用监听 scroll，也能让吸顶导航栏滚动时切换样式】 https://www.bilibili.com/video/BV16RLg6gE94/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
