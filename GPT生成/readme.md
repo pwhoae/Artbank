@@ -1,4 +1,6 @@
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
+  生成鏡面反射光遊戲:https://share.gemini.google/m1Z6quBNjlHY<br>
+
 godot game player 一筆畫 畫面震動（Screenshake）<br>
 3d 像素化shader 
 <br>站酷/reactbit/https://uiverse.io/navnav(half free) 
