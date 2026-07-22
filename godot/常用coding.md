@@ -21,6 +21,7 @@ XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數
 
 AtlasTexture 拼圖
 filedialog:玩家upload file
+tilemap》collision layer
 
 ### 2D Notes
 
