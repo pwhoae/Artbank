@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 2D 藍天白雲 Shader 生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+        input[type="range"] {
+            accent-color: #3b82f6;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen overflow-hidden flex flex-col md:flex-row">
+
+    <!-- Left Sidebar / Controls Panel -->
+    <div class="w-full md:w-96 bg-slate-900/90 backdrop-blur-md border-r border-slate-800 flex flex-col h-1/2 md:h-full z-10 shadow-2xl">
+        <!-- Header -->
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid font-bold text-sky-400 text-xl fa-cloud-sun"></i>
+                <h1 class="font-bold text-lg text-slate-100 tracking-wide">Godot 2D 天空 Shader 生成器</h1>
+            </div>
+            <span class="text-xs bg-sky-500/20 text-sky-300 font-mono px-2 py-0.5 rounded border border-sky-500/30">Godot 4.x (2D)</span>
+        </div>
+
+        <!-- Scrollable Control Settings -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            
+            <!-- Presets Section -->
+            <div>
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 block flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 風格預設 (Presets)
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyPreset('classic')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> 晴空萬里
+                    </button>
+                    <button onclick="applyPreset('ghibli')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 吉卜力動漫
+                    </button>
+                    <button onclick="applyPreset('sunset')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 絕美夕陽
+                    </button>
+                    <button onclick="applyPreset('dreamy')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition">
+                        <span class="w-2.5 h-2.5 rounded-full bg-pink-400"></span> 夢幻粉彩
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sky Colors -->
+            <div class="space-y-3">
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                    <i class="fa-solid fa-palette text-sky-400"></i> 天空色彩 (Sky Colors)
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-xs text-slate-400 block mb-1">天頂顏色 (Top)</span>
+                        <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                            <input type="color" id="skyTopColor" value="#1e60bd" onchange="updateUniforms()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-xs font-mono text-slate-300" id="skyTopColorHex">#1e60bd</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block mb-1">地平線顏色 (Horizon)</span>
+                        <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                            <input type="color" id="skyHorizonColor" value="#a8d8ff" onchange="updateUniforms()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-xs font-mono text-slate-300" id="skyHorizonColorHex">#a8d8ff</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cloud Properties -->
+            <div class="space-y-3">
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud text-indigo-400"></i> 雲朵參數 (Clouds)
+                </label>
+                
+                <!-- Cloud Colors -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-xs text-slate-400 block mb-1">雲朵亮面 (Main)</span>
+                        <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                            <input type="color" id="cloudColor" value="#ffffff" onchange="updateUniforms()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-xs font-mono text-slate-300" id="cloudColorHex">#ffffff</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block mb-1">雲朵陰影 (Shadow)</span>
+                        <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                            <input type="color" id="cloudShadowColor" value="#9eb6db" onchange="updateUniforms()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                            <span class="text-xs font-mono text-slate-300" id="cloudShadowColorHex">#9eb6db</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coverage -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">覆蓋率 (Coverage)</span>
+                        <span id="cloudCoverageVal" class="text-sky-400 font-mono">0.48</span>
+                    </div>
+                    <input type="range" id="cloudCoverage" min="0.0" max="1.0" step="0.01" value="0.48" oninput="updateUniforms()" class="w-full">
+                </div>
+
+                <!-- Softness -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">軟硬度/邊緣 (Softness)</span>
+                        <span id="cloudSoftnessVal" class="text-sky-400 font-mono">0.20</span>
+                    </div>
+                    <input type="range" id="cloudSoftness" min="0.01" max="0.5" step="0.01" value="0.20" oninput="updateUniforms()" class="w-full">
+                </div>
+
+                <!-- Scale -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">雲朵縮放 (Scale)</span>
+                        <span id="cloudScaleVal" class="text-sky-400 font-mono">2.2</span>
+                    </div>
+                    <input type="range" id="cloudScale" min="0.5" max="8.0" step="0.1" value="2.2" oninput="updateUniforms()" class="w-full">
+                </div>
+
+                <!-- Speed X & Speed Y -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">風速 X (Speed X)</span>
+                            <span id="cloudSpeedXVal" class="text-sky-400 font-mono">0.03</span>
+                        </div>
+                        <input type="range" id="cloudSpeedX" min="-0.2" max="0.2" step="0.005" value="0.03" oninput="updateUniforms()" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">風速 Y (Speed Y)</span>
+                            <span id="cloudSpeedYVal" class="text-sky-400 font-mono">0.005</span>
+                        </div>
+                        <input type="range" id="cloudSpeedY" min="-0.2" max="0.2" step="0.005" value="0.005" oninput="updateUniforms()" class="w-full">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sun Lighting & Horizon Section -->
+            <div class="space-y-3">
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                    <i class="fa-solid fa-sun text-yellow-400"></i> 太陽與 2D 地平線 (Sun & Horizon)
+                </label>
+
+                <div>
+                    <span class="text-xs text-slate-400 block mb-1">太陽光顏色</span>
+                    <div class="flex items-center space-x-2 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                        <input type="color" id="sunColor" value="#fff5cc" onchange="updateUniforms()" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                        <span class="text-xs font-mono text-slate-300" id="sunColorHex">#fff5cc</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">太陽位置 X (UV)</span>
+                            <span id="sunPosXVal" class="text-sky-400 font-mono">0.70</span>
+                        </div>
+                        <input type="range" id="sunPosX" min="0.0" max="1.0" step="0.01" value="0.70" oninput="updateUniforms()" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">太陽位置 Y (UV)</span>
+                            <span id="sunPosYVal" class="text-sky-400 font-mono">0.25</span>
+                        </div>
+                        <input type="range" id="sunPosY" min="0.0" max="1.0" step="0.01" value="0.25" oninput="updateUniforms()" class="w-full">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">太陽大小 (Sun Size)</span>
+                        <span id="sunSizeVal" class="text-sky-400 font-mono">0.050</span>
+                    </div>
+                    <input type="range" id="sunSize" min="0.01" max="0.2" step="0.005" value="0.05" oninput="updateUniforms()" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">地平線高度 (Horizon Height)</span>
+                        <span id="horizonHeightVal" class="text-sky-400 font-mono">0.60</span>
+                    </div>
+                    <input type="range" id="horizonHeight" min="0.1" max="1.0" step="0.01" value="0.60" oninput="updateUniforms()" class="w-full">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="p-4 border-t border-slate-800 bg-slate-900 flex space-x-2">
+            <button onclick="openCodeModal()" class="flex-1 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-medium text-xs rounded-lg transition flex items-center justify-center space-x-2 shadow-lg shadow-sky-600/30">
+                <i class="fa-solid fa-code"></i>
+                <span>獲取 Godot 2D Shader 程式碼</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Section: 2D Viewport -->
+    <div class="flex-1 relative bg-slate-950 flex flex-col h-1/2 md:h-full">
+        <!-- Canvas Container -->
+        <div id="viewport" class="w-full h-full"></div>
+
+        <!-- Viewport Overlay Info -->
+        <div class="absolute top-4 left-4 pointer-events-none bg-slate-900/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-800 text-xs text-slate-300 flex items-center space-x-2">
+            <i class="fa-solid fa-layer-group text-sky-400"></i>
+            <span>Godot 2D (`canvas_item`) 即時畫質預覽</span>
+        </div>
+    </div>
+
+    <!-- Modal for Exporting Godot Shader Code -->
+    <div id="codeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-file-code text-sky-400"></i>
+                    <h3 class="font-bold text-slate-200 text-sm">Godot 4 2D `.gdshader` 原始碼 (`canvas_item`)</h3>
+                </div>
+                <button onclick="closeCodeModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Code View) -->
+            <div class="p-4 flex-1 overflow-y-auto bg-slate-950 font-mono text-xs text-slate-300 relative">
+                <pre id="shaderCodeContainer"><code id="shaderCodeText"></code></pre>
+            </div>
+
+            <!-- Usage Instructions & Footer -->
+            <div class="p-4 border-t border-slate-800 bg-slate-900 flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="text-xs text-slate-400 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-circle-info text-sky-400"></i>
+                    <span>用法：在 Godot 2D 場景添加 <code class="text-sky-300 bg-slate-800 px-1 rounded">ColorRect</code> / <code class="text-sky-300 bg-slate-800 px-1 rounded">Parallax2D</code> -> 新建 <code class="text-sky-300 bg-slate-800 px-1 rounded">ShaderMaterial</code> 粘貼此程式碼</span>
+                </div>
+                <div class="flex space-x-2 w-full md:w-auto">
+                    <button onclick="copyShaderCode()" id="copyBtn" class="flex-1 md:flex-none px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-medium transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>複製 2D Shader 程式碼</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-emerald-600 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-medium flex items-center space-x-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toastMsg">已成功複製到剪貼簿！</span>
+    </div>
+
+    <script>
+        // Global variables for Three.js 2D quad scene
+        let scene, camera, renderer, quadMesh, skyMaterial;
+
+        // WebGL 2D Quad Vertex Shader
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 1.0);
+            }
+        `;
+
+        // WebGL 2D Fragment Shader (Matching Godot 2D CanvasItem Sky Shader)
+        const fragmentShader = `
+            uniform vec3 u_sky_top_color;
+            uniform vec3 u_sky_horizon_color;
+            uniform vec3 u_cloud_color;
+            uniform vec3 u_cloud_shadow_color;
+            uniform float u_cloud_coverage;
+            uniform float u_cloud_softness;
+            uniform float u_cloud_scale;
+            uniform vec2 u_cloud_speed;
+            uniform vec3 u_sun_color;
+            uniform vec2 u_sun_position;
+            uniform float u_sun_size;
+            uniform float u_horizon_height;
+            uniform float u_time;
+
+            varying vec2 vUv;
+
+            // 2D Hash & Noise
+            float hash(vec2 p) {
+                p = fract(p * vec2(234.34, 435.345));
+                p += dot(p, p + 34.23);
+                return fract(p.x * p.y);
+            }
+
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                
+                float a = hash(i);
+                float b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0));
+                float d = hash(i + vec2(1.0, 1.0));
+                
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+
+            float fbm(vec2 p) {
+                float value = 0.0;
+                float amplitude = 0.5;
+                mat2 rot = mat2(0.8, -0.6, 0.6, 0.8);
+                for (int i = 0; i < 5; i++) {
+                    value += amplitude * noise(p);
+                    p = rot * p * 2.02;
+                    amplitude *= 0.5;
+                }
+                return value;
+            }
+
+            void main() {
+                vec2 uv = vUv;
+                
+                // Sky Gradient based on UV.y
+                float horizon_factor = clamp(uv.y / max(u_horizon_height, 0.01), 0.0, 1.0);
+                vec3 skyColor = mix(u_sky_horizon_color, u_sky_top_color, pow(horizon_factor, 0.7));
+
+                // Sun Disc & Glare in 2D
+                vec2 sunUV = vec2(u_sun_position.x, 1.0 - u_sun_position.y); // Flip Y for WebGL UV convention
+                float distToSun = distance(uv, sunUV);
+                float sunDisk = smoothstep(u_sun_size, u_sun_size * 0.7, distToSun);
+                float sunGlow = pow(max(0.0, 1.0 - distToSun * 2.5), 4.0) * 0.5;
+                skyColor += u_sun_color * (sunDisk * 2.0 + sunGlow);
+
+                // 2D Procedural Clouds
+                vec2 cloudUV = uv * u_cloud_scale + u_time * u_cloud_speed;
+                float n = fbm(cloudUV);
+                float n2 = fbm(cloudUV * 1.8 - u_time * u_cloud_speed * 0.3);
+                float cloudShape = n * 0.7 + n2 * 0.3;
+
+                // Density & Softness Threshold
+                float cutoff = 1.0 - u_cloud_coverage;
+                float cloudAlpha = smoothstep(cutoff, cutoff + u_cloud_softness, cloudShape);
+                
+                // Fade out near horizon
+                cloudAlpha *= smoothstep(0.0, 0.25, uv.y);
+
+                // Cloud Shadowing
+                vec2 sunDir = normalize(uv - sunUV + vec2(0.001));
+                float shadowSample = fbm(cloudUV - sunDir * 0.05);
+                float cloudLight = clamp((cloudShape - shadowSample * 0.5) * 2.5 + 0.3, 0.0, 1.0);
+                
+                vec3 finalCloudColor = mix(u_cloud_shadow_color, u_cloud_color, cloudLight);
+
+                skyColor = mix(skyColor, finalCloudColor, cloudAlpha);
+
+                gl_FragColor = vec4(skyColor, 1.0);
+            }
+        `;
+
+        function hexToColor(hex) {
+            return new THREE.Color(hex);
+        }
+
+        function hexToVec3Str(hex) {
+            const c = new THREE.Color(hex);
+            return `vec3(${c.r.toFixed(3)}, ${c.g.toFixed(3)}, ${c.b.toFixed(3)})`;
+        }
+
+        function initScene() {
+            const container = document.getElementById('viewport');
+
+            scene = new THREE.Scene();
+            camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Fullscreen 2D Quad
+            const geometry = new THREE.PlaneGeometry(2, 2);
+            
+            skyMaterial = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                uniforms: {
+                    u_sky_top_color: { value: hexToColor(document.getElementById('skyTopColor').value) },
+                    u_sky_horizon_color: { value: hexToColor(document.getElementById('skyHorizonColor').value) },
+                    u_cloud_color: { value: hexToColor(document.getElementById('cloudColor').value) },
+                    u_cloud_shadow_color: { value: hexToColor(document.getElementById('cloudShadowColor').value) },
+                    u_cloud_coverage: { value: parseFloat(document.getElementById('cloudCoverage').value) },
+                    u_cloud_softness: { value: parseFloat(document.getElementById('cloudSoftness').value) },
+                    u_cloud_scale: { value: parseFloat(document.getElementById('cloudScale').value) },
+                    u_cloud_speed: { value: new THREE.Vector2(0.03, 0.005) },
+                    u_sun_color: { value: hexToColor(document.getElementById('sunColor').value) },
+                    u_sun_position: { value: new THREE.Vector2(0.70, 0.25) },
+                    u_sun_size: { value: parseFloat(document.getElementById('sunSize').value) },
+                    u_horizon_height: { value: parseFloat(document.getElementById('horizonHeight').value) },
+                    u_time: { value: 0 }
+                }
+            });
+
+            quadMesh = new THREE.Mesh(geometry, skyMaterial);
+            scene.add(quadMesh);
+
+            window.addEventListener('resize', onWindowResize);
+            
+            updateUniforms();
+            animate(0);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('viewport');
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function updateUniforms() {
+            if (!skyMaterial) return;
+
+            const topHex = document.getElementById('skyTopColor').value;
+            const horizonHex = document.getElementById('skyHorizonColor').value;
+            const cloudHex = document.getElementById('cloudColor').value;
+            const cloudShadowHex = document.getElementById('cloudShadowColor').value;
+            const sunHex = document.getElementById('sunColor').value;
+
+            document.getElementById('skyTopColorHex').innerText = topHex;
+            document.getElementById('skyHorizonColorHex').innerText = horizonHex;
+            document.getElementById('cloudColorHex').innerText = cloudHex;
+            document.getElementById('cloudShadowColorHex').innerText = cloudShadowHex;
+            document.getElementById('sunColorHex').innerText = sunHex;
+
+            const coverage = parseFloat(document.getElementById('cloudCoverage').value);
+            const softness = parseFloat(document.getElementById('cloudSoftness').value);
+            const scale = parseFloat(document.getElementById('cloudScale').value);
+            const speedX = parseFloat(document.getElementById('cloudSpeedX').value);
+            const speedY = parseFloat(document.getElementById('cloudSpeedY').value);
+            const sunX = parseFloat(document.getElementById('sunPosX').value);
+            const sunY = parseFloat(document.getElementById('sunPosY').value);
+            const sunSize = parseFloat(document.getElementById('sunSize').value);
+            const horizonH = parseFloat(document.getElementById('horizonHeight').value);
+
+            document.getElementById('cloudCoverageVal').innerText = coverage.toFixed(2);
+            document.getElementById('cloudSoftnessVal').innerText = softness.toFixed(2);
+            document.getElementById('cloudScaleVal').innerText = scale.toFixed(1);
+            document.getElementById('cloudSpeedXVal').innerText = speedX.toFixed(3);
+            document.getElementById('cloudSpeedYVal').innerText = speedY.toFixed(3);
+            document.getElementById('sunPosXVal').innerText = sunX.toFixed(2);
+            document.getElementById('sunPosYVal').innerText = sunY.toFixed(2);
+            document.getElementById('sunSizeVal').innerText = sunSize.toFixed(3);
+            document.getElementById('horizonHeightVal').innerText = horizonH.toFixed(2);
+
+            skyMaterial.uniforms.u_sky_top_color.value = hexToColor(topHex);
+            skyMaterial.uniforms.u_sky_horizon_color.value = hexToColor(horizonHex);
+            skyMaterial.uniforms.u_cloud_color.value = hexToColor(cloudHex);
+            skyMaterial.uniforms.u_cloud_shadow_color.value = hexToColor(cloudShadowHex);
+            skyMaterial.uniforms.u_cloud_coverage.value = coverage;
+            skyMaterial.uniforms.u_cloud_softness.value = softness;
+            skyMaterial.uniforms.u_cloud_scale.value = scale;
+            skyMaterial.uniforms.u_cloud_speed.value.set(speedX, speedY);
+            skyMaterial.uniforms.u_sun_color.value = hexToColor(sunHex);
+            skyMaterial.uniforms.u_sun_position.value.set(sunX, sunY);
+            skyMaterial.uniforms.u_sun_size.value = sunSize;
+            skyMaterial.uniforms.u_horizon_height.value = horizonH;
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            if (skyMaterial) {
+                skyMaterial.uniforms.u_time.value = time * 0.001;
+            }
+            renderer.render(scene, camera);
+        }
+
+        function applyPreset(type) {
+            if (type === 'classic') {
+                document.getElementById('skyTopColor').value = '#1e60bd';
+                document.getElementById('skyHorizonColor').value = '#a8d8ff';
+                document.getElementById('cloudColor').value = '#ffffff';
+                document.getElementById('cloudShadowColor').value = '#9eb6db';
+                document.getElementById('cloudCoverage').value = 0.48;
+                document.getElementById('cloudSoftness').value = 0.20;
+                document.getElementById('cloudScale').value = 2.2;
+                document.getElementById('cloudSpeedX').value = 0.03;
+                document.getElementById('cloudSpeedY').value = 0.005;
+                document.getElementById('sunColor').value = '#fff5cc';
+                document.getElementById('sunPosX').value = 0.70;
+                document.getElementById('sunPosY').value = 0.25;
+                document.getElementById('sunSize').value = 0.05;
+                document.getElementById('horizonHeight').value = 0.60;
+            } else if (type === 'ghibli') {
+                document.getElementById('skyTopColor').value = '#0055ff';
+                document.getElementById('skyHorizonColor').value = '#88d5ff';
+                document.getElementById('cloudColor').value = '#ffffff';
+                document.getElementById('cloudShadowColor').value = '#6f8fb3';
+                document.getElementById('cloudCoverage').value = 0.55;
+                document.getElementById('cloudSoftness').value = 0.08;
+                document.getElementById('cloudScale').value = 1.8;
+                document.getElementById('cloudSpeedX').value = 0.015;
+                document.getElementById('cloudSpeedY').value = 0.002;
+                document.getElementById('sunColor').value = '#ffffdd';
+                document.getElementById('sunPosX').value = 0.75;
+                document.getElementById('sunPosY').value = 0.20;
+                document.getElementById('sunSize').value = 0.06;
+                document.getElementById('horizonHeight').value = 0.65;
+            } else if (type === 'sunset') {
+                document.getElementById('skyTopColor').value = '#311b68';
+                document.getElementById('skyHorizonColor').value = '#ff6b4a';
+                document.getElementById('cloudColor').value = '#ffcb85';
+                document.getElementById('cloudShadowColor').value = '#662f52';
+                document.getElementById('cloudCoverage').value = 0.52;
+                document.getElementById('cloudSoftness').value = 0.22;
+                document.getElementById('cloudScale').value = 2.5;
+                document.getElementById('cloudSpeedX').value = 0.02;
+                document.getElementById('cloudSpeedY').value = -0.003;
+                document.getElementById('sunColor').value = '#ffaa33';
+                document.getElementById('sunPosX').value = 0.50;
+                document.getElementById('sunPosY').value = 0.60;
+                document.getElementById('sunSize').value = 0.08;
+                document.getElementById('horizonHeight').value = 0.50;
+            } else if (type === 'dreamy') {
+                document.getElementById('skyTopColor').value = '#4a2e80';
+                document.getElementById('skyHorizonColor').value = '#ffb3d9';
+                document.getElementById('cloudColor').value = '#ffffff';
+                document.getElementById('cloudShadowColor').value = '#b388eb';
+                document.getElementById('cloudCoverage').value = 0.45;
+                document.getElementById('cloudSoftness').value = 0.30;
+                document.getElementById('cloudScale').value = 2.0;
+                document.getElementById('cloudSpeedX').value = 0.025;
+                document.getElementById('cloudSpeedY').value = 0.005;
+                document.getElementById('sunColor').value = '#ffd6eb';
+                document.getElementById('sunPosX').value = 0.80;
+                document.getElementById('sunPosY').value = 0.30;
+                document.getElementById('sunSize').value = 0.07;
+                document.getElementById('horizonHeight').value = 0.55;
+            }
+            updateUniforms();
+        }
+
+        function generateGodotShaderCode() {
+            const topColor = hexToVec3Str(document.getElementById('skyTopColor').value);
+            const horizonColor = hexToVec3Str(document.getElementById('skyHorizonColor').value);
+            const cloudColor = hexToVec3Str(document.getElementById('cloudColor').value);
+            const cloudShadowColor = hexToVec3Str(document.getElementById('cloudShadowColor').value);
+            const sunColor = hexToVec3Str(document.getElementById('sunColor').value);
+            
+            const coverage = parseFloat(document.getElementById('cloudCoverage').value).toFixed(2);
+            const softness = parseFloat(document.getElementById('cloudSoftness').value).toFixed(2);
+            const scale = parseFloat(document.getElementById('cloudScale').value).toFixed(1);
+            const speedX = parseFloat(document.getElementById('cloudSpeedX').value).toFixed(3);
+            const speedY = parseFloat(document.getElementById('cloudSpeedY').value).toFixed(3);
+            const sunX = parseFloat(document.getElementById('sunPosX').value).toFixed(2);
+            const sunY = parseFloat(document.getElementById('sunPosY').value).toFixed(2);
+            const sunSize = parseFloat(document.getElementById('sunSize').value).toFixed(3);
+            const horizonH = parseFloat(document.getElementById('horizonHeight').value).toFixed(2);
+
+            return `shader_type canvas_item;
+
+// Godot 4 2D Sky & Cloud Shader (2D canvas_item 藍天白雲著色器)
+// Generated via Godot 2D Sky Shader Generator
+
+uniform vec4 sky_top_color : source_color = vec4(${topColor}, 1.0);
+uniform vec4 sky_horizon_color : source_color = vec4(${horizonColor}, 1.0);
+
+uniform vec4 cloud_color : source_color = vec4(${cloudColor}, 1.0);
+uniform vec4 cloud_shadow_color : source_color = vec4(${cloudShadowColor}, 1.0);
+uniform float cloud_coverage : hint_range(0.0, 1.0) = ${coverage};
+uniform float cloud_softness : hint_range(0.01, 0.5) = ${softness};
+uniform float cloud_scale : hint_range(0.5, 10.0) = ${scale};
+uniform vec2 cloud_speed = vec2(${speedX}, ${speedY});
+
+uniform vec4 sun_color : source_color = vec4(${sunColor}, 1.0);
+uniform vec2 sun_position = vec2(${sunX}, ${sunY}); // UV 相對位置 (0.0 ~ 1.0)
+uniform float sun_size : hint_range(0.005, 0.3) = ${sunSize};
+uniform float horizon_height : hint_range(0.1, 1.0) = ${horizonH};
+
+// 偽隨機 Hash 函數
+float hash(vec2 p) {
+    p = fract(p * vec2(234.34, 435.345));
+    p += dot(p, p + 34.23);
+    return fract(p.x * p.y);
+}
+
+// 2D 噪波函數
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+// 分形布朗運動 (fBm)
+float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    mat2 rot = mat2(vec2(0.8, -0.6), vec2(0.6, 0.8));
+    for (int i = 0; i < 5; i++) {
+        value += amplitude * noise(p);
+        p = rot * p * 2.02;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
+void fragment() {
+    // UV 座標 (頂部: y=0, 底部: y=1)
+    vec2 uv = UV;
+    
+    // 計算 Y 軸天空漸層 (頂部為 sky_top_color，地平線為 sky_horizon_color)
+    float sky_pos = 1.0 - uv.y;
+    float horizon_factor = clamp(sky_pos / max(horizon_height, 0.01), 0.0, 1.0);
+    vec3 sky_color = mix(sky_horizon_color.rgb, sky_top_color.rgb, pow(horizon_factor, 0.7));
+    
+    // 2D 太陽與光暈
+    float dist_to_sun = distance(uv, sun_position);
+    float sun_disk = smoothstep(sun_size, sun_size * 0.7, dist_to_sun);
+    float sun_glow = pow(max(0.0, 1.0 - dist_to_sun * 2.5), 4.0) * 0.5;
+    sky_color += sun_color.rgb * (sun_disk * 2.0 + sun_glow);
+    
+    // 2D 雲朵採樣
+    vec2 cloud_uv = uv * cloud_scale + TIME * cloud_speed;
+    float n = fbm(cloud_uv);
+    float n2 = fbm(cloud_uv * 1.8 - TIME * cloud_speed * 0.3);
+    float cloud_shape = n * 0.7 + n2 * 0.3;
+    
+    // 雲朵覆蓋率與軟邊
+    float cutoff = 1.0 - cloud_coverage;
+    float cloud_alpha = smoothstep(cutoff, cutoff + cloud_softness, cloud_shape);
+    
+    // 地平線邊緣平滑淡出
+    cloud_alpha *= smoothstep(0.0, 0.25, sky_pos);
+    
+    // 雲朵陰影立體感
+    vec2 sun_dir = normalize(uv - sun_position + vec2(0.001));
+    float shadow_sample = fbm(cloud_uv - sun_dir * 0.05);
+    float cloud_light = clamp((cloud_shape - shadow_sample * 0.5) * 2.5 + 0.3, 0.0, 1.0);
+    
+    vec3 final_cloud_color = mix(cloud_shadow_color.rgb, cloud_color.rgb, cloud_light);
+    
+    // 混合天空與雲朵
+    vec3 color = mix(sky_color, final_cloud_color, cloud_alpha);
+    
+    COLOR = vec4(color, 1.0);
+}`;
+        }
+
+        // Modal Control Logic
+        function openCodeModal() {
+            const code = generateGodotShaderCode();
+            document.getElementById('shaderCodeText').innerText = code;
+            document.getElementById('codeModal').classList.remove('hidden');
+        }
+
+        function closeCodeModal() {
+            document.getElementById('codeModal').classList.add('hidden');
+        }
+
+        function copyShaderCode() {
+            const code = document.getElementById('shaderCodeText').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast("2D Shader 程式碼已成功複製！");
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Initialize on DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            initScene();
+        });
+    </script>
+</body>
+</html>
