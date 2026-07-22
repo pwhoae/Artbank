@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS 現代特效與前端互動設計指南</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f6ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              900: '#1e3a8a',
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 8s linear infinite',
+            'bounce-soft': 'bounce 2s infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* CSS @property 漸變旋轉示範 */
+    @property --gradient-angle {
+      syntax: "<angle>";
+      initial-value: 0deg;
+      inherits: false;
+    }
+
+    .animated-border-card {
+      position: relative;
+      background: #121827;
+      border-radius: 1rem;
+    }
+
+    .animated-border-card::before,
+    .animated-border-card::after {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      z-index: -1;
+      background: conic-gradient(
+        from var(--gradient-angle),
+        #ff4545,
+        #00ff99,
+        #0066ff,
+        #ff00ea,
+        #ff4545
+      );
+      border-radius: 1.1rem;
+      animation: rotation 4s linear infinite;
+    }
+
+    .animated-border-card::after {
+      filter: blur(12px);
+      opacity: 0.7;
+    }
+
+    @keyframes rotation {
+      0% { --gradient-angle: 0deg; }
+      100% { --gradient-angle: 360deg; }
+    }
+
+    /* 純 CSS 計數器範例 */
+    .css-counter-container {
+      counter-reset: custom-section-counter;
+    }
+
+    .css-counter-item {
+      counter-increment: custom-section-counter;
+    }
+
+    .css-counter-item::before {
+      content: "SECTION " counter(custom-section-counter, decimal-leading-zero) " // ";
+      font-weight: 800;
+      color: #3b82f6;
+      letter-spacing: 0.05em;
+    }
+
+    /* 撕 Memo 紙效果 */
+    .memo-paper {
+      clip-path: polygon(
+        0% 0%, 100% 0%, 100% calc(100% - 12px), 
+        95% 100%, 90% calc(100% - 8px), 85% 100%, 80% calc(100% - 10px), 
+        75% 100%, 70% calc(100% - 8px), 65% 100%, 60% calc(100% - 12px),
+        55% 100%, 50% calc(100% - 8px), 45% 100%, 40% calc(100% - 10px),
+        35% 100%, 30% calc(100% - 8px), 25% 100%, 20% calc(100% - 12px),
+        15% 100%, 10% calc(100% - 8px), 5% 100%, 0% calc(100% - 10px)
+      );
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+    }
+
+    .memo-paper.teared {
+      transform: translateY(120px) rotate(15deg);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 客製化滾動條 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+
+  <!-- 導覽列 -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80 transition-all">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i class="fa-solid font-bold text-white text-lg">CSS</i>
+        </div>
+        <span class="font-extrabold text-lg sm:text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+          CSS 特效與互動設計庫
+        </span>
+      </div>
+
+      <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+        <a href="#playground" class="hover:text-blue-400 transition-colors">互動實驗室</a>
+        <a href="#principles" class="hover:text-blue-400 transition-colors">設計準則</a>
+        <a href="#memos" class="hover:text-blue-400 transition-colors">撕 Memo 牆</a>
+        <a href="#tutorials" class="hover:text-blue-400 transition-colors">Bilibili 視頻彙整</a>
+      </nav>
+
+      <div class="flex items-center space-x-3">
+        <a href="#tutorials" class="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-blue-500/25 flex items-center gap-2">
+          <i class="fa-play-circle text-base"></i> 瀏覽實戰教導
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 英雄視圖 (Hero Section) -->
+  <section class="relative overflow-hidden py-16 lg:py-24 border-b border-slate-800/60 bg-gradient-to-b from-slate-900/50 via-slate-950 to-slate-950">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.25),rgba(255,255,255,0))]"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+      
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-700/80 text-xs font-semibold text-blue-400 mb-6 shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+        現代前端實戰技巧精選彙整
+      </div>
+
+      <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-tight sm:leading-none">
+        用 <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">CSS 現代魔術</span> 打造具備視覺張力的網頁互動
+      </h1>
+
+      <p class="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        設計不是追求絕對的物理平衡，而是追求適合專案需求的「張力」。涵蓋毛玻璃質感、3D 視差、OKLCH 色彩學、@property 動畫與經典實戰範例。
+      </p>
+
+      <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <a href="#playground" class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform flex items-center gap-2">
+          <i class="fa-solid fa-flask"></i> 開啟 CSS 特效實驗室
+        </a>
+        <a href="#tutorials" class="px-6 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold transition-all hover:scale-105 flex items-center gap-2">
+          <i class="fa-solid fa-video"></i> 查看 Bilibili 實務範例
+        </a>
+      </div>
+
+      <!-- 核心技術標籤組 -->
+      <div class="mt-12 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+        <span class="px-3 py-1.5 rounded-md bg-slate-900/80 border border-slate-800"># Glassmorphism</span>
+        <span class="px-3 py-1.5 rounded-md bg-slate-900/80 border border-slate-800"># 3D Parallax</span>
+        <span class="px-3 py-1.5 rounded-md bg-slate-900/80 border border-slate-800"># @property</span>
+        <span class="px-3 py-1.5 rounded-md bg-slate-900/80 border border-slate-800"># CSS Counters</span>
+        <span class="px-3 py-1.5 rounded-md bg-slate-900/80 border border-slate-800"># OKLCH Color</span>
+        <span class="px-3 py-1.5 rounded-md bg-slate-900/80 border border-slate-800"># Clip-Path</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主要內容區域 -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20">
+
+    <!-- 1. 互動式 CSS 實驗室 -->
+    <section id="playground" class="scroll-mt-20">
+      <div class="mb-8">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3">
+          <i class="fa-solid fa-wand-magic-sparkles text-blue-400"></i>
+          1. 現代 CSS 特效即時實驗室
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base mt-2">
+          親自調整參數，理解現代 CSS 屬性如何創建高品質視覺與視覺深度。
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- 特效 (A): 毛玻璃質感 Glassmorphism 控制台 -->
+        <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <i class="fa-regular fa-clone text-indigo-400"></i> 毛玻璃質感 (Glassmorphism)
+              </h3>
+              <span class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800/50 px-2 py-0.5 rounded">backdrop-filter</span>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+              將元素背景設為半透明，搭配 <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">backdrop-filter: blur()</code> 進行模糊化。疊加微弱的 Border 與 Shadow 可大幅增強逼真感。
+            </p>
+
+            <!-- 預覽畫布 -->
+            <div class="relative h-48 rounded-xl overflow-hidden mb-6 flex items-center justify-center p-4 bg-cover bg-center"
+                 style="background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80');">
+              
+              <!-- 毛玻璃實體 -->
+              <div id="glass-target" class="w-full max-w-xs p-5 rounded-2xl text-center transition-all duration-150"
+                   style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);">
+                <i class="fa-solid fa-gem text-3xl text-white mb-2 filter drop-shadow"></i>
+                <h4 class="font-bold text-white text-base">Glassmorphism Card</h4>
+                <p class="text-xs text-slate-200 mt-1">即時響應式模糊與磨砂質感</p>
+              </div>
+            </div>
+
+            <!-- 控制滑桿 -->
+            <div class="space-y-4 text-xs font-medium text-slate-300">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label for="slider-blur">模糊程度 (Blur): <span id="val-blur" class="text-blue-400">10px</span></label>
+                </div>
+                <input id="slider-blur" type="range" min="0" max="30" value="10" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label for="slider-opacity">背景不透明度 (Opacity): <span id="val-opacity" class="text-blue-400">0.15</span></label>
+                </div>
+                <input id="slider-opacity" type="range" min="0" max="0.8" step="0.05" value="0.15" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              </div>
+
+              <div>
+                <div class="flex justify-between mb-1">
+                  <label for="slider-border">邊框亮度 (Border Alpha): <span id="val-border" class="text-blue-400">0.25</span></label>
+                </div>
+                <input id="slider-border" type="range" min="0" max="0.8" step="0.05" value="0.25" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 特效 (B): 3D 視差卡片 Tilt Card -->
+        <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-cube text-purple-400"></i> 3D 視差傾斜卡片 (Parallax Tilt)
+              </h3>
+              <span class="text-xs bg-purple-950 text-purple-300 border border-purple-800/50 px-2 py-0.5 rounded">transform-style: preserve-3d</span>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+              根據滑鼠游標相對位置計算 <code class="text-purple-300 bg-slate-800 px-1 py-0.5 rounded">rotateX</code> 與 <code class="text-purple-300 bg-slate-800 px-1 py-0.5 rounded">rotateY</code>，讓內容透過 <code class="text-purple-300 bg-slate-800 px-1 py-0.5 rounded">translateZ</code> 浮出卡片，實現強烈空間深度感。
+            </p>
+
+            <!-- 3D 視差容器 -->
+            <div class="h-64 flex items-center justify-center perspective-1000">
+              <div id="tilt-card" class="w-full max-w-sm h-48 rounded-2xl p-6 bg-gradient-to-br from-purple-900/80 via-slate-900 to-indigo-950 border border-purple-500/30 shadow-2xl relative cursor-pointer transition-transform duration-100 ease-out flex flex-col justify-between"
+                   style="transform-style: preserve-3d;">
+                
+                <!-- 卡片頂部 -->
+                <div style="transform: translateZ(30px);" class="flex justify-between items-center">
+                  <span class="text-xs font-bold tracking-widest text-purple-300 uppercase">Zhangjiajie China</span>
+                  <i class="fa-solid fa-mountain text-purple-400 text-xl"></i>
+                </div>
+
+                <!-- 卡片中央大字 -->
+                <div style="transform: translateZ(50px);" class="my-auto">
+                  <h4 class="text-2xl font-black text-white tracking-wider">張家界 · 3D 視差</h4>
+                  <p class="text-xs text-slate-300 mt-1">移動滑鼠探索多層次懸浮質感</p>
+                </div>
+
+                <!-- 卡片底部按鈕 -->
+                <div style="transform: translateZ(35px);" class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">TRAVELO VISION</span>
+                  <span class="bg-purple-600 text-white font-semibold px-3 py-1 rounded-full shadow-lg">Hover Me</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-center text-xs text-slate-500 italic mt-2">
+              提示：將滑鼠於卡片上方移動即可感受 3D 傾斜與多層次浮動
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 第二列實驗室：@property & OKLCH -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+
+        <!-- 特效 (C): @property 漸變旋轉邊框 -->
+        <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-rotate text-emerald-400"></i> @property 漸變旋轉邊框
+              </h3>
+              <span class="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800/50 px-2 py-0.5 rounded">CSS Houdini</span>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+              透過 CSS 原生註冊自訂屬性 <code class="text-emerald-300 bg-slate-800 px-1 py-0.5 rounded">@property --gradient-angle</code>，使得平時無法動畫化的漸變角度（conic-gradient）實現極致流暢的邊框旋轉。
+            </p>
+
+            <div class="my-6 p-2 flex items-center justify-center">
+              <div class="animated-border-card w-full max-w-md p-6 text-slate-200">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Interactive Border</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-1">全新 border-box 漸變算法</h4>
+                <p class="text-xs text-slate-400 leading-normal">
+                  不需要複雜的 DOM 結構，僅憑 CSS 自訂變數與 @property 即可製作媲美高階動畫的霓虹光暈旋轉邊框。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 特效 (D): OKLCH 色彩學與字重張力 -->
+        <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 flex flex-col justify-between shadow-xl">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-palette text-pink-400"></i> OKLCH 色彩與字重張力
+              </h3>
+              <span class="text-xs bg-pink-950 text-pink-300 border border-pink-800/50 px-2 py-0.5 rounded">oklch() & font-weight</span>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+              OKLCH 提供更客觀的人眼感知一致性。配合粗細字重的心理暗示（粗字重代表力量與權威；細字重展現精緻與留白奢華感）。
+            </p>
+
+            <!-- OKLCH 動態展示面板 -->
+            <div id="oklch-box" class="rounded-xl p-5 mb-4 text-slate-900 transition-colors duration-200"
+                 style="background-color: oklch(0.65 0.22 190); shadow: 0 10px 25px -5px rgba(0,0,0,0.3);">
+              <div class="flex justify-between items-center mb-2">
+                <span id="oklch-hue-label" class="text-xs font-extrabold uppercase tracking-wider px-2 py-1 bg-black/20 text-white rounded">当前 HUE 值: 190°</span>
+                <span class="text-xs font-bold text-black/70">OKLCH Color Space</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 my-2">
+                <div class="p-3 bg-white/20 backdrop-blur rounded-lg">
+                  <span class="text-xs block text-black/80 font-bold mb-1">粗字重 (Weight 900)</span>
+                  <p class="text-xl font-black tracking-tight leading-none text-black">
+                    視覺密度與主導力量
+                  </p>
+                </div>
+                <div class="p-3 bg-white/20 backdrop-blur rounded-lg">
+                  <span class="text-xs block text-black/80 font-bold mb-1">細字重 (Weight 300)</span>
+                  <p class="text-xl font-light tracking-widest leading-none text-black">
+                    精緻留白與克制奢華
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- OKLCH 滑桿 -->
+            <div class="text-xs font-medium text-slate-300">
+              <div class="flex justify-between mb-1">
+                <label for="slider-hue">調整 OKLCH 色相 (Hue): <span id="val-hue" class="text-pink-400">190°</span></label>
+              </div>
+              <input id="slider-hue" type="range" min="0" max="360" value="190" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 2. CSS Counters 與設計準則 -->
+    <section id="principles" class="scroll-mt-20 border-t border-slate-800/80 pt-16">
+      <div class="mb-8">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3">
+          <i class="fa-solid fa-list-ol text-blue-400"></i>
+          2. 純 CSS 自動標題編號 (CSS Counters)
+        </h2>
+        <p class="text-slate-400 text-sm sm:text-base mt-2">
+          免去 JavaScript 手動計算，由全域/父層設置 <code class="text-blue-300 bg-slate-800 px-1 py-0.5 rounded">counter-reset</code> 並在子層利用偽元素自動遞增與輸出數字。非常適合動態載入的列表內容。
+        </p>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 shadow-xl">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-bold text-white">動態載入項列表 (Counter Active)</h3>
+          <button id="btn-add-counter" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> 新增動態項目
+          </button>
+        </div>
+
+        <div id="counter-list" class="css-counter-container space-y-3">
+          <div class="css-counter-item bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-200 flex items-center justify-between">
+            <span>毛玻璃質感 (Glassmorphism) 與透明陰影疊加</span>
+            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded">CSS Level 4</span>
+          </div>
+          <div class="css-counter-item bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-200 flex items-center justify-between">
+            <span>使用 Clip-Path 創建獨特幾何切割形狀與進入動畫</span>
+            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded">Masking & Clip</span>
+          </div>
+          <div class="css-counter-item bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-200 flex items-center justify-between">
+            <span>允許使用者調整元素尺寸 (resize: both) 增強自訂度</span>
+            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded">User Interactivity</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 撕 Memo 牆 (Tearing Memo Wall) -->
+    <section id="memos" class="scroll-mt-20 border-t border-slate-800/80 pt-16">
+      <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3">
+            <i class="fa-solid fa-note-sticky text-yellow-400"></i>
+            3. 互動式撕 Memo 牆 (Tearing Interactive Arena)
+          </h2>
+          <p class="text-slate-400 text-sm sm:text-base mt-2">
+            點擊 Memo 條下方的撕開圖示，體驗逼真流暢的紙張撕裂離場動畫。
+          </p>
+        </div>
+        
+        <button id="btn-reset-memos" class="self-start sm:self-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-yellow-400 text-xs font-bold border border-yellow-500/30 rounded-lg transition-all flex items-center gap-2">
+          <i class="fa-solid fa-rotate-left"></i> 重置 Memo 牆
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Memo 1 -->
+        <div class="memo-card-wrapper relative group">
+          <div class="memo-paper bg-amber-200 text-amber-950 p-6 rounded-t-lg shadow-2xl relative border-t-8 border-amber-300">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-300/60 px-2 py-0.5 rounded">高優先級任務</span>
+              <i class="fa-solid fa-thumbtack text-red-600 text-lg"></i>
+            </div>
+            <h4 class="font-extrabold text-lg mb-2">緊急備忘：</h4>
+            <p class="text-sm font-medium leading-relaxed mb-6">
+              完成撕 Memo 撕扯動畫與鋸齒邊緣 Clip-Path 的多邊形切割計算！
+            </p>
+            <div class="border-t border-amber-300/80 pt-3 flex justify-between items-center text-xs font-bold">
+              <span class="text-amber-800">點擊右側撕掉 ➔</span>
+              <button class="tear-btn w-8 h-8 rounded-full bg-amber-400/80 hover:bg-red-500 hover:text-white text-amber-900 flex items-center justify-center transition-colors shadow">
+                <i class="fa-solid fa-scissors"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memo 2 -->
+        <div class="memo-card-wrapper relative group">
+          <div class="memo-paper bg-emerald-200 text-emerald-950 p-6 rounded-t-lg shadow-2xl relative border-t-8 border-emerald-300">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-300/60 px-2 py-0.5 rounded">需求記錄</span>
+              <i class="fa-solid fa-paperclip text-emerald-700 text-lg"></i>
+            </div>
+            <h4 class="font-extrabold text-lg mb-2">需求進度：</h4>
+            <p class="text-sm font-medium leading-relaxed mb-6">
+              新增 GSAP 垂直視差「魔法森林」滾動觸發器，整合 3D 視差卡片。
+            </p>
+            <div class="border-t border-emerald-300/80 pt-3 flex justify-between items-center text-xs font-bold">
+              <span class="text-emerald-800">點擊右側撕掉 ➔</span>
+              <button class="tear-btn w-8 h-8 rounded-full bg-emerald-400/80 hover:bg-red-500 hover:text-white text-emerald-900 flex items-center justify-center transition-colors shadow">
+                <i class="fa-solid fa-scissors"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memo 3 -->
+        <div class="memo-card-wrapper relative group">
+          <div class="memo-paper bg-sky-200 text-sky-950 p-6 rounded-t-lg shadow-2xl relative border-t-8 border-sky-300">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-black uppercase tracking-wider text-sky-800 bg-sky-300/60 px-2 py-0.5 rounded">名言勵志</span>
+              <i class="fa-solid fa-bookmark text-sky-600 text-lg"></i>
+            </div>
+            <h4 class="font-extrabold text-lg mb-2">Design Motto:</h4>
+            <p class="text-sm font-medium italic leading-relaxed mb-6">
+              "The secret of getting ahead is getting started." — 追求專案震撼張力！
+            </p>
+            <div class="border-t border-sky-300/80 pt-3 flex justify-between items-center text-xs font-bold">
+              <span class="text-sky-800">點擊右側撕掉 ➔</span>
+              <button class="tear-btn w-8 h-8 rounded-full bg-sky-400/80 hover:bg-red-500 hover:text-white text-sky-900 flex items-center justify-center transition-colors shadow">
+                <i class="fa-solid fa-scissors"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. Bilibili 實戰教程與靈感畫廊 -->
+    <section id="tutorials" class="scroll-mt-20 border-t border-slate-800/80 pt-16">
+      <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3">
+            <i class="fa-brands fa-bilibili text-pink-400"></i>
+            4. Bilibili 前端 CSS 實戰影音教程網格
+          </h2>
+          <p class="text-slate-400 text-sm sm:text-base mt-2">
+            彙整文件內所有高畫質 Bilibili 特效教學、源碼與視覺案例展示。
+          </p>
+        </div>
+
+        <!-- 篩選按鈕列 -->
+        <div id="filter-buttons" class="flex flex-wrap gap-2 text-xs font-semibold">
+          <button data-category="all" class="filter-btn active px-3 py-1.5 rounded-lg bg-blue-600 text-white transition-all">全部</button>
+          <button data-category="parallax" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">視差效果</button>
+          <button data-category="hover" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">Hover 特效</button>
+          <button data-category="website" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">響應式首頁</button>
+          <button data-category="animation" class="filter-btn px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all">CSS 動畫</button>
+        </div>
+      </div>
+
+      <!-- 課程網格卡片 -->
+      <div id="video-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Card 1: 3D 視差張家界 -->
+        <div class="video-card bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group" data-category="parallax">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-slate-950">
+              <img src="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=600&q=80" alt="張家界" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 left-3 bg-purple-600/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                3D 視差網頁
+              </span>
+            </div>
+            <div class="p-5">
+              <h3 class="font-bold text-slate-100 text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                【CSS - (附源码)使用CSS和Javascript实现的3D效果的视差网页】
+              </h3>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                主題：中國 - 張家界 (TRAVELO)。透過多層次圖片視差呈現磅礡山水空間深度。
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-800/50 mt-4">
+            <span class="text-[11px] text-slate-500">BV1zr421K7Dq</span>
+            <a href="https://www.bilibili.com/video/BV1zr421K7Dq" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+              前往觀看 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 2: 玻璃反光導覽列 -->
+        <div class="video-card bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group" data-category="hover">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-slate-950">
+              <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80" alt="汽車導覽" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 left-3 bg-blue-600/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                Hover 玻璃反光
+              </span>
+            </div>
+            <div class="p-5">
+              <h3 class="font-bold text-slate-100 text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                【CSS - (附源码)Hover时带有玻璃反光效果的导航栏】
+              </h3>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                游標懸停導覽選單時呈現真實物理光澤與斜向掃光特效，極具質感。
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-800/50 mt-4">
+            <span class="text-[11px] text-slate-500">BV1tE421w7Zt</span>
+            <a href="https://www.bilibili.com/video/BV1tE421w7Zt" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+              前往觀看 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 3: GSAP 魔法森林垂直視差 -->
+        <div class="video-card bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group" data-category="parallax">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-slate-950">
+              <img src="https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80" alt="魔法森林" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 left-3 bg-emerald-600/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                GSAP 視差動畫
+              </span>
+            </div>
+            <div class="p-5">
+              <h3 class="font-bold text-slate-100 text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                【CSS-“魔法森林”-GSAP实现的垂直视差效果的网页】
+              </h3>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                結合 GSAP ScrollTrigger 實現滾動觸發的多層次垂直森林滾動視差。
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-800/50 mt-4">
+            <span class="text-[11px] text-slate-500">BV1P4421U7Qp</span>
+            <a href="https://www.bilibili.com/video/BV1P4421U7Qp" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+              前往觀看 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 4: 響應式汽車網站首頁 -->
+        <div class="video-card bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group" data-category="website">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-slate-950">
+              <img src="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=600&q=80" alt="汽車網站" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 left-3 bg-amber-600/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                Let's RACE 汽車首頁
+              </span>
+            </div>
+            <div class="p-5">
+              <h3 class="font-bold text-slate-100 text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                【CSS - (附源码)HTML CSS 和JavaScript 创建的响应式汽车网站首页】
+              </h3>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                亮黃與深黑高對比撞色，包含側邊導覽選單與動態跑車模型展示。
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-800/50 mt-4">
+            <span class="text-[11px] text-slate-500">BV1rW421R7bR</span>
+            <a href="https://www.bilibili.com/video/BV1rW421R7bR" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+              前往觀看 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 5: 堆叠式自動播放輪播 -->
+        <div class="video-card bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group" data-category="animation">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-slate-950">
+              <img src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=600&q=80" alt="堆疊輪播" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 left-3 bg-indigo-600/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                堆疊式 Carousel
+              </span>
+            </div>
+            <div class="p-5">
+              <h3 class="font-bold text-slate-100 text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                【CSS - (附代码)堆叠式带自动播放功能的图片轮播图】
+              </h3>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                卡片多層堆疊、層級切換動畫與定時自動播放功能的完整實現。
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-800/50 mt-4">
+            <span class="text-[11px] text-slate-500">BV1YH4y1w7eN</span>
+            <a href="https://www.bilibili.com/video/BV1YH4y1w7eN" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+              前往觀看 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 6: AirPods Max 動畫首頁 -->
+        <div class="video-card bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 hover:border-slate-700 transition-all duration-300 flex flex-col justify-between group" data-category="website">
+          <div>
+            <div class="relative h-44 overflow-hidden bg-slate-950">
+              <img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="AirPods Max" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 left-3 bg-slate-700/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                Apple 產品展示
+              </span>
+            </div>
+            <div class="p-5">
+              <h3 class="font-bold text-slate-100 text-base group-hover:text-blue-400 transition-colors line-clamp-2">
+                【CSS - (附源码)使用CSS和Javascript创建的Apple AirPods Max动画主页】
+              </h3>
+              <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                極簡極致奢華感，搭配滑動時產品部件的流暢展開與旋轉細節。
+              </p>
+            </div>
+          </div>
+          <div class="px-5 pb-5 pt-0 flex items-center justify-between border-t border-slate-800/50 mt-4">
+            <span class="text-[11px] text-slate-500">BV1k4421D7nc</span>
+            <a href="https://www.bilibili.com/video/BV1k4421D7nc" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1">
+              前往觀看 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 頁尾 -->
+  <footer class="bg-slate-950 border-t border-slate-800/80 mt-20 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6 text-xs text-slate-500">
+      <div class="flex items-center space-x-3">
+        <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
+          C
+        </div>
+        <span class="font-bold text-slate-300">CSS 現代視覺特效與互動指南</span>
+      </div>
+
+      <p class="text-center md:text-left">
+        整理自 Bilibili 實戰教學系列課程 · 設計理念："追求適合專案需求的視覺張力"
+      </p>
+
+      <div class="flex space-x-4 text-slate-400">
+        <a href="#playground" class="hover:text-blue-400">實驗室</a>
+        <a href="#tutorials" class="hover:text-blue-400">影片彙整</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript 互動腳本 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // --- 1. Glassmorphism 控制台 ---
+      const glassTarget = document.getElementById('glass-target');
+      const sliderBlur = document.getElementById('slider-blur');
+      const sliderOpacity = document.getElementById('slider-opacity');
+      const sliderBorder = document.getElementById('slider-border');
+
+      const valBlur = document.getElementById('val-blur');
+      const valOpacity = document.getElementById('val-opacity');
+      const valBorder = document.getElementById('val-border');
+
+      function updateGlass() {
+        const blurVal = sliderBlur.value;
+        const opacityVal = sliderOpacity.value;
+        const borderVal = sliderBorder.value;
+
+        valBlur.textContent = `${blurVal}px`;
+        valOpacity.textContent = opacityVal;
+        valBorder.textContent = borderVal;
+
+        glassTarget.style.background = `rgba(255, 255, 255, ${opacityVal})`;
+        glassTarget.style.backdropFilter = `blur(${blurVal}px)`;
+        glassTarget.style.webkitBackdropFilter = `blur(${blurVal}px)`;
+        glassTarget.style.border = `1px solid rgba(255, 255, 255, ${borderVal})`;
+      }
+
+      sliderBlur.addEventListener('input', updateGlass);
+      sliderOpacity.addEventListener('input', updateGlass);
+      sliderBorder.addEventListener('input', updateGlass);
+
+      // --- 2. 3D 視差 Tilt Card 卡片懸停跟隨 ---
+      const tiltCard = document.getElementById('tilt-card');
+      const container = tiltCard.parentElement;
+
+      container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        const x = e.clientX - rect.left; // 容器內 X 座標
+        const y = e.clientY - rect.top;  // 容器內 Y 座標
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = ((y - centerY) / centerY) * -18; // 傾斜角度 (X 軸)
+        const rotateY = ((x - centerX) / centerX) * 18;  // 傾斜角度 (Y 軸)
+
+        tiltCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`;
+      });
+
+      container.addEventListener('mouseleave', () => {
+        tiltCard.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      });
+
+      // --- 3. OKLCH 滑桿 ---
+      const oklchBox = document.getElementById('oklch-box');
+      const sliderHue = document.getElementById('slider-hue');
+      const valHue = document.getElementById('val-hue');
+      const oklchHueLabel = document.getElementById('oklch-hue-label');
+
+      sliderHue.addEventListener('input', (e) => {
+        const hue = e.target.value;
+        valHue.textContent = `${hue}°`;
+        oklchHueLabel.textContent = `当前 HUE 值: ${hue}°`;
+        oklchBox.style.backgroundColor = `oklch(0.65 0.22 ${hue})`;
+      });
+
+      // --- 4. CSS Counters 新增動態項目 ---
+      const counterList = document.getElementById('counter-list');
+      const btnAddCounter = document.getElementById('btn-add-counter');
+
+      const sampleTopics = [
+        "OKLCH 廣色域顏色空間應用與相容性降級處理",
+        "使用 CSS 變數動態計算螢幕震動 (Screenshake) 動畫特效",
+        "Hover 時微調 inset 屬性大小實現無縫外邊框展演動畫",
+        "視差滾動遮罩 (Masking Animation) 切換色彩與主圖"
+      ];
+
+      btnAddCounter.addEventListener('click', () => {
+        const randomTopic = sampleTopics[Math.floor(Math.random() * sampleTopics.length)];
+        const newItem = document.createElement('div');
+        newItem.className = "css-counter-item bg-slate-950 p-4 rounded-xl border border-slate-800/80 text-sm text-slate-200 flex items-center justify-between animate-fade-in";
+        newItem.innerHTML = `
+          <span>${randomTopic}</span>
+          <span class="text-xs bg-blue-900/60 text-blue-300 px-2 py-1 rounded">Dynamic Item</span>
+        `;
+        counterList.appendChild(newItem);
+      });
+
+      // --- 5. 撕 Memo 紙張互動 ---
+      function setupMemoTear() {
+        const tearBtns = document.querySelectorAll('.tear-btn');
+        tearBtns.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const paper = e.target.closest('.memo-paper');
+            if (paper) {
+              paper.classList.add('teared');
+            }
+          });
+        });
+      }
+      setupMemoTear();
+
+      const btnResetMemos = document.getElementById('btn-reset-memos');
+      btnResetMemos.addEventListener('click', () => {
+        const papers = document.querySelectorAll('.memo-paper');
+        papers.forEach(paper => {
+          paper.classList.remove('teared');
+        });
+      });
+
+      // --- 6. Bilibili 影音卡片分類篩選 ---
+      const filterBtns = document.querySelectorAll('.filter-btn');
+      const videoCards = document.querySelectorAll('.video-card');
+
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // 清除 active 狀態
+          filterBtns.forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-white', 'active');
+            b.classList.add('bg-slate-800', 'text-slate-300');
+          });
+
+          // 設定目前選取狀態
+          btn.classList.add('bg-blue-600', 'text-white', 'active');
+          btn.classList.remove('bg-slate-800', 'text-slate-300');
+
+          const category = btn.getAttribute('data-category');
+
+          videoCards.forEach(card => {
+            if (category === 'all' || card.getAttribute('data-category') === category) {
+              card.style.display = 'flex';
+            } else {
+              card.style.display = 'none';
+            }
+          });
+        });
+      });
+
+    });
+  </script>
+</body>
+</html>
