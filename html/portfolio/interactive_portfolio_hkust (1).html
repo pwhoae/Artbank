@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKUST Portfolio | Tech Art & Interactive Systems</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- Three.js for 3D Visuals -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hkust: {
+                            blue: '#003366',
+                            gold: '#C89B3C',
+                            accent: '#2563eb',
+                        },
+                        apple: {
+                            bg: '#f4f6fb',
+                            card: 'rgba(255, 255, 255, 0.78)',
+                            border: 'rgba(255, 255, 255, 0.95)',
+                            textPrimary: '#0f172a',
+                            textSecondary: '#475569',
+                            neonBlue: '#0284c7',
+                            neonPurple: '#7c3aed',
+                            neonPink: '#db2777'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f1f4fa;
+            color: #0f172a;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Screen Shake & Flash Effect */
+        @keyframes screenShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            15% { transform: translate(-8px, 6px) rotate(-1.5deg); }
+            30% { transform: translate(8px, -6px) rotate(1.5deg); }
+            45% { transform: translate(-5px, -3px) rotate(-0.8deg); }
+            60% { transform: translate(5px, 4px) rotate(0.8deg); }
+            75% { transform: translate(-3px, 2px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shake-active {
+            animation: screenShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Ultra-Clean Apple Light Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 20px 40px -15px rgba(0, 51, 102, 0.08), 0 0 1px 1px rgba(255, 255, 255, 0.8) inset;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Apple Reflection Hover Effect */
+        .glass-nav-item {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-nav-item::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -150%;
+            width: 100%;
+            height: 200%;
+            background: linear-gradient(
+                60deg,
+                transparent,
+                rgba(255, 255, 255, 0.8),
+                transparent
+            );
+            transform: rotate(25deg);
+            transition: all 0.6s ease;
+        }
+        .glass-nav-item:hover::after {
+            left: 150%;
+        }
+
+        /* Resizable Container Handle Styling */
+        .resizable-card {
+            resize: both;
+            overflow: auto;
+            min-width: 300px;
+            min-height: 220px;
+            position: relative;
+        }
+        .resizable-card::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .resizable-card::-webkit-scrollbar-thumb {
+            background: rgba(0, 51, 102, 0.2);
+            border-radius: 5px;
+        }
+
+        /* Iridescent Rotating Gradient Border */
+        .gradient-border-wrapper {
+            position: relative;
+            border-radius: 1.5rem;
+            padding: 3px;
+            background: linear-gradient(135deg, #0284c7, #7c3aed, #db2777, #2563eb, #0284c7);
+            background-size: 300% 300%;
+            animation: gradientRotate 5s linear infinite;
+        }
+        @keyframes gradientRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Parallax Center Line */
+        .parallax-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0) 0%, rgba(37, 99, 235, 0.4) 50%, rgba(124, 58, 237, 0) 100%);
+            transform: translateX(-50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Animated Wipe Text for Skills */
+        .wipe-text {
+            background: linear-gradient(90deg, #0f172a 50%, #94a3b8 50%);
+            background-size: 200% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: background-position 0.5s ease;
+            background-position: 100% 0;
+        }
+        .group:hover .wipe-text {
+            background-position: 0% 0;
+        }
+
+        /* Dynamic Clip Path Shapes for Toolbox */
+        .shape-hexagon {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+        .shape-rhombus {
+            clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%);
+        }
+        .shape-notch {
+            clip-path: polygon(0% 0%, 88% 0%, 100% 28%, 100% 100%, 0% 100%);
+        }
+
+        /* 3D Dynamic Card Tilt & Inset Animation */
+        .card-3d-wrap {
+            perspective: 1000px;
+        }
+        .card-3d-inner {
+            transition: transform 0.2s cubic-bezier(0.1, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .inset-anim-box {
+            border: 2px solid rgba(37, 99, 235, 0.2);
+            transition: all 0.4s ease;
+        }
+        .inset-anim-box:hover {
+            box-shadow: inset 0 0 25px rgba(37, 99, 235, 0.15), 0 15px 35px rgba(37, 99, 235, 0.12);
+            border-color: #2563eb;
+        }
+
+        /* Typography Tension (60% Heavy vs 40% Light) */
+        .font-tension-heavy {
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+        .font-tension-light {
+            font-weight: 300;
+            letter-spacing: 0.04em;
+        }
+
+        /* Stacked Card Carousel */
+        .stacked-carousel {
+            position: relative;
+            height: 400px;
+        }
+        .stacked-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* Cool Interactive Pulsing Glow */
+        .pulse-glow {
+            box-shadow: 0 0 25px rgba(37, 99, 235, 0.25);
+        }
+    </style>
+</head>
+<body id="app-body" class="relative selection:bg-blue-500 selection:text-white">
+
+    <!-- Interactive Ambient Canvas Background -->
+    <canvas id="bg-canvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 opacity-70"></canvas>
+
+    <!-- Parallax Connector Line -->
+    <div class="parallax-line"></div>
+
+    <header class="fixed top-4 left-1/2 -translate-x-1/2 w-[92%] max-w-6xl z-50">
+        <nav class="glass-panel rounded-2xl px-6 py-3.5 flex items-center justify-between border border-white/90 shadow-xl">
+            <!-- HKUST Brand Logo -->
+            <a href="#hero" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-hkust-blue via-blue-600 to-hkust-gold p-[2px] shadow-md group-hover:scale-105 transition-transform">
+                    <div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center font-extrabold text-xs tracking-wider text-hkust-blue">
+                        HKUST
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-tension-heavy text-sm tracking-wide text-slate-900 group-hover:text-blue-600 transition-colors">TECH ART LAB</span>
+                    <span class="font-tension-light text-[10px] text-slate-500 uppercase tracking-widest">Interactive Systems</span>
+                </div>
+            </a>
+
+            <!-- Nav Links -->
+            <div class="hidden md:flex items-center gap-1.5 bg-slate-200/50 p-1.5 rounded-xl border border-white/60">
+                <a href="#about" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-white transition-all">00. Student Card</a>
+                <a href="#projects" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-white transition-all">01. Projects Stack</a>
+                <a href="#techart" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-white transition-all">02. Tech Art Lab</a>
+                <a href="#toolbox" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-white transition-all">03. Toolbox</a>
+                <a href="#contact" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-white transition-all">04. Contact</a>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-2">
+                <button id="shake-trigger-btn" onclick="triggerScreenShake()" class="glass-nav-item px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-xs flex items-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-500/25 active:scale-95">
+                    <i class="fa-solid fa-bolt text-yellow-300 animate-bounce"></i>
+                    <span class="font-mono">SHAKE UI</span>
+                </button>
+                <div class="px-3 py-1.5 rounded-xl bg-white/80 border border-slate-200 text-[11px] font-mono text-emerald-600 flex items-center gap-1.5 shadow-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    2026 ACTIVE
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section id="hero" class="min-h-screen pt-32 pb-16 flex flex-col justify-center items-center relative z-10 px-4">
+        <!-- Live Marquee Ticker -->
+        <div class="w-full max-w-5xl mb-8 overflow-hidden rounded-xl bg-white/80 border border-slate-200/80 py-2.5 shadow-sm backdrop-blur-md">
+            <div class="flex whitespace-nowrap animate-marquee font-mono text-xs text-slate-700 tracking-wider gap-12" id="marquee-banner">
+                <!-- Dynamically populated by JS -->
+            </div>
+        </div>
+
+        <div class="max-w-4xl text-center flex flex-col items-center">
+            <!-- University Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border border-blue-200 shadow-md text-hkust-blue text-xs font-semibold tracking-wider mb-6">
+                <i class="fa-solid fa-graduation-cap text-hkust-gold"></i>
+                HONG KONG UNIVERSITY OF SCIENCE AND TECHNOLOGY
+            </div>
+
+            <h1 class="text-5xl sm:text-7xl md:text-8xl mb-6 tracking-tight leading-none">
+                <span class="font-tension-heavy block text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-hkust-blue to-blue-900">CREATIVE</span>
+                <span class="font-tension-light block text-blue-600 italic font-serif opacity-95 my-1">COMPUTATION</span>
+                <span class="font-tension-heavy block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">ENGINEER</span>
+            </h1>
+
+            <p class="font-tension-light text-slate-600 max-w-2xl text-base sm:text-lg mb-8 leading-relaxed">
+                Seamlessly combining real-time <span class="font-semibold text-slate-900">WebGL Shaders</span>, interactive physics simulations, and sleek Apple-inspired retro interfaces. Built for high-impact creative technology.
+            </p>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#projects" class="glass-nav-item px-8 py-3.5 rounded-2xl bg-hkust-blue text-white font-bold text-sm tracking-wide hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-900/20 transition-all flex items-center gap-2">
+                    <span>EXPLORE PROJECTS</span>
+                    <i class="fa-solid fa-arrow-down text-xs"></i>
+                </a>
+                <a href="#techart" class="glass-nav-item px-8 py-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-cubes text-blue-600"></i>
+                    <span>SHADER LAB</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-slate-400 text-xs">
+            <span class="font-mono text-[10px] tracking-widest uppercase text-blue-600 font-semibold">SCROLL TO DISCOVER</span>
+            <div class="w-5 h-9 rounded-full border-2 border-slate-300 flex justify-center p-1 bg-white/50">
+                <div class="w-1.5 h-2.5 bg-blue-600 rounded-full animate-bounce"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-24 px-4 relative z-10 max-w-6xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-blue-600 text-xs tracking-widest uppercase font-bold mb-1">SECTION // 00</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-slate-900">
+                HKUST <span class="font-tension-light text-slate-500">STUDENT CARD</span>
+            </h2>
+            <div class="w-16 h-1 bg-gradient-to-r from-hkust-blue to-hkust-gold rounded-full mt-3"></div>
+        </div>
+
+        <div class="flex justify-center">
+            <div class="resizable-card glass-panel rounded-3xl p-6 sm:p-8 w-full max-w-3xl border border-white/90 shadow-2xl group transition-all" id="hkust-card">
+                <!-- Resizable Indicator Handle Notice -->
+                <div class="absolute top-3 right-4 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-mono text-slate-600 pointer-events-none flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center text-[9px] text-blue-600"></i>
+                    RESIZABLE CARD (DRAG BOTTOM-RIGHT)
+                </div>
+
+                <div class="grid md:grid-cols-12 gap-6 items-center h-full">
+                    <!-- Dynamic Hover Canvas visual -->
+                    <div class="md:col-span-5 relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 aspect-square flex items-center justify-center group/img shadow-lg">
+                        <canvas id="hkust-card-canvas" class="w-full h-full absolute inset-0"></canvas>
+                        
+                        <!-- Overlay Hologram Badge -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-4 left-4 right-4 z-10">
+                            <span class="px-2.5 py-1 rounded-md bg-hkust-gold text-slate-950 font-black text-[10px] uppercase tracking-wider">HKUST Student</span>
+                            <p class="text-white font-bold text-sm mt-1">Computer Science & Creative Media</p>
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="md:col-span-7 flex flex-col justify-between h-full space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-2xl font-tension-heavy text-slate-900 group-hover:text-blue-600 transition-colors">
+                                    Hong Kong University of Science and Technology
+                                </h3>
+                            </div>
+                            <p class="text-xs font-mono text-blue-600 font-bold mb-4">Clear Water Bay, Hong Kong ✦ Class of 2026</p>
+                            
+                            <p class="font-tension-light text-slate-600 text-sm leading-relaxed mb-4">
+                                Researching real-time WebGL graphics, procedural AI art pipelines, interactive installation shaders, and Apple-grade human-computer interaction (HCI).
+                            </p>
+                        </div>
+
+                        <!-- Specialized Badges -->
+                        <div class="grid grid-cols-2 gap-2.5 text-xs font-mono">
+                            <div class="p-3 rounded-xl bg-white/80 border border-slate-200 shadow-sm">
+                                <span class="text-slate-400 block text-[10px]">MAJOR G.P.A</span>
+                                <span class="text-hkust-blue font-bold text-sm">3.88 / 4.00</span>
+                            </div>
+                            <div class="p-3 rounded-xl bg-white/80 border border-slate-200 shadow-sm">
+                                <span class="text-slate-400 block text-[10px]">RESEARCH FOCUS</span>
+                                <span class="text-purple-600 font-bold text-sm">3D WebGL Shaders</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex justify-between items-center text-xs text-slate-500 border-t border-slate-200/80">
+                            <span>Status: Enrolled</span>
+                            <span class="text-emerald-600 font-mono font-bold">● Interactive Demo Mode</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects" class="py-24 px-4 relative z-10 max-w-5xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-blue-600 text-xs tracking-widest uppercase font-bold mb-1">SECTION // 01</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-slate-900">
+                GITHUB <span class="font-tension-light text-blue-600">PROJECT STACK</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-2 font-mono">AUTO-PLAYING STACKED CAROUSEL ✦ CLICK CARDS TO CYCLE</p>
+        </div>
+
+        <div class="relative max-w-2xl mx-auto">
+            <div class="stacked-carousel relative h-[420px]" id="project-carousel">
+                <!-- Card 1 -->
+                <div class="stacked-card cursor-pointer" onclick="cycleCarousel(0)">
+                    <div class="gradient-border-wrapper h-full shadow-xl">
+                        <div class="bg-white rounded-[1.25rem] p-7 h-full flex flex-col justify-between relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-mono font-bold border border-blue-200">FEATURED REPO</span>
+                                    <h3 class="text-2xl font-tension-heavy text-slate-900 mt-2 group-hover:text-blue-600 transition-colors">HyperRay-WebGL Engine</h3>
+                                </div>
+                                <i class="fa-brands fa-github text-3xl text-slate-400 group-hover:text-slate-900 transition-colors"></i>
+                            </div>
+
+                            <p class="font-tension-light text-slate-600 text-sm leading-relaxed my-4">
+                                High-performance browser raymarching shader playground built with Three.js & GLSL. Features real-time boolean SDF operations and dynamic volumetric lighting.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-blue-600 font-medium">#WebGL</span>
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-purple-600 font-medium">#GLSL</span>
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-pink-600 font-medium">#Three.js</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-star text-amber-500"></i> 1,240 Stars</span>
+                                    <span class="text-blue-600 font-mono font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Inspect Repo <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="stacked-card cursor-pointer" onclick="cycleCarousel(1)">
+                    <div class="gradient-border-wrapper h-full shadow-xl">
+                        <div class="bg-white rounded-[1.25rem] p-7 h-full flex flex-col justify-between relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-mono font-bold border border-purple-200">AI GENERATIVE</span>
+                                    <h3 class="text-2xl font-tension-heavy text-slate-900 mt-2 group-hover:text-purple-600 transition-colors">NeuroMorph-Diffusion</h3>
+                                </div>
+                                <i class="fa-brands fa-github text-3xl text-slate-400 group-hover:text-slate-900 transition-colors"></i>
+                            </div>
+
+                            <p class="font-tension-light text-slate-600 text-sm leading-relaxed my-4">
+                                Latent space interpolation visualizer connecting Stable Diffusion prompts to interactive WebGL particle canvases in real-time.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-purple-600 font-medium">#Python</span>
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-blue-600 font-medium">#PyTorch</span>
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-emerald-600 font-medium">#WebSockets</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-star text-amber-500"></i> 890 Stars</span>
+                                    <span class="text-purple-600 font-mono font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Inspect Repo <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="stacked-card cursor-pointer" onclick="cycleCarousel(2)">
+                    <div class="gradient-border-wrapper h-full shadow-xl">
+                        <div class="bg-white rounded-[1.25rem] p-7 h-full flex flex-col justify-between relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-[10px] font-mono font-bold border border-pink-200">PHYSICS TWEEN</span>
+                                    <h3 class="text-2xl font-tension-heavy text-slate-900 mt-2 group-hover:text-pink-600 transition-colors">SpringCore Motion Physics</h3>
+                                </div>
+                                <i class="fa-brands fa-github text-3xl text-slate-400 group-hover:text-slate-900 transition-colors"></i>
+                            </div>
+
+                            <p class="font-tension-light text-slate-600 text-sm leading-relaxed my-4">
+                                Ultra-lightweight 60fps spring physics and gesture solver for web applications. Emulates Apple iOS gesture fluidity with zero dependencies.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-pink-600 font-medium">#TypeScript</span>
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-amber-600 font-medium">#Math</span>
+                                    <span class="px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-blue-600 font-medium">#UI Motion</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-slate-100 text-xs text-slate-500">
+                                    <span class="flex items-center gap-1.5 font-semibold"><i class="fa-solid fa-star text-amber-500"></i> 2,150 Stars</span>
+                                    <span class="text-pink-600 font-mono font-bold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Inspect Repo <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-center items-center gap-4 mt-6">
+                <button onclick="prevCard()" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-700 hover:text-blue-600 transition-all shadow-md">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="flex gap-2" id="carousel-dots">
+                    <span class="w-3 h-3 rounded-full bg-blue-600 transition-all"></span>
+                    <span class="w-3 h-3 rounded-full bg-slate-300 transition-all"></span>
+                    <span class="w-3 h-3 rounded-full bg-slate-300 transition-all"></span>
+                </div>
+                <button onclick="nextCard()" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-700 hover:text-blue-600 transition-all shadow-md">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="techart" class="py-24 px-4 relative z-10 max-w-6xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-blue-600 text-xs tracking-widest uppercase font-bold mb-1">SECTION // 02</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-slate-900">
+                TECHNICAL ART <span class="font-tension-light text-purple-600">LABORATORY</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-2 font-mono">INTERACTIVE REAL-TIME SHADER, TWEEN & AI GENERATOR DEMO</p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+            <!-- Lab 1: Shader -->
+            <div class="glass-panel rounded-3xl p-6 border border-white/90 flex flex-col justify-between hover:shadow-2xl transition-all group">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2.5 py-1 rounded-md bg-blue-100 text-blue-700 font-mono text-[10px] font-bold">01 // SHADER</span>
+                        <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
+                    </div>
+                    <h3 class="text-xl font-tension-heavy text-slate-900 mb-2">Dynamic Iridescent Shader</h3>
+                    <p class="font-tension-light text-xs text-slate-600 mb-4">Real-time GPU fragment shader rendering light refraction inside standard WebGL context.</p>
+
+                    <div class="relative w-full h-44 rounded-2xl overflow-hidden border border-slate-200 mb-4 shadow-inner">
+                        <canvas id="shader-demo-canvas" class="w-full h-full"></canvas>
+                        <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-white/80 backdrop-blur-md text-[9px] font-mono text-blue-700 font-bold border border-white">
+                            60 FPS GPU SHADER
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="text-slate-600 font-semibold">Plasma Speed</span>
+                        <input type="range" id="shader-speed" min="1" max="10" value="5" class="w-24 accent-blue-600 cursor-pointer">
+                    </div>
+                    <button onclick="triggerScreenShake()" class="w-full py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-mono text-xs font-bold transition-all">
+                        Pulse Frequency Shock
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lab 2: Tween Physics -->
+            <div class="glass-panel rounded-3xl p-6 border border-white/90 flex flex-col justify-between hover:shadow-2xl transition-all group">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2.5 py-1 rounded-md bg-purple-100 text-purple-700 font-mono text-[10px] font-bold">02 // TWEEN & PHYSICS</span>
+                        <i class="fa-solid fa-atom text-purple-600 text-lg"></i>
+                    </div>
+                    <h3 class="text-xl font-tension-heavy text-slate-900 mb-2">Kinetic Spring Node</h3>
+                    <p class="font-tension-light text-xs text-slate-600 mb-4">Drag the kinetic orb to experience Apple-style elastic spring physics and damping recoil.</p>
+
+                    <div class="relative w-full h-44 rounded-2xl bg-slate-900 border border-slate-200 mb-4 overflow-hidden shadow-inner" id="tween-container">
+                        <canvas id="tween-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-xs font-mono text-slate-600 font-semibold">
+                        <span>Damping: <strong class="text-purple-600">0.82</strong></span>
+                        <span>Stiffness: <strong class="text-purple-600">120</strong></span>
+                    </div>
+                    <button onclick="resetPhysicsNode()" class="w-full py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-mono text-xs font-bold transition-all">
+                        Reset Kinetic Node
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lab 3: AI Art Synthesizer -->
+            <div class="glass-panel rounded-3xl p-6 border border-white/90 flex flex-col justify-between hover:shadow-2xl transition-all group">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2.5 py-1 rounded-md bg-pink-100 text-pink-700 font-mono text-[10px] font-bold">03 // GENERATIVE AI</span>
+                        <i class="fa-solid fa-brain text-pink-600 text-lg"></i>
+                    </div>
+                    <h3 class="text-xl font-tension-heavy text-slate-900 mb-2">Procedural Matrix Generator</h3>
+                    <p class="font-tension-light text-xs text-slate-600 mb-4">Synthesize procedural geometric patterns and cellular automata in real-time.</p>
+
+                    <div class="relative w-full h-44 rounded-2xl bg-slate-900 border border-slate-200 mb-4 overflow-hidden shadow-inner">
+                        <canvas id="ai-art-canvas" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="generateAIArt()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-mono text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-md">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>SYNTHESIZE PATTERN</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="toolbox" class="py-24 px-4 relative z-10 max-w-6xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-blue-600 text-xs tracking-widest uppercase font-bold mb-1">SECTION // 03</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-slate-900">
+                TOOLBOX & <span class="font-tension-light text-blue-600">TECH STACK</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-2 font-mono">HOVER FOR ANIMATED WIPE REVEAL & CLIP-PATH GEOMETRY</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Badge 1 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/90 group hover:border-blue-500 transition-all shadow-md hover:shadow-xl">
+                <div class="w-12 h-12 mb-4 bg-blue-600 text-white flex items-center justify-center shape-hexagon text-xl font-bold shadow-md">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-slate-900 mb-1">Graphics & Shaders</h3>
+                <p class="wipe-text text-sm font-mono text-slate-600 leading-snug">
+                    WebGL, GLSL Shaders, Three.js, Canvas2D, HLSL, ShaderGraph, Raymarching SDFs.
+                </p>
+            </div>
+
+            <!-- Badge 2 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/90 group hover:border-purple-500 transition-all shadow-md hover:shadow-xl">
+                <div class="w-12 h-12 mb-4 bg-purple-600 text-white flex items-center justify-center shape-rhombus text-xl font-bold shadow-md">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-slate-900 mb-1">Frontend Core</h3>
+                <p class="wipe-text text-sm font-mono text-slate-600 leading-snug">
+                    TypeScript, React, Next.js, Tailwind CSS, HTML5 Web APIs, GSAP Motion.
+                </p>
+            </div>
+
+            <!-- Badge 3 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/90 group hover:border-pink-500 transition-all shadow-md hover:shadow-xl">
+                <div class="w-12 h-12 mb-4 bg-pink-600 text-white flex items-center justify-center shape-notch text-xl font-bold shadow-md">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-slate-900 mb-1">AI & Generative</h3>
+                <p class="wipe-text text-sm font-mono text-slate-600 leading-snug">
+                    PyTorch, Stable Diffusion API, WebGPU, LLM Prompt Pipelines, Node.js.
+                </p>
+            </div>
+
+            <!-- Badge 4 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/90 group hover:border-emerald-500 transition-all shadow-md hover:shadow-xl">
+                <div class="w-12 h-12 mb-4 bg-emerald-600 text-white flex items-center justify-center shape-hexagon text-xl font-bold shadow-md">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-slate-900 mb-1">Creative Engines</h3>
+                <p class="wipe-text text-sm font-mono text-slate-600 leading-snug">
+                    Unity 3D, Unreal Engine 5, TouchDesigner, Figma, Blender 3D, Substance.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-24 px-4 relative z-10 max-w-4xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-blue-600 text-xs tracking-widest uppercase font-bold mb-1">SECTION // 04</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-slate-900">
+                GET IN <span class="font-tension-light text-blue-600">TOUCH</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-2 font-mono">PARALLAX 3D ROTATING CARD ✦ CLICK TO COPY CONTACT DETAILS</p>
+        </div>
+
+        <div class="card-3d-wrap" id="card-3d-wrap">
+            <div class="card-3d-inner glass-panel rounded-3xl p-8 sm:p-12 inset-anim-box relative border border-white/90 shadow-2xl" id="card-3d">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <div class="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-mono font-bold mb-4 border border-blue-200">
+                            ✦ HKUST RESEARCHER & DEVELOPER
+                        </div>
+                        <h3 class="text-3xl font-tension-heavy text-slate-900 mb-4">Let's Build the Interactive Future Together.</h3>
+                        <p class="font-tension-light text-slate-600 text-sm leading-relaxed mb-6">
+                            Available for research collaborations, creative technology consulting, or custom WebGL shader projects.
+                        </p>
+
+                        <button onclick="copyContactEmail('student@hkust.edu.hk')" class="px-6 py-3.5 rounded-xl bg-hkust-blue text-white font-bold text-xs tracking-wider hover:bg-blue-700 transition-all flex items-center gap-2 group active:scale-95 shadow-lg shadow-blue-900/20">
+                            <i class="fa-regular fa-copy"></i>
+                            <span id="copy-btn-text">COPY EMAIL: student@hkust.edu.hk</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-3 font-mono text-xs">
+                        <div class="p-4 rounded-xl bg-white/80 border border-slate-200 flex justify-between items-center shadow-sm">
+                            <span class="text-slate-500 font-semibold">LOCATION</span>
+                            <span class="text-slate-900 font-bold">Hong Kong (HKUST Campus)</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white/80 border border-slate-200 flex justify-between items-center shadow-sm">
+                            <span class="text-slate-500 font-semibold">GITHUB</span>
+                            <a href="https://github.com" target="_blank" class="text-blue-600 font-bold hover:underline">@hkust-tech-art</a>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white/80 border border-slate-200 flex justify-between items-center shadow-sm">
+                            <span class="text-slate-500 font-semibold">TIMEZONE</span>
+                            <span class="text-emerald-600 font-bold">UTC+8 (Hong Kong Time)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-16 border-t border-slate-200/80 relative z-10 px-4 bg-white/80 backdrop-blur-lg">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="flex flex-col items-center md:items-start">
+                <span class="text-xs font-mono text-blue-600 font-bold tracking-widest uppercase mb-2">COUNTDOWN TO NEXT YEAR (2027)</span>
+                <div class="flex items-center gap-3 font-mono text-2xl sm:text-3xl text-slate-900 font-bold" id="countdown-timer">
+                    <div class="flex flex-col items-center"><span id="cd-days">00</span><span class="text-[9px] text-slate-500 font-sans">DAYS</span></div>
+                    <span class="text-blue-600">:</span>
+                    <div class="flex flex-col items-center"><span id="cd-hours">00</span><span class="text-[9px] text-slate-500 font-sans">HOURS</span></div>
+                    <span class="text-blue-600">:</span>
+                    <div class="flex flex-col items-center"><span id="cd-mins">00</span><span class="text-[9px] text-slate-500 font-sans">MINS</span></div>
+                    <span class="text-blue-600">:</span>
+                    <div class="flex flex-col items-center"><span id="cd-secs">00</span><span class="text-[9px] text-slate-500 font-sans">SECS</span></div>
+                </div>
+            </div>
+
+            <div class="text-center md:text-right">
+                <p class="font-tension-heavy text-slate-900 text-sm mb-1">Designed with Apple retro light aesthetics & WebGL technology</p>
+                <p class="font-tension-light text-xs text-slate-500">© 2026 Hong Kong University of Science and Technology. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-notification" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 px-5 py-3 rounded-2xl glass-panel border border-blue-500 text-blue-700 font-mono text-xs flex items-center gap-3 shadow-2xl">
+        <i class="fa-solid fa-circle-check text-blue-600 text-base"></i>
+        <span id="toast-msg">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        /* --- Audio Feedback Synthesizer --- */
+        function playTone(freq = 440, type = 'sine', duration = 0.1) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        /* --- 01. Screen Shake & Audio Trigger --- */
+        function triggerScreenShake() {
+            playTone(180, 'sawtooth', 0.25);
+            const body = document.getElementById('app-body');
+            body.classList.remove('shake-active');
+            void body.offsetWidth; // Force reflow
+            body.classList.add('shake-active');
+
+            if(window.bgParticles) {
+                window.bgParticles.forEach(p => {
+                    p.vx += (Math.random() - 0.5) * 18;
+                    p.vy += (Math.random() - 0.5) * 18;
+                });
+            }
+        }
+
+        /* --- 02. Live Marquee Ticker --- */
+        function updateMarquee() {
+            const marquee = document.getElementById('marquee-banner');
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString();
+
+            const text = `✦ TODAY: ${dateStr} [${timeStr}] ✦ HKUST TECH ART PORTFOLIO ✦ REAL-TIME SHADERS & AI ✦ CURRENT SYSTEM: ONLINE ✦ RESIZABLE CARDS ENABLED ✦`;
+            marquee.innerHTML = `<span>${text}</span><span>${text}</span>`;
+        }
+        setInterval(updateMarquee, 1000);
+        updateMarquee();
+
+        /* --- 03. Ambient Particle Mesh Canvas (Light Mode Tuned) --- */
+        const bgCanvas = document.getElementById('bg-canvas');
+        const ctx = bgCanvas.getContext('2d');
+        let width = bgCanvas.width = window.innerWidth;
+        let height = bgCanvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = bgCanvas.width = window.innerWidth;
+            height = bgCanvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        window.bgParticles = particles;
+        for(let i = 0; i < 65; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.9,
+                vy: (Math.random() - 0.5) * 0.9,
+                radius: Math.random() * 2.5 + 1.5,
+                color: Math.random() > 0.5 ? '#0284c7' : '#7c3aed'
+            });
+        }
+
+        function drawBg() {
+            ctx.clearRect(0, 0, width, height);
+
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if(p.x < 0 || p.x > width) p.vx *= -1;
+                if(p.y < 0 || p.y > height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = 0.4;
+                ctx.fill();
+
+                for(let j = index + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if(dist < 130) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(37, 99, 235, ${0.15 * (1 - dist / 130)})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(drawBg);
+        }
+        drawBg();
+
+        /* --- 04. HKUST Card Canvas Visual --- */
+        const cardCanvas = document.getElementById('hkust-card-canvas');
+        const cCtx = cardCanvas.getContext('2d');
+        function renderCardCanvas() {
+            if(!cardCanvas.width) {
+                cardCanvas.width = cardCanvas.parentElement.clientWidth;
+                cardCanvas.height = cardCanvas.parentElement.clientHeight;
+            }
+            const time = Date.now() * 0.002;
+            const w = cardCanvas.width;
+            const h = cardCanvas.height;
+
+            cCtx.fillStyle = '#0a1329';
+            cCtx.fillRect(0, 0, w, h);
+
+            for(let i = 0; i < 8; i++) {
+                const cx = w/2 + Math.sin(time + i) * (w*0.35);
+                const cy = h/2 + Math.cos(time*0.8 + i) * (h*0.35);
+                const rad = 45 + Math.sin(time*2 + i) * 25;
+
+                const grad = cCtx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+                grad.addColorStop(0, i % 2 === 0 ? 'rgba(37, 99, 235, 0.7)' : 'rgba(200, 155, 60, 0.7)');
+                grad.addColorStop(1, 'transparent');
+
+                cCtx.fillStyle = grad;
+                cCtx.beginPath();
+                cCtx.arc(cx, cy, rad, 0, Math.PI*2);
+                cCtx.fill();
+            }
+            requestAnimationFrame(renderCardCanvas);
+        }
+        renderCardCanvas();
+
+        /* --- 05. Stacked Card Carousel --- */
+        let currentCarouselIndex = 0;
+        const carouselCards = document.querySelectorAll('.stacked-card');
+        const carouselDots = document.querySelectorAll('#carousel-dots span');
+
+        function updateCarousel() {
+            carouselCards.forEach((card, i) => {
+                const offset = (i - currentCarouselIndex + carouselCards.length) % carouselCards.length;
+
+                if (offset === 0) {
+                    card.style.transform = 'translateY(0) scale(1)';
+                    card.style.zIndex = '30';
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                } else if (offset === 1) {
+                    card.style.transform = 'translateY(-24px) scale(0.92)';
+                    card.style.zIndex = '20';
+                    card.style.opacity = '0.75';
+                    card.style.pointerEvents = 'none';
+                } else {
+                    card.style.transform = 'translateY(-48px) scale(0.84)';
+                    card.style.zIndex = '10';
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                }
+            });
+
+            carouselDots.forEach((dot, i) => {
+                dot.className = i === currentCarouselIndex ? 'w-6 h-3 rounded-full bg-blue-600 transition-all' : 'w-3 h-3 rounded-full bg-slate-300 transition-all';
+            });
+        }
+
+        function cycleCarousel(idx) {
+            playTone(520, 'sine', 0.08);
+            currentCarouselIndex = idx;
+            updateCarousel();
+        }
+
+        function nextCard() {
+            currentCarouselIndex = (currentCarouselIndex + 1) % carouselCards.length;
+            updateCarousel();
+        }
+
+        function prevCard() {
+            currentCarouselIndex = (currentCarouselIndex - 1 + carouselCards.length) % carouselCards.length;
+            updateCarousel();
+        }
+
+        setInterval(nextCard, 4500);
+        updateCarousel();
+
+        /* --- 06. Technical Art: Shader Sandbox Canvas --- */
+        const shaderCanvas = document.getElementById('shader-demo-canvas');
+        const sCtx = shaderCanvas.getContext('2d');
+        const speedInput = document.getElementById('shader-speed');
+
+        function renderShaderDemo() {
+            shaderCanvas.width = shaderCanvas.parentElement.clientWidth;
+            shaderCanvas.height = shaderCanvas.parentElement.clientHeight;
+            const w = shaderCanvas.width;
+            const h = shaderCanvas.height;
+            const speed = parseFloat(speedInput.value) * 0.0012;
+            const time = Date.now() * speed;
+
+            const imgData = sCtx.createImageData(w, h);
+            const data = imgData.data;
+
+            for(let x = 0; x < w; x += 3) {
+                for(let y = 0; y < h; y += 3) {
+                    const u = x / w;
+                    const v = y / h;
+                    const val = Math.sin(u * 8 + time) + Math.cos(v * 8 + time) + Math.sin((u+v)*6 + time);
+                    const r = Math.floor((Math.sin(val) + 1) * 110 + 30);
+                    const g = Math.floor((Math.cos(val) + 1) * 110 + 40);
+                    const b = 245;
+
+                    for(let dx = 0; dx < 3; dx++) {
+                        for(let dy = 0; dy < 3; dy++) {
+                            const index = ((y + dy) * w + (x + dx)) * 4;
+                            data[index] = r;
+                            data[index + 1] = g;
+                            data[index + 2] = b;
+                            data[index + 3] = 255;
+                        }
+                    }
+                }
+            }
+            sCtx.putImageData(imgData, 0, 0);
+            requestAnimationFrame(renderShaderDemo);
+        }
+        renderShaderDemo();
+
+        /* --- 07. Technical Art: Kinetic Physics Sandbox --- */
+        const tweenCanvas = document.getElementById('tween-canvas');
+        const tCtx = tweenCanvas.getContext('2d');
+        let nodePos = { x: 120, y: 80 };
+        let nodeVel = { x: 0, y: 0 };
+        let targetPos = { x: 120, y: 80 };
+        let isDraggingNode = false;
+
+        function renderTweenPhysics() {
+            tweenCanvas.width = tweenCanvas.parentElement.clientWidth;
+            tweenCanvas.height = tweenCanvas.parentElement.clientHeight;
+            const w = tweenCanvas.width;
+            const h = tweenCanvas.height;
+
+            tCtx.clearRect(0, 0, w, h);
+
+            if(!isDraggingNode) {
+                targetPos = { x: w/2, y: h/2 };
+                const ax = (targetPos.x - nodePos.x) * 0.08;
+                const ay = (targetPos.y - nodePos.y) * 0.08;
+                nodeVel.x = (nodeVel.x + ax) * 0.82;
+                nodeVel.y = (nodeVel.y + ay) * 0.82;
+                nodePos.x += nodeVel.x;
+                nodePos.y += nodeVel.y;
+            }
+
+            tCtx.beginPath();
+            tCtx.moveTo(w/2, h/2);
+            tCtx.lineTo(nodePos.x, nodePos.y);
+            tCtx.strokeStyle = 'rgba(124, 58, 237, 0.7)';
+            tCtx.lineWidth = 3;
+            tCtx.stroke();
+
+            tCtx.beginPath();
+            tCtx.arc(w/2, h/2, 6, 0, Math.PI*2);
+            tCtx.fillStyle = '#ffffff';
+            tCtx.fill();
+
+            tCtx.beginPath();
+            tCtx.arc(nodePos.x, nodePos.y, 16, 0, Math.PI*2);
+            tCtx.fillStyle = '#7c3aed';
+            tCtx.shadowColor = '#7c3aed';
+            tCtx.shadowBlur = 15;
+            tCtx.fill();
+            tCtx.shadowBlur = 0;
+
+            requestAnimationFrame(renderTweenPhysics);
+        }
+        renderTweenPhysics();
+
+        tweenCanvas.addEventListener('mousedown', (e) => {
+            isDraggingNode = true;
+            playTone(600, 'triangle', 0.05);
+            const rect = tweenCanvas.getBoundingClientRect();
+            nodePos.x = e.clientX - rect.left;
+            nodePos.y = e.clientY - rect.top;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(isDraggingNode) {
+                const rect = tweenCanvas.getBoundingClientRect();
+                nodePos.x = e.clientX - rect.left;
+                nodePos.y = e.clientY - rect.top;
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isDraggingNode = false; });
+
+        function resetPhysicsNode() {
+            playTone(400, 'sawtooth', 0.15);
+            nodePos = { x: 40, y: 40 };
+            nodeVel = { x: 22, y: -16 };
+            triggerScreenShake();
+        }
+
+        /* --- 08. Generative AI Matrix Canvas --- */
+        const aiCanvas = document.getElementById('ai-art-canvas');
+        const aCtx = aiCanvas.getContext('2d');
+        function generateAIArt() {
+            playTone(750, 'sine', 0.1);
+            aiCanvas.width = aiCanvas.parentElement.clientWidth;
+            aiCanvas.height = aiCanvas.parentElement.clientHeight;
+            const w = aiCanvas.width;
+            const h = aiCanvas.height;
+
+            aCtx.fillStyle = '#0f172a';
+            aCtx.fillRect(0, 0, w, h);
+
+            const grid = 12;
+            for(let x = 0; x < w; x += grid) {
+                for(let y = 0; y < h; y += grid) {
+                    if(Math.random() > 0.45) {
+                        aCtx.fillStyle = Math.random() > 0.5 ? '#db2777' : '#0284c7';
+                        aCtx.fillRect(x, y, grid - 2, grid - 2);
+                    }
+                }
+            }
+        }
+        generateAIArt();
+
+        /* --- 09. 3D Parallax Card --- */
+        const card3D = document.getElementById('card-3d');
+        const card3DWrap = document.getElementById('card-3d-wrap');
+
+        card3DWrap.addEventListener('mousemove', (e) => {
+            const rect = card3DWrap.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+
+            card3D.style.transform = `rotateY(${x * 0.04}deg) rotateX(${-y * 0.04}deg)`;
+        });
+
+        card3DWrap.addEventListener('mouseleave', () => {
+            card3D.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        });
+
+        /* --- 10. Copy Contact Email with Toast --- */
+        function copyContactEmail(text) {
+            playTone(880, 'sine', 0.15);
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const toast = document.getElementById('toast-notification');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = `Copied "${text}" to clipboard!`;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        /* --- 11. Countdown Timer (2027) --- */
+        function updateCountdown() {
+            const targetYear = new Date().getFullYear() + 1;
+            const targetDate = new Date(`January 1, ${targetYear} 00:00:00`).getTime();
+            const now = new Date().getTime();
+            const diff = targetDate - now;
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+            document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+            document.getElementById('cd-mins').innerText = String(mins).padStart(2, '0');
+            document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>
+</html>

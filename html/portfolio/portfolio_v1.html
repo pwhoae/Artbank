@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HO PO WA | Portfolio & Interactive Showcase</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Parallax -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hkust: {
+                            blue: '#003366',
+                            gold: '#C69214',
+                            light: '#f4f7fa'
+                        },
+                        apple: {
+                            bg: '#f5f5f7',
+                            card: 'rgba(255, 255, 255, 0.75)',
+                            text: '#1d1d1f',
+                            subtext: '#86868b',
+                            accent: '#0071e3'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            overflow-x: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Tactical Typographic Contrast: 60% Bold Heavy / 40% Ultra Thin */
+        .weight-contrast-heavy { font-weight: 800; tracking: -0.03em; }
+        .weight-contrast-light { font-weight: 300; opacity: 0.85; }
+
+        /* Glassmorphism Header & Reflective Hover */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Glass Reflection Effect on Hover */
+        .glass-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-shine::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -150%;
+            width: 100%;
+            height: 200%;
+            background: linear-gradient(60deg, transparent, rgba(255,255,255,0.6), transparent);
+            transform: rotate(25deg);
+            transition: all 0.75s ease;
+        }
+        .glass-shine:hover::after {
+            left: 150%;
+        }
+
+        /* Screen Shake Keyframes */
+        @keyframes shakeHard {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            15% { transform: translate(-4px, 3px) rotate(-1deg); }
+            30% { transform: translate(4px, -3px) rotate(1deg); }
+            45% { transform: translate(-3px, -2px) rotate(-0.5deg); }
+            60% { transform: translate(3px, 2px) rotate(0.5deg); }
+            75% { transform: translate(-1px, 1px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .screen-shake {
+            animation: shakeHard 0.35s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Rotating Gradient Border for Body 1 Carousel */
+        .animated-border-box {
+            position: relative;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            padding: 3px;
+        }
+        .animated-border-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, #003366, #C69214, #0071e3, #ff2d55, #003366);
+            animation: spinBorder 4s linear infinite;
+            z-index: 0;
+        }
+        .animated-border-content {
+            position: relative;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1.1rem;
+            z-index: 1;
+        }
+        @keyframes spinBorder {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Clip-Path Shapes for Body 3 Skills */
+        .clip-polygon-1 {
+            clip-path: polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%);
+        }
+        .clip-polygon-2 {
+            clip-path: polygon(0% 0%, 92% 0%, 100% 100%, 8% 100%);
+        }
+
+        /* Wipe Text Animation */
+        .animated-wipe {
+            background: linear-gradient(90deg, #003366 0%, #0071e3 50%, #1d1d1f 100%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shineText 5s linear infinite;
+        }
+        @keyframes shineText {
+            to { background-position: 200% center; }
+        }
+
+        /* Resizable Container Handle Styling */
+        .resizable-container {
+            resize: both;
+            overflow: auto;
+            min-width: 300px;
+            min-height: 200px;
+        }
+        .resizable-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .resizable-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 51, 102, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Dynamic Mask Reveal Animation on Scroll */
+        .scroll-mask-reveal {
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+
+        /* Vertical Connector Line */
+        .vertical-line-connector {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 51, 102, 0.2) 20%, rgba(198, 146, 20, 0.3) 80%, transparent);
+            z-index: 0;
+            transform: translateX(-50%);
+        }
+
+        /* Modern Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f5f7;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-apple-text antialiased selection:bg-hkust-gold selection:text-white">
+
+    <!-- 3D Canvas Background for HKUST Parallax Nodes -->
+    <canvas id="bg3dCanvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 opacity-40"></canvas>
+
+    <!-- Top Ticker / Marquee Banner -->
+    <div class="bg-hkust-blue text-white text-xs py-1.5 px-4 overflow-hidden relative z-50 flex items-center shadow-sm">
+        <div class="inline-flex whitespace-nowrap animate-marquee space-x-8 font-mono tracking-wider items-center w-full">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-graduation-cap text-hkust-gold"></i> HO PO WA (何寶華)</span>
+            <span class="text-white/40">•</span>
+            <span>HKUST Computer Engineering (BEng, Honors Class I)</span>
+            <span class="text-white/40">•</span>
+            <span class="text-hkust-gold"><i class="fa-solid fa-microchip"></i> HKSTP Talent Foundry AI Bootcamp</span>
+            <span class="text-white/40">•</span>
+            <span>MTR Corporation Summer Intern 2024</span>
+            <span class="text-white/40">•</span>
+            <span>Generative AI • MediaPipe • LLM Agents • Full-Stack Systems</span>
+            <span class="text-white/40">•</span>
+            <span id="liveTimeDisplay" class="font-bold text-yellow-300"></span>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="#" onclick="triggerShake()" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-hkust-blue to-apple-accent text-white font-bold flex items-center justify-center text-lg shadow-md transition-transform group-hover:scale-105">
+                    HPW
+                </div>
+                <div>
+                    <span class="block text-sm font-extrabold tracking-tight text-hkust-blue">HO PO WA</span>
+                    <span class="block text-[10px] font-mono text-apple-subtext tracking-widest uppercase">Engineered for AI</span>
+                </div>
+            </a>
+
+            <!-- Nav Links with Reflection Effect -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <a href="#about" onclick="triggerShake(2)" class="glass-shine px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:text-hkust-blue transition-all">00. HKUST Education</a>
+                <a href="#projects" onclick="triggerShake(2)" class="glass-shine px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:text-hkust-blue transition-all">01. Projects Deck</a>
+                <a href="#techart" onclick="triggerShake(2)" class="glass-shine px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:text-hkust-blue transition-all">02. Shader & AI Lab</a>
+                <a href="#skills" onclick="triggerShake(2)" class="glass-shine px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:text-hkust-blue transition-all">03. Toolbox & Skills</a>
+                <a href="#contact" onclick="triggerShake(2)" class="glass-shine px-4 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:text-hkust-blue transition-all">04. Contact</a>
+            </nav>
+
+            <!-- Interactive Action Button -->
+            <div class="flex items-center gap-3">
+                <button onclick="triggerShake(8)" class="glass-shine bg-hkust-blue hover:bg-blue-900 text-white text-xs font-bold px-4 py-2 rounded-full transition-all shadow-md active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-sparkles text-hkust-gold"></i>
+                    <span>Shake Screen</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Vertical Parallax Wrapper -->
+    <main class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-28">
+
+        <!-- Background Vertical Connector Line -->
+        <div class="vertical-line-connector"></div>
+
+        <!-- HERO SECTION -->
+        <section class="relative pt-6 pb-12 flex flex-col items-center text-center">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-gray-200/80 shadow-sm mb-6 animate-bounce">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span class="text-xs font-medium text-gray-600">Available for Generative AI & Engineering Roles</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight max-w-4xl">
+                <span class="weight-contrast-heavy text-hkust-blue">HO PO WA</span>
+                <span class="block weight-contrast-light text-3xl sm:text-5xl md:text-6xl text-gray-700 mt-2">
+                    Computer Engineer & <span class="animated-wipe font-bold">AI Systems Builder</span>
+                </span>
+            </h1>
+
+            <p class="max-w-2xl text-base sm:text-lg text-apple-subtext font-normal leading-relaxed mb-8">
+                HKUST BEng Graduate with hands-on expertise across LLMs, Multi-step AI Agents, MediaPipe Vision, and Embedded Systems. Trained by <span class="text-hkust-blue font-semibold">NVIDIA, AWS & Huawei</span> at HKSTP.
+            </p>
+
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a href="#projects" onclick="triggerShake(4)" class="px-6 py-3 rounded-full bg-hkust-blue hover:bg-blue-900 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                    Explore Interactive Projects <i class="fa-solid fa-arrow-down ml-2"></i>
+                </a>
+                <a href="https://github.com/pwhoae" target="_blank" class="px-6 py-3 rounded-full bg-white/90 hover:bg-white text-gray-800 font-semibold text-sm border border-gray-300 shadow-sm transition-all hover:border-gray-400 flex items-center gap-2">
+                    <i class="fa-brands fa-github text-lg"></i> GitHub Profile
+                </a>
+            </div>
+        </section>
+
+        <!-- BODY 0: EDUCATION & EXPERIENCE CARDS -->
+        <section id="about" class="relative scroll-mt-24">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-8 h-8 rounded-lg bg-hkust-gold/20 text-hkust-gold flex items-center justify-center font-bold font-mono text-sm">00</div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-hkust-blue">Education & Background</h2>
+                <div class="h-[1px] flex-grow bg-gray-300/60 ml-4"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+
+                <!-- Resizable HKUST Card -->
+                <div class="md:col-span-7 glass-card rounded-2xl p-6 sm:p-8 resizable-container shadow-xl transition-all hover:border-hkust-gold/40 relative group">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-mono font-bold uppercase text-hkust-gold bg-hkust-gold/10 px-3 py-1 rounded-full">
+                            <i class="fa-solid fa-university mr-1"></i> HKUST Parallax Deck
+                        </span>
+                        <span class="text-[10px] text-gray-400 font-mono"><i class="fa-solid fa-up-right-and-down-left-from-center mr-1"></i> Resizable Panel</span>
+                    </div>
+
+                    <!-- Interactive Hover Image/Card Switcher -->
+                    <div id="hkustCardVisual" class="relative w-full h-48 rounded-xl overflow-hidden mb-6 bg-slate-900 shadow-inner cursor-pointer" onclick="toggleCampusImage()">
+                        <img id="campusImg1" src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1000&q=80" alt="HKUST Campus" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-700 opacity-100 group-hover:scale-105 transition-transform">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5 flex flex-col justify-end text-white">
+                            <span class="text-xs font-mono text-hkust-gold font-bold uppercase tracking-wider">The Hong Kong University of Science and Technology</span>
+                            <h3 class="text-xl font-bold">BEng in Computer Engineering</h3>
+                            <p class="text-xs text-gray-300">Second Class Honors, Division I • 2022 – 2025</p>
+                        </div>
+                        <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-mono px-2.5 py-1 rounded-md border border-white/20">
+                            <i class="fa-solid fa-arrows-rotate mr-1"></i> Hover/Click to Toggle Visual
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-sm text-gray-600">
+                        <p class="leading-relaxed">
+                            Focused on high-performance computing, AI system architecture, computer vision, and embedded hardware. Applied hardware-software co-design across multiple projects.
+                        </p>
+                        <div class="p-3 rounded-lg bg-blue-50/60 border border-blue-100 flex items-start gap-3 text-xs text-hkust-blue">
+                            <i class="fa-solid fa-award text-lg text-hkust-gold"></i>
+                            <div>
+                                <strong>Associate Degree:</strong> Associate in Information Technology (Hong Kong Community College, 2020 - 2022) with distinction fundamentals.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MTR Work Experience & Bootcamp Card -->
+                <div class="md:col-span-5 space-y-6">
+                    <!-- MTR Card -->
+                    <div class="glass-card rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border-l-4 border-l-red-600">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-extrabold text-base text-gray-900">MTR Corporation Limited</h3>
+                                <p class="text-xs text-red-600 font-semibold">Summer Intern (Project 3036)</p>
+                            </div>
+                            <span class="text-[11px] font-mono bg-gray-100 px-2.5 py-1 rounded-md text-gray-600">2024</span>
+                        </div>
+                        <ul class="text-xs text-gray-600 space-y-2 mt-3 list-disc pl-4">
+                            <li>Compiled comprehensive project reports and organized structured engineering data for on-schedule project delivery.</li>
+                            <li>Enhanced drawing verification workflows and cross-functional team coordination efficiency.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Bootcamp Training Card -->
+                    <div class="glass-card rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border-l-4 border-l-hkust-gold">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-extrabold text-base text-gray-900">HKSTP Talent Foundry Bootcamp</h3>
+                                <p class="text-xs text-hkust-gold font-semibold">NVIDIA, AWS & Huawei Certified Training</p>
+                            </div>
+                            <span class="text-[11px] font-mono bg-amber-50 text-amber-800 px-2 py-1 rounded-md">2025–2026</span>
+                        </div>
+                        <p class="text-xs text-gray-600 leading-relaxed mt-2">
+                            Specialized in GenAI, LLMs, Multi-step reasoning AI Agents, n8n automated workflows, and AI video pipelines (e.g. Vidu AI).
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- BODY 1: GITHUB PROJECTS - STACKED CAROUSEL -->
+        <section id="projects" class="relative scroll-mt-24">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-8 h-8 rounded-lg bg-hkust-blue text-white flex items-center justify-center font-bold font-mono text-sm">01</div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-hkust-blue">GitHub Projects Stack</h2>
+                <div class="h-[1px] flex-grow bg-gray-300/60 ml-4"></div>
+            </div>
+
+            <!-- Carousel Controller Header -->
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <p class="text-xs sm:text-sm text-apple-subtext">
+                    Featured engineering builds. Auto-playing stacked cards with rotating gradient borders. Click any card to trigger tactile feedback.
+                </p>
+                <div class="flex items-center gap-2">
+                    <button onclick="prevProjectCard()" class="w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 hover:bg-hkust-blue hover:text-white transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <button onclick="nextProjectCard()" class="w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 hover:bg-hkust-blue hover:text-white transition-all flex items-center justify-center">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stacked Card Carousel Container -->
+            <div class="animated-border-box shadow-2xl">
+                <div class="animated-border-content p-6 sm:p-10 min-h-[420px] flex flex-col justify-between">
+                    <div id="projectCardContainer" class="transition-all duration-500">
+                        <!-- Dynamic Project Content Rendered via JS -->
+                    </div>
+
+                    <!-- Carousel Dots Indicator -->
+                    <div class="flex items-center justify-center space-x-2 mt-8 pt-4 border-t border-gray-100" id="carouselDots">
+                        <!-- Dots populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BODY 2: TECHNICAL ART & SHADER LAB -->
+        <section id="techart" class="relative scroll-mt-24">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold font-mono text-sm">02</div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-hkust-blue">Technical Art & Shader Simulation</h2>
+                <div class="h-[1px] flex-grow bg-gray-300/60 ml-4"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                <!-- Controls & Explanation -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-card p-6 rounded-2xl">
+                        <span class="text-xs font-mono uppercase text-purple-600 font-bold tracking-wider block mb-2">Interactive Fragment Shader</span>
+                        <h3 class="text-xl font-extrabold text-gray-900 mb-3">Generative AI Wave & Tween Dynamics</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-4">
+                            Simulating real-time math-driven shaders and generative media pipelines (Vidu AI, MediaPipe landmark vectors, and procedural color interpolation).
+                        </p>
+
+                        <!-- Controls -->
+                        <div class="space-y-4 pt-2">
+                            <div>
+                                <label class="text-xs font-semibold text-gray-700 flex justify-between">
+                                    <span>Wave Velocity (Tween Speed)</span>
+                                    <span id="speedVal" class="font-mono text-purple-600">1.0x</span>
+                                </label>
+                                <input type="range" id="shaderSpeed" min="0.1" max="3" step="0.1" value="1.0" oninput="updateShaderSpeed(this.value)" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600 mt-2">
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button onclick="setShaderType('cyber')" class="flex-1 py-2 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold hover:bg-purple-600 hover:text-white transition-all">
+                                    Cyber Wave
+                                </button>
+                                <button onclick="setShaderType('ai')" class="flex-1 py-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-hkust-blue hover:text-white transition-all">
+                                    AI Matrix
+                                </button>
+                                <button onclick="setShaderType('gold')" class="flex-1 py-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold hover:bg-hkust-gold hover:text-white transition-all">
+                                    HKUST Gold
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resizable Interactive Shader Canvas -->
+                <div class="lg:col-span-7 glass-card p-4 rounded-2xl resizable-container shadow-xl flex flex-col items-center justify-center relative">
+                    <div class="w-full flex justify-between items-center mb-2 px-2">
+                        <span class="text-[11px] font-mono text-gray-500"><i class="fa-solid fa-code text-purple-500 mr-1"></i> WebGL Fragment Shader Canvas</span>
+                        <span class="text-[10px] text-gray-400 font-mono"><i class="fa-solid fa-hand-pointer mr-1"></i> Drag to Resize</span>
+                    </div>
+                    <canvas id="shaderCanvas" class="w-full h-[320px] rounded-xl shadow-inner border border-gray-200/60"></canvas>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- BODY 3: TOOLBOX & SKILLS (CLIP-PATH POLYGONS) -->
+        <section id="skills" class="relative scroll-mt-24">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold font-mono text-sm">03</div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-hkust-blue">Technical Toolbox & Clip-Path Badges</h2>
+                <div class="h-[1px] flex-grow bg-gray-300/60 ml-4"></div>
+            </div>
+
+            <!-- Skills Grid with Animated Wipe Text & Shapes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- Programming Languages -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold mb-4">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <h3 class="text-base font-extrabold text-gray-900 mb-3">Programming</h3>
+                    <div class="space-y-2">
+                        <div class="clip-polygon-1 bg-hkust-blue text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Python <span class="text-hkust-gold text-[10px] ml-1">(PyTorch/ML)</span>
+                        </div>
+                        <div class="clip-polygon-2 bg-slate-800 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            C++ <span class="text-gray-300 text-[10px] ml-1">(Data Structs)</span>
+                        </div>
+                        <div class="clip-polygon-1 bg-amber-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Java <span class="text-amber-200 text-[10px] ml-1">(OOP)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI / ML & GenAI -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm hover:shadow-md transition-all border-t-2 border-t-purple-500">
+                    <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg font-bold mb-4">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="text-base font-extrabold text-gray-900 mb-3">AI & Generative ML</h3>
+                    <div class="space-y-2">
+                        <div class="clip-polygon-2 bg-purple-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            MediaPipe Vision
+                        </div>
+                        <div class="clip-polygon-1 bg-indigo-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            LLM & Prompt Eng.
+                        </div>
+                        <div class="clip-polygon-2 bg-pink-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            n8n AI Workflows
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Frameworks & Cloud -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg font-bold mb-4">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <h3 class="text-base font-extrabold text-gray-900 mb-3">Frameworks</h3>
+                    <div class="space-y-2">
+                        <div class="clip-polygon-1 bg-sky-600 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Flutter <span class="text-sky-200 text-[10px] ml-1">(Mobile)</span>
+                        </div>
+                        <div class="clip-polygon-2 bg-amber-600 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Firebase Backend
+                        </div>
+                        <div class="clip-polygon-1 bg-emerald-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Flask API
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Embedded Systems & Hardware -->
+                <div class="glass-card p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg font-bold mb-4">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h3 class="text-base font-extrabold text-gray-900 mb-3">Embedded Tech</h3>
+                    <div class="space-y-2">
+                        <div class="clip-polygon-2 bg-rose-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Arduino & STM32
+                        </div>
+                        <div class="clip-polygon-1 bg-teal-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Raspberry Pi
+                        </div>
+                        <div class="clip-polygon-2 bg-gray-700 text-white p-3 font-mono text-xs font-bold tracking-wider hover:scale-105 transition-transform cursor-default">
+                            Git & DevOps
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- CONTACT SECTION: 3D PARALLAX ROTATING CARD -->
+        <section id="contact" class="relative scroll-mt-24">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-8 h-8 rounded-lg bg-hkust-gold text-white flex items-center justify-center font-bold font-mono text-sm">04</div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-hkust-blue">Get In Touch</h2>
+                <div class="h-[1px] flex-grow bg-gray-300/60 ml-4"></div>
+            </div>
+
+            <div class="max-w-2xl mx-auto perspective-1000">
+                <div id="contactCard3D" class="glass-card rounded-3xl p-8 sm:p-12 shadow-2xl transition-transform duration-200 ease-out border border-white/80 relative overflow-hidden" onmousemove="handleCard3DMove(event)" onmouseleave="resetCard3D()">
+
+                    <!-- Animated Background Glow Inset -->
+                    <div class="absolute -inset-1 bg-gradient-to-r from-hkust-blue via-hkust-gold to-apple-accent opacity-20 blur-xl transition-all duration-500"></div>
+
+                    <div class="relative z-10 text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-hkust-blue text-hkust-gold text-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                            <i class="fa-solid fa-address-card"></i>
+                        </div>
+
+                        <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">HO PO WA (何寶華)</h3>
+                        <p class="text-xs font-mono text-apple-subtext uppercase tracking-widest mb-8">Computer Engineer • HKUST Graduate</p>
+
+                        <!-- Contact Details with Quick Copy -->
+                        <div class="space-y-3 mb-8 max-w-md mx-auto">
+                            <!-- Email -->
+                            <div class="p-3.5 rounded-xl bg-white/90 border border-gray-200/80 flex items-center justify-between shadow-sm group hover:border-hkust-blue transition-all">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-envelope text-hkust-blue text-base"></i>
+                                    <span class="text-xs sm:text-sm font-mono text-gray-800">pwhoae@connect.ust.hk</span>
+                                </div>
+                                <button onclick="copyToClipboard('pwhoae@connect.ust.hk', 'Email copied!')" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-hkust-blue hover:text-white text-xs font-semibold text-gray-600 transition-all">
+                                    <i class="fa-regular fa-copy mr-1"></i> Copy
+                                </button>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="p-3.5 rounded-xl bg-white/90 border border-gray-200/80 flex items-center justify-between shadow-sm group hover:border-hkust-blue transition-all">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-phone text-emerald-600 text-base"></i>
+                                    <span class="text-xs sm:text-sm font-mono text-gray-800">+852 9856 1688</span>
+                                </div>
+                                <button onclick="copyToClipboard('+852 9856 1688', 'Phone number copied!')" class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-emerald-600 hover:text-white text-xs font-semibold text-gray-600 transition-all">
+                                    <i class="fa-regular fa-copy mr-1"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- External Links -->
+                        <div class="flex items-center justify-center space-x-4">
+                            <a href="https://github.com/pwhoae" target="_blank" onclick="triggerShake(3)" class="w-11 h-11 rounded-xl bg-gray-900 text-white flex items-center justify-center text-lg hover:bg-hkust-blue transition-all shadow-md">
+                                <i class="fa-brands fa-github"></i>
+                            </a>
+                            <a href="https://www.linkedin.com/in/po-wa-ho-b10928352/" target="_blank" onclick="triggerShake(3)" class="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg hover:bg-blue-700 transition-all shadow-md">
+                                <i class="fa-brands fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEXT YEAR COUNTDOWN TIMER -->
+        <section class="glass-card rounded-3xl p-8 sm:p-10 text-center shadow-xl border border-white">
+            <span class="text-xs font-mono uppercase font-bold text-hkust-gold tracking-widest block mb-2">Target Career Milestone</span>
+            <h3 class="text-xl sm:text-2xl font-extrabold text-gray-900 mb-6">2027 AI Innovation Roadmap Countdown</h3>
+
+            <div class="grid grid-cols-4 gap-3 sm:gap-6 max-w-xl mx-auto">
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-inner border border-gray-200/60">
+                    <span id="cdDays" class="text-2xl sm:text-4xl font-extrabold text-hkust-blue font-mono">00</span>
+                    <span class="block text-[10px] sm:text-xs text-gray-400 font-semibold uppercase mt-1">Days</span>
+                </div>
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-inner border border-gray-200/60">
+                    <span id="cdHours" class="text-2xl sm:text-4xl font-extrabold text-hkust-blue font-mono">00</span>
+                    <span class="block text-[10px] sm:text-xs text-gray-400 font-semibold uppercase mt-1">Hours</span>
+                </div>
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-inner border border-gray-200/60">
+                    <span id="cdMins" class="text-2xl sm:text-4xl font-extrabold text-hkust-blue font-mono">00</span>
+                    <span class="block text-[10px] sm:text-xs text-gray-400 font-semibold uppercase mt-1">Mins</span>
+                </div>
+                <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-inner border border-gray-200/60">
+                    <span id="cdSecs" class="text-2xl sm:text-4xl font-extrabold text-hkust-gold font-mono">00</span>
+                    <span class="block text-[10px] sm:text-xs text-gray-400 font-semibold uppercase mt-1">Secs</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500 relative z-10">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-hkust-gold inline-block"></span>
+                <span class="font-extrabold text-gray-800">HO PO WA</span> • BEng Computer Engineering (HKUST)
+            </div>
+            <div class="font-mono text-[11px]">
+                Built with HTML5, Tailwind, WebGL & Three.js • Inspired by Apple Design Aesthetics
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Popup -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-gray-700 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMsg" class="text-xs font-semibold">Notification message</span>
+    </div>
+
+    <!-- JAVASCRIPT INTERACTIVE ENGINE -->
+    <script>
+
+        // 1. Projects Data Array from CV
+        const projectsData = [
+            {
+                title: "UST Simulator (Godot Card Game)",
+                type: "Game Architecture / Godot Engine",
+                tags: ["Godot Engine", "GDScript", "Card Physics", "Game Design"],
+                desc: "An immersive card-based simulation game modeling HKUST campus life, strategic student decisions, and dynamic event engines with custom UI flow.",
+                icon: "fa-gamepad",
+                color: "from-blue-600 to-indigo-700",
+                link: "https://github.com/pwhoae"
+            },
+            {
+                title: "Real-Time Posture Recognition System",
+                type: "Computer Vision & MediaPipe AI",
+                tags: ["Python", "MediaPipe", "OpenCV", "Biometrics"],
+                desc: "High-precision posture tracking system leveraging MediaPipe skeletal keypoints to detect ergonomic posture anomalies in real time with high accuracy.",
+                icon: "fa-child-reaching",
+                color: "from-emerald-600 to-teal-700",
+                link: "https://github.com/pwhoae"
+            },
+            {
+                title: "USTLink (Campus Forum Mobile App)",
+                type: "Full-Stack Mobile App",
+                tags: ["Flutter", "Firebase", "Dart", "Realtime DB"],
+                desc: "A mobile community platform for HKUST students featuring real-time messaging, forum threads, user authentication, and responsive cross-platform UI.",
+                icon: "fa-mobile-screen-button",
+                color: "from-purple-600 to-pink-600",
+                link: "https://github.com/pwhoae"
+            },
+            {
+                title: "Search Engine Website",
+                type: "Information Retrieval System",
+                tags: ["Python", "Flask", "Indexing", "NLP"],
+                desc: "A custom web crawler, inverted indexer, and query ranking search engine delivering fast search results with query expansion.",
+                icon: "fa-magnifying-glass",
+                color: "from-amber-500 to-orange-600",
+                link: "https://github.com/pwhoae"
+            }
+        ];
+
+        let currentProjectIdx = 0;
+        let autoPlayTimer = null;
+
+        function renderProjectCard(idx) {
+            const proj = projectsData[idx];
+            const container = document.getElementById('projectCardContainer');
+            
+            container.innerHTML = `
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 transition-all duration-300">
+                    <div class="space-y-4 max-w-xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-hkust-blue/10 text-hkust-blue text-xs font-mono font-bold">
+                            <i class="fa-solid ${proj.icon}"></i> ${proj.type}
+                        </div>
+                        <h3 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">${proj.title}</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed">${proj.desc}</p>
+                        
+                        <div class="flex flex-wrap gap-2 pt-2">
+                            ${proj.tags.map(t => `<span class="px-3 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold border border-gray-200">${t}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-56 h-44 rounded-2xl bg-gradient-to-tr ${proj.color} p-6 text-white flex flex-col justify-between shadow-lg relative overflow-hidden group cursor-pointer" onclick="triggerShake(6)">
+                        <div class="absolute -right-4 -bottom-4 text-white/10 text-8xl">
+                            <i class="fa-solid ${proj.icon}"></i>
+                        </div>
+                        <span class="text-[10px] font-mono tracking-widest uppercase opacity-80">Featured Build</span>
+                        <div class="relative z-10">
+                            <span class="block text-xs font-bold">Click to Expand</span>
+                            <a href="${proj.link}" target="_blank" class="mt-2 inline-flex items-center gap-1 text-xs font-mono underline hover:text-hkust-gold">
+                                View Code <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Update Dots
+            const dotsContainer = document.getElementById('carouselDots');
+            dotsContainer.innerHTML = projectsData.map((_, i) => `
+                <button onclick="goToProjectCard(${i})" class="w-3 h-3 rounded-full transition-all ${i === idx ? 'bg-hkust-blue w-8' : 'bg-gray-300 hover:bg-gray-400'}"></button>
+            `).join('');
+        }
+
+        function nextProjectCard() {
+            triggerShake(2);
+            currentProjectIdx = (currentProjectIdx + 1) % projectsData.length;
+            renderProjectCard(currentProjectIdx);
+        }
+
+        function prevProjectCard() {
+            triggerShake(2);
+            currentProjectIdx = (currentProjectIdx - 1 + projectsData.length) % projectsData.length;
+            renderProjectCard(currentProjectIdx);
+        }
+
+        function goToProjectCard(i) {
+            triggerShake(2);
+            currentProjectIdx = i;
+            renderProjectCard(currentProjectIdx);
+        }
+
+        function startAutoPlay() {
+            autoPlayTimer = setInterval(() => {
+                currentProjectIdx = (currentProjectIdx + 1) % projectsData.length;
+                renderProjectCard(currentProjectIdx);
+            }, 5000);
+        }
+
+        // 2. Screen Shake Utility
+        function triggerShake(intensity = 5) {
+            document.body.classList.remove('screen-shake');
+            // Trigger reflow
+            void document.body.offsetWidth;
+            document.body.classList.add('screen-shake');
+            setTimeout(() => {
+                document.body.classList.remove('screen-shake');
+            }, 350);
+        }
+
+        // 3. HKUST Image Switcher
+        let campusToggleState = false;
+        function toggleCampusImage() {
+            triggerShake(3);
+            const img = document.getElementById('campusImg1');
+            campusToggleState = !campusToggleState;
+            if(campusToggleState) {
+                img.src = "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1000&q=80";
+            } else {
+                img.src = "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1000&q=80";
+            }
+            showToast("Visual view toggled!");
+        }
+
+        // 4. Toast Notification
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 2500);
+        }
+
+        // Copy Helper
+        function copyToClipboard(text, label) {
+            triggerShake(2);
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast(label);
+        }
+
+        // 5. 3D Card Tilt Effect
+        function handleCard3DMove(e) {
+            const card = document.getElementById('contactCard3D');
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            card.style.transform = `rotateY(${x / 20}deg) rotateX(${-y / 20}deg)`;
+        }
+
+        function resetCard3D() {
+            const card = document.getElementById('contactCard3D');
+            card.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        }
+
+        // 6. Shader Visual Canvas Simulation
+        let shaderSpeed = 1.0;
+        let shaderType = 'cyber';
+        let shaderAnimFrame = null;
+
+        function updateShaderSpeed(val) {
+            shaderSpeed = parseFloat(val);
+            document.getElementById('speedVal').innerText = `${shaderSpeed.toFixed(1)}x`;
+        }
+
+        function setShaderType(type) {
+            triggerShake(2);
+            shaderType = type;
+            showToast(`Shader theme set to: ${type.toUpperCase()}`);
+        }
+
+        function initShaderCanvas() {
+            const canvas = document.getElementById('shaderCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 320;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            let t = 0;
+            function render() {
+                t += 0.02 * shaderSpeed;
+                const w = canvas.width;
+                const h = canvas.height;
+
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(0, 0, w, h);
+
+                const cols = 20;
+                const rows = 12;
+                const cellW = w / cols;
+                const cellH = h / rows;
+
+                for (let i = 0; i < cols; i++) {
+                    for (let j = 0; j < rows; j++) {
+                        const wave = Math.sin(t + i * 0.3 + j * 0.3);
+                        const radius = (wave + 1) * 8 + 2;
+
+                        ctx.beginPath();
+                        ctx.arc(i * cellW + cellW / 2, j * cellH + cellH / 2, radius, 0, Math.PI * 2);
+
+                        if (shaderType === 'cyber') {
+                            ctx.fillStyle = `hsl(${(t * 50 + i * 10) % 360}, 80%, 60%)`;
+                        } else if (shaderType === 'ai') {
+                            ctx.fillStyle = `rgba(59, 130, 246, ${(wave + 1) / 2})`;
+                        } else {
+                            ctx.fillStyle = `rgba(198, 146, 20, ${(wave + 1) / 2})`;
+                        }
+                        ctx.fill();
+                    }
+                }
+
+                // Tween Connectors
+                ctx.strokeStyle = shaderType === 'gold' ? 'rgba(198,146,20,0.2)' : 'rgba(168,85,247,0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 0; i < w; i += 20) {
+                    const y = h / 2 + Math.sin(t + i * 0.01) * 40;
+                    if (i === 0) ctx.moveTo(i, y);
+                    else ctx.lineTo(i, y);
+                }
+                ctx.stroke();
+
+                shaderAnimFrame = requestAnimationFrame(render);
+            }
+            render();
+        }
+
+        // 7. Three.js 3D Background Parallax Nodes
+        function init3DBackground() {
+            const canvas = document.getElementById('bg3dCanvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            const geometry = new THREE.IcosahedronGeometry(1.2, 0);
+            const material = new THREE.MeshBasicMaterial({ color: 0x003366, wireframe: true, transparent: true, opacity: 0.15 });
+
+            const group = new THREE.Group();
+            for (let i = 0; i < 25; i++) {
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.x = (Math.random() - 0.5) * 20;
+                mesh.position.y = (Math.random() - 0.5) * 20;
+                mesh.position.z = (Math.random() - 0.5) * 20;
+                mesh.rotation.x = Math.random() * Math.PI;
+                mesh.rotation.y = Math.random() * Math.PI;
+                group.add(mesh);
+            }
+            scene.add(group);
+
+            camera.position.z = 8;
+
+            let mouseX = 0, mouseY = 0;
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth - 0.5) * 0.5;
+                mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
+            });
+
+            function animate3D() {
+                requestAnimationFrame(animate3D);
+                group.rotation.x += 0.001;
+                group.rotation.y += 0.0015;
+
+                camera.position.x += (mouseX - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                renderer.render(scene, camera);
+            }
+            animate3D();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // 8. Countdown Timer Logic
+        function initCountdown() {
+            const targetDate = new Date("January 1, 2027 00:00:00").getTime();
+
+            setInterval(() => {
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+
+                if (diff > 0) {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    document.getElementById('cdDays').innerText = String(days).padStart(2, '0');
+                    document.getElementById('cdHours').innerText = String(hours).padStart(2, '0');
+                    document.getElementById('cdMins').innerText = String(mins).padStart(2, '0');
+                    document.getElementById('cdSecs').innerText = String(secs).padStart(2, '0');
+                }
+            }, 1000);
+        }
+
+        // Live Clock Ticker
+        function initLiveClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('liveTimeDisplay').innerText = `[${now.toLocaleTimeString()}] HK Time`;
+            }, 1000);
+        }
+
+        // Window Load Initialization
+        window.onload = function() {
+            renderProjectCard(0);
+            startAutoPlay();
+            initShaderCanvas();
+            init3DBackground();
+            initCountdown();
+            initLiveClock();
+        };
+    </script>
+</body>
+</html>

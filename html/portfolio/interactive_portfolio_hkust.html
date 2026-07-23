@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKUST Portfolio | Tech Art & Interactive Systems</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <!-- Three.js for 3D Shader Visuals -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        hkust: {
+                            gold: '#003366',
+                            blue: '#003366',
+                            accent: '#C89B3C',
+                        },
+                        retro: {
+                            dark: '#0a0d14',
+                            glass: 'rgba(255, 255, 255, 0.07)',
+                            neonCyan: '#00f3ff',
+                            neonPink: '#ff007f',
+                            neonPurple: '#9d4edd'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #080a10;
+            color: #f3f4f6;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Screen Shake Effect */
+        @keyframes screenShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            15% { transform: translate(-6px, 4px) rotate(-1deg); }
+            30% { transform: translate(6px, -4px) rotate(1deg); }
+            45% { transform: translate(-4px, -2px) rotate(-0.5deg); }
+            60% { transform: translate(4px, 3px) rotate(0.5deg); }
+            75% { transform: translate(-2px, 1px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shake-active {
+            animation: screenShake 0.35s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        /* Glassmorphism & Apple Gloss Hover Reflection */
+        .glass-panel {
+            background: rgba(18, 24, 38, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-nav-item {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .glass-nav-item::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -150%;
+            width: 100%;
+            height: 200%;
+            background: linear-gradient(
+                60deg,
+                transparent,
+                rgba(255, 255, 255, 0.35),
+                transparent
+            );
+            transform: rotate(25deg);
+            transition: all 0.6s ease;
+        }
+        .glass-nav-item:hover::after {
+            left: 150%;
+        }
+
+        /* Resizable Container Handle Styling */
+        .resizable-card {
+            resize: both;
+            overflow: auto;
+            min-width: 280px;
+            min-height: 200px;
+            position: relative;
+        }
+        .resizable-card::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .resizable-card::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Rotating Gradient Border */
+        .gradient-border-wrapper {
+            position: relative;
+            border-radius: 1.25rem;
+            padding: 3px;
+            background: linear-gradient(0deg, #00f3ff, #9d4edd, #ff007f, #00f3ff);
+            background-size: 300% 300%;
+            animation: gradientRotate 6s ease infinite;
+        }
+        @keyframes gradientRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Parallax Connector Line */
+        .parallax-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(0, 243, 255, 0) 0%, rgba(0, 243, 255, 0.8) 50%, rgba(255, 0, 127, 0) 100%);
+            transform: translateX(-50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Scroll Driven Mask Reveal */
+        .mask-reveal {
+            clip-path: inset(0 0 100% 0);
+            transition: clip-path 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .mask-reveal.revealed {
+            clip-path: inset(0 0 0 0);
+        }
+
+        /* Animated Wipe Text */
+        .wipe-text {
+            background: linear-gradient(90deg, #ffffff 50%, rgba(255,255,255,0.2) 50%);
+            background-size: 200% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: background-position 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            background-position: 100% 0;
+        }
+        .wipe-text:hover, .group:hover .wipe-text {
+            background-position: 0% 0;
+        }
+
+        /* Dynamic Clip Path Shapes for Skills */
+        .shape-hexagon {
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+        .shape-rhombus {
+            clip-path: polygon(15% 0%, 100% 0%, 85% 100%, 0% 100%);
+        }
+        .shape-notch {
+            clip-path: polygon(0% 0%, 90% 0%, 100% 30%, 100% 100%, 0% 100%);
+        }
+
+        /* 3D Dynamic Card Tilt & Inset Animation */
+        .card-3d-wrap {
+            perspective: 1000px;
+        }
+        .card-3d-inner {
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .inset-anim-box {
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            transition: all 0.4s ease;
+        }
+        .inset-anim-box:hover {
+            box-shadow: inset 0 0 25px rgba(0, 243, 255, 0.3), 0 0 20px rgba(0, 243, 255, 0.2);
+            border-color: #00f3ff;
+        }
+
+        /* Custom Typography Weight Utility */
+        .font-tension-heavy {
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+        .font-tension-light {
+            font-weight: 200;
+            letter-spacing: 0.08em;
+        }
+
+        /* Stacked Card Carousel */
+        .stacked-carousel {
+            position: relative;
+            height: 380px;
+        }
+        .stacked-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+    </style>
+</head>
+<body id="app-body" class="relative selection:bg-cyan-500 selection:text-black">
+
+    <canvas id="bg-canvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 opacity-40"></canvas>
+
+    <!-- Parallax Connecting Center Line -->
+    <div class="parallax-line"></div>
+
+    <header class="fixed top-4 left-1/2 -translate-x-1/2 w-[92%] max-w-6xl z-50">
+        <nav class="glass-panel rounded-2xl px-6 py-3 flex items-center justify-between border border-white/10 shadow-2xl">
+            <!-- HKUST Brand logo & Title -->
+            <a href="#hero" class="flex items-center gap-3 group">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-hkust-gold to-yellow-400 p-[2px] shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-bold text-xs tracking-wider text-cyan-400">
+                        HKUST
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-tension-heavy text-sm tracking-wide text-white group-hover:text-cyan-400 transition-colors">TECH ART LAB</span>
+                    <span class="font-tension-light text-[10px] text-gray-400 uppercase tracking-widest">Interactive Systems</span>
+                </div>
+            </a>
+
+            <!-- Navigation Links -->
+            <div class="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                <a href="#about" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all">00. HKUST Card</a>
+                <a href="#projects" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all">01. Projects</a>
+                <a href="#techart" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all">02. Tech Art</a>
+                <a href="#toolbox" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all">03. Tools</a>
+                <a href="#contact" class="glass-nav-item px-4 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-all">04. Contact</a>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-2">
+                <button id="shake-trigger-btn" onclick="triggerScreenShake()" class="glass-nav-item px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs flex items-center gap-1.5 transition-all active:scale-95">
+                    <i class="fa-solid fa-bolt text-cyan-400 animate-pulse"></i>
+                    <span class="hidden sm:inline font-mono">SHAKE UI</span>
+                </button>
+                <div class="px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[10px] font-mono text-emerald-400 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    2026 ACTIVE
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <section id="hero" class="min-h-screen pt-32 pb-16 flex flex-col justify-center items-center relative z-10 px-4">
+        <!-- Live Running Marquee Today Banner -->
+        <div class="w-full max-w-5xl mb-8 overflow-hidden rounded-xl bg-white/5 border border-white/10 py-2 backdrop-blur-md">
+            <div class="flex whitespace-nowrap animate-marquee font-mono text-xs text-cyan-300 tracking-widest gap-12" id="marquee-banner">
+                <!-- Dynamically Populated by JS -->
+            </div>
+        </div>
+
+        <div class="max-w-4xl text-center flex flex-col items-center">
+            <!-- Typographic Tension: Heavy 60% vs Light 40% -->
+            <div class="inline-block px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 text-cyan-300 text-xs tracking-wider mb-6 backdrop-blur-md">
+                ✦ HONG KONG UNIVERSITY OF SCIENCE AND TECHNOLOGY
+            </div>
+
+            <h1 class="text-5xl sm:text-7xl md:text-8xl mb-6 tracking-tight leading-none">
+                <span class="font-tension-heavy block text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-gray-400">CREATIVE</span>
+                <span class="font-tension-light block text-cyan-400 italic font-serif opacity-90 my-1">COMPUTATION</span>
+                <span class="font-tension-heavy block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500">ENGINEER</span>
+            </h1>
+
+            <p class="font-tension-light text-gray-300 max-w-2xl text-base sm:text-lg mb-8 leading-relaxed">
+                Bridging real-time <span class="font-semibold text-white">WebGL Shaders</span>, procedural AI generation, and sleek Apple-inspired retro interfaces. Designed for high-impact interactive web experiences.
+            </p>
+
+            <!-- Quick Action Interactive Buttons -->
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#projects" class="glass-nav-item px-8 py-3.5 rounded-2xl bg-cyan-500 text-slate-950 font-bold text-sm tracking-wide hover:bg-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 transition-all flex items-center gap-2">
+                    <span>EXPLORE PROJECTS</span>
+                    <i class="fa-solid fa-arrow-down text-xs"></i>
+                </a>
+                <a href="#techart" class="glass-nav-item px-8 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium text-sm transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-cubes text-cyan-400"></i>
+                    <span>SHADER LAB</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Scroll down indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-400 text-xs">
+            <span class="font-mono text-[10px] tracking-widest uppercase text-cyan-400">SCROLL REVEAL</span>
+            <div class="w-5 h-9 rounded-full border-2 border-white/20 flex justify-center p-1">
+                <div class="w-1 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-24 px-4 relative z-10 max-w-6xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-cyan-400 text-xs tracking-widest uppercase mb-2">SECTION // 00</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-white">
+                HKUST <span class="font-tension-light text-gray-400">ACADEMIC CARD</span>
+            </h2>
+            <div class="w-16 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full mt-3"></div>
+        </div>
+
+        <!-- Resizable Glass Card Container -->
+        <div class="flex justify-center">
+            <div class="resizable-card glass-panel rounded-3xl p-6 sm:p-8 w-full max-w-3xl border border-white/15 shadow-2xl group transition-all" id="hkust-card">
+                <!-- Resizable Indicator Badge -->
+                <div class="absolute top-3 right-4 px-2 py-0.5 rounded bg-white/10 text-[10px] font-mono text-gray-400 pointer-events-none flex items-center gap-1">
+                    <i class="fa-solid fa-up-right-and-down-left-from-center text-[8px]"></i>
+                    RESIZABLE CARD (DRAG CORNER ⇲)
+                </div>
+
+                <div class="grid md:grid-cols-12 gap-6 items-center h-full">
+                    <!-- Dynamic Hover Canvas / Image Transition Container -->
+                    <div class="md:col-span-5 relative rounded-2xl overflow-hidden bg-slate-900 border border-white/10 aspect-square flex items-center justify-center group/img">
+                        <!-- Default State Visual -->
+                        <canvas id="hkust-card-canvas" class="w-full h-full absolute inset-0"></canvas>
+
+                        <!-- Overlay Hologram Badge -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80"></div>
+                        <div class="absolute bottom-4 left-4 right-4 z-10">
+                            <span class="px-2.5 py-1 rounded-md bg-hkust-gold/90 text-slate-950 font-bold text-[10px] uppercase tracking-wider">HKUST Student</span>
+                            <p class="text-white font-bold text-sm mt-1">Computer Science & Creative Media</p>
+                        </div>
+                    </div>
+
+                    <!-- Details Description -->
+                    <div class="md:col-span-7 flex flex-col justify-between h-full space-y-4">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-2xl font-tension-heavy text-white group-hover:text-cyan-300 transition-colors">
+                                    Hong Kong University of Science and Technology
+                                </h3>
+                            </div>
+                            <p class="text-xs font-mono text-cyan-400 mb-4">Clear Water Bay, Hong Kong ✦ Class of 2026</p>
+                            
+                            <p class="font-tension-light text-gray-300 text-sm leading-relaxed mb-4">
+                                Focusing on real-time graphics rendering, generative AI integration, interactive installation shaders, and human-computer interaction (HCI).
+                            </p>
+                        </div>
+
+                        <!-- Specialized Badges -->
+                        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                            <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/50 transition-colors">
+                                <span class="text-gray-400 block text-[10px]">MAJOR G.P.A</span>
+                                <span class="text-cyan-300 font-bold">3.88 / 4.00</span>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-colors">
+                                <span class="text-gray-400 block text-[10px]">RESEARCH FOCUS</span>
+                                <span class="text-purple-300 font-bold">3D WebGL Shaders</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex justify-between items-center text-xs text-gray-400 border-t border-white/10">
+                            <span>Status: Enrolled</span>
+                            <span class="text-emerald-400 font-mono">● Interactive Demo Mode</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects" class="py-24 px-4 relative z-10 max-w-5xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-cyan-400 text-xs tracking-widest uppercase mb-2">SECTION // 01</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-white">
+                GITHUB <span class="font-tension-light text-cyan-400">PROJECT STACK</span>
+            </h2>
+            <p class="text-xs text-gray-400 mt-2 font-mono">AUTO-PLAYING STACKED CAROUSEL ✦ CLICK CARDS TO CYCLE</p>
+        </div>
+
+        <!-- Stacked Card Carousel Wrapper -->
+        <div class="relative max-w-2xl mx-auto">
+            <div class="stacked-carousel relative h-[420px]" id="project-carousel">
+                <!-- Card 1 -->
+                <div class="stacked-card cursor-pointer" onclick="cycleCarousel(0)">
+                    <div class="gradient-border-wrapper h-full shadow-2xl">
+                        <div class="bg-slate-950 rounded-[1rem] p-6 h-full flex flex-col justify-between relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono border border-cyan-500/30">FEATURED REPO</span>
+                                    <h3 class="text-2xl font-tension-heavy text-white mt-2 group-hover:text-cyan-400 transition-colors">HyperRay-WebGL Engine</h3>
+                                </div>
+                                <i class="fa-brands fa-github text-3xl text-gray-500 group-hover:text-white transition-colors"></i>
+                            </div>
+
+                            <p class="font-tension-light text-gray-300 text-sm leading-relaxed my-4">
+                                A high-performance browser raymarching shader playground built with Three.js & GLSL. Supports real-time boolean SDF operations and dynamic volumetric lighting.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-cyan-300">#WebGL</span>
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-purple-300">#GLSL</span>
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-pink-300">#Three.js</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-white/10 text-xs text-gray-400">
+                                    <span class="flex items-center gap-2"><i class="fa-regular fa-star text-yellow-400"></i> 1,240 Stars</span>
+                                    <span class="text-cyan-400 font-mono group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Inspect Repo <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="stacked-card cursor-pointer" onclick="cycleCarousel(1)">
+                    <div class="gradient-border-wrapper h-full shadow-2xl">
+                        <div class="bg-slate-950 rounded-[1rem] p-6 h-full flex flex-col justify-between relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono border border-purple-500/30">AI GENERATIVE</span>
+                                    <h3 class="text-2xl font-tension-heavy text-white mt-2 group-hover:text-purple-400 transition-colors">NeuroMorph-Diffusion</h3>
+                                </div>
+                                <i class="fa-brands fa-github text-3xl text-gray-500 group-hover:text-white transition-colors"></i>
+                            </div>
+
+                            <p class="font-tension-light text-gray-300 text-sm leading-relaxed my-4">
+                                Latent space interpolation visualizer connecting Stable Diffusion prompts to interactive WebGL particle canvases in real-time.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-purple-300">#Python</span>
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-cyan-300">#PyTorch</span>
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-emerald-300">#WebSockets</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-white/10 text-xs text-gray-400">
+                                    <span class="flex items-center gap-2"><i class="fa-regular fa-star text-yellow-400"></i> 890 Stars</span>
+                                    <span class="text-purple-400 font-mono group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Inspect Repo <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="stacked-card cursor-pointer" onclick="cycleCarousel(2)">
+                    <div class="gradient-border-wrapper h-full shadow-2xl">
+                        <div class="bg-slate-950 rounded-[1rem] p-6 h-full flex flex-col justify-between relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="px-2.5 py-1 rounded-full bg-pink-500/20 text-pink-300 text-[10px] font-mono border border-pink-500/30">PHYSICS TWEEN</span>
+                                    <h3 class="text-2xl font-tension-heavy text-white mt-2 group-hover:text-pink-400 transition-colors">SpringCore Motion Physics</h3>
+                                </div>
+                                <i class="fa-brands fa-github text-3xl text-gray-500 group-hover:text-white transition-colors"></i>
+                            </div>
+
+                            <p class="font-tension-light text-gray-300 text-sm leading-relaxed my-4">
+                                Ultra-lightweight 60fps spring physics and gesture solver for web applications. Emulates iOS fluidity with zero external dependencies.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-pink-300">#TypeScript</span>
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-yellow-300">#Math</span>
+                                    <span class="px-2 py-1 rounded bg-white/5 border border-white/10 text-cyan-300">#UI Motion</span>
+                                </div>
+                                <div class="flex justify-between items-center pt-3 border-t border-white/10 text-xs text-gray-400">
+                                    <span class="flex items-center gap-2"><i class="fa-regular fa-star text-yellow-400"></i> 2,150 Stars</span>
+                                    <span class="text-pink-400 font-mono group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">Inspect Repo <i class="fa-solid fa-arrow-right text-[10px]"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carousel Controls -->
+            <div class="flex justify-center items-center gap-4 mt-6">
+                <button onclick="prevCard()" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:border-cyan-400 transition-all">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div class="flex gap-2" id="carousel-dots">
+                    <span class="w-3 h-3 rounded-full bg-cyan-400 transition-all"></span>
+                    <span class="w-3 h-3 rounded-full bg-white/20 transition-all"></span>
+                    <span class="w-3 h-3 rounded-full bg-white/20 transition-all"></span>
+                </div>
+                <button onclick="nextCard()" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:border-cyan-400 transition-all">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="techart" class="py-24 px-4 relative z-10 max-w-6xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-cyan-400 text-xs tracking-widest uppercase mb-2">SECTION // 02</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-white">
+                TECHNICAL ART <span class="font-tension-light text-purple-400">LABORATORY</span>
+            </h2>
+            <p class="text-xs text-gray-400 mt-2 font-mono">INTERACTIVE REAL-TIME SHADER, TWEEN & AI GENERATOR DEMO</p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-6">
+            <!-- Sub-Lab 1: Live Shader Sandbox -->
+            <div class="glass-panel rounded-3xl p-6 border border-white/15 flex flex-col justify-between hover:border-cyan-500/50 transition-all group">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 font-mono text-[10px]">01 // SHADER</span>
+                        <i class="fa-solid fa-flask text-cyan-400"></i>
+                    </div>
+                    <h3 class="text-xl font-tension-heavy text-white mb-2">Raymarched Plasma Shader</h3>
+                    <p class="font-tension-light text-xs text-gray-300 mb-4">Real-time GPU fragment shader animation running inside standard WebGL context.</p>
+
+                    <!-- Interactive Canvas Area -->
+                    <div class="relative w-full h-44 rounded-2xl overflow-hidden border border-white/10 mb-4">
+                        <canvas id="shader-demo-canvas" class="w-full h-full"></canvas>
+                        <div class="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-[9px] font-mono text-cyan-300">
+                            60 FPS GPU SHADER
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="text-gray-400">Plasma Speed</span>
+                        <input type="range" id="shader-speed" min="1" max="10" value="5" class="w-24 accent-cyan-400 cursor-pointer">
+                    </div>
+                    <button onclick="triggerScreenShake()" class="w-full py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-mono text-xs transition-all">
+                        Pulse Frequency Shock
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sub-Lab 2: Tween & Physics Motion -->
+            <div class="glass-panel rounded-3xl p-6 border border-white/15 flex flex-col justify-between hover:border-purple-500/50 transition-all group">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 font-mono text-[10px]">02 // TWEEN & PHYSICS</span>
+                        <i class="fa-solid fa-atom text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-tension-heavy text-white mb-2">Spring Physics Node</h3>
+                    <p class="font-tension-light text-xs text-gray-300 mb-4">Drag the kinetic node to test smooth spring damping physics and recoil animation.</p>
+
+                    <!-- Interactive Physics Canvas Sandbox -->
+                    <div class="relative w-full h-44 rounded-2xl bg-slate-950 border border-white/10 mb-4 overflow-hidden" id="tween-container">
+                        <canvas id="tween-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-xs font-mono text-gray-400">
+                        <span>Damping: <strong class="text-purple-300" id="damping-val">0.82</strong></span>
+                        <span>Stiffness: <strong class="text-purple-300" id="stiffness-val">120</strong></span>
+                    </div>
+                    <button onclick="resetPhysicsNode()" class="w-full py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 font-mono text-xs transition-all">
+                        Reset Kinetic Node
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sub-Lab 3: Generative AI Matrix Synthesizer -->
+            <div class="glass-panel rounded-3xl p-6 border border-white/15 flex flex-col justify-between hover:border-pink-500/50 transition-all group">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2.5 py-1 rounded-md bg-pink-500/20 text-pink-300 font-mono text-[10px]">03 // GENERATIVE AI</span>
+                        <i class="fa-solid fa-brain text-pink-400"></i>
+                    </div>
+                    <h3 class="text-xl font-tension-heavy text-white mb-2">Procedural Art Synthesizer</h3>
+                    <p class="font-tension-light text-xs text-gray-300 mb-4">Click generate to run real-time procedural cellular automata & generative matrices.</p>
+
+                    <!-- Canvas Visualizer -->
+                    <div class="relative w-full h-44 rounded-2xl bg-slate-950 border border-white/10 mb-4 overflow-hidden">
+                        <canvas id="ai-art-canvas" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="generateAIArt()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/40 text-pink-300 font-mono text-xs transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>SYNTHESIZE PATTERN</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="toolbox" class="py-24 px-4 relative z-10 max-w-6xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-cyan-400 text-xs tracking-widest uppercase mb-2">SECTION // 03</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-white">
+                TOOLBOX & <span class="font-tension-light text-cyan-400">TECH STACK</span>
+            </h2>
+            <p class="text-xs text-gray-400 mt-2 font-mono">HOVER FOR ANIMATED WIPE REVEAL & CLIP-PATH GEOMETRY</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Badge 1 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 group hover:border-cyan-400 transition-all">
+                <div class="w-12 h-12 mb-4 bg-cyan-500/20 text-cyan-400 flex items-center justify-center shape-hexagon text-xl font-bold">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-white mb-1">Graphics & Shaders</h3>
+                <p class="wipe-text text-sm font-mono text-gray-300 leading-snug">
+                    WebGL, GLSL Shaders, Three.js, Canvas2D, HLSL, ShaderGraph, Raymarching SDFs.
+                </p>
+            </div>
+
+            <!-- Badge 2 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 group hover:border-purple-400 transition-all">
+                <div class="w-12 h-12 mb-4 bg-purple-500/20 text-purple-400 flex items-center justify-center shape-rhombus text-xl font-bold">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-white mb-1">Frontend Core</h3>
+                <p class="wipe-text text-sm font-mono text-gray-300 leading-snug">
+                    TypeScript, React, Next.js, Tailwind CSS, HTML5, Web API, GSAP Motion.
+                </p>
+            </div>
+
+            <!-- Badge 3 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 group hover:border-pink-400 transition-all">
+                <div class="w-12 h-12 mb-4 bg-pink-500/20 text-pink-400 flex items-center justify-center shape-notch text-xl font-bold">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-white mb-1">AI & Generative</h3>
+                <p class="wipe-text text-sm font-mono text-gray-300 leading-snug">
+                    PyTorch, Stable Diffusion API, WebGPU, LLM Prompt Pipelines, Node.js.
+                </p>
+            </div>
+
+            <!-- Badge 4 -->
+            <div class="glass-panel p-6 rounded-2xl border border-white/10 group hover:border-emerald-400 transition-all">
+                <div class="w-12 h-12 mb-4 bg-emerald-500/20 text-emerald-400 flex items-center justify-center shape-hexagon text-xl font-bold">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <h3 class="text-lg font-tension-heavy text-white mb-1">Creative Engines</h3>
+                <p class="wipe-text text-sm font-mono text-gray-300 leading-snug">
+                    Unity 3D, Unreal Engine 5, TouchDesigner, Figma, Blender 3D, Substance.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-24 px-4 relative z-10 max-w-4xl mx-auto">
+        <div class="mb-12 flex flex-col items-center text-center">
+            <span class="font-mono text-cyan-400 text-xs tracking-widest uppercase mb-2">SECTION // 04</span>
+            <h2 class="text-3xl md:text-5xl font-tension-heavy tracking-tight text-white">
+                GET IN <span class="font-tension-light text-cyan-400">TOUCH</span>
+            </h2>
+            <p class="text-xs text-gray-400 mt-2 font-mono">PARALLAX 3D ROTATING CARD ✦ CLICK TO COPY CONTACT DETAILS</p>
+        </div>
+
+        <!-- 3D Tilting Card Container -->
+        <div class="card-3d-wrap" id="card-3d-wrap">
+            <div class="card-3d-inner glass-panel rounded-3xl p-8 sm:p-12 inset-anim-box relative border border-white/20 shadow-2xl" id="card-3d">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <div class="inline-block px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-mono mb-4 border border-cyan-500/30">
+                            ✦ HKUST RESEARCHER & DEVELOPER
+                        </div>
+                        <h3 class="text-3xl font-tension-heavy text-white mb-4">Let's Build Interactive Future Together.</h3>
+                        <p class="font-tension-light text-gray-300 text-sm leading-relaxed mb-6">
+                            Available for research collaborations, creative tech consulting, or full-stack shader projects.
+                        </p>
+
+                        <!-- Copy Email Button -->
+                        <button onclick="copyContactEmail('student@hkust.edu.hk')" class="px-5 py-3 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs tracking-wider hover:bg-cyan-400 transition-all flex items-center gap-2 group active:scale-95 shadow-lg shadow-cyan-500/20">
+                            <i class="fa-regular fa-copy"></i>
+                            <span id="copy-btn-text">COPY EMAIL: student@hkust.edu.hk</span>
+                        </button>
+                    </div>
+
+                    <!-- Visual Tech Details -->
+                    <div class="space-y-4 font-mono text-xs">
+                        <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center">
+                            <span class="text-gray-400">LOCATION</span>
+                            <span class="text-white font-bold">Hong Kong (HKUST Campus)</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center">
+                            <span class="text-gray-400">GITHUB</span>
+                            <a href="https://github.com" target="_blank" class="text-cyan-400 hover:underline">@hkust-tech-art</a>
+                        </div>
+                        <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center">
+                            <span class="text-gray-400">TIMEZONE</span>
+                            <span class="text-emerald-400">UTC+8 (Hong Kong Time)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-16 border-t border-white/10 relative z-10 px-4 bg-slate-950/80 backdrop-blur-lg">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+            <!-- Next Year Countdown Timer -->
+            <div class="flex flex-col items-center md:items-start">
+                <span class="text-xs font-mono text-cyan-400 tracking-widest uppercase mb-2">COUNTDOWN TO NEXT YEAR (2027)</span>
+                <div class="flex items-center gap-3 font-mono text-2xl sm:text-3xl text-white font-bold" id="countdown-timer">
+                    <div class="flex flex-col items-center"><span id="cd-days">00</span><span class="text-[9px] text-gray-500 font-sans">DAYS</span></div>
+                    <span class="text-cyan-400">:</span>
+                    <div class="flex flex-col items-center"><span id="cd-hours">00</span><span class="text-[9px] text-gray-500 font-sans">HOURS</span></div>
+                    <span class="text-cyan-400">:</span>
+                    <div class="flex flex-col items-center"><span id="cd-mins">00</span><span class="text-[9px] text-gray-500 font-sans">MINS</span></div>
+                    <span class="text-cyan-400">:</span>
+                    <div class="flex flex-col items-center"><span id="cd-secs">00</span><span class="text-[9px] text-gray-500 font-sans">SECS</span></div>
+                </div>
+            </div>
+
+            <div class="text-center md:text-right">
+                <p class="font-tension-heavy text-white text-sm mb-1">Designed with retro Apple aesthetics & WebGL technology</p>
+                <p class="font-tension-light text-xs text-gray-400">© 2026 Hong Kong University of Science and Technology. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-notification" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 px-5 py-3 rounded-2xl glass-panel border border-cyan-400 text-cyan-300 font-mono text-xs flex items-center gap-3 shadow-2xl">
+        <i class="fa-solid fa-circle-check text-cyan-400 text-base"></i>
+        <span id="toast-msg">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        /* --- 01. Global Audio / Screen Shake Manager --- */
+        function triggerScreenShake() {
+            const body = document.getElementById('app-body');
+            body.classList.remove('shake-active');
+            void body.offsetWidth; // Force reflow
+            body.classList.add('shake-active');
+
+            // Trigger visual particle shockwave on background canvas
+            if(window.bgParticles) {
+                window.bgParticles.forEach(p => {
+                    p.vx += (Math.random() - 0.5) * 15;
+                    p.vy += (Math.random() - 0.5) * 15;
+                });
+            }
+        }
+
+        /* --- 02. Live Marquee Today Banner --- */
+        function updateMarquee() {
+            const marquee = document.getElementById('marquee-banner');
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString();
+
+            const text = `✦ TODAY: ${dateStr} [${timeStr}] ✦ HKUST TECH ART PORTFOLIO ✦ REAL-TIME SHADERS & AI ✦ CURRENT SYSTEM: ONLINE ✦ RESIZABLE CARDS ENABLED ✦`;
+            marquee.innerHTML = `<span>${text}</span><span>${text}</span>`;
+        }
+        setInterval(updateMarquee, 1000);
+        updateMarquee();
+
+        /* --- 03. Three.js / Canvas Background Visualizer --- */
+        const bgCanvas = document.getElementById('bg-canvas');
+        const ctx = bgCanvas.getContext('2d');
+        let width = bgCanvas.width = window.innerWidth;
+        let height = bgCanvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = bgCanvas.width = window.innerWidth;
+            height = bgCanvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        window.bgParticles = particles;
+        for(let i = 0; i < 60; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8,
+                radius: Math.random() * 2 + 1,
+                color: Math.random() > 0.5 ? '#00f3ff' : '#9d4edd'
+            });
+        }
+
+        function drawBg() {
+            ctx.clearRect(0, 0, width, height);
+
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if(p.x < 0 || p.x > width) p.vx *= -1;
+                if(p.y < 0 || p.y > height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+
+                // Draw connecting lines for nearby particles
+                for(let j = index + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if(dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(0, 243, 255, ${1 - dist / 120 * 0.8})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(drawBg);
+        }
+        drawBg();
+
+        /* --- 04. HKUST Card Canvas Shader Morph --- */
+        const cardCanvas = document.getElementById('hkust-card-canvas');
+        const cCtx = cardCanvas.getContext('2d');
+        function renderCardCanvas() {
+            if(!cardCanvas.width) {
+                cardCanvas.width = cardCanvas.parentElement.clientWidth;
+                cardCanvas.height = cardCanvas.parentElement.clientHeight;
+            }
+            const time = Date.now() * 0.002;
+            const w = cardCanvas.width;
+            const h = cardCanvas.height;
+
+            cCtx.fillStyle = '#0b0f19';
+            cCtx.fillRect(0, 0, w, h);
+
+            for(let i = 0; i < 8; i++) {
+                const cx = w/2 + Math.sin(time + i) * (w*0.3);
+                const cy = h/2 + Math.cos(time*0.8 + i) * (h*0.3);
+                const rad = 40 + Math.sin(time*2 + i) * 20;
+
+                const grad = cCtx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+                grad.addColorStop(0, i % 2 === 0 ? 'rgba(0,243,255,0.4)' : 'rgba(157,78,221,0.4)');
+                grad.addColorStop(1, 'transparent');
+
+                cCtx.fillStyle = grad;
+                cCtx.beginPath();
+                cCtx.arc(cx, cy, rad, 0, Math.PI*2);
+                cCtx.fill();
+            }
+            requestAnimationFrame(renderCardCanvas);
+        }
+        renderCardCanvas();
+
+        /* --- 05. Stacked Card Carousel Auto-Play --- */
+        let currentCarouselIndex = 0;
+        const carouselCards = document.querySelectorAll('.stacked-card');
+        const carouselDots = document.querySelectorAll('#carousel-dots span');
+
+        function updateCarousel() {
+            carouselCards.forEach((card, i) => {
+                const offset = (i - currentCarouselIndex + carouselCards.length) % carouselCards.length;
+
+                if (offset === 0) {
+                    // Front card
+                    card.style.transform = 'translateY(0) scale(1) z-index(30)';
+                    card.style.zIndex = '30';
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                } else if (offset === 1) {
+                    // Middle card back
+                    card.style.transform = 'translateY(-24px) scale(0.92) z-index(20)';
+                    card.style.zIndex = '20';
+                    card.style.opacity = '0.7';
+                    card.style.pointerEvents = 'none';
+                } else {
+                    // Back card
+                    card.style.transform = 'translateY(-48px) scale(0.84) z-index(10)';
+                    card.style.zIndex = '10';
+                    card.style.opacity = '0.4';
+                    card.style.pointerEvents = 'none';
+                }
+            });
+
+            carouselDots.forEach((dot, i) => {
+                dot.className = i === currentCarouselIndex ? 'w-6 h-3 rounded-full bg-cyan-400 transition-all' : 'w-3 h-3 rounded-full bg-white/20 transition-all';
+            });
+        }
+
+        function cycleCarousel(idx) {
+            currentCarouselIndex = idx;
+            updateCarousel();
+        }
+
+        function nextCard() {
+            currentCarouselIndex = (currentCarouselIndex + 1) % carouselCards.length;
+            updateCarousel();
+        }
+
+        function prevCard() {
+            currentCarouselIndex = (currentCarouselIndex - 1 + carouselCards.length) % carouselCards.length;
+            updateCarousel();
+        }
+
+        setInterval(nextCard, 4000);
+        updateCarousel();
+
+        /* --- 06. Technical Art: Shader Sandbox Canvas --- */
+        const shaderCanvas = document.getElementById('shader-demo-canvas');
+        const sCtx = shaderCanvas.getContext('2d');
+        const speedInput = document.getElementById('shader-speed');
+
+        function renderShaderDemo() {
+            shaderCanvas.width = shaderCanvas.parentElement.clientWidth;
+            shaderCanvas.height = shaderCanvas.parentElement.clientHeight;
+            const w = shaderCanvas.width;
+            const h = shaderCanvas.height;
+            const speed = parseFloat(speedInput.value) * 0.001;
+            const time = Date.now() * speed;
+
+            const imgData = sCtx.createImageData(w, h);
+            const data = imgData.data;
+
+            for(let x = 0; x < w; x += 3) {
+                for(let y = 0; y < h; y += 3) {
+                    const u = x / w;
+                    const v = y / h;
+                    const val = Math.sin(u * 10 + time) + Math.cos(v * 10 + time) + Math.sin((u+v)*5 + time);
+                    const r = Math.floor((Math.sin(val) + 1) * 127);
+                    const g = Math.floor((Math.cos(val) + 1) * 100);
+                    const b = 200;
+
+                    for(let dx = 0; dx < 3; dx++) {
+                        for(let dy = 0; dy < 3; dy++) {
+                            const index = ((y + dy) * w + (x + dx)) * 4;
+                            data[index] = r;
+                            data[index + 1] = g;
+                            data[index + 2] = b;
+                            data[index + 3] = 255;
+                        }
+                    }
+                }
+            }
+            sCtx.putImageData(imgData, 0, 0);
+            requestAnimationFrame(renderShaderDemo);
+        }
+        renderShaderDemo();
+
+        /* --- 07. Technical Art: Interactive Spring Node Physics Sandbox --- */
+        const tweenCanvas = document.getElementById('tween-canvas');
+        const tCtx = tweenCanvas.getContext('2d');
+        let nodePos = { x: 100, y: 80 };
+        let nodeVel = { x: 0, y: 0 };
+        let targetPos = { x: 100, y: 80 };
+        let isDraggingNode = false;
+
+        function renderTweenPhysics() {
+            tweenCanvas.width = tweenCanvas.parentElement.clientWidth;
+            tweenCanvas.height = tweenCanvas.parentElement.clientHeight;
+            const w = tweenCanvas.width;
+            const h = tweenCanvas.height;
+
+            tCtx.clearRect(0, 0, w, h);
+
+            if(!isDraggingNode) {
+                targetPos = { x: w/2, y: h/2 };
+                // Spring Physics calculation
+                const ax = (targetPos.x - nodePos.x) * 0.08;
+                const ay = (targetPos.y - nodePos.y) * 0.08;
+                nodeVel.x = (nodeVel.x + ax) * 0.82;
+                nodeVel.y = (nodeVel.y + ay) * 0.82;
+                nodePos.x += nodeVel.x;
+                nodePos.y += nodeVel.y;
+            }
+
+            // Draw Connection Line
+            tCtx.beginPath();
+            tCtx.moveTo(w/2, h/2);
+            tCtx.lineTo(nodePos.x, nodePos.y);
+            tCtx.strokeStyle = 'rgba(157,78,221,0.6)';
+            tCtx.lineWidth = 3;
+            tCtx.stroke();
+
+            // Draw Center Anchor
+            tCtx.beginPath();
+            tCtx.arc(w/2, h/2, 6, 0, Math.PI*2);
+            tCtx.fillStyle = '#ffffff';
+            tCtx.fill();
+
+            // Draw Draggable Kinetic Node
+            tCtx.beginPath();
+            tCtx.arc(nodePos.x, nodePos.y, 16, 0, Math.PI*2);
+            tCtx.fillStyle = '#9d4edd';
+            tCtx.shadowColor = '#9d4edd';
+            tCtx.shadowBlur = 15;
+            tCtx.fill();
+            tCtx.shadowBlur = 0;
+
+            requestAnimationFrame(renderTweenPhysics);
+        }
+        renderTweenPhysics();
+
+        tweenCanvas.addEventListener('mousedown', (e) => {
+            isDraggingNode = true;
+            const rect = tweenCanvas.getBoundingClientRect();
+            nodePos.x = e.clientX - rect.left;
+            nodePos.y = e.clientY - rect.top;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(isDraggingNode) {
+                const rect = tweenCanvas.getBoundingClientRect();
+                nodePos.x = e.clientX - rect.left;
+                nodePos.y = e.clientY - rect.top;
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isDraggingNode = false; });
+
+        function resetPhysicsNode() {
+            nodePos = { x: 50, y: 50 };
+            nodeVel = { x: 20, y: -15 };
+            triggerScreenShake();
+        }
+
+        /* --- 08. Generative AI Matrix Canvas --- */
+        const aiCanvas = document.getElementById('ai-art-canvas');
+        const aCtx = aiCanvas.getContext('2d');
+        function generateAIArt() {
+            aiCanvas.width = aiCanvas.parentElement.clientWidth;
+            aiCanvas.height = aiCanvas.parentElement.clientHeight;
+            const w = aiCanvas.width;
+            const h = aiCanvas.height;
+
+            aCtx.fillStyle = '#080a10';
+            aCtx.fillRect(0, 0, w, h);
+
+            const grid = 12;
+            for(let x = 0; x < w; x += grid) {
+                for(let y = 0; y < h; y += grid) {
+                    if(Math.random() > 0.45) {
+                        aCtx.fillStyle = Math.random() > 0.5 ? '#ff007f' : '#00f3ff';
+                        aCtx.fillRect(x, y, grid - 2, grid - 2);
+                    }
+                }
+            }
+        }
+        generateAIArt();
+
+        /* --- 09. 3D Card Parallax Hover Effect --- */
+        const card3D = document.getElementById('card-3d');
+        const card3DWrap = document.getElementById('card-3d-wrap');
+
+        card3DWrap.addEventListener('mousemove', (e) => {
+            const rect = card3DWrap.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+
+            card3D.style.transform = `rotateY(${x * 0.05}deg) rotateX(${-y * 0.05}deg)`;
+        });
+
+        card3DWrap.addEventListener('mouseleave', () => {
+            card3D.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        });
+
+        /* --- 10. Copy Contact Email with Toast --- */
+        function copyContactEmail(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const toast = document.getElementById('toast-notification');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = `Copied "${text}" to clipboard!`;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        /* --- 11. Countdown Timer to Next Year (2027) --- */
+        function updateCountdown() {
+            const targetYear = new Date().getFullYear() + 1;
+            const targetDate = new Date(`January 1, ${targetYear} 00:00:00`).getTime();
+            const now = new Date().getTime();
+            const diff = targetDate - now;
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+            document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+            document.getElementById('cd-mins').innerText = String(mins).padStart(2, '0');
+            document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        window.onload = function() {
+            console.log("HKUST Interactive Portfolio Loaded successfully.");
+        };
+    </script>
+</body>
+</html>
