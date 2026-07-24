@@ -1,27 +1,5 @@
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
-  鏡面
-磁吸
-
-
-<br>生成鏡面反射光遊戲:https://share.gemini.google/m1Z6quBNjlHY<br>
-
-godot game player 一筆畫 畫面震動（Screenshake）<br>
-3d 像素化shader 
-<br>站酷/reactbit/https://uiverse.io/navnav(half free) 
-【CSS - (附源码)渐变彩色文字擦拭动画】 https://www.bilibili.com/video/BV1AkaZeVEY4/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-【不用监听 scroll，也能让吸顶导航栏滚动时切换样式】 https://www.bilibili.com/video/BV16RLg6gE94/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-【「福利」「中英字幕」Udemy - 使用Unity和C#编写你的第一个3D太空射击游戏】 https://www.bilibili.com/video/BV1toNX6kEFW/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-
-无限世界！Godot 3D 无限生成地形演示。_视频
-ZZZ_傳送門
-UE5破碎系统空间斩_视频
-【视觉过载⚠️？手搓一个机能风音乐网站】 https://www.bilibili.com/video/BV1eBz5BcETa/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-1-2天法則
-背包
-有優質的生活機能，像是清楚的圖示/圖片，還有一些標題讓你快速知道那是什麼東西。
-紀錄功能，讓你看看最近拿了什麼東西，如果你想知道有沒有拿到特定的戰利品。可以快速整理、篩選，有分類清楚的「分頁」/區塊，而且還可以快速操作，像是輕鬆使用道具、輕鬆切換裝備。
- 
-<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> gpu>process material
+<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> 
 
 <details><summary><h6>放棄idea</h6></summary>
   冲破次元壁的/商業化插圖
