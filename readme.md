@@ -3,7 +3,6 @@
 * 🔒 [Artbank Private Repo](https://github.com/pwhoae/artbank_private)  
 * **本機自寫去背工具**：.html  
 
-<a id="readme"></a>
 # **🎨 Artbank & GameDev Resource Hub**
 ## **📌 目錄 (Table of Contents)**
 
@@ -115,4 +114,4 @@
 * 📸 [HKUST GECO Photo Album (Day 2 Nov 15\)](https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng)
 
 [回到頂部](#readme_begin) 
-
+<a id="readme"></a>
