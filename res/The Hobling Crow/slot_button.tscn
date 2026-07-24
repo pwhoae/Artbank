@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://bp7kie8qsejp6"]
-
-[ext_resource type="Script" uid="uid://br346as0tvwn8" path="res://工具箱 2.0/[棄置]/The Hobling Crow/腳本/slot_button.gd" id="1_hvy21"]
-
-[node name="slot_button" type="Button" unique_id=213630268]
-script = ExtResource("1_hvy21")

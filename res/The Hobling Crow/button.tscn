@@ -1,9 +1,0 @@
-[gd_scene format=3 uid="uid://ceg23n3x88ofm"]
-
-[ext_resource type="Script" uid="uid://bq4x7fyh1t3rd" path="res://工具箱 2.0/[棄置]/The Hobling Crow/腳本/button.gd" id="1_rid1w"]
-
-[node name="Button" type="Button" unique_id=409619216]
-offset_right = 8.0
-offset_bottom = 8.0
-script = ExtResource("1_rid1w")
-word_name = "tedst"
