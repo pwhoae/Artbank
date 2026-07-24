@@ -37,7 +37,7 @@
 | **Mixamo** | AI / 一鍵模型骨骼自動綁定與動作庫：[mixamo.com](https://www.mixamo.com/) |
 | **Kenney Assets** | 跨平台、風格統一的免費 2D/3D/音效素材：[kenney.nl](https://kenney.nl/assets) |
 | **Poly Pizza** | 輕量級 Low-Poly 3D 模型庫：[poly.pizza](https://poly.pizza/) |
-| **Poly Haven** | 高畫質 CC0 3D 模型、紋理與 HDRI：[polyhaven.com](https://polyhaven.com/) |
+| **Poly Haven** | <s>高畫質 CC0 3D 模型、紋理與 HDRI：[polyhaven.com](https://polyhaven.com/) </s>|
 | **Blender Models** | Blender 社群模型庫：[blender-models.com](https://www.blender-models.com/) |
 | **Blender Demo Files** | Blender 官方示範檔下載：[blender.org/download/demo-files](https://www.blender.org/download/demo-files/) |
 | **Blender Market** | Blender 專業外掛與模型市場：[blendermarket.com](https://blendermarket.com) |
