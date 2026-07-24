@@ -14,9 +14,6 @@ md/bili/圖
 ```
 ### 1. 核心風格與比例 (Core Style & Proportions) * **Chibi / Super Deformed (SD):** 經典的二次元 Q 版身形，通常是 2 頭身到 2.5 頭身。 * **Anime chibi style:** 動漫 Q 版風格，強調大頭、大眼睛、小嘴巴以及簡化但精緻的四肢。 * **Dynamic pose:** 雖然是 Q 版，但動作極具動感、張力與浮空感，不是死板的站姿。 ### 2. 線條與上色技法 (Lineart & Coloring) * **Clean line art / Crisp outlines:** 線條乾淨俐落，邊緣清晰，粗細有致，沒有雜亂的草稿感。 * **Soft shading / Cel-shaded hybrid:** 採用半賽璐珞（Cel-shading）搭配軟陰影（Soft shading）的現代日系上色。陰影邊緣有明確的切面，但在頭髮、腮紅等細節上有細緻的漸層過渡。 * **Vibrant accents / High contrast:** 基礎色彩以沉穩的深色（黑、深灰）為主，但搭配了高飽和度的亮色（如亮金、紫色、黃色）作為點綴，呈現出霓虹般的潮流感。 * **Subtle gradients:** 頭髮和眼睛帶有細微的色彩漸層與透明感，增加精緻度。
 ```
-```
-卖什么→谁来卖→卖给谁→怎么卖>钱怎么分→环境影响→行业怎么来的>怎么赚钱→凭什么赢→未来能走多远
-```
 
 |設計(8)|敘事性時尚海報<br>去像素+賽璐璐畫風|
 |------|---------|
@@ -29,7 +26,6 @@ md/bili/圖
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
 ```
-遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
 <hr>
 
 ### <a href="https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1">平面設計 prompt html</a>
@@ -169,7 +165,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 ### 例 186：品牌视觉识别图
 
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case186.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case186.jpg" width="100" height="100"></img>
 ```text
 [中文]创建一个包含100种不同奇幻RPG物品的10×10网格，以经典像素艺术风格渲染（16位或32位精灵图美学，让人联想到SNES/GBA时代的日式RPG）。每个物品应出现在其独立的方形瓷砖中，下方带有简短清晰的标签。在白色背景上保持网格整洁。使每个物品在视觉上都有所区分，并且每个标签拼写正确。使用清晰的像素边缘、每个精灵图有限的调色板，以及用于阴影的微妙抖动。使用这些行主题：第1行：剑与刀刃第2行：盾牌与盔甲第3行：弓、弩与远程武器第4行：法杖、魔杖与魔法焦点第5行：药水、灵药与烧瓶第6行：卷轴、典籍与法术书第7行：戒指、护身符与附魔小饰品第8行：头盔、王冠与头饰第9行：钥匙、遗物与任务物品第10行：宝石、符文与制作材料将每个瓷砖显示为干净背景方形上居中的物品精灵图，渲染为经典的库存图标——你在奇幻RPG菜单中会看到的那种。保持整体风格一致、连贯，并让人联想到备受喜爱的复古奇幻RPG——迷人、细节丰富，且在小尺寸下易于辨认。
 [English]Create a 10 × 10 grid of 100 different fantasy RPG items rendered in classic pixel art style (16-bit or 32-bit sprite aesthetic, reminiscent of SNES/GBA-era JRPGs). Each item should appear in its own square tile with a short clear label underneath. Keep the grid neat on a white background. Make every item visually distinct and every label correctly spelled. Use crisp pixel edges, limited palette per sprite, and subtle dithering for shading. Use these row themes: Row 1: swords and blades Row 2: shields and armor Row 3: bows, crossbows, and ranged weapons Row 4: staves, wands, and magical foci Row 5: potions, elixirs, and flasks Row 6: scrolls, tomes, and spellbooks Row 7: rings, amulets, and enchanted trinkets Row 8: helmets, crowns, and headgear Row 9: keys, relics, and quest items Row 10: gems, runes, and crafting materials Show each tile as a centered item sprite on a clean background square, rendered as a classic inventory icon — the kind you'd see in a fantasy RPG menu. Keep the overall style consistent, cohesive, and reminiscent of beloved retro fantasy RPGs — charming, detailed, and instantly readable at small sizes.
@@ -189,7 +185,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 ### 例 237：夏日柑橘苏打高转化广告图
 
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case237.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case237.jpg" width="100" height="100"></img>
 
 
 ```text
@@ -203,7 +199,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 ### 例 299：极简留白涂鸦手绘草图
 
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case299.jpg"></img>
+<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case299.jpg" width="100" height="100"></img>
 
 ```text
 [中文]以涂鸦速写风表现【主题/主体】，整体呈现快速勾勒、自由变形、即兴手绘与草稿式的视觉效果。线条随手、夸张、可粗细不一，略显凌乱但具有节奏和表现力，强调概括、夸张、趣味和随性，而不是严谨写实或精细刻画。颜色采用粗糙、干刷感明显的块面表现，可保留不均匀的涂抹痕迹、刷痕、飞白与覆盖感，色彩根据【主题/主体】自动适配，但整体保持涂鸦式、速写式、概括式的表达。不要透明水彩晕染效果，不要细腻水彩过渡，不要纸纹理，不要柔和雾化，不要梦幻质感。背景以留白为主，保持简洁、轻松、未完成感和设计感，可加入少量辅助性符号、箭头、记号、圈画、重复线、随手写的文字或其他涂鸦元素，以增强速写本或随笔式视觉语言，但不可过于拥挤，不可破坏主体和留白气质。画面内容不需要预先写清楚，由【主题/主体】自动推演并生成最适合的主体形象、动作、相关元素、符号或简化场景，整体保持统一的涂鸦速写风和夸张概括的表现方式，避免复杂写实背景和过度铺陈。画面中需自然加入专属签名“voxcat”，作为画面的一部分，位置低调但清晰，可放在左下角、右下角或标题附近，风格需与整体版式统一，像作品署名或设计落款；签名字体精致、克制、高级，不可过大，不可破坏主体构图，不可显得突兀或廉价。
