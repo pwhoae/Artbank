@@ -10,6 +10,7 @@
 | 球 | [黑洞\_blackhole.gdshader](https://github.com/pwhoae/Artbank/blob/main/godot/shader/_%E5%8F%AF%E7%94%A8shader/%E9%BB%91%E6%B4%9E_blackhole.gdshader) |  |  |
 
 <br>
+生成godot 3d 抖动輪廓shader https://share.gemini.google/Ap20SUSWodTF
 godot 3d shader 隨時改變的天空 日出/日落/夕陽/夜晚 設置一個參數方便調用日出/日落/夕陽/夜晚 https://share.gemini.google/D1cFk8Gzdkco
 
 回血.html
