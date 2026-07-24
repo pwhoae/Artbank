@@ -4,8 +4,9 @@
 * **本機自寫去背工具**：.html  
 
 # **🎨 Artbank & GameDev Resource Hub**
-## **📌 目錄 (Table of Contents)**
 
+<details><summary>目錄 (Table of Contents)</summary>
+## **📌 目錄 (Table of Contents)**
 * [🔗 相關專案與連結](#bookmark=id.6yupuzuwbe1j)  
 * [💡 商業邏輯思考框架](#bookmark=id.cpxzwa2w6300)  
 * [🎨 2D / 3D 美術與素材資源](#bookmark=id.oumkebv79rso)  
@@ -14,10 +15,9 @@
 * [🎮 遊戲開發與專用工具](#bookmark=id.t6ba8grgj5c6)  
 * [🌐 社交與瀏覽器擴充](#bookmark=id.2x4zncg5yvsd)  
 * [📷 其他記錄](#bookmark=id.ydqxyzy00kjk)
+</details>
 
 ## **🔗 相關專案與連結**
-
-
 * 🎮 [GameDev Resources List (GitHub)](https://github.com/Kavex/GameDev-Resources)  
 * 🎨 [Itch.io Game Assets (Art Tag)](https://itch.io/game-assets/tag-art)  
 * 🖼️ [ArtStation Community Top](https://www.artstation.com/?sort_by=community&dimension=all)
