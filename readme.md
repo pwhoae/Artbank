@@ -42,9 +42,9 @@
 | **Blender Market** | Blender 專業外掛與模型市場：[blendermarket.com](https://blendermarket.com) |
 | **Quaternius Animation** | 通用動畫庫：[Itch Download](https://quaternius.itch.io/universal-animation-library/download/eyJpZCI6MzQwODAzNCwiZXhwaXJlcyI6MTc4MTUzMDQyN30%3d%2ea9%2bGjXyn%2bo0ydcDE%2fEREJdkicWY%3d) |
 | **Free3D / Free3D Animated** | 免費 3D 與動畫模型：[free3d.com](https://free3d.com) | [Animated Models](https://free3d.com/3d-models/animated) |
-| **Sketchfab** | 3D 模型預覽與交易平台：[sketchfab.com](https://sketchfab.com) |
-| **Cubebrush** | CG 素材與工具市場：[cubebrush.co](https://cubebrush.co) |
 | **CGModel** | 模型分享網：[cgmodel.com](https://cgmodel.com) |
+| **Sketchfab** | <s>3D 模型預覽與交易平台：[sketchfab.com](https://sketchfab.com) </s>|
+| **Cubebrush** | <s>CG 素材與工具市場：[cubebrush.co](https://cubebrush.co) </s>|
 | **Poly Haven** | <s>高畫質 CC0 3D 模型、紋理與 HDRI：[polyhaven.com](https://polyhaven.com/) </s>|
 | **Kay Lousberg (Itch)** | <s>免費 Low-Poly 3D 資源庫：[kaylousberg.itch.io](https://kaylousberg.itch.io/)</s> |
 
