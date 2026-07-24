@@ -5,6 +5,7 @@ https://github.com/pwhoae/artbank_private
 ```
 卖什么→谁来卖→卖给谁→怎么卖>钱怎么分→环境影响→行业怎么来的>怎么赚钱→凭什么赢→未来能走多远
 ```
+遊戲democode learn/<a href="https://github.com/Kavex/GameDev-Resources">git(GameDev tag)</a>/<a href="https://itch.io/game-assets/tag-art">itch</a>/<a href="https://www.artstation.com/?sort_by=community&dimension=all">artstation</a>
 
 
 ### 美術
