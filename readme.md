@@ -1,9 +1,9 @@
-[回到底部](#readme)<a id="readme_begin"></a><br>https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md
-https://github.com/pwhoae/artbank_private
+[回到底部](#readme)<a id="readme_begin"></a><br>
+* 📄 [GPT 生成 README 歷史版本](https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md)  
+* 🔒 [Artbank Private Repo](https://github.com/pwhoae/artbank_private)  
+* **本機自寫去背工具**：.html  
 
-[回到頂部](#readme_begin) 
 <a id="readme"></a>
-https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng<br>
 # **🎨 Artbank & GameDev Resource Hub**
 ## **📌 目錄 (Table of Contents)**
 
@@ -18,8 +18,7 @@ https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng<br
 
 ## **🔗 相關專案與連結**
 
-* 📄 [GPT 生成 README 歷史版本](https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md)  
-* 🔒 [Artbank Private Repo](https://github.com/pwhoae/artbank_private)  
+
 * 🎮 [GameDev Resources List (GitHub)](https://github.com/Kavex/GameDev-Resources)  
 * 🎨 [Itch.io Game Assets (Art Tag)](https://itch.io/game-assets/tag-art)  
 * 🖼️ [ArtStation Community Top](https://www.artstation.com/?sort_by=community&dimension=all)
@@ -71,7 +70,6 @@ https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng<br
 
 * **AI 圖片無損放大**：[BigJPG](https://bigjpg.com/)  
 * **線上去背工具**：[摳摳圖 RemoveBG](https://www.koukoutu.com/removebgtool/all)  
-* **本機自寫去背工具**：RemoveBG/index.html  
 * **5000兆円 產生器**：[5000兆円 Generator](https://yanstory.github.io/5000choyen/)  
 * **HTTP 狀態碼貓咪**：[http.cat](https://http.cat/)  
 * **PDF 線上處理**：[LightPDF](https://lightpdf.com/tw/)
@@ -81,13 +79,6 @@ https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng<br
 * **Tween 視覺化與資產**：[QAQELOL Tweens (Itch)](https://qaqelol.itch.io/tweens)  Tween composer插件
 
 ## **🎵 音樂與音效資源**
-
-### **常用音效分類備忘**
-
-* \[shock\] (震驚)  
-* \[cat\_meme\] (貓咪迷因)  
-* \[meme\] (梗圖/迷因)  
-* \[綜藝\] (綜藝音效)
 
 ### **音訊工具與 AI 音樂**
 
@@ -123,6 +114,5 @@ https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng<br
 
 * 📸 [HKUST GECO Photo Album (Day 2 Nov 15\)](https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng)
 
-[回到頁首](#bookmark=id.tlmsbyrkjwyp)
-
+[回到頂部](#readme_begin) 
 
