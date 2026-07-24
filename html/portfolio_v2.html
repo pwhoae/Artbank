@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="zh-HK" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HO PO WA - Interactive Apple-Retro Portfolio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Space Grotesk', 'monospace'],
+          },
+          colors: {
+            apple: {
+              bg: '#f5f5f7',
+              card: 'rgba(255, 255, 255, 0.75)',
+              glass: 'rgba(255, 255, 255, 0.65)',
+              accent: '#0071e3',
+              gold: '#e3a857',
+              pink: '#ff2d55',
+              darkText: '#1d1d1f',
+              grayText: '#86868b'
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 8s linear infinite',
+            'gradient-border': 'gradientBorder 4s ease infinite',
+            'wipe': 'wipeText 2s ease-in-out infinite alternate',
+            'float': 'float 3s ease-in-out infinite'
+          },
+          keyframes: {
+            gradientBorder: {
+              '0%, 100%': { 'background-position': '0% 50%' },
+              '50%': { 'background-position': '100% 50%' },
+            },
+            wipeText: {
+              '0%': { 'clip-path': 'polygon(0 0, 0 0, 0 100%, 0% 100%)' },
+              '100%': { 'clip-path': 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Cat Paw Custom Cursor */
+    * {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%23ff5e7e"><path d="M12 14c-1.66 0-3 1.34-3 3 0 1.66 1.34 3 3 3s3-1.34 3-3c0-1.66-1.34-3-3-3zm-5-3c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-8-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>') 16 16, auto !important;
+    }
+
+    button, a, input, select {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="%230071e3"><path d="M12 14c-1.66 0-3 1.34-3 3 0 1.66 1.34 3 3 3s3-1.34 3-3c0-1.66-1.34-3-3-3zm-5-3c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-8-5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>') 16 16, pointer !important;
+    }
+
+    /* Screen shake dynamic CSS class */
+    .screen-shake {
+      animation: shake 0.35s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 1px, 0) rotate(-0.5deg); }
+      20%, 80% { transform: translate3d(3px, -2px, 0) rotate(1deg); }
+      30%, 50%, 70% { transform: translate3d(-4px, 2px, 0) rotate(-1deg); }
+      40%, 60% { transform: translate3d(4px, -1px, 0) rotate(0.5deg); }
+    }
+
+    /* Resizable container style */
+    .resizable-card {
+      resize: both;
+      overflow: auto;
+      min-width: 280px;
+      min-height: 180px;
+    }
+
+    /* Typography tension styling (60% Heavy, 40% Thin) */
+    .heavy-weight { font-weight: 900; letter-spacing: -0.04em; }
+    .thin-weight { font-weight: 200; letter-spacing: 0.05em; }
+
+    /* Glass reflection sheen effect on hover */
+    .glass-sheen {
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-sheen::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.6) 50%,
+        transparent 70%
+      );
+      transition: transform 0.6s ease;
+      transform: translateY(-100%) translateX(-100%);
+      pointer-events: none;
+    }
+    .glass-sheen:hover::after {
+      transform: translateY(100%) translateX(100%);
+    }
+
+    /* Venetian Blind (百葉窗) Hover Effect */
+    .venetian-item {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+    }
+    .venetian-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0,113,227,0.1) 0px,
+        rgba(0,113,227,0.1) 8px,
+        transparent 8px,
+        transparent 16px
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.4s ease;
+      transform: scaleY(0);
+      transform-origin: top;
+      pointer-events: none;
+    }
+    .venetian-item:hover::before {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+
+    /* Clip Path Special Shapes */
+    .clip-badge {
+      clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+    }
+    .clip-star {
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    }
+    .clip-hexagon {
+      clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+
+    /* Rotating Gradient Border */
+    .rotating-border-box {
+      position: relative;
+      border-radius: 1.5rem;
+      background: #fff;
+      z-index: 1;
+    }
+    .rotating-border-box::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 1.6rem;
+      background: linear-gradient(90deg, #ff2d55, #0071e3, #ffcc00, #ff2d55);
+      background-size: 300% 300%;
+      z-index: -1;
+      animation: gradientBorder 4s ease infinite;
+    }
+
+    /* 3D Tilt Contact Card Inset effect */
+    .card-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease, inset 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #0071e3;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body class="bg-apple-bg text-apple-darkText font-sans overflow-x-hidden selection:bg-apple-accent selection:text-white" id="mainBody">
+
+  <!-- Floating Shake Trigger Floating Control -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+    <button id="shakeBtn" class="bg-white/90 backdrop-blur-md shadow-xl border border-white/60 p-3 rounded-full text-apple-accent hover:bg-apple-accent hover:text-white transition-all transform hover:scale-110 active:scale-95 flex items-center justify-center group" title="畫面震動 (Shake Screen)">
+      <i class="fa-solid fa-bolt text-lg group-hover:rotate-12 transition-transform"></i>
+    </button>
+  </div>
+
+  <!-- Top Navigation Header with Frosted Glass & HKUST Parallax Vibe -->
+  <header class="fixed top-0 left-0 w-full z-40 bg-apple-glass/80 backdrop-blur-xl border-b border-white/40 shadow-sm transition-all duration-300">
+    <div class="max-w-7xl mx-mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Brand & Name -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shadow-md transform hover:rotate-6 transition-transform">
+          HO
+        </div>
+        <div>
+          <span class="heavy-weight text-xl tracking-tight text-slate-900">HO PO WA</span>
+          <span class="thin-weight text-xs block text-slate-500 tracking-wider">HKUST CPEG | AI Agent Developer</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links with Glass Sheen Hover -->
+      <nav class="hidden md:flex items-center space-x-1 bg-white/40 p-1.5 rounded-full border border-white/60 shadow-inner">
+        <a href="#exp" class="glass-sheen px-4 py-2 rounded-full text-sm font-medium text-slate-700 hover:text-apple-accent hover:bg-white/80 transition-all">經歷 Exp</a>
+        <a href="#projects" class="glass-sheen px-4 py-2 rounded-full text-sm font-medium text-slate-700 hover:text-apple-accent hover:bg-white/80 transition-all">作品 Projects</a>
+        <a href="#techart" class="glass-sheen px-4 py-2 rounded-full text-sm font-medium text-slate-700 hover:text-apple-accent hover:bg-white/80 transition-all">Tech Art</a>
+        <a href="#skills" class="glass-sheen px-4 py-2 rounded-full text-sm font-medium text-slate-700 hover:text-apple-accent hover:bg-white/80 transition-all">技能 Skills</a>
+        <a href="#contact" class="glass-sheen px-4 py-2 rounded-full text-sm font-medium text-slate-700 hover:text-apple-accent hover:bg-white/80 transition-all">聯繫 Contact</a>
+      </nav>
+
+      <!-- Audio Circular Dynamic Progress Bar Visualizer -->
+      <div class="flex items-center space-x-4">
+        <div class="relative w-12 h-12 flex items-center justify-center group" id="audioContainer">
+          <!-- Circular SVG Progress Bar -->
+          <svg class="w-12 h-12 transform -rotate-90">
+            <circle cx="24" cy="24" r="20" stroke="#e2e8f0" stroke-width="3" fill="transparent" />
+            <circle id="audioCircle" cx="24" cy="24" r="20" stroke="#0071e3" stroke-width="3" stroke-dasharray="125.6" stroke-dashoffset="125.6" stroke-linecap="round" fill="transparent" class="transition-all duration-100" />
+          </svg>
+          <!-- Audio Toggle Button -->
+          <button id="audioBtn" class="absolute inset-0 m-auto w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-apple-accent hover:scale-105 transition-transform" title="Toggle Lo-Fi Ambient Beat">
+            <i class="fa-solid fa-play text-xs ml-0.5" id="audioIcon"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- HERO SECTION: HKUST Parallax + Retro Apple Photogenic Aesthetic -->
+  <section class="relative pt-32 pb-20 md:pt-44 md:pb-32 overflow-hidden min-h-screen flex items-center">
+    
+    <!-- Parallax Background Glow Elements -->
+    <div id="heroBg1" class="absolute top-1/4 left-10 w-96 h-96 bg-blue-200/50 rounded-full blur-3xl pointer-events-none transition-transform duration-75"></div>
+    <div id="heroBg2" class="absolute bottom-10 right-10 w-[500px] h-[500px] bg-pink-200/40 rounded-full blur-3xl pointer-events-none transition-transform duration-75"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Column: Tension Typography & Bio -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="inline-flex items-center space-x-2 bg-blue-50 border border-blue-200 text-apple-accent px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase">
+            <span class="w-2 h-2 rounded-full bg-apple-accent animate-ping"></span>
+            <span>HKUST Computer Engineering Grad (2022-2025)</span>
+          </div>
+
+          <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight text-slate-900 leading-none">
+            <span class="heavy-weight block text-slate-900">HO PO WA</span>
+            <span class="thin-weight text-3xl sm:text-5xl text-slate-500 block mt-2">AI Agent & Tech Art Engineer</span>
+          </h1>
+
+          <p class="text-lg text-slate-600 max-w-2xl leading-relaxed font-light">
+            專注於 <strong class="font-semibold text-slate-900">Generative AI, LLM Multi-step Workflows, Godot Tech Art</strong> 與全棧 AI 系統部署。將香港科技大學的工程底蘊與最新前沿 AI 框架（MediaPipe, Prompt Engineering, n8n, Flutter）融會貫通。
+          </p>
+
+          <!-- Interactive Action Controls & Resize Hint -->
+          <div class="flex flex-wrap gap-4 pt-4">
+            <a href="#projects" class="bg-apple-accent text-white font-medium px-8 py-3.5 rounded-2xl shadow-lg shadow-blue-500/25 hover:bg-blue-600 transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0">
+              探索專案 Explore Projects
+            </a>
+            <a href="#contact" class="bg-white/80 border border-slate-200 text-slate-800 font-medium px-8 py-3.5 rounded-2xl shadow-sm hover:bg-white hover:border-slate-300 transition-all">
+              立即聯繫 Contact
+            </a>
+          </div>
+
+          <!-- Quick Interactive Tip -->
+          <div class="pt-4 flex items-center gap-3 text-xs text-slate-400">
+            <span class="inline-block px-2 py-0.5 bg-slate-200 rounded text-slate-600 font-mono">Tip</span>
+            <span>頁面多處卡片支持右下角拉伸大小 (Resizable Cards) 與貓爪互動</span>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Resizable Apple-style Floating Badge -->
+        <div class="lg:col-span-5">
+          <div class="resizable-card bg-white/70 backdrop-blur-2xl border border-white/80 rounded-3xl p-8 shadow-2xl relative glass-sheen group transition-all">
+            <div class="absolute top-4 right-4 flex space-x-1.5">
+              <span class="w-3 h-3 rounded-full bg-red-400"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+              <span class="w-3 h-3 rounded-full bg-green-400"></span>
+            </div>
+
+            <div class="mt-4 space-y-4">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg">
+                <i class="fa-solid fa-graduation-cap"></i>
+              </div>
+              <div>
+                <h3 class="heavy-weight text-2xl text-slate-900">香港科技大學 HKUST</h3>
+                <p class="thin-weight text-slate-500">BEng in Computer Engineering</p>
+                <p class="text-xs text-apple-accent font-semibold mt-1">Second Class Honors, Division I</p>
+              </div>
+              <div class="border-t border-slate-200/80 pt-4 space-y-2 text-xs text-slate-600">
+                <p class="flex items-center gap-2">
+                  <i class="fa-solid fa-brain text-purple-500"></i>
+                  <span>HKSTP Talent Foundry: Generative AI & LLMs</span>
+                </p>
+                <p class="flex items-center gap-2">
+                  <i class="fa-solid fa-train text-red-500"></i>
+                  <span>MTR Corp Summer Intern (Project 3036)</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- BODY 0: SCHOOL & WORK EXPERIENCE (With Hover Photo Switch Effects) -->
+  <section id="exp" class="py-24 relative bg-white/40 border-y border-slate-200/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="heavy-weight text-4xl sm:text-5xl text-slate-900">經歷與背景 Experience</h2>
+        <p class="thin-weight text-lg text-slate-500 mt-2">Education & Industrial Internships</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Experience Card 1: HKSTP Talent Foundry -->
+        <div class="resizable-card bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 shadow-lg hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-mono px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-semibold">2025 - 2026</span>
+              <h3 class="heavy-weight text-2xl text-slate-900 mt-3">Hong Kong Science and Technology Parks Corporation</h3>
+              <p class="thin-weight text-slate-600 text-sm">Talent Foundry Bootcamp</p>
+            </div>
+            <!-- Hover Image Switch Container -->
+            <div class="w-16 h-16 rounded-2xl overflow-hidden relative shadow-md">
+              <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=150&auto=format&fit=crop&q=80" alt="HKSTP 1" class="absolute inset-0 w-full h-full object-cover group-hover:opacity-0 transition-opacity duration-500" />
+              <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=150&auto=format&fit=crop&q=80" alt="HKSTP 2" class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-110" />
+            </div>
+          </div>
+          <ul class="mt-6 space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Trained under <strong>NVIDIA, AWS, and Huawei</strong> programs covering Generative AI, LLMs & NLP.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Built multi-step reasoning <strong>AI Agents</strong> and full-stack AI deployment pipelines.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Implemented <strong>n8n workflow automation</strong> & Generative AI video pipelines (Vidu AI).</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Experience Card 2: HKUST -->
+        <div class="resizable-card bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 shadow-lg hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-mono px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold">2022 - 2025</span>
+              <h3 class="heavy-weight text-2xl text-slate-900 mt-3">The Hong Kong University of Science and Technology</h3>
+              <p class="thin-weight text-slate-600 text-sm">BEng in Computer Engineering (Honors Div I)</p>
+            </div>
+            <div class="w-16 h-16 rounded-2xl overflow-hidden relative shadow-md">
+              <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=150&auto=format&fit=crop&q=80" alt="HKUST 1" class="absolute inset-0 w-full h-full object-cover group-hover:opacity-0 transition-opacity duration-500" />
+              <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=150&auto=format&fit=crop&q=80" alt="HKUST 2" class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-110" />
+            </div>
+          </div>
+          <ul class="mt-6 space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Specialized in Computer Engineering, AI Systems & Graphics Programming.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Developed FYP: <strong>UST Simulator</strong> interactive card game in Godot.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Experience Card 3: MTR Corp -->
+        <div class="resizable-card bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 shadow-lg hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-mono px-3 py-1 bg-red-100 text-red-700 rounded-full font-semibold">2024</span>
+              <h3 class="heavy-weight text-2xl text-slate-900 mt-3">MTR Corporation Limited</h3>
+              <p class="thin-weight text-slate-600 text-sm">Summer Intern</p>
+            </div>
+            <div class="w-16 h-16 rounded-2xl overflow-hidden relative shadow-md">
+              <img src="https://images.unsplash.com/photo-1515165562839-978bbcf18277?w=150&auto=format&fit=crop&q=80" alt="MTR 1" class="absolute inset-0 w-full h-full object-cover group-hover:opacity-0 transition-opacity duration-500" />
+              <img src="https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=150&auto=format&fit=crop&q=80" alt="MTR 2" class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-110" />
+            </div>
+          </div>
+          <ul class="mt-6 space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Participated in <strong>"Project 3036"</strong>, compiling project reports and structured data.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Improved workflow efficiency through drawing verification and system coordination.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Experience Card 4: HKCC -->
+        <div class="resizable-card bg-white/80 backdrop-blur-xl rounded-3xl p-8 border border-white/60 shadow-lg hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-mono px-3 py-1 bg-green-100 text-green-700 rounded-full font-semibold">2020 - 2022</span>
+              <h3 class="heavy-weight text-2xl text-slate-900 mt-3">PolyU Hong Kong Community College</h3>
+              <p class="thin-weight text-slate-600 text-sm">Associate in Information Technology</p>
+            </div>
+            <div class="w-16 h-16 rounded-2xl overflow-hidden relative shadow-md">
+              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=150&auto=format&fit=crop&q=80" alt="HKCC 1" class="absolute inset-0 w-full h-full object-cover group-hover:opacity-0 transition-opacity duration-500" />
+              <img src="https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=150&auto=format&fit=crop&q=80" alt="HKCC 2" class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-110" />
+            </div>
+          </div>
+          <ul class="mt-6 space-y-2 text-sm text-slate-600">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check text-apple-accent mt-1"></i>
+              <span>Built core fundamentals in Web Technologies, Software Engineering, and Database Architecture.</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BODY 1: GITHUB PROJECTS (Stacked Auto-Play Carousel + Gradient Rotating Border) -->
+  <section id="projects" class="py-24 relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="heavy-weight text-4xl sm:text-5xl text-slate-900">GitHub 項目集 GitHub Projects</h2>
+        <p class="thin-weight text-lg text-slate-500 mt-2">Stacked Auto-Play Carousel with Gradient Rotating Border</p>
+      </div>
+
+      <!-- Stacked Carousel Container -->
+      <div class="relative max-w-3xl mx-auto h-[420px] flex items-center justify-center" id="carouselContainer">
+        
+        <!-- Project Slide 1 -->
+        <div class="carousel-card absolute w-full max-w-lg transition-all duration-700 ease-out transform" data-index="0">
+          <div class="rotating-border-box p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-mono px-3 py-1 bg-blue-100 text-blue-700 rounded-full">Godot Engine</span>
+              <a href="https://github.com/LHanss/2024FYP---UST-Simulator" target="_blank" class="text-slate-400 hover:text-apple-accent text-xl transition-colors"><i class="fa-brands fa-github"></i></a>
+            </div>
+            <h3 class="heavy-weight text-2xl text-slate-900 mb-2">UST Simulator</h3>
+            <p class="text-sm text-slate-600 mb-6 font-light">
+              2024 HKUST FYP. A card game simulation of university campus life built in Godot Engine featuring interactive card mechanics and custom shaders.
+            </p>
+            <a href="https://github.com/LHanss/2024FYP---UST-Simulator" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-apple-accent hover:underline">
+              <span>View Repository</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Project Slide 2 -->
+        <div class="carousel-card absolute w-full max-w-lg transition-all duration-700 ease-out transform" data-index="1">
+          <div class="rotating-border-box p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-mono px-3 py-1 bg-green-100 text-green-700 rounded-full">Python Scraper</span>
+              <a href="https://github.com/SkyturtI/Web-Scraper" target="_blank" class="text-slate-400 hover:text-apple-accent text-xl transition-colors"><i class="fa-brands fa-github"></i></a>
+            </div>
+            <h3 class="heavy-weight text-2xl text-slate-900 mb-2">Search Engine Website</h3>
+            <p class="text-sm text-slate-600 mb-6 font-light">
+              A high-performance web scraper and full-text search engine platform built with indexed data query structures.
+            </p>
+            <a href="https://github.com/SkyturtI/Web-Scraper" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-apple-accent hover:underline">
+              <span>View Repository</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Project Slide 3 -->
+        <div class="carousel-card absolute w-full max-w-lg transition-all duration-700 ease-out transform" data-index="2">
+          <div class="rotating-border-box p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-mono px-3 py-1 bg-amber-100 text-amber-700 rounded-full">Flutter & Mobile</span>
+              <a href="https://github.com/pwhoae/pwhoae/blob/main/images/USTLink%20GPT.jpg" target="_blank" class="text-slate-400 hover:text-apple-accent text-xl transition-colors"><i class="fa-brands fa-github"></i></a>
+            </div>
+            <h3 class="heavy-weight text-2xl text-slate-900 mb-2">USTLink (Campus Forum App)</h3>
+            <p class="text-sm text-slate-600 mb-6 font-light">
+              Cross-platform campus forum mobile app powered by Flutter and LLM GPT integration for smart content recommendation and user discussions.
+            </p>
+            <a href="https://github.com/pwhoae/pwhoae/blob/main/images/USTLink%20GPT.jpg" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-apple-accent hover:underline">
+              <span>View Preview Image</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Project Slide 4 -->
+        <div class="carousel-card absolute w-full max-w-lg transition-all duration-700 ease-out transform" data-index="3">
+          <div class="rotating-border-box p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-mono px-3 py-1 bg-purple-100 text-purple-700 rounded-full">AI / MediaPipe</span>
+              <a href="https://github.com/pwhoae/pwhoae/blob/main/images/Real-Time%20Posture%20Recognition%20System.png" target="_blank" class="text-slate-400 hover:text-apple-accent text-xl transition-colors"><i class="fa-brands fa-github"></i></a>
+            </div>
+            <h3 class="heavy-weight text-2xl text-slate-900 mb-2">Real-Time Posture Recognition System</h3>
+            <p class="text-sm text-slate-600 mb-6 font-light">
+              Real-time computer vision posture analysis utilizing MediaPipe pose estimation with instant posture feedback and telemetry metrics.
+            </p>
+            <a href="https://github.com/pwhoae/pwhoae/blob/main/images/Real-Time%20Posture%20Recognition%20System.png" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-apple-accent hover:underline">
+              <span>View System Screenshot</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Project Slide 5 -->
+        <div class="carousel-card absolute w-full max-w-lg transition-all duration-700 ease-out transform" data-index="4">
+          <div class="rotating-border-box p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-mono px-3 py-1 bg-pink-100 text-pink-700 rounded-full">Web Audio</span>
+              <a href="https://test-n-bit-audio-converter.vercel.app/" target="_blank" class="text-slate-400 hover:text-apple-accent text-xl transition-colors"><i class="fa-solid fa-globe"></i></a>
+            </div>
+            <h3 class="heavy-weight text-2xl text-slate-900 mb-2">N-Bit Audio Converter</h3>
+            <p class="text-sm text-slate-600 mb-6 font-light">
+              Web application for bit-depth audio quantization and retro chiptune audio rendering with real-time waveform inspection.
+            </p>
+            <a href="https://test-n-bit-audio-converter.vercel.app/" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-apple-accent hover:underline">
+              <span>Visit Live Web App</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Carousel Controls -->
+      <div class="flex items-center justify-center space-x-6 mt-8">
+        <button id="prevCarousel" class="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center text-slate-700 hover:bg-apple-accent hover:text-white transition-all">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <span id="carouselCounter" class="font-mono text-sm font-semibold text-slate-500">1 / 5</span>
+        <button id="nextCarousel" class="w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center text-slate-700 hover:bg-apple-accent hover:text-white transition-all">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BODY 2: TECHNICAL ART & VISUAL LAB (3D Water Ripple Canvas + Tween Cheatsheet + AI Prompt Generator) -->
+  <section id="techart" class="py-24 bg-white/60 border-y border-slate-200/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <h2 class="heavy-weight text-4xl sm:text-5xl text-slate-900">技術藝術 Technical Art Lab</h2>
+        <p class="thin-weight text-lg text-slate-500 mt-2">Shaders, Physics Tweens & AI Prompt Engineering</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Interactive 3D Water Simulation Canvas (Godot Shader Demo Representation) -->
+        <div class="resizable-card bg-white rounded-3xl p-6 shadow-xl border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="heavy-weight text-xl text-slate-900">3D Water Shader Demo</h3>
+              <span class="text-xs font-mono bg-blue-100 text-apple-accent px-2.5 py-1 rounded-md">Interactive Canvas</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">點擊下方畫布產生波浪 (Click/Hover canvas for dynamic water ripple)</p>
+            <div class="w-full h-48 rounded-2xl overflow-hidden relative border border-blue-100 shadow-inner">
+              <canvas id="waterCanvas" class="w-full h-full block bg-gradient-to-b from-blue-300 to-indigo-500"></canvas>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Ref: Godot 3D Water Shader</span>
+            <a href="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo%20res/%E5%A0%B4%E6%99%AF%203D%20water.gif" target="_blank" class="text-apple-accent hover:underline">View Source GIF</a>
+          </div>
+        </div>
+
+        <!-- Tween Cheatsheet Visual Playground ($=t.0$) -->
+        <div class="resizable-card bg-white rounded-3xl p-6 shadow-xl border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="heavy-weight text-xl text-slate-900">Tween Curve Playground</h3>
+              <span class="text-xs font-mono bg-purple-100 text-purple-700 px-2.5 py-1 rounded-md">$=t.0$</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">選擇 Ease 動畫曲線並查看點擊動效 (Interactive Physics Ease)</p>
+
+            <!-- Interactive Ball Track -->
+            <div class="w-full h-24 bg-slate-100 rounded-2xl relative overflow-hidden flex items-center px-4 mb-4 border border-slate-200">
+              <div id="tweenBall" class="w-8 h-8 rounded-full bg-apple-accent shadow-lg text-white text-[10px] flex items-center justify-center font-bold">t</div>
+            </div>
+
+            <!-- Ease Selector Buttons -->
+            <div class="grid grid-cols-3 gap-2 text-xs">
+              <button onclick="playTween('easeOutBounce')" class="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-apple-accent hover:text-white transition-colors">Bounce</button>
+              <button onclick="playTween('easeInOutElastic')" class="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-apple-accent hover:text-white transition-colors">Elastic</button>
+              <button onclick="playTween('easeInOutCubic')" class="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-apple-accent hover:text-white transition-colors">Cubic</button>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span>Godot Tween Engine</span>
+            <a href="https://raw.githubusercontent.com/godotengine/godot-docs/master/img/tween_cheatsheet.webp" target="_blank" class="text-apple-accent hover:underline">View Cheatsheet</a>
+          </div>
+        </div>
+
+        <!-- Generate AI Prompt Helper Tool -->
+        <div class="resizable-card bg-white rounded-3xl p-6 shadow-xl border border-slate-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="heavy-weight text-xl text-slate-900">Generate AI Prompt</h3>
+              <span class="text-xs font-mono bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md">Prompt Gen</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">即時生成高級 AI Prompt (Prompt Engineering Tool)</p>
+
+            <div class="space-y-2 text-xs">
+              <select id="promptRole" class="w-full p-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-apple-accent">
+                <option value="AI Systems Architect">Role: AI Systems Architect</option>
+                <option value="Godot Technical Artist">Role: Godot Technical Artist</option>
+                <option value="LLM Agent Engineer">Role: LLM Agent Engineer</option>
+              </select>
+              <select id="promptTask" class="w-full p-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-apple-accent">
+                <option value="Optimize multi-step reasoning workflows with n8n">Task: Optimize n8n Workflows</option>
+                <option value="Write custom HLSL water shader for Godot 4">Task: Godot 4 HLSL Shader</option>
+                <option value="Deploy MediaPipe posture recognition model">Task: Deploy MediaPipe Pipeline</option>
+              </select>
+              <button onclick="generateAIPrompt()" class="w-full py-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-apple-accent transition-colors">
+                生成 Prompt (Generate)
+              </button>
+            </div>
+
+            <!-- Output Box -->
+            <div id="promptOutput" class="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-700 h-20 overflow-y-auto">
+              [Click Generate to build structured AI system prompt...]
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-100 text-right">
+            <button onclick="copyPromptText()" class="text-xs text-apple-accent hover:underline font-medium">
+              <i class="fa-regular fa-copy"></i> 複製 Prompt
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BODY 3: TOOLBAR & CLIP-PATH ANIMATED WIPE TEXT -->
+  <section class="py-20 relative overflow-hidden bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Clip-Path Animated Wipe Text Banner -->
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-5xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-pink-400 to-amber-300 animate-wipe">
+          TOOLSET & DEV ENVIRONMENT
+        </h2>
+        <p class="thin-weight text-slate-400 mt-2 text-sm">Powered by Clip-Path Shapes & Modern Development Stack</p>
+      </div>
+
+      <!-- Clip-Path Unique Shapes Toolbar Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
+        
+        <!-- Tool 1: GitHub -->
+        <div class="clip-badge bg-white/10 hover:bg-apple-accent backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-brands fa-github text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">GITHUB</p>
+        </div>
+
+        <!-- Tool 2: Godot -->
+        <div class="clip-hexagon bg-white/10 hover:bg-purple-600 backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-solid fa-gamepad text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">GODOT</p>
+        </div>
+
+        <!-- Tool 3: VSCode -->
+        <div class="clip-badge bg-white/10 hover:bg-blue-500 backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-solid fa-code text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">VSCODE</p>
+        </div>
+
+        <!-- Tool 4: Blender -->
+        <div class="clip-hexagon bg-white/10 hover:bg-orange-500 backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-solid fa-cubes text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">BLENDER</p>
+        </div>
+
+        <!-- Tool 5: ChatGPT -->
+        <div class="clip-badge bg-white/10 hover:bg-emerald-500 backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-solid fa-robot text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">CHATGPT</p>
+        </div>
+
+        <!-- Tool 6: Gemini -->
+        <div class="clip-hexagon bg-white/10 hover:bg-cyan-500 backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-solid fa-sparkles text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">GEMINI</p>
+        </div>
+
+        <!-- Tool 7: Obsidian -->
+        <div class="clip-badge bg-white/10 hover:bg-indigo-500 backdrop-blur-md p-6 text-center transition-all duration-300 hover:scale-105 group">
+          <i class="fa-solid fa-book-bookmark text-3xl mb-2 text-white group-hover:rotate-12 transition-transform"></i>
+          <p class="heavy-weight text-xs tracking-wider">OBSIDIAN</p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BODY 4: SKILLS (Marquee + Venetian Blind Hover Effects) -->
+  <section id="skills" class="py-24 bg-apple-bg relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+      <div class="text-center max-w-3xl mx-auto">
+        <h2 class="heavy-weight text-4xl sm:text-5xl text-slate-900">核心技能 Skills Matrix</h2>
+        <p class="thin-weight text-lg text-slate-500 mt-2">Venetian Blind Hover Effect & Continuous Tech Marquee</p>
+      </div>
+    </div>
+
+    <!-- Infinite Tech Marquee Slider -->
+    <div class="w-full overflow-hidden whitespace-nowrap bg-white border-y border-slate-200 py-4 mb-16 shadow-inner">
+      <div class="inline-block animate-marquee space-x-8 text-sm font-mono font-semibold text-slate-600">
+        <span>PYTHON</span> <span class="text-apple-accent">•</span>
+        <span>C++</span> <span class="text-apple-accent">•</span>
+        <span>JAVA</span> <span class="text-apple-accent">•</span>
+        <span>FLUTTER</span> <span class="text-apple-accent">•</span>
+        <span>FIREBASE</span> <span class="text-apple-accent">•</span>
+        <span>FLASK</span> <span class="text-apple-accent">•</span>
+        <span>MEDIAPIPE</span> <span class="text-apple-accent">•</span>
+        <span>LLM AGENTS</span> <span class="text-apple-accent">•</span>
+        <span>PROMPT ENGINEERING</span> <span class="text-apple-accent">•</span>
+        <span>ARDUINO</span> <span class="text-apple-accent">•</span>
+        <span>STM32</span> <span class="text-apple-accent">•</span>
+        <span>RASPBERRY PI</span> <span class="text-apple-accent">•</span>
+        <span>GIT / SQL / HTML</span> <span class="text-apple-accent">•</span>
+      </div>
+    </div>
+
+    <!-- Skills Venetian Blind Interactive Grid -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Skill Category 1 -->
+        <div class="venetian-item bg-white/80 rounded-3xl p-8 border border-white/60 shadow-lg">
+          <div class="w-12 h-12 rounded-2xl bg-blue-100 text-apple-accent flex items-center justify-center text-xl mb-4">
+            <i class="fa-solid fa-code"></i>
+          </div>
+          <h3 class="heavy-weight text-xl text-slate-900 mb-2">Programming & Frameworks</h3>
+          <p class="thin-weight text-xs text-slate-500 mb-4">Core Software Engineering</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Python</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">C++</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Java</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Flutter</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Firebase</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Flask</span>
+          </div>
+        </div>
+
+        <!-- Skill Category 2 -->
+        <div class="venetian-item bg-white/80 rounded-3xl p-8 border border-white/60 shadow-lg">
+          <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl mb-4">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <h3 class="heavy-weight text-xl text-slate-900 mb-2">AI / ML & Workflows</h3>
+          <p class="thin-weight text-xs text-slate-500 mb-4">Generative Intelligence</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">MediaPipe</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">LLM Architecture</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Prompt Eng.</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">n8n Automation</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Vidu AI</span>
+          </div>
+        </div>
+
+        <!-- Skill Category 3 -->
+        <div class="venetian-item bg-white/80 rounded-3xl p-8 border border-white/60 shadow-lg">
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl mb-4">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <h3 class="heavy-weight text-xl text-slate-900 mb-2">Embedded & Tools</h3>
+          <p class="thin-weight text-xs text-slate-500 mb-4">Hardware & Developer Tools</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Arduino</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">STM32</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Raspberry Pi</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">Git / Office</span>
+            <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-semibold text-slate-700">HTML / SQL</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT SECTION & EXTRAS (3D Rotating Card + Inset Animation + Copy Details + Timers + Four Seasons) -->
+  <section id="contact" class="py-24 bg-white/70 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        
+        <!-- Left: 3D Rotating Contact Card with Dynamic Inset Effect & Copy Feature -->
+        <div class="lg:col-span-6">
+          <div class="perspective-1000">
+            <div id="contactCard3D" class="card-3d bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden group">
+              
+              <!-- Light sheen overlay -->
+              <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+
+              <div class="flex items-center justify-between mb-8">
+                <div>
+                  <span class="text-xs uppercase tracking-widest text-blue-400 font-mono">Get In Touch</span>
+                  <h3 class="heavy-weight text-3xl text-white mt-1">HO PO WA</h3>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-xl text-blue-300">
+                  <i class="fa-solid fa-paper-plane"></i>
+                </div>
+              </div>
+
+              <!-- Contact Info Lines with Click to Copy -->
+              <div class="space-y-4 text-sm font-light mb-8">
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/line" onclick="copyText('+852 9856 1688', 'Phone Number')">
+                  <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-phone text-blue-400"></i>
+                    <span>+852 9856 1688</span>
+                  </div>
+                  <i class="fa-regular fa-copy opacity-0 group-hover/line:opacity-100 transition-opacity text-xs text-blue-300"></i>
+                </div>
+
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/line" onclick="copyText('pwhoae@connect.ust.hk', 'HKUST Email')">
+                  <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-envelope text-blue-400"></i>
+                    <span>pwhoae@connect.ust.hk</span>
+                  </div>
+                  <i class="fa-regular fa-copy opacity-0 group-hover/line:opacity-100 transition-opacity text-xs text-blue-300"></i>
+                </div>
+
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/line" onclick="copyText('https://github.com/pwhoae', 'GitHub Link')">
+                  <div class="flex items-center gap-3">
+                    <i class="fa-brands fa-github text-blue-400"></i>
+                    <span>github.com/pwhoae</span>
+                  </div>
+                  <i class="fa-regular fa-copy opacity-0 group-hover/line:opacity-100 transition-opacity text-xs text-blue-300"></i>
+                </div>
+
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/line" onclick="copyText('https://www.linkedin.com/in/po-wa-ho-b10928352/', 'LinkedIn Link')">
+                  <div class="flex items-center gap-3">
+                    <i class="fa-brands fa-linkedin text-blue-400"></i>
+                    <span>linkedin.com/in/po-wa-ho-b10928352</span>
+                  </div>
+                  <i class="fa-regular fa-copy opacity-0 group-hover/line:opacity-100 transition-opacity text-xs text-blue-300"></i>
+                </div>
+              </div>
+
+              <!-- Interactive Inset Button -->
+              <button onclick="triggerCardInsetAnimation()" class="w-full py-3 rounded-2xl bg-apple-accent hover:bg-blue-500 font-semibold text-xs tracking-wider uppercase transition-all shadow-lg active:scale-95">
+                觸發卡片 Inset 縮放動畫 (Trigger Inset FX)
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Clock + Next Year Countdown + Expandable Four Seasons Gallery -->
+        <div class="lg:col-span-6 space-y-8">
+          
+          <!-- Today Time & Next Year Countdown Widget -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Live Time Clock -->
+            <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200 text-center">
+              <span class="text-xs uppercase font-mono text-slate-400">Today Time (HKT)</span>
+              <div id="liveClock" class="heavy-weight text-3xl text-slate-900 mt-2 font-mono">00:00:00</div>
+              <p class="text-[11px] text-slate-500 mt-1" id="liveDate">2026-07-24</p>
+            </div>
+
+            <!-- Countdown to Next Year -->
+            <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200 text-center">
+              <span class="text-xs uppercase font-mono text-slate-400">Countdown To <span id="nextYearLabel">2027</span></span>
+              <div id="nextYearCountdown" class="heavy-weight text-2xl text-apple-accent mt-2 font-mono">000d 00h 00m</div>
+              <p class="text-[11px] text-slate-500 mt-1">Days, Hours, Minutes Remaining</p>
+            </div>
+
+          </div>
+
+          <!-- Expandable Four Seasons Gallery (擴展式卡片輪播 春夏秋冬) -->
+          <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200">
+            <h4 class="heavy-weight text-lg text-slate-900 mb-4">擴展式四季輪播 Four Seasons Gallery</h4>
+            <div class="flex flex-col sm:flex-row gap-3 h-64">
+              
+              <!-- Spring -->
+              <div class="season-card flex-1 hover:flex-[3] transition-all duration-500 rounded-2xl bg-gradient-to-br from-pink-200 to-rose-300 p-4 relative overflow-hidden group flex flex-col justify-end text-slate-800">
+                <i class="fa-solid fa-seedling text-3xl absolute top-4 left-4 opacity-70"></i>
+                <div class="relative z-10">
+                  <span class="text-xs uppercase font-mono opacity-80">Spring</span>
+                  <h5 class="heavy-weight text-xl">春 • 萌芽</h5>
+                </div>
+              </div>
+
+              <!-- Summer -->
+              <div class="season-card flex-1 hover:flex-[3] transition-all duration-500 rounded-2xl bg-gradient-to-br from-amber-200 to-yellow-400 p-4 relative overflow-hidden group flex flex-col justify-end text-slate-800">
+                <i class="fa-solid fa-sun text-3xl absolute top-4 left-4 opacity-70"></i>
+                <div class="relative z-10">
+                  <span class="text-xs uppercase font-mono opacity-80">Summer</span>
+                  <h5 class="heavy-weight text-xl">夏 • 繁茂</h5>
+                </div>
+              </div>
+
+              <!-- Autumn -->
+              <div class="season-card flex-1 hover:flex-[3] transition-all duration-500 rounded-2xl bg-gradient-to-br from-orange-300 to-amber-600 p-4 relative overflow-hidden group flex flex-col justify-end text-white">
+                <i class="fa-solid fa-leaf text-3xl absolute top-4 left-4 opacity-70"></i>
+                <div class="relative z-10">
+                  <span class="text-xs uppercase font-mono opacity-80">Autumn</span>
+                  <h5 class="heavy-weight text-xl">秋 • 豐收</h5>
+                </div>
+              </div>
+
+              <!-- Winter -->
+              <div class="season-card flex-1 hover:flex-[3] transition-all duration-500 rounded-2xl bg-gradient-to-br from-blue-200 to-indigo-400 p-4 relative overflow-hidden group flex flex-col justify-end text-white">
+                <i class="fa-solid fa-snowflake text-3xl absolute top-4 left-4 opacity-70"></i>
+                <div class="relative z-10">
+                  <span class="text-xs uppercase font-mono opacity-80">Winter</span>
+                  <h5 class="heavy-weight text-xl">冬 • 沉澱</h5>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer Bottom Note -->
+      <div class="mt-20 text-center border-t border-slate-200 pt-8 text-xs text-slate-400 font-mono">
+        <p>© HO PO WA Portfolio. Designed in Retro Apple Aesthetic with HKUST Parallax Effects.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    /* Global Screen Shake Helper */
+    function triggerScreenShake() {
+      const body = document.body;
+      body.classList.remove('screen-shake');
+      void body.offsetWidth; // Force reflow
+      body.classList.add('screen-shake');
+      setTimeout(() => body.classList.remove('screen-shake'), 400);
+    }
+
+    document.getElementById('shakeBtn').addEventListener('click', triggerScreenShake);
+
+    /* Web Audio Sound Synthesizer & Progress Bar */
+    let audioCtx = null;
+    let isPlayingAudio = false;
+    let audioTimer = null;
+    let audioProgress = 0;
+
+    const audioBtn = document.getElementById('audioBtn');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioCircle = document.getElementById('audioCircle');
+
+    function playSynthBeats() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220 + Math.random() * 200, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    audioBtn.addEventListener('click', () => {
+      isPlayingAudio = !isPlayingAudio;
+      if (isPlayingAudio) {
+        audioIcon.className = "fa-solid fa-pause text-xs";
+        audioTimer = setInterval(() => {
+          audioProgress = (audioProgress + 2) % 100;
+          const offset = 125.6 - (125.6 * audioProgress) / 100;
+          audioCircle.style.strokeDashoffset = offset;
+          playSynthBeats();
+        }, 150);
+      } else {
+        audioIcon.className = "fa-solid fa-play text-xs ml-0.5";
+        clearInterval(audioTimer);
+      }
+    });
+
+    /* Stacked Carousel Logic */
+    const carouselCards = document.querySelectorAll('.carousel-card');
+    let currentCarouselIndex = 0;
+    const totalCarousel = carouselCards.length;
+    const carouselCounter = document.getElementById('carouselCounter');
+
+    function updateCarousel() {
+      carouselCards.forEach((card, index) => {
+        const offset = (index - currentCarouselIndex + totalCarousel) % totalCarousel;
+        
+        if (offset === 0) {
+          // Front Card
+          card.style.transform = 'translateY(0) scale(1)';
+          card.style.opacity = '1';
+          card.style.zIndex = '30';
+          card.style.pointerEvents = 'auto';
+        } else if (offset === 1) {
+          // Second Card Stacked Behind
+          card.style.transform = 'translateY(24px) scale(0.92)';
+          card.style.opacity = '0.7';
+          card.style.zIndex = '20';
+          card.style.pointerEvents = 'none';
+        } else if (offset === 2) {
+          // Third Card Stacked Behind
+          card.style.transform = 'translateY(48px) scale(0.84)';
+          card.style.opacity = '0.4';
+          card.style.zIndex = '10';
+          card.style.pointerEvents = 'none';
+        } else {
+          // Hidden Back Cards
+          card.style.transform = 'translateY(60px) scale(0.75)';
+          card.style.opacity = '0';
+          card.style.zIndex = '0';
+          card.style.pointerEvents = 'none';
+        }
+      });
+
+      carouselCounter.innerText = `${currentCarouselIndex + 1} / ${totalCarousel}`;
+    }
+
+    document.getElementById('nextCarousel').addEventListener('click', () => {
+      currentCarouselIndex = (currentCarouselIndex + 1) % totalCarousel;
+      updateCarousel();
+    });
+
+    document.getElementById('prevCarousel').addEventListener('click', () => {
+      currentCarouselIndex = (currentCarouselIndex - 1 + totalCarousel) % totalCarousel;
+      updateCarousel();
+    });
+
+    // Auto play carousel
+    setInterval(() => {
+      currentCarouselIndex = (currentCarouselIndex + 1) % totalCarousel;
+      updateCarousel();
+    }, 4000);
+
+    updateCarousel();
+
+    /* Technical Art: Interactive 3D Water Canvas Ripple Simulation */
+    const waterCanvas = document.getElementById('waterCanvas');
+    const ctx = waterCanvas.getContext('2d');
+    let width, height;
+    let time = 0;
+
+    function resizeWaterCanvas() {
+      if (!waterCanvas.parentElement) return;
+      width = waterCanvas.width = waterCanvas.parentElement.clientWidth;
+      height = waterCanvas.height = waterCanvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeWaterCanvas);
+    resizeWaterCanvas();
+
+    let ripples = [];
+
+    waterCanvas.addEventListener('click', (e) => {
+      const rect = waterCanvas.getBoundingClientRect();
+      ripples.push({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        radius: 0,
+        alpha: 1
+      });
+      triggerScreenShake();
+    });
+
+    function drawWater() {
+      ctx.clearRect(0, 0, width, height);
+      time += 0.05;
+
+      // Draw background wave lines
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < width; x += 10) {
+        const y = height / 2 + Math.sin(x * 0.02 + time) * 15;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Render Interactive Ripples
+      ripples.forEach((r, idx) => {
+        r.radius += 2.5;
+        r.alpha -= 0.015;
+        
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, r.alpha)})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        if (r.alpha <= 0) ripples.splice(idx, 1);
+      });
+
+      requestAnimationFrame(drawWater);
+    }
+    drawWater();
+
+    /* Tween Curve Ball Playground */
+    function playTween(type) {
+      const ball = document.getElementById('tweenBall');
+      ball.style.transition = 'none';
+      ball.style.transform = 'translateX(0px)';
+
+      setTimeout(() => {
+        if (type === 'easeOutBounce') {
+          ball.style.transition = 'transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        } else if (type === 'easeInOutElastic') {
+          ball.style.transition = 'transform 1.2s cubic-bezier(0.68, -0.6, 0.32, 1.6)';
+        } else {
+          ball.style.transition = 'transform 0.8s cubic-bezier(0.65, 0, 0.35, 1)';
+        }
+        ball.style.transform = 'translateX(180px)';
+      }, 50);
+    }
+
+    /* AI Prompt Generator Tool */
+    function generateAIPrompt() {
+      const role = document.getElementById('promptRole').value;
+      const task = document.getElementById('promptTask').value;
+      const prompt = `System Prompt:\nYou are an expert ${role}.\nYour goal is to ${task}.\nGenerate optimized code architecture, error handles, and step-by-step reasoning logs.`;
+      document.getElementById('promptOutput').innerText = prompt;
+    }
+
+    function copyPromptText() {
+      const text = document.getElementById('promptOutput').innerText;
+      copyText(text, 'AI Prompt');
+    }
+
+    /* Copy Text Utility */
+    function copyText(text, label) {
+      const input = document.createElement('textarea');
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      
+      // Toast notification
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-24 right-8 bg-slate-900 text-white text-xs px-4 py-2 rounded-xl shadow-xl z-50 animate-bounce';
+      toast.innerText = `已複製 ${label} 到剪貼簿！ (Copied!)`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    /* Contact Card 3D Tilt & Inset Effect Animation */
+    const contactCard3D = document.getElementById('contactCard3D');
+
+    function triggerCardInsetAnimation() {
+      contactCard3D.style.transform = 'scale(0.92) rotateX(10deg)';
+      contactCard3D.style.boxShadow = '0 0 0 12px rgba(0, 113, 227, 0.3)';
+      setTimeout(() => {
+        contactCard3D.style.transform = 'scale(1) rotateX(0deg)';
+        contactCard3D.style.boxShadow = 'none';
+      }, 600);
+      triggerScreenShake();
+    }
+
+    // 3D Tilt on Mousemove
+    contactCard3D.addEventListener('mousemove', (e) => {
+      const rect = contactCard3D.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      contactCard3D.style.transform = `perspective(1000px) rotateY(${x / 20}deg) rotateX(${-y / 20}deg)`;
+    });
+
+    contactCard3D.addEventListener('mouseleave', () => {
+      contactCard3D.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg)';
+    });
+
+    /* Today Time & Next Year Countdown */
+    function updateTimers() {
+      const now = new Date();
+      
+      // Live Clock
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const secs = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('liveClock').innerText = `${hours}:${mins}:${secs}`;
+      document.getElementById('liveDate').innerText = now.toISOString().split('T')[0];
+
+      // Next Year Countdown
+      const currentYear = now.getFullYear();
+      const nextYear = currentYear + 1;
+      document.getElementById('nextYearLabel').innerText = nextYear;
+
+      const nextYearDate = new Date(`January 1, ${nextYear} 00:00:00`);
+      const diff = nextYearDate - now;
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / (1000 * 60)) % 60);
+
+      document.getElementById('nextYearCountdown').innerText = `${days}d ${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m`;
+    }
+
+    setInterval(updateTimers, 1000);
+    updateTimers();
+
+    /* Scroll Parallax for Hero Background Glows */
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      const bg1 = document.getElementById('heroBg1');
+      const bg2 = document.getElementById('heroBg2');
+      if (bg1 && bg2) {
+        bg1.style.transform = `translateY(${scrollY * 0.15}px)`;
+        bg2.style.transform = `translateY(-${scrollY * 0.1}px)`;
+      }
+    });
+
+    /* Window Load Animation */
+    window.onload = function() {
+      console.log('HO PO WA Portfolio Loaded Successfully.');
+    };
+  </script>
+
+  <!-- Tailwind Keyframe Marquee helper -->
+  <style>
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      animation: marquee 25s linear infinite;
+    }
+  </style>
+
+</body>
+</html>
