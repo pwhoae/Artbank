@@ -293,7 +293,7 @@ interface ItemFactory:
 
 ### 美術
 ```
-roughness=0,toon
+roughness=0,toon,抖动輪廓
 ```
 美術=為什麼喜歡這種東西>有梗/場景互動小道具/地圖互動/看到門持key 配套
 
