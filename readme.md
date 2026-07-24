@@ -37,16 +37,18 @@
 | **Mixamo** | AI / 一鍵模型骨骼自動綁定與動作庫：[mixamo.com](https://www.mixamo.com/) |
 | **Kenney Assets** | 跨平台、風格統一的免費 2D/3D/音效素材：[kenney.nl](https://kenney.nl/assets) |
 | **Poly Pizza** | 輕量級 Low-Poly 3D 模型庫：[poly.pizza](https://poly.pizza/) |
-| **Poly Haven** | <s>高畫質 CC0 3D 模型、紋理與 HDRI：[polyhaven.com](https://polyhaven.com/) </s>|
 | **Blender Models** | Blender 社群模型庫：[blender-models.com](https://www.blender-models.com/) |
 | **Blender Demo Files** | Blender 官方示範檔下載：[blender.org/download/demo-files](https://www.blender.org/download/demo-files/) |
 | **Blender Market** | Blender 專業外掛與模型市場：[blendermarket.com](https://blendermarket.com) |
-| **Kay Lousberg (Itch)** | 免費 Low-Poly 3D 資源庫：[kaylousberg.itch.io](https://kaylousberg.itch.io/) |
 | **Quaternius Animation** | 通用動畫庫：[Itch Download](https://quaternius.itch.io/universal-animation-library/download/eyJpZCI6MzQwODAzNCwiZXhwaXJlcyI6MTc4MTUzMDQyN30%3d%2ea9%2bGjXyn%2bo0ydcDE%2fEREJdkicWY%3d) |
 | **Free3D / Free3D Animated** | 免費 3D 與動畫模型：[free3d.com](https://free3d.com) | [Animated Models](https://free3d.com/3d-models/animated) |
 | **Sketchfab** | 3D 模型預覽與交易平台：[sketchfab.com](https://sketchfab.com) |
 | **Cubebrush** | CG 素材與工具市場：[cubebrush.co](https://cubebrush.co) |
 | **CGModel** | 模型分享網：[cgmodel.com](https://cgmodel.com) |
+| **Poly Haven** | <s>高畫質 CC0 3D 模型、紋理與 HDRI：[polyhaven.com](https://polyhaven.com/) </s>|
+| **Kay Lousberg (Itch)** | <s>免費 Low-Poly 3D 資源庫：[kaylousberg.itch.io](https://kaylousberg.itch.io/)</s> |
+
+
 
 ### **🖼️ 2D / SVG / 圖標 / 字型 / 紋理**
 
