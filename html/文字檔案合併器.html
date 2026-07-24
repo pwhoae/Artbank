@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-File Text Merger</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbars for light theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Navigation Header -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <i data-lucide="files" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl text-slate-900 leading-tight">Text File Combiner</h1>
+                    <p class="text-xs text-slate-500">Merge multiple text documents into a single .txt file</p>
+                </div>
+            </div>
+            <div class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full font-medium border border-slate-200 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Client-side only (Secure)
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto w-full flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Upload & Settings -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            <!-- Upload Dropzone -->
+            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-500"></i>
+                    Upload Files
+                </h2>
+                
+                <div id="dropzone" 
+                     class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/50 transition-all duration-200 flex flex-col items-center justify-center min-h-[180px] bg-slate-50/50">
+                    <input type="file" id="fileInput" multiple accept=".txt,.csv,.md,.json,.js,.html,.css,.xml,.log,.py,.java,.c,.cpp" class="hidden">
+                    <div class="w-12 h-12 bg-white rounded-full shadow-sm border border-slate-200 flex items-center justify-center text-indigo-600 mb-3">
+                        <i data-lucide="file-plus" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-sm font-medium text-slate-700">
+                        Drag & drop text files here or <span class="text-indigo-600 underline">browse</span>
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">Supports TXT, MD, CSV, Code, JSON, Logs, etc.</p>
+                </div>
+            </div>
+
+            <!-- Merge Options -->
+            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex-1 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4 text-indigo-500"></i>
+                        Merge Settings
+                    </h2>
+
+                    <div class="space-y-4">
+                        <!-- Separator Option -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">File Separator</label>
+                            <select id="separatorSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <option value="double_newline">Double Newline (Blank line)</option>
+                                <option value="filename_header">File Name Header (e.g. === file.txt ===)</option>
+                                <option value="divider_line">Horizontal Line (---)</option>
+                                <option value="custom">Custom Separator</option>
+                                <option value="none">No Separator (Direct Join)</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Separator Text Input -->
+                        <div id="customSeparatorContainer" class="hidden">
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Custom Text Separator</label>
+                            <input type="text" id="customSeparatorInput" placeholder="\n--- END OF FILE ---\n" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono-code">
+                        </div>
+
+                        <!-- Header Format (When filename header selected) -->
+                        <div id="headerFormatContainer" class="hidden">
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Header Style</label>
+                            <input type="text" id="headerFormatInput" value="==================== {filename} ====================" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono-code">
+                            <p class="text-[11px] text-slate-400 mt-1">Use <code class="bg-slate-100 px-1 rounded">{filename}</code> as a placeholder.</p>
+                        </div>
+
+                        <!-- Output File Name -->
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Output File Name</label>
+                            <div class="flex rounded-lg shadow-sm">
+                                <input type="text" id="outputFilename" value="combined_documents" class="flex-1 bg-slate-50 border border-r-0 border-slate-300 rounded-l-lg px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <span class="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-slate-300 bg-slate-100 text-slate-500 text-sm">.txt</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toast Notification Box -->
+                <div id="toast" class="hidden mt-4 p-3 rounded-lg text-xs font-medium flex items-center justify-between transition-all">
+                    <span id="toastMessage">Notification message</span>
+                    <button onclick="hideToast()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: File Queue & Merged Preview -->
+        <div class="lg:col-span-7 flex flex-col gap-6">
+            <!-- Queue Section -->
+            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Files to Combine</h2>
+                        <span id="fileCountBadge" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+                    </div>
+                    <button id="clearAllBtn" class="text-xs text-rose-600 hover:text-rose-800 hover:underline flex items-center gap-1 hidden">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear All
+                    </button>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="py-12 text-center text-slate-400">
+                    <i data-lucide="file-text" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                    <p class="text-sm">No files uploaded yet.</p>
+                </div>
+
+                <!-- File List Container -->
+                <ul id="fileList" class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    <!-- Dynamic File Items will go here -->
+                </ul>
+            </div>
+
+            <!-- Combined Result Preview -->
+            <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4 text-indigo-500"></i>
+                        Merged Preview
+                    </h2>
+                    <div class="text-xs text-slate-400 flex items-center gap-3">
+                        <span>Lines: <strong id="statLines" class="text-slate-700">0</strong></span>
+                        <span>Chars: <strong id="statChars" class="text-slate-700">0</strong></span>
+                        <span>Size: <strong id="statSize" class="text-slate-700">0 KB</strong></span>
+                    </div>
+                </div>
+
+                <textarea id="previewTextarea" readonly 
+                          placeholder="Your combined file text preview will appear here..."
+                          class="w-full flex-1 min-h-[220px] p-3 text-xs font-mono-code bg-slate-50 border border-slate-200 rounded-lg resize-none focus:outline-none text-slate-700"></textarea>
+
+                <div class="mt-4 flex flex-col sm:flex-row items-center gap-3 justify-end">
+                    <button id="copyBtn" class="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm transition-colors flex items-center justify-center gap-2 border border-slate-200">
+                        <i data-lucide="copy" class="w-4 h-4"></i> Copy Text
+                    </button>
+                    <button id="downloadBtn" disabled class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i> Combine & Download .txt
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-400 mt-auto">
+        Fast local text file merger &bull; Processing happens entirely in your browser
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State
+        let uploadedFiles = []; // Array of objects: { id, name, size, content, order }
+
+        // DOM Elements
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const emptyState = document.getElementById('emptyState');
+        const fileCountBadge = document.getElementById('fileCountBadge');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const separatorSelect = document.getElementById('separatorSelect');
+        const customSeparatorContainer = document.getElementById('customSeparatorContainer');
+        const customSeparatorInput = document.getElementById('customSeparatorInput');
+        const headerFormatContainer = document.getElementById('headerFormatContainer');
+        const headerFormatInput = document.getElementById('headerFormatInput');
+        const outputFilename = document.getElementById('outputFilename');
+        const previewTextarea = document.getElementById('previewTextarea');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const statLines = document.getElementById('statLines');
+        const statChars = document.getElementById('statChars');
+        const statSize = document.getElementById('statSize');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Event Listeners for Dropzone
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-indigo-500', 'bg-indigo-50/80');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/80');
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/80');
+            if (e.dataTransfer.files.length) {
+                processFiles(e.dataTransfer.files);
+            }
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                processFiles(e.target.files);
+                fileInput.value = ''; // Reset input
+            }
+        });
+
+        // Settings event listeners
+        separatorSelect.addEventListener('change', () => {
+            const val = separatorSelect.value;
+            customSeparatorContainer.classList.toggle('hidden', val !== 'custom');
+            headerFormatContainer.classList.toggle('hidden', val !== 'filename_header');
+            updateCombinedPreview();
+        });
+
+        customSeparatorInput.addEventListener('input', updateCombinedPreview);
+        headerFormatInput.addEventListener('input', updateCombinedPreview);
+
+        clearAllBtn.addEventListener('click', () => {
+            uploadedFiles = [];
+            renderFileList();
+            updateCombinedPreview();
+            showToast('All files cleared', 'info');
+        });
+
+        // File processing function
+        function processFiles(files) {
+            const fileArray = Array.from(files);
+            let loadedCount = 0;
+
+            fileArray.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedFiles.push({
+                        id: 'file_' + Math.random().toString(36).substr(2, 9),
+                        name: file.name,
+                        size: file.size,
+                        content: e.target.result
+                    });
+
+                    loadedCount++;
+                    if (loadedCount === fileArray.length) {
+                        renderFileList();
+                        updateCombinedPreview();
+                        showToast(`Successfully added ${loadedCount} file(s)`, 'success');
+                    }
+                };
+                reader.onerror = () => {
+                    showToast(`Error reading file: ${file.name}`, 'error');
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // Render File List
+        function renderFileList() {
+            fileList.innerHTML = '';
+            fileCountBadge.textContent = uploadedFiles.length;
+
+            if (uploadedFiles.length === 0) {
+                emptyState.classList.remove('hidden');
+                clearAllBtn.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            clearAllBtn.classList.remove('hidden');
+
+            uploadedFiles.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors group';
+                
+                li.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="text-xs font-bold text-slate-400 w-5 flex-shrink-0">${index + 1}.</span>
+                        <div class="p-1.5 bg-white border border-slate-200 rounded text-slate-600 flex-shrink-0">
+                            <i data-lucide="file-text" class="w-4 h-4"></i>
+                        </div>
+                        <div class="truncate">
+                            <p class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(file.name)}</p>
+                            <p class="text-[10px] text-slate-400">${formatBytes(file.size)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button onclick="moveFile(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:hover:text-slate-400" title="Move Up">
+                            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="moveFile(${index}, 1)" ${index === uploadedFiles.length - 1 ? 'disabled' : ''} class="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:hover:text-slate-400" title="Move Down">
+                            <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="removeFile(${index})" class="p-1 text-slate-400 hover:text-rose-600 ml-1" title="Remove File">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+                fileList.appendChild(li);
+            });
+
+            lucide.createIcons();
+        }
+
+        function moveFile(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < uploadedFiles.length) {
+                const temp = uploadedFiles[index];
+                uploadedFiles[index] = uploadedFiles[newIndex];
+                uploadedFiles[newIndex] = temp;
+                renderFileList();
+                updateCombinedPreview();
+            }
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            renderFileList();
+            updateCombinedPreview();
+        }
+
+        // Get Separator String based on controls
+        function getSeparatorString(filename) {
+            const mode = separatorSelect.value;
+            switch (mode) {
+                case 'double_newline':
+                    return '\n\n';
+                case 'divider_line':
+                    return '\n\n--------------------------------------------------------------------------------\n\n';
+                case 'filename_header':
+                    const headerPattern = headerFormatInput.value || '=== {filename} ===';
+                    const headerText = headerPattern.replace('{filename}', filename);
+                    return `\n\n${headerText}\n\n`;
+                case 'custom':
+                    // Process literal \n into real newlines if user typed raw \n
+                    const rawVal = customSeparatorInput.value || '\n';
+                    return rawVal.replace(/\\n/g, '\n');
+                case 'none':
+                default:
+                    return '';
+            }
+        }
+
+        // Update Combined Text Preview
+        function updateCombinedPreview() {
+            if (uploadedFiles.length === 0) {
+                previewTextarea.value = '';
+                downloadBtn.disabled = true;
+                statLines.textContent = '0';
+                statChars.textContent = '0';
+                statSize.textContent = '0 KB';
+                return;
+            }
+
+            let combinedText = '';
+
+            uploadedFiles.forEach((file, idx) => {
+                if (idx > 0) {
+                    combinedText += getSeparatorString(file.name);
+                } else if (separatorSelect.value === 'filename_header') {
+                    // Include header for first file too if header separator is chosen
+                    const headerPattern = headerFormatInput.value || '=== {filename} ===';
+                    combinedText += headerPattern.replace('{filename}', file.name) + '\n\n';
+                }
+                combinedText += file.content;
+            });
+
+            previewTextarea.value = combinedText;
+            downloadBtn.disabled = false;
+
+            // Update stats
+            const chars = combinedText.length;
+            const lines = combinedText ? combinedText.split('\n').length : 0;
+            const bytes = new Blob([combinedText]).size;
+
+            statChars.textContent = chars.toLocaleString();
+            statLines.textContent = lines.toLocaleString();
+            statSize.textContent = formatBytes(bytes);
+        }
+
+        // Download Action
+        downloadBtn.addEventListener('click', () => {
+            const text = previewTextarea.value;
+            if (!text) return;
+
+            let name = outputFilename.value.trim() || 'combined_documents';
+            if (!name.endsWith('.txt')) name += '.txt';
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast(`Downloaded ${name}`, 'success');
+        });
+
+        // Copy to Clipboard (using textarea fallback for iframe safety)
+        copyBtn.addEventListener('click', () => {
+            if (!previewTextarea.value) {
+                showToast('Nothing to copy', 'info');
+                return;
+            }
+
+            previewTextarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Copied combined text to clipboard!', 'success');
+            } catch (err) {
+                showToast('Failed to copy text', 'error');
+            }
+            window.getSelection().removeAllRanges();
+        });
+
+        // Utilities
+        function formatBytes(bytes, decimals = 1) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = msg;
+            toast.className = 'mt-4 p-3 rounded-lg text-xs font-medium flex items-center justify-between transition-all ';
+
+            if (type === 'success') {
+                toast.classList.add('bg-emerald-50', 'text-emerald-700', 'border', 'border-emerald-200');
+            } else if (type === 'error') {
+                toast.classList.add('bg-rose-50', 'text-rose-700', 'border', 'border-rose-200');
+            } else {
+                toast.classList.add('bg-indigo-50', 'text-indigo-700', 'border', 'border-indigo-200');
+            }
+
+            toast.classList.remove('hidden');
+
+            setTimeout(() => {
+                hideToast();
+            }, 4000);
+        }
+
+        function hideToast() {
+            document.getElementById('toast').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
