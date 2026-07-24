@@ -2,6 +2,9 @@
 
 https://github.com/pwhoae/artbank_private
 音頻:[shock]/ [cat_meme]/ [meme]/ [綜藝]
+```
+卖什么→谁来卖→卖给谁→怎么卖>钱怎么分→环境影响→行业怎么来的>怎么赚钱→凭什么赢→未来能走多远
+```
 
 
 ### 美術
