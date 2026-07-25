@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D Jitter Toon Outline Shader Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <!-- lil-gui for controls -->
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.18"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0d0e15;
+            color: #e2e8f0;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom styling for lil-gui */
+        .lil-gui {
+            --background-color: rgba(22, 24, 38, 0.88);
+            --text-color: #e2e8f0;
+            --title-background-color: #1e2238;
+            --widget-color: #2d3452;
+            --hover-color: #3b446b;
+            --focus-color: #6366f1;
+            --number-color: #818cf8;
+            --string-color: #34d399;
+            font-family: 'Inter', sans-serif !important;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .glass-panel {
+            background: rgba(18, 20, 32, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen w-full overflow-hidden bg-slate-950">
+
+    <!-- 3D Canvas Viewport -->
+    <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+    <!-- Header Controls -->
+    <header class="absolute top-4 left-4 z-10 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div class="glass-panel px-4 py-3 rounded-xl flex items-center space-x-3 shadow-2xl">
+            <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-cube text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base sm:text-lg tracking-wide text-white flex items-center gap-2">
+                    Godot 3D 抖动轮廓与卡通着色器
+                    <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Live WebGL</span>
+                </h1>
+                <p class="text-xs text-slate-400">Inverted Hull Jitter Outline & Toon Cel Shading</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Quick Preset Toolbar (Top Center / Mobile Bottom) -->
+    <div class="absolute top-4 right-4 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-10">
+        <div class="glass-panel px-3 py-2 rounded-xl flex items-center gap-2 shadow-2xl">
+            <span class="text-xs font-semibold text-slate-400 hidden md:inline pl-1"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>配色预设:</span>
+            <button onclick="applyPreset('purple')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 transition-all flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Suzanne 紫色
+            </button>
+            <button onclick="applyPreset('cyberpunk')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 transition-all flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> 赛博朋克
+            </button>
+            <button onclick="applyPreset('sketch')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-700/40 hover:bg-slate-700/70 text-slate-200 border border-slate-500/40 transition-all flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-100"></span> 漫威手绘
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Info Overlay -->
+    <div class="absolute bottom-4 left-4 z-10 max-w-sm hidden md:block">
+        <div class="glass-panel p-4 rounded-xl text-xs space-y-2 text-slate-300">
+            <div class="flex items-center justify-between font-semibold text-indigo-300 border-b border-white/10 pb-2">
+                <span><i class="fa-solid fa-sliders mr-1"></i> 交互提示</span>
+                <span class="text-[10px] text-slate-400">Orbit Controls</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
+                <div class="flex items-center gap-1.5"><i class="fa-solid fa-computer-mouse text-indigo-400"></i> 左键拖拽: 旋转视角</div>
+                <div class="flex items-center gap-1.5"><i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i> 右键拖拽: 平移相机</div>
+                <div class="flex items-center gap-1.5"><i class="fa-solid fa-arrows-to-dot text-indigo-400"></i> 滚轮缩放: 视角距离</div>
+                <div class="flex items-center gap-1.5"><i class="fa-solid fa-play text-indigo-400"></i> 右侧面板: 实时参数调节</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           1. GLSL SHADER CODES FOR THREE.JS (MATCHING GODOT SHADER LOGIC)
+           ========================================================================= */
+
+        // --- TOON SURFACE VERTEX SHADER ---
+        const toonVertexShader = `
+            varying vec3 vNormal;
+            varying vec3 vWorldPosition;
+            varying vec2 vUv;
+
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `;
+
+        // --- TOON SURFACE FRAGMENT SHADER ---
+        const toonFragmentShader = `
+            uniform vec3 uBaseColor;
+            uniform vec3 uShadowColor;
+            uniform vec3 uSpecularColor;
+            uniform vec3 uLightDirection;
+            uniform float uShadowThreshold;
+            uniform float uShadowSmoothness;
+            uniform float uSpecularSize;
+            uniform float uSpecularSmoothness;
+
+            varying vec3 vNormal;
+            varying vec3 vWorldPosition;
+
+            void main() {
+                vec3 N = normalize(vNormal);
+                vec3 L = normalize(uLightDirection);
+                
+                // Cel Shading Diffuse (阶梯漫反射)
+                float NdotL = dot(N, L);
+                float cel = smoothstep(uShadowThreshold - uShadowSmoothness, uShadowThreshold + uShadowSmoothness, NdotL);
+                vec3 diffuse = mix(uShadowColor, uBaseColor, cel);
+                
+                // Specular Highlight (卡通高光)
+                vec3 V = normalize(cameraPosition - vWorldPosition);
+                vec3 H = normalize(L + V);
+                float NdotH = dot(N, H);
+                float spec = smoothstep(1.0 - uSpecularSize - uSpecularSmoothness, 1.0 - uSpecularSize + uSpecularSmoothness, NdotH);
+                vec3 specular = uSpecularColor * spec;
+
+                // Rim Lighting (边缘发光增强卡通感)
+                float rim = 1.0 - clamp(dot(V, N), 0.0, 1.0);
+                float rimIntensity = smoothstep(0.65, 0.7, rim) * 0.15;
+                vec3 rimColor = vec3(1.0) * rimIntensity;
+
+                gl_FragColor = vec4(diffuse + specular + rimColor, 1.0);
+            }
+        `;
+
+        // --- JITTER OUTLINE VERTEX SHADER (INVERTED HULL + QUANTIZED TIME NOISE) ---
+        const outlineVertexShader = `
+            uniform float uTime;
+            uniform float uOutlineThickness;
+            uniform float uJitterSpeed;
+            uniform float uJitterIntensity;
+            uniform float uNoiseFrequency;
+            uniform bool uEnableJitter;
+
+            varying vec3 vNormal;
+
+            // 3D Hash Noise
+            float hash3D(vec3 p) {
+                p = fract(p * vec3(443.897, 441.423, 437.195));
+                p += dot(p, p.yzx + 19.19);
+                return fract((p.x + p.y) * p.z);
+            }
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                
+                // Quantized Time for Stop-Motion / Hand-drawn Jitter (12 FPS / 8 FPS)
+                float quantizedTime = floor(uTime * uJitterSpeed) / uJitterSpeed;
+                
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                
+                // 3D Spatial Hash Noise Sampling
+                float noiseVal = hash3D(floor(worldPos.xyz * uNoiseFrequency) + vec3(quantizedTime * 73.1));
+                float noiseOffset = noiseVal * 2.0 - 1.0;
+                
+                // Extrusion thickness calculation
+                float finalThickness = uOutlineThickness;
+                if (uEnableJitter) {
+                    finalThickness += noiseOffset * uJitterIntensity;
+                }
+                
+                // Extrude along vertex normal (Inverted Hull expansion)
+                vec3 extrudedPos = position + normal * max(0.0, finalThickness);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(extrudedPos, 1.0);
+            }
+        `;
+
+        // --- JITTER OUTLINE FRAGMENT SHADER ---
+        const outlineFragmentShader = `
+            uniform vec3 uOutlineColor;
+
+            void main() {
+                gl_FragColor = vec4(uOutlineColor, 1.0);
+            }
+        `;
+    </script>
+
+    <script>
+        /* =========================================================================
+           2. THREE.JS SCENE SETUP & SHADER MATERIAL UNIFORMS
+           ========================================================================= */
+
+        let scene, camera, renderer, controls;
+        let currentMeshGroup, toonMesh, outlineMesh;
+        let clock = new THREE.Clock();
+
+        // Shader Uniforms State
+        const shaderParams = {
+            // Geometry
+            modelType: 'Suzanne (Monkey)',
+            autoRotate: true,
+            rotateSpeed: 0.8,
+            backgroundColor: '#9366f8',
+
+            // Toon Shader
+            baseColor: '#a661e0',
+            shadowColor: '#521f85',
+            specularColor: '#f2e1ff',
+            shadowThreshold: 0.1,
+            shadowSmoothness: 0.02,
+            specularSize: 0.25,
+            specularSmoothness: 0.01,
+            lightDirX: 1.0,
+            lightDirY: 2.0,
+            lightDirZ: 1.5,
+
+            // Jitter Outline
+            outlineColor: '#1f0d38',
+            outlineThickness: 0.045,
+            enableJitter: true,
+            jitterSpeed: 12.0, // FPS
+            jitterIntensity: 0.012,
+            noiseFrequency: 25.0
+        };
+
+        // Uniform Objects
+        const toonUniforms = {
+            uBaseColor: { value: new THREE.Color(shaderParams.baseColor) },
+            uShadowColor: { value: new THREE.Color(shaderParams.shadowColor) },
+            uSpecularColor: { value: new THREE.Color(shaderParams.specularColor) },
+            uLightDirection: { value: new THREE.Vector3(shaderParams.lightDirX, shaderParams.lightDirY, shaderParams.lightDirZ).normalize() },
+            uShadowThreshold: { value: shaderParams.shadowThreshold },
+            uShadowSmoothness: { value: shaderParams.shadowSmoothness },
+            uSpecularSize: { value: shaderParams.specularSize },
+            uSpecularSmoothness: { value: shaderParams.specularSmoothness }
+        };
+
+        const outlineUniforms = {
+            uTime: { value: 0 },
+            uOutlineColor: { value: new THREE.Color(shaderParams.outlineColor) },
+            uOutlineThickness: { value: shaderParams.outlineThickness },
+            uJitterSpeed: { value: shaderParams.jitterSpeed },
+            uJitterIntensity: { value: shaderParams.jitterIntensity },
+            uNoiseFrequency: { value: shaderParams.noiseFrequency },
+            uEnableJitter: { value: shaderParams.enableJitter }
+        };
+
+        // Materials
+        const toonMaterial = new THREE.ShaderMaterial({
+            vertexShader: toonVertexShader,
+            fragmentShader: toonFragmentShader,
+            uniforms: toonUniforms,
+            side: THREE.FrontSide
+        });
+
+        const outlineMaterial = new THREE.ShaderMaterial({
+            vertexShader: outlineVertexShader,
+            fragmentShader: outlineFragmentShader,
+            uniforms: outlineUniforms,
+            side: THREE.BackSide, // Crucial for inverted hull technique
+            depthWrite: true
+        });
+
+        // Geometries cache
+        const geometries = {};
+
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(shaderParams.backgroundColor);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0.5, 6.5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 15;
+            controls.minDistance = 2;
+
+            currentMeshGroup = new THREE.Group();
+            scene.add(currentMeshGroup);
+
+            // Create geometries
+            geometries['Torus Knot'] = new THREE.TorusKnotGeometry(1.2, 0.4, 128, 32);
+            geometries['Sphere'] = new THREE.SphereGeometry(1.8, 64, 64);
+            geometries['Dodecahedron'] = new THREE.DodecahedronGeometry(1.8, 0);
+
+            // Load Suzanne Monkey Head or create fallback procedural monkey mesh
+            loadSuzanneGeometry();
+
+            // Handle Window Resize
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function loadSuzanneGeometry() {
+            const loader = new THREE.OBJLoader();
+            // Load standard Suzanne geometry OBJ from CDN
+            loader.load(
+                'https://raw.githubusercontent.com/alecjacobson/common-3d-test-models/master/data/suzanne.obj',
+                (obj) => {
+                    let suzanneGeo;
+                    obj.traverse((child) => {
+                        if (child.isMesh && !suzanneGeo) {
+                            suzanneGeo = child.geometry;
+                        }
+                    });
+                    if (suzanneGeo) {
+                        suzanneGeo.computeVertexNormals();
+                        suzanneGeo.scale(1.5, 1.5, 1.5);
+                        geometries['Suzanne (Monkey)'] = suzanneGeo;
+                        updateMeshGeometry('Suzanne (Monkey)');
+                    }
+                },
+                undefined,
+                (error) => {
+                    console.warn("Could not load Suzanne OBJ online, using Torus Knot as default:", error);
+                    geometries['Suzanne (Monkey)'] = geometries['Torus Knot'];
+                    updateMeshGeometry('Torus Knot');
+                }
+            );
+            
+            // Temporary mesh while OBJ is downloading
+            updateMeshGeometry('Torus Knot');
+        }
+
+        function updateMeshGeometry(type) {
+            const geo = geometries[type] || geometries['Torus Knot'];
+            
+            // Clear existing group children
+            while (currentMeshGroup.children.length > 0) {
+                currentMeshGroup.remove(currentMeshGroup.children[0]);
+            }
+
+            // Pass 1: Base Toon Mesh
+            toonMesh = new THREE.Mesh(geo, toonMaterial);
+            currentMeshGroup.add(toonMesh);
+
+            // Pass 2: Outer Jitter Outline Mesh
+            outlineMesh = new THREE.Mesh(geo, outlineMaterial);
+            currentMeshGroup.add(outlineMesh);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        let gui;
+        function setupGUI() {
+            gui = new lil.GUI({ title: '🎨 Shader 渲染控制台' });
+            gui.domElement.style.marginTop = '70px';
+
+            // Folder: Model & Environment
+            const fEnv = gui.addFolder('场景与模型');
+            fEnv.add(shaderParams, 'modelType', ['Suzanne (Monkey)', 'Torus Knot', 'Sphere', 'Dodecahedron']).name('切换模型').onChange(val => {
+                updateMeshGeometry(val);
+            });
+            fEnv.add(shaderParams, 'autoRotate').name('自动旋转');
+            fEnv.add(shaderParams, 'rotateSpeed', 0, 3, 0.1).name('旋转速度');
+            fEnv.addColor(shaderParams, 'backgroundColor').name('背景颜色').onChange(val => {
+                scene.background.set(val);
+            });
+
+            // Folder: Jitter Outline (抖动轮廓)
+            const fOutline = gui.addFolder('✏️ 抖动轮廓线 (Pass 2)');
+            fOutline.addColor(shaderParams, 'outlineColor').name('轮廓线颜色').onChange(val => {
+                outlineUniforms.uOutlineColor.value.set(val);
+            });
+            fOutline.add(shaderParams, 'outlineThickness', 0.0, 0.15, 0.002).name('基础线宽').onChange(val => {
+                outlineUniforms.uOutlineThickness.value = val;
+            });
+            fOutline.add(shaderParams, 'enableJitter').name('开启线稿抖动').onChange(val => {
+                outlineUniforms.uEnableJitter.value = val;
+            });
+            fOutline.add(shaderParams, 'jitterSpeed', 1, 30, 1).name('抖动帧率 (FPS)').onChange(val => {
+                outlineUniforms.uJitterSpeed.value = val;
+            });
+            fOutline.add(shaderParams, 'jitterIntensity', 0.0, 0.04, 0.001).name('抖动幅度').onChange(val => {
+                outlineUniforms.uJitterIntensity.value = val;
+            });
+            fOutline.add(shaderParams, 'noiseFrequency', 1, 100, 1).name('噪波频率').onChange(val => {
+                outlineUniforms.uNoiseFrequency.value = val;
+            });
+
+            // Folder: Toon Surface Shader (卡通着色)
+            const fToon = gui.addFolder('🎨 赛璐珞着色 (Pass 1)');
+            fToon.addColor(shaderParams, 'baseColor').name('基础固有色').onChange(val => {
+                toonUniforms.uBaseColor.value.set(val);
+            });
+            fToon.addColor(shaderParams, 'shadowColor').name('阴影色调').onChange(val => {
+                toonUniforms.uShadowColor.value.set(val);
+            });
+            fToon.addColor(shaderParams, 'specularColor').name('高光颜色').onChange(val => {
+                toonUniforms.uSpecularColor.value.set(val);
+            });
+            fToon.add(shaderParams, 'shadowThreshold', -0.5, 0.8, 0.02).name('明暗交界线').onChange(val => {
+                toonUniforms.uShadowThreshold.value = val;
+            });
+            fToon.add(shaderParams, 'shadowSmoothness', 0.001, 0.2, 0.005).name('阴影过渡软度').onChange(val => {
+                toonUniforms.uShadowSmoothness.value = val;
+            });
+            fToon.add(shaderParams, 'specularSize', 0.01, 0.6, 0.01).name('高光光斑大小').onChange(val => {
+                toonUniforms.uSpecularSize.value = val;
+            });
+
+            fOutline.open();
+            fToon.open();
+        }
+
+        function applyPreset(presetKey) {
+            if (presetKey === 'purple') {
+                // Suzanne Purple Style (Matching reference image)
+                shaderParams.baseColor = '#a661e0';
+                shaderParams.shadowColor = '#521f85';
+                shaderParams.specularColor = '#f2e1ff';
+                shaderParams.outlineColor = '#1f0d38';
+                shaderParams.backgroundColor = '#9366f8';
+                shaderParams.outlineThickness = 0.045;
+                shaderParams.jitterSpeed = 12;
+                shaderParams.jitterIntensity = 0.012;
+            } else if (presetKey === 'cyberpunk') {
+                // Cyberpunk Neon Cyan
+                shaderParams.baseColor = '#00f0ff';
+                shaderParams.shadowColor = '#002b5c';
+                shaderParams.specularColor = '#ffffff';
+                shaderParams.outlineColor = '#ff0055';
+                shaderParams.backgroundColor = '#0b0e1a';
+                shaderParams.outlineThickness = 0.05;
+                shaderParams.jitterSpeed = 18;
+                shaderParams.jitterIntensity = 0.018;
+            } else if (presetKey === 'sketch') {
+                // Marvel Sketch / Manga Ink
+                shaderParams.baseColor = '#f3f4f6';
+                shaderParams.shadowColor = '#94a3b8';
+                shaderParams.specularColor = '#ffffff';
+                shaderParams.outlineColor = '#0f172a';
+                shaderParams.backgroundColor = '#e2e8f0';
+                shaderParams.outlineThickness = 0.06;
+                shaderParams.jitterSpeed = 8;
+                shaderParams.jitterIntensity = 0.025;
+            }
+
+            // Sync Uniforms
+            toonUniforms.uBaseColor.value.set(shaderParams.baseColor);
+            toonUniforms.uShadowColor.value.set(shaderParams.shadowColor);
+            toonUniforms.uSpecularColor.value.set(shaderParams.specularColor);
+            outlineUniforms.uOutlineColor.value.set(shaderParams.outlineColor);
+            scene.background.set(shaderParams.backgroundColor);
+            outlineUniforms.uOutlineThickness.value = shaderParams.outlineThickness;
+            outlineUniforms.uJitterSpeed.value = shaderParams.jitterSpeed;
+            outlineUniforms.uJitterIntensity.value = shaderParams.jitterIntensity;
+
+            // Update GUI controls display
+            if (gui) gui.controllers.forEach(c => c.updateDisplay());
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            outlineUniforms.uTime.value = elapsedTime;
+
+            // Auto rotation
+            if (shaderParams.autoRotate && currentMeshGroup) {
+                currentMeshGroup.rotation.y = elapsedTime * shaderParams.rotateSpeed * 0.5;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            initScene();
+            setupGUI();
+            animate();
+        };
+    </script>
+
+</body>
+</html>
