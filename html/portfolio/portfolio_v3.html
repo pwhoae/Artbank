@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ho Po Wa - Interactive Portfolio</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Load GSAP for scroll animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <!-- Phosphor Icons for SVG UI elements -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        display: ['"Playfair Display"', 'serif'],
+                    },
+                    colors: {
+                        appleLight: '#F5F5F7',
+                        appleGray: '#86868B',
+                        glassWhite: 'rgba(255, 255, 255, 0.7)',
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                        'neo': '20px 20px 60px #d0d0d2, -20px -20px 60px #ffffff',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;600;900&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Forced Light Mode Palette */
+            --bg-color: #E8E8ED;
+            --text-main: #1d1d1f;
+            --spotlight-color: rgba(255, 255, 255, 0.9);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            /* High contrast center lighting simulated via fixed pseudo element */
+        }
+
+        /* Center Spotlight Effect */
+        #spotlight {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            background: radial-gradient(circle 800px at var(--mouse-x, 50%) var(--mouse-y, 50%), var(--spotlight-color), transparent 80%);
+            z-index: 0;
+            mix-blend-mode: overlay;
+        }
+
+        /* Tension Typography (60% Bold, 40% Thin mix) */
+        .tension-text {
+            font-weight: 900;
+            letter-spacing: -0.05em;
+        }
+        .tension-sub {
+            font-weight: 100;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* Resizable Container Utility */
+        .resizable-box {
+            resize: both;
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 200px;
+            position: relative;
+        }
+        .resizable-box::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.2) 50%);
+            pointer-events: none;
+        }
+
+        /* Glassmorphism & Refection */
+        .glass-nav {
+            background: var(--glassWhite);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            transition: all 0.3s ease;
+        }
+        .glass-nav:hover {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        /* Glass Reflection on Hover */
+        .glass-nav::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            transition: 0.5s;
+            pointer-events: none;
+        }
+        .glass-nav:hover::before {
+            left: 150%;
+        }
+
+        /* 3D Jitter / Glitch Outline */
+        .jitter-3d:hover {
+            animation: jitter 0.3s infinite alternate;
+            text-shadow: 2px 0 0 rgba(255,0,0,0.5), -2px 0 0 rgba(0,255,255,0.5);
+        }
+        @keyframes jitter {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        /* Tech-wear Circular Progress */
+        .tech-progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke: #1d1d1f;
+        }
+        .tech-progress-ring__bg {
+            stroke: rgba(0,0,0,0.1);
+        }
+
+        /* 3D Parallax Connect Container */
+        .parallax-container {
+            perspective: 1200px;
+            transform-style: preserve-3d;
+        }
+        .parallax-layer {
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Image Swap Hover */
+        .img-swap-container {
+            position: relative;
+        }
+        .img-swap-container .img-hover {
+            position: absolute;
+            top: 0; left: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .img-swap-container:hover .img-hover {
+            opacity: 1;
+        }
+
+        /* Stacked Carousel */
+        .carousel-container {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+        .carousel-card {
+            position: absolute;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+        }
+        
+        /* Gradient Rotating Border */
+        .gradient-border-rotate {
+            position: relative;
+            background: #fff;
+            background-clip: padding-box;
+            border: 4px solid transparent;
+            border-radius: 1.5rem;
+        }
+        .gradient-border-rotate::before {
+            content: '';
+            position: absolute;
+            top: -4px; bottom: -4px;
+            left: -4px; right: -4px;
+            background: conic-gradient(from var(--angle), #ff4545, #00ff99, #006aff, #ff0095, #ff4545);
+            z-index: -1;
+            border-radius: inherit;
+            animation: rotate-gradient 4s linear infinite;
+        }
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        @keyframes rotate-gradient {
+            to { --angle: 360deg; }
+        }
+
+        /* Clip-path Wipe Text & Louver Effect */
+        .wipe-text {
+            background-image: linear-gradient(to right, var(--text-main) 50%, #aaa 50%);
+            background-size: 200% 100%;
+            background-position: 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: background-position 0.5s ease;
+        }
+        .wipe-text:hover {
+            background-position: 0%;
+        }
+
+        .louver-effect {
+            position: relative;
+        }
+        .louver-effect::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0; top: 0;
+            color: #ff4545;
+            clip-path: polygon(0 0, 100% 0, 100% 10%, 0 10%, 0 20%, 100% 20%, 100% 30%, 0 30%, 0 40%, 100% 40%, 100% 50%, 0 50%, 0 60%, 100% 60%, 100% 70%, 0 70%, 0 80%, 100% 80%, 100% 90%, 0 90%, 0 100%, 100% 100%);
+            transform: translateY(10px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .louver-effect:hover::after {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Marquee */
+        .marquee-wrapper {
+            display: flex;
+            width: max-content;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            to { transform: translateX(-50%); }
+        }
+
+        /* Magnetic Button */
+        .magnetic-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease;
+        }
+
+        /* 3D Contact Card */
+        .contact-card-wrap {
+            perspective: 1000px;
+        }
+        .contact-card {
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease;
+        }
+        .contact-inset {
+            transform: translateZ(50px);
+            transition: all 0.3s ease;
+        }
+        .contact-card:hover .contact-inset {
+            transform: translateZ(80px) scale(1.05);
+        }
+
+        /* Expandable Carousel (Seasons) */
+        .season-container {
+            display: flex;
+            gap: 10px;
+            height: 300px;
+        }
+        .season-card {
+            flex: 1;
+            border-radius: 20px;
+            background-size: cover;
+            background-position: center;
+            transition: flex 0.5s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .season-card:hover {
+            flex: 3;
+        }
+
+        /* Mask Reveal Container */
+        .mask-reveal {
+            clip-path: circle(0% at 50% 50%);
+        }
+
+        /* Scratch Card Canvas */
+        #scratchCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body class="antialiased relative selection:bg-black selection:text-white">
+
+    <div id="spotlight"></div>
+
+    <nav class="fixed top-0 w-full z-50 glass-nav px-6 py-4 flex justify-between items-center overflow-hidden">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-black tracking-tighter tension-text jitter-3d">PO WA HO</h1>
+            <span class="text-xs font-thin tracking-widest tension-sub hidden sm:inline-block">Portfolio</span>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <!-- Search Bar 彩蛋 -->
+            <div class="relative group">
+                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="searchInput" placeholder="Search..." class="bg-gray-100/50 backdrop-blur-md border border-gray-200 text-sm rounded-full pl-9 pr-4 py-2 w-32 focus:w-48 transition-all duration-300 outline-none focus:border-gray-400 placeholder-gray-500 font-light">
+                <div class="absolute -bottom-8 left-0 text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Try typing 'cat'</div>
+            </div>
+
+            <!-- Music Tech-wear Progress -->
+            <div class="relative flex items-center justify-center w-10 h-10 cursor-pointer jitter-3d" id="musicToggle">
+                <svg class="w-full h-full" viewBox="0 0 100 100">
+                    <circle class="tech-progress-ring__bg" stroke-width="6" fill="transparent" r="44" cx="50" cy="50"/>
+                    <circle class="tech-progress-ring__circle" id="musicProgress" stroke-width="6" fill="transparent" r="44" cx="50" cy="50" stroke-dasharray="276.46" stroke-dashoffset="276.46" stroke-linecap="round"/>
+                </svg>
+                <i class="ph ph-play-circle absolute text-xl transition-transform duration-300" id="musicIcon"></i>
+            </div>
+        </div>
+    </nav>
+
+    <header class="relative w-full h-screen flex items-center justify-center parallax-container overflow-hidden z-10" id="heroSection">
+        <!-- SVG Dynamic BG -->
+        <div class="absolute inset-0 z-0 opacity-20 pointer-events-none flex items-center justify-center">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="black" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+        </div>
+
+        <div class="z-10 text-center parallax-layer" data-speed="0.05" id="heroText">
+            <h2 class="text-xs sm:text-sm font-bold tracking-[0.3em] uppercase text-gray-500 mb-4 wipe-text">Hong Kong University of Science and Technology</h2>
+            <h1 class="text-6xl sm:text-8xl md:text-[10vw] leading-none tension-text drop-shadow-2xl jitter-3d cursor-default">
+                TALENT <br> FOUNDRY
+            </h1>
+            <p class="mt-6 text-lg sm:text-xl font-light tension-sub text-gray-600 max-w-2xl mx-auto px-4">
+                BEng in Computer Engineering.<br>
+                Crafting interfaces, logic, and intelligence.
+            </p>
+        </div>
+        
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 opacity-50">
+            <span class="text-xs uppercase tracking-widest font-thin">Scroll to Reveal</span>
+            <div class="w-[1px] h-12 bg-black animate-pulse"></div>
+        </div>
+    </header>
+
+    <!-- The entire body content below hero is wrapped in a mask that expands on scroll -->
+    <main class="relative z-20 bg-white mask-reveal pb-32" id="mainBody">
+        
+        <section class="py-24 px-6 max-w-7xl mx-auto">
+            <h3 class="text-4xl tension-text mb-12 flex items-center gap-4">
+                <span class="w-12 h-[2px] bg-black"></span> EXPERIENCE
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- HKSTP -->
+                <div class="resizable-box bg-gray-50 rounded-3xl p-6 shadow-neo img-swap-container group cursor-crosshair">
+                    <div class="w-full h-40 bg-gray-200 rounded-xl mb-6 overflow-hidden relative">
+                        <img src="https://placehold.co/400x300/E8E8ED/1d1d1f?text=HKSTP+Logo" alt="HKSTP Base" class="w-full h-full object-cover">
+                        <img src="https://placehold.co/400x300/1d1d1f/E8E8ED?text=Talent+Foundry" alt="HKSTP Hover" class="img-hover w-full h-full object-cover">
+                    </div>
+                    <p class="text-xs text-gray-400 font-bold tracking-widest mb-2">2025 - 2026</p>
+                    <h4 class="text-xl font-black leading-tight mb-2">HKSTP</h4>
+                    <p class="text-sm font-light text-gray-600">Talent Foundry Bootcamp. Generative AI, LLMs, NLP, and AI Agent workflows.</p>
+                </div>
+                
+                <!-- HKUST -->
+                <div class="resizable-box bg-gray-50 rounded-3xl p-6 shadow-neo img-swap-container group cursor-crosshair">
+                    <div class="w-full h-40 bg-gray-200 rounded-xl mb-6 overflow-hidden relative">
+                        <img src="https://placehold.co/400x300/E8E8ED/1d1d1f?text=HKUST" alt="HKUST Base" class="w-full h-full object-cover">
+                        <img src="https://placehold.co/400x300/ff3333/ffffff?text=Computer+Eng" alt="HKUST Hover" class="img-hover w-full h-full object-cover">
+                    </div>
+                    <p class="text-xs text-gray-400 font-bold tracking-widest mb-2">2022 - 2025</p>
+                    <h4 class="text-xl font-black leading-tight mb-2">The Hong Kong University of Science and Technology</h4>
+                    <p class="text-sm font-light text-gray-600">BEng in Computer Engineering. Second Class Honors, Division I.</p>
+                </div>
+
+                <!-- MTR -->
+                <div class="resizable-box bg-gray-50 rounded-3xl p-6 shadow-neo img-swap-container group cursor-crosshair">
+                    <div class="w-full h-40 bg-gray-200 rounded-xl mb-6 overflow-hidden relative">
+                        <img src="https://placehold.co/400x300/E8E8ED/1d1d1f?text=MTR+Corp" alt="MTR Base" class="w-full h-full object-cover">
+                        <img src="https://placehold.co/400x300/007a33/ffffff?text=Project+3036" alt="MTR Hover" class="img-hover w-full h-full object-cover">
+                    </div>
+                    <p class="text-xs text-gray-400 font-bold tracking-widest mb-2">2024</p>
+                    <h4 class="text-xl font-black leading-tight mb-2">MTR Corporation Limited</h4>
+                    <p class="text-sm font-light text-gray-600">Summer Intern. Project 3036 data organization and drawing verification.</p>
+                </div>
+
+                <!-- HKCC -->
+                <div class="resizable-box bg-gray-50 rounded-3xl p-6 shadow-neo img-swap-container group cursor-crosshair">
+                    <div class="w-full h-40 bg-gray-200 rounded-xl mb-6 overflow-hidden relative">
+                        <img src="https://placehold.co/400x300/E8E8ED/1d1d1f?text=PolyU+HKCC" alt="HKCC Base" class="w-full h-full object-cover">
+                        <img src="https://placehold.co/400x300/8c1515/ffffff?text=Associate+IT" alt="HKCC Hover" class="img-hover w-full h-full object-cover">
+                    </div>
+                    <p class="text-xs text-gray-400 font-bold tracking-widest mb-2">2020 - 2022</p>
+                    <h4 class="text-xl font-black leading-tight mb-2">PolyU Hong Kong Community College</h4>
+                    <p class="text-sm font-light text-gray-600">Associate in Information Technology.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 bg-appleLight relative overflow-hidden">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
+                <div class="w-full md:w-1/3">
+                    <h3 class="text-4xl tension-text mb-6 flex items-center gap-4">
+                        <span class="w-12 h-[2px] bg-black"></span> GITHUB
+                    </h3>
+                    <p class="text-lg font-light text-gray-600 mb-8 tension-sub">
+                        Explore my repositories featuring game development, AI systems, and full-stack web applications.
+                    </p>
+                    <div class="flex gap-4">
+                        <button id="prevBtn" class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center hover:bg-black hover:text-white transition-colors"><i class="ph ph-arrow-left"></i></button>
+                        <button id="nextBtn" class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center hover:bg-black hover:text-white transition-colors"><i class="ph ph-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-2/3 h-[400px] relative carousel-container flex justify-center items-center">
+                    <!-- Carousel Cards populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 max-w-7xl mx-auto">
+            <h3 class="text-4xl tension-text mb-12 flex items-center gap-4">
+                <span class="w-12 h-[2px] bg-black"></span> TECH ART
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="resizable-box bg-black text-white p-8 rounded-3xl gradient-border-rotate">
+                    <h4 class="text-2xl font-bold mb-4 wipe-text" style="--text-main: white;">Shader Magic</h4>
+                    <p class="font-light text-gray-400 mb-6">Custom Godot shaders for dynamic water and environment effects.</p>
+                    <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader" target="_blank" class="inline-block bg-white text-black px-6 py-2 rounded-full font-bold hover:scale-105 transition-transform text-sm">View Repository</a>
+                </div>
+                <div class="bg-gray-100 p-8 rounded-3xl shadow-inner relative overflow-hidden flex items-center justify-center resizable-box">
+                    <img src="https://raw.githubusercontent.com/godotengine/godot-docs/master/img/tween_cheatsheet.webp" alt="Tween Cheatsheet" class="w-full h-auto rounded-xl shadow-lg mix-blend-multiply opacity-80 hover:opacity-100 transition-opacity">
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-100 to-transparent pointer-events-none"></div>
+                    <p class="absolute bottom-6 left-8 font-black text-xl tracking-widest text-gray-800">Tweening Logic</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 bg-[#f0f0f5]">
+            <div class="max-w-7xl mx-auto text-center">
+                <h3 class="text-4xl tension-text mb-16 inline-block wipe-text text-black text-center">TOOLKIT</h3>
+                <div class="flex flex-wrap justify-center gap-8">
+                    <!-- Tool Items -->
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white rounded-2xl shadow-sm flex items-center justify-center text-4xl text-gray-700 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl" style="clip-path: circle(50% at 50% 50%);">
+                            <div class="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            <i class="ph ph-github-logo relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">GitHub</span>
+                    </div>
+                    <!-- Repeat for other tools with different clip paths for fun -->
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white shadow-sm flex items-center justify-center text-4xl text-blue-500 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl" style="clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);">
+                            <div class="absolute inset-0 bg-blue-500 -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+                            <i class="ph ph-code relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">VSCode</span>
+                    </div>
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white shadow-sm flex items-center justify-center text-4xl text-blue-400 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl" style="clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);">
+                            <div class="absolute inset-0 bg-blue-400 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            <i class="ph ph-game-controller relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">Godot</span>
+                    </div>
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white rounded-xl shadow-sm flex items-center justify-center text-4xl text-orange-500 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);">
+                            <div class="absolute inset-0 bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-300 rounded-full"></div>
+                            <i class="ph ph-cube relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">Blender</span>
+                    </div>
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-4xl text-green-600 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl">
+                            <div class="absolute inset-0 bg-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <i class="ph ph-chat-centered-text relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">ChatGPT</span>
+                    </div>
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-4xl text-purple-600 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl">
+                            <div class="absolute inset-0 bg-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <i class="ph ph-sparkle relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">Gemini</span>
+                    </div>
+                    <div class="group flex flex-col items-center">
+                        <div class="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-4xl text-purple-400 relative overflow-hidden transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl">
+                            <div class="absolute inset-0 bg-purple-400 rotate-180 group-hover:rotate-0 transition-transform duration-500"></div>
+                            <i class="ph ph-notebook relative z-10 group-hover:text-white transition-colors duration-300"></i>
+                        </div>
+                        <span class="mt-4 text-sm font-bold text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">Obsidian</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 overflow-hidden border-y border-gray-200">
+            <h3 class="text-4xl tension-text mb-12 ml-10 flex items-center gap-4 max-w-7xl mx-auto px-6">
+                <span class="w-12 h-[2px] bg-black"></span> SKILLS
+            </h3>
+            
+            <div class="marquee-wrapper mb-6">
+                <div class="flex gap-16 text-5xl font-black tension-text text-gray-300 whitespace-nowrap px-8">
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="Python">Python</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="C++">C++</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="Java">Java</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="GDScript">GDScript</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="JavaScript">JavaScript</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="Kotlin">Kotlin</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="SQL">SQL</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="HTML">HTML</span>
+                </div>
+                <!-- Duplicate for seamless scroll -->
+                <div class="flex gap-16 text-5xl font-black tension-text text-gray-300 whitespace-nowrap px-8">
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="Python">Python</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="C++">C++</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="Java">Java</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="GDScript">GDScript</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="JavaScript">JavaScript</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="Kotlin">Kotlin</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="SQL">SQL</span>
+                    <span class="louver-effect cursor-default transition-colors hover:text-black" data-text="HTML">HTML</span>
+                </div>
+            </div>
+
+            <!-- Reverse Marquee -->
+            <div class="marquee-wrapper" style="animation-direction: reverse; animation-duration: 25s;">
+                <div class="flex gap-16 text-4xl font-light text-gray-400 whitespace-nowrap px-8">
+                    <span>Large Language Models (LLM)</span>
+                    <span>Generative AI</span>
+                    <span>AI Agents</span>
+                    <span>Prompt Engineering</span>
+                    <span>Deep Learning</span>
+                    <span>Computer Vision</span>
+                    <span>MediaPipe</span>
+                    <span>Flutter</span>
+                    <span>Firebase</span>
+                    <span>Unity 3D</span>
+                    <span>Raspberry Pi</span>
+                    <span>STM32</span>
+                    <span>Arduino</span>
+                </div>
+                 <!-- Duplicate for seamless scroll -->
+                 <div class="flex gap-16 text-4xl font-light text-gray-400 whitespace-nowrap px-8">
+                    <span>Large Language Models (LLM)</span>
+                    <span>Generative AI</span>
+                    <span>AI Agents</span>
+                    <span>Prompt Engineering</span>
+                    <span>Deep Learning</span>
+                    <span>Computer Vision</span>
+                    <span>MediaPipe</span>
+                    <span>Flutter</span>
+                    <span>Firebase</span>
+                    <span>Unity 3D</span>
+                    <span>Raspberry Pi</span>
+                    <span>STM32</span>
+                    <span>Arduino</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 max-w-7xl mx-auto">
+            <h3 class="text-4xl tension-text mb-12 flex items-center gap-4">
+                <span class="w-12 h-[2px] bg-black"></span> EXTRAS
+            </h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Seasons Expanding Cards -->
+                <div>
+                    <h4 class="text-lg font-bold mb-4 tracking-widest text-gray-500 uppercase">Seasons</h4>
+                    <div class="season-container">
+                        <div class="season-card flex items-end p-4" style="background-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent), url('https://placehold.co/400x600/a3e635/000000?text=Spring');">
+                            <span class="text-white font-bold tension-text text-xl">Spring</span>
+                        </div>
+                        <div class="season-card flex items-end p-4" style="background-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent), url('https://placehold.co/400x600/fcd34d/000000?text=Summer');">
+                            <span class="text-white font-bold tension-text text-xl">Summer</span>
+                        </div>
+                        <div class="season-card flex items-end p-4" style="background-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent), url('https://placehold.co/400x600/fb923c/000000?text=Autumn');">
+                            <span class="text-white font-bold tension-text text-xl">Autumn</span>
+                        </div>
+                        <div class="season-card flex items-end p-4" style="background-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent), url('https://placehold.co/400x600/93c5fd/000000?text=Winter');">
+                            <span class="text-white font-bold tension-text text-xl">Winter</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scratch Card (Just for fun) -->
+                <div>
+                    <h4 class="text-lg font-bold mb-4 tracking-widest text-gray-500 uppercase">Scratch Me</h4>
+                    <div class="w-full h-[300px] relative rounded-3xl overflow-hidden shadow-neo bg-black flex items-center justify-center">
+                        <div class="text-4xl font-black text-white text-center jitter-3d tension-text">JUST FOR FUN! 🎉<br><span class="text-sm font-light">You found the secret message.</span></div>
+                        <canvas id="scratchCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="relative z-10 bg-black text-white py-32 px-6 flex flex-col items-center justify-center overflow-hidden" id="contactSection">
+        <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at center, white 1px, transparent 1px); background-size: 20px 20px;"></div>
+        
+        <div class="w-full max-w-4xl flex flex-col md:flex-row items-center justify-between gap-12 z-10">
+            
+            <div class="text-left w-full md:w-1/2">
+                <h2 class="text-6xl md:text-8xl tension-text mb-4 jitter-3d">LET'S<br>TALK.</h2>
+                <div class="flex gap-4 font-light text-gray-400 text-sm tracking-widest mb-8 uppercase">
+                    <span id="currentTimeDisplay">00:00:00</span> • 
+                    <span id="countdownDisplay">Next Year: 000d 00h</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="magnetic-btn bg-white text-black px-8 py-4 rounded-full font-black text-xl hover:scale-110 shadow-[0_0_20px_rgba(255,255,255,0.5)]" id="goBtn">
+                        GO
+                    </button>
+                    <span class="text-sm font-light text-gray-500 uppercase tracking-widest hidden md:block">Drag mouse near button</span>
+                </div>
+            </div>
+
+            <!-- 3D Contact Card -->
+            <div class="w-full md:w-1/2 contact-card-wrap flex justify-center">
+                <div class="contact-card w-80 h-96 bg-gray-900 rounded-3xl p-8 border border-gray-800 shadow-2xl relative flex flex-col justify-between cursor-pointer" id="contactCard">
+                    <div class="contact-inset text-2xl font-black text-white tracking-widest uppercase">
+                        Ho Po Wa
+                    </div>
+                    <div class="contact-inset space-y-4 font-light text-sm text-gray-400">
+                        <p class="flex items-center gap-2 hover:text-white transition-colors"><i class="ph ph-phone"></i> +852 9856 1688</p>
+                        <p class="flex items-center gap-2 hover:text-white transition-colors"><i class="ph ph-envelope-simple"></i> pwhoae@connect.ust.hk</p>
+                        <p class="flex items-center gap-2 hover:text-white transition-colors"><i class="ph ph-github-logo"></i> github.com/pwhoae</p>
+                    </div>
+                    <div class="contact-inset absolute top-4 right-4 text-xs bg-black px-2 py-1 rounded border border-gray-700 text-gray-500" id="copyBadge">
+                        Click to Copy
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. Spotlight Effect ---
+            const body = document.querySelector('body');
+            body.addEventListener('mousemove', (e) => {
+                document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
+                document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
+            });
+
+            // --- 2. Search Bar Easter Egg ---
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (searchInput.value.trim().toLowerCase() === 'cat') {
+                        window.location.href = 'https://http.cat/';
+                    } else {
+                        // Custom minimal message box (no alert)
+                        showToast(`Search for "${searchInput.value}" not implemented. Try typing "cat".`);
+                    }
+                }
+            });
+
+            function showToast(msg) {
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-5 right-5 bg-black text-white px-6 py-3 rounded-xl shadow-2xl z-50 font-light text-sm transform translate-y-20 opacity-0 transition-all duration-300';
+                toast.innerText = msg;
+                document.body.appendChild(toast);
+                setTimeout(() => { toast.classList.remove('translate-y-20', 'opacity-0'); }, 10);
+                setTimeout(() => { 
+                    toast.classList.add('translate-y-20', 'opacity-0'); 
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            // --- 3. Music Tech-wear Progress Bar ---
+            const musicToggle = document.getElementById('musicToggle');
+            const musicProgress = document.getElementById('musicProgress');
+            let isPlaying = false;
+            let progressInterval;
+            let currentOffset = 276.46; // Circumference
+            
+            musicToggle.addEventListener('click', () => {
+                isPlaying = !isPlaying;
+                const icon = document.getElementById('musicIcon');
+                if (isPlaying) {
+                    icon.classList.remove('ph-play-circle');
+                    icon.classList.add('ph-pause-circle');
+                    // Simulate progress
+                    progressInterval = setInterval(() => {
+                        currentOffset -= 2;
+                        if (currentOffset <= 0) currentOffset = 276.46;
+                        musicProgress.style.strokeDashoffset = currentOffset;
+                    }, 50);
+                } else {
+                    icon.classList.remove('ph-pause-circle');
+                    icon.classList.add('ph-play-circle');
+                    clearInterval(progressInterval);
+                }
+            });
+
+            // --- 4. Hero Parallax Effect ---
+            const heroSection = document.getElementById('heroSection');
+            const heroText = document.getElementById('heroText');
+            heroSection.addEventListener('mousemove', (e) => {
+                const x = (window.innerWidth / 2 - e.pageX) / 25;
+                const y = (window.innerHeight / 2 - e.pageY) / 25;
+                heroText.style.transform = `rotateY(${x}deg) rotateX(${y}deg) translateZ(50px)`;
+            });
+            heroSection.addEventListener('mouseleave', () => {
+                heroText.style.transform = `rotateY(0deg) rotateX(0deg) translateZ(0)`;
+            });
+
+            // --- 5. GSAP Scroll Mask Reveal ---
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.to(".mask-reveal", {
+                clipPath: "circle(150% at 50% 50%)",
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#mainBody",
+                    start: "top bottom",
+                    end: "top 20%",
+                    scrub: 1
+                }
+            });
+
+            // --- 6. GitHub Projects Stacked Carousel ---
+            const projects = [
+                { title: "UST Simulator", url: "https://github.com/LHanss/2024FYP---UST-Simulator", desc: "Godot Card Game" },
+                { title: "Search Engine", url: "https://github.com/Skyturtl/Web-Scraper", desc: "Web Scraper" },
+                { title: "USTLink", url: "#", desc: "Campus Forum App", img: "https://placehold.co/600x400/1d1d1f/ffffff?text=USTLink" },
+                { title: "Posture Recognition", url: "#", desc: "Real-Time System", img: "https://placehold.co/600x400/1d1d1f/ffffff?text=Posture+Rec" },
+                { title: "N-bit-audio", url: "https://test-n-bit-audio-converter.vercel.app/", desc: "Audio Converter" }
+            ];
+
+            const carouselContainer = document.querySelector('.carousel-container');
+            let currentIdx = 0;
+
+            // Generate Cards
+            projects.forEach((proj, i) => {
+                const card = document.createElement('div');
+                card.className = `carousel-card w-64 h-80 rounded-2xl bg-white shadow-2xl p-6 flex flex-col justify-between border border-gray-100 cursor-pointer overflow-hidden`;
+                card.innerHTML = `
+                    <div class="absolute inset-0 bg-gray-900 opacity-0 hover:opacity-10 transition-opacity z-10"></div>
+                    <div class="z-20">
+                        <h4 class="font-black text-xl mb-2 tension-text">${proj.title}</h4>
+                        <p class="font-light text-sm text-gray-500">${proj.desc}</p>
+                    </div>
+                    <div class="z-20 text-right mt-auto">
+                        <a href="${proj.url}" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold bg-black text-white px-3 py-1 rounded-full hover:bg-gray-800 pointer-events-auto">View <i class="ph ph-arrow-square-out"></i></a>
+                    </div>
+                    ${proj.img ? `<img src="${proj.img}" class="absolute inset-0 w-full h-full object-cover opacity-20 z-0 pointer-events-none">` : ''}
+                `;
+                carouselContainer.appendChild(card);
+            });
+
+            const cards = document.querySelectorAll('.carousel-card');
+
+            function updateCarousel() {
+                cards.forEach((card, i) => {
+                    const offset = i - currentIdx;
+                    if (offset === 0) {
+                        card.style.transform = `translateZ(0px) translateX(0px) scale(1)`;
+                        card.style.opacity = '1';
+                        card.style.zIndex = '10';
+                    } else if (offset > 0) {
+                        card.style.transform = `translateZ(-${offset * 50}px) translateX(${offset * 40}px) scale(${1 - offset * 0.05})`;
+                        card.style.opacity = 1 - (offset * 0.2);
+                        card.style.zIndex = 10 - offset;
+                    } else {
+                        // Move behind left
+                        card.style.transform = `translateZ(${offset * 50}px) translateX(${offset * 40}px) scale(${1 + offset * 0.05})`;
+                        card.style.opacity = 0;
+                        card.style.zIndex = 0;
+                    }
+                });
+            }
+            updateCarousel();
+
+            document.getElementById('nextBtn').addEventListener('click', () => {
+                if(currentIdx < cards.length - 1) currentIdx++;
+                else currentIdx = 0;
+                updateCarousel();
+            });
+            document.getElementById('prevBtn').addEventListener('click', () => {
+                if(currentIdx > 0) currentIdx--;
+                else currentIdx = cards.length - 1;
+                updateCarousel();
+            });
+
+            // Autoplay Carousel
+            let carouselAuto = setInterval(() => document.getElementById('nextBtn').click(), 3000);
+            carouselContainer.addEventListener('mouseenter', () => clearInterval(carouselAuto));
+            carouselContainer.addEventListener('mouseleave', () => carouselAuto = setInterval(() => document.getElementById('nextBtn').click(), 3000));
+
+
+            // --- 7. Contact Card 3D Tilt & Copy ---
+            const contactCardWrap = document.querySelector('.contact-card-wrap');
+            const contactCard = document.getElementById('contactCard');
+            const copyBadge = document.getElementById('copyBadge');
+
+            contactCardWrap.addEventListener('mousemove', (e) => {
+                const rect = contactCardWrap.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const rotateX = ((y - cy) / cy) * -15;
+                const rotateY = ((x - cx) / cx) * 15;
+                
+                contactCard.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+
+            contactCardWrap.addEventListener('mouseleave', () => {
+                contactCard.style.transform = `rotateX(0) rotateY(0)`;
+            });
+
+            contactCard.addEventListener('click', () => {
+                const textToCopy = "pwhoae@connect.ust.hk\n+852 9856 1688\ngithub.com/pwhoae";
+                // Using fallback for iframe compatibility
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyBadge.innerText = "Copied!";
+                    copyBadge.classList.add('bg-green-600', 'text-white');
+                    setTimeout(() => {
+                        copyBadge.innerText = "Click to Copy";
+                        copyBadge.classList.remove('bg-green-600', 'text-white');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textArea);
+            });
+
+            // --- 8. Magnetic Button ---
+            const magBtn = document.getElementById('goBtn');
+            const contactSection = document.getElementById('contactSection');
+            
+            contactSection.addEventListener('mousemove', (e) => {
+                const rect = magBtn.getBoundingClientRect();
+                const btnX = rect.left + rect.width / 2;
+                const btnY = rect.top + rect.height / 2;
+                
+                const distanceX = e.clientX - btnX;
+                const distanceY = e.clientY - btnY;
+                const distance = Math.sqrt(distanceX ** 2 + distanceY ** 2);
+                
+                const magnetRadius = 150;
+                
+                if (distance < magnetRadius) {
+                    const pullX = (distanceX / magnetRadius) * 20;
+                    const pullY = (distanceY / magnetRadius) * 20;
+                    magBtn.style.transform = `translate(${pullX}px, ${pullY}px) scale(1.1)`;
+                } else {
+                    magBtn.style.transform = `translate(0px, 0px) scale(1)`;
+                }
+            });
+
+            // --- 9. Timers ---
+            function updateTimes() {
+                const now = new Date();
+                
+                // Current Time
+                document.getElementById('currentTimeDisplay').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+                
+                // Countdown to Next Year
+                const nextYear = new Date(now.getFullYear() + 1, 0, 1);
+                const diff = nextYear - now;
+                const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                document.getElementById('countdownDisplay').innerText = `Next Year: ${String(d).padStart(3, '0')}d ${String(h).padStart(2, '0')}h`;
+            }
+            setInterval(updateTimes, 1000);
+            updateTimes();
+
+            // --- 10. Scratch Card ---
+            const canvas = document.getElementById('scratchCanvas');
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+            
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                // Fill with scratchable cover
+                ctx.fillStyle = '#1d1d1f'; // dark gray/black cover
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // Add some text or pattern over the scratch area
+                ctx.font = '24px Inter';
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.fillText('SCRATCH ME', canvas.width/2, canvas.height/2);
+            }
+            
+            // Set up initial state
+            setTimeout(resizeCanvas, 100);
+            window.addEventListener('resize', resizeCanvas);
+
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    x: (e.clientX || e.touches[0].clientX) - rect.left,
+                    y: (e.clientY || e.touches[0].clientY) - rect.top
+                };
+            }
+
+            function scratch(e) {
+                if (!isDrawing) return;
+                e.preventDefault();
+                const pos = getMousePos(e);
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            canvas.addEventListener('mousedown', () => isDrawing = true);
+            canvas.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('mousemove', scratch);
+            canvas.addEventListener('mouseleave', () => isDrawing = false);
+            
+            // Touch support for scratch
+            canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+            canvas.addEventListener('touchend', () => isDrawing = false);
+            canvas.addEventListener('touchmove', scratch);
+        });
+    </script>
+</body>
+</html>
