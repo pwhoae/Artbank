@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D Dynamic Sky Shader Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between z-10">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/30">
+                <i class="fa-solid font-bold text-xl text-white">🎮</i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-white tracking-wide">Godot 3D 動態天空 Shader 互動工作室</h1>
+                <p class="text-xs text-gray-400">單一參數 `time_of_day` (0 - 24 小時) 自動驅動全天候天空景色</p>
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="flex bg-gray-800 p-1 rounded-lg border border-gray-700">
+            <button id="btn-preview" onclick="switchTab('preview')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-blue-600 text-white shadow-md">
+                <i class="fa-solid fa-eye mr-2"></i>實時 3D 渲染預覽
+            </button>
+            <button id="btn-code" onclick="switchTab('code')" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-white">
+                <i class="fa-solid fa-code mr-2"></i>Godot Shader 源碼 & 教學
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 relative overflow-hidden flex">
+        
+        <!-- 3D Canvas Area -->
+        <div id="view-preview" class="w-full h-full relative">
+            <div id="canvas-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+            <!-- Overlay Time Controls HUD -->
+            <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 glass-panel p-5 rounded-2xl w-11/12 max-w-2xl shadow-2xl flex flex-col gap-4">
+                
+                <!-- Time & Status Header -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span id="time-icon" class="text-2xl text-amber-400">🌅</span>
+                        <div>
+                            <div class="text-xs text-gray-400 font-semibold tracking-wider uppercase">當前模擬時間 (`time_of_day`)</div>
+                            <div id="time-display" class="text-2xl font-black text-white tracking-wider font-mono">06:30 <span id="phase-badge" class="ml-2 text-xs font-normal px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">日出 Sunrise</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Auto play toggle -->
+                    <button id="play-btn" onclick="togglePlay()" class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-600/30">
+                        <i id="play-icon" class="fa-solid fa-play"></i>
+                        <span id="play-text">自動播放時間</span>
+                    </button>
+                </div>
+
+                <!-- Slider Control -->
+                <div class="space-y-1">
+                    <input type="range" id="time-slider" min="0" max="24" step="0.05" value="6.5" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    <div class="flex justify-between text-[10px] text-gray-400 font-mono px-1">
+                        <span>00:00 (深夜)</span>
+                        <span>06:00 (日出)</span>
+                        <span>12:00 (正午)</span>
+                        <span>18:00 (日落/夕陽)</span>
+                        <span>20:00 (暮光)</span>
+                        <span>24:00 (深夜)</span>
+                    </div>
+                </div>
+
+                <!-- Quick Preset Buttons -->
+                <div class="grid grid-cols-5 gap-2 pt-1">
+                    <button onclick="setTime(6.2)" class="py-2 px-1 bg-gray-800 hover:bg-amber-600/30 hover:border-amber-500 border border-gray-700 rounded-lg text-xs flex flex-col items-center gap-1 transition">
+                        <span>🌅</span><span class="font-medium text-gray-200">日出 (06:12)</span>
+                    </button>
+                    <button onclick="setTime(12.0)" class="py-2 px-1 bg-gray-800 hover:bg-blue-600/30 hover:border-blue-500 border border-gray-700 rounded-lg text-xs flex flex-col items-center gap-1 transition">
+                        <span>☀️</span><span class="font-medium text-gray-200">正午 (12:00)</span>
+                    </button>
+                    <button onclick="setTime(18.0)" class="py-2 px-1 bg-gray-800 hover:bg-orange-600/30 hover:border-orange-500 border border-gray-700 rounded-lg text-xs flex flex-col items-center gap-1 transition">
+                        <span>🌇</span><span class="font-medium text-gray-200">夕陽 (18:00)</span>
+                    </button>
+                    <button onclick="setTime(19.3)" class="py-2 px-1 bg-gray-800 hover:bg-purple-600/30 hover:border-purple-500 border border-gray-700 rounded-lg text-xs flex flex-col items-center gap-1 transition">
+                        <span>🌆</span><span class="font-medium text-gray-200">晚霞/暮光 (19:18)</span>
+                    </button>
+                    <button onclick="setTime(23.5)" class="py-2 px-1 bg-gray-800 hover:bg-indigo-600/30 hover:border-indigo-500 border border-gray-700 rounded-lg text-xs flex flex-col items-center gap-1 transition">
+                        <span>🌌</span><span class="font-medium text-gray-200">深夜/星空 (23:30)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="absolute top-4 left-4 glass-panel p-3 rounded-lg text-xs text-gray-300">
+                <i class="fa-solid fa-hand-pointer mr-1 text-blue-400"></i> 按住滑鼠左鍵旋轉鏡頭觀看 360° 天空盒
+            </div>
+        </div>
+
+        <!-- Code & Guide Tab -->
+        <div id="view-code" class="w-full h-full hidden bg-gray-900 overflow-y-auto p-6 md:p-10">
+            <div class="max-w-5xl mx-auto space-y-8">
+                
+                <!-- Introduction Card -->
+                <div class="bg-gray-800/60 border border-gray-700 rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-bold text-blue-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Godot 3D 簡化版天空 Shader 說明
+                    </h2>
+                    <p class="text-gray-300 text-sm leading-relaxed">
+                        這個 Shader 專門為 Godot 4.x / 3.x 設計，將複雜大氣散射公式簡化為一個暴露的 <code class="bg-gray-900 px-1.5 py-0.5 rounded text-amber-300 font-mono">time_of_day</code> (0.0 ~ 24.0) 參數。
+                        Shader 內部會自動依據時間計算 **太陽軌道角度、大氣色散、日落強烈金紅光暈、晚霞紫紅漸變與夜間星空閃爍**。
+                    </p>
+                </div>
+
+                <!-- Code Block Section -->
+                <div class="bg-gray-950 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+                    <div class="bg-gray-800 px-5 py-3 flex justify-between items-center border-b border-gray-700">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>
+                            <span class="ml-2 font-mono text-xs text-gray-300">dynamic_sky.gdshader (Godot 4 Shader)</span>
+                        </div>
+                        <button onclick="copyCode()" class="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-md font-medium transition">
+                            <i class="fa-solid fa-copy"></i>
+                            <span id="copy-btn-text">複製完整 Shader 代碼</span>
+                        </button>
+                    </div>
+
+                    <pre class="p-5 text-sm font-mono text-gray-200 overflow-x-auto leading-relaxed max-h-[500px]"><code id="shader-code-content">// =================================================================
+// Godot 4.x 動態 3D 天空 Shader (Dynamic Sky Shader)
+// 支援 0.0 ~ 24.0 全天候時間參數自動切換：日出 / 正午 / 夕陽 / 晚霞 / 夜晚
+// =================================================================
+shader_type sky;
+
+// 【核心參數】時間（0.0 ~ 24.0 小時，例如 6.5 代表早上 6:30，18.0 代表下午 6:00）
+uniform float time_of_day : hint_range(0.0, 24.0, 0.05) = 12.0;
+
+// 天體配置
+uniform float sun_size : hint_range(0.005, 0.1) = 0.035;
+uniform float sun_blur : hint_range(0.01, 0.5) = 0.08;
+uniform float moon_size : hint_range(0.005, 0.1) = 0.025;
+uniform float moon_blur : hint_range(0.01, 0.5) = 0.03;
+
+// 色彩調色盤（也可保持預設）
+group_uniforms SkyColors;
+uniform vec3 day_top_color : source_color = vec3(0.22, 0.48, 0.88);
+uniform vec3 day_horizon_color : source_color = vec3(0.68, 0.85, 0.96);
+
+uniform vec3 sunset_top_color : source_color = vec3(0.18, 0.12, 0.35);
+uniform vec3 sunset_horizon_color : source_color = vec3(0.98, 0.38, 0.12);
+
+uniform vec3 night_top_color : source_color = vec3(0.02, 0.03, 0.08);
+uniform vec3 night_horizon_color : source_color = vec3(0.06, 0.10, 0.22);
+
+group_uniforms Stars;
+uniform float stars_intensity : hint_range(0.0, 3.0) = 1.2;
+uniform float stars_twinkle_speed : hint_range(0.0, 10.0) = 2.5;
+
+// 偽隨機數生成算法 (用於生成星空)
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+void sky() {
+    // 1. 將 time_of_day (0-24) 轉換為弧度角 (6:00 時太陽在東方地平線上升起)
+    float time_rad = ((time_of_day - 6.0) / 24.0) * 6.2831853;
+    
+    // 計算太陽與月亮的三維方向向量 (傾斜角 15 度讓軌道更自然)
+    vec3 sun_dir = normalize(vec3(-cos(time_rad), sin(time_rad), sin(time_rad) * 0.25));
+    vec3 moon_dir = -sun_dir;
+
+    vec3 view_dir = EYEDIR; // 當前觀察像素的方向向量
+    float view_y = view_dir.y; // 高度角 (-1.0 到 1.0)
+
+    // 2. 太陽高度計算 (-1.0 到 1.0)
+    float sun_y = sun_dir.y;
+
+    // 計算日出/日落 (Sunset/Sunrise) 權重 (當太陽接近地平線 -0.2 ~ 0.25 時達到峰值)
+    float sunset_factor = clamp(1.0 - abs(sun_y - 0.02) / 0.3, 0.0, 1.0);
+    sunset_factor = pow(sunset_factor, 1.5);
+
+    // 白天權重 (太陽升起時)
+    float day_factor = smoothstep(-0.15, 0.25, sun_y);
+
+    // 黑夜權重
+    float night_factor = 1.0 - day_factor;
+
+    // 3. 地平線漸變遮罩 (地平線處值接近 1，天頂接近 0)
+    float horizon_mask = pow(clamp(1.0 - max(view_y, 0.0), 0.0, 1.0), 3.0);
+
+    // 混合三個時段的天空顏色 (白天 / 夕陽 / 黑夜)
+    vec3 day_sky = mix(day_top_color, day_horizon_color, horizon_mask);
+    vec3 sunset_sky = mix(sunset_top_color, sunset_horizon_color, horizon_mask);
+    vec3 night_sky = mix(night_top_color, night_horizon_color, horizon_mask);
+
+    // 朝向太陽方向的地平線加入金橘色散射光暈
+    float sun_horizon_glow = max(dot(view_dir, vec3(sun_dir.x, 0.0, sun_dir.z)), 0.0);
+    sunset_sky += vec3(1.0, 0.45, 0.1) * pow(sun_horizon_glow, 4.0) * sunset_factor * 1.5;
+
+    // 最終基礎天空顏色插值
+    vec3 final_sky = mix(night_sky, day_sky, day_factor);
+    final_sky = mix(final_sky, sunset_sky, sunset_factor * (1.0 - day_factor * 0.4));
+
+    // 4. 星空算繪 (僅在夜間且高度在地平線以上顯示)
+    if (night_factor > 0.05 && view_y > -0.05) {
+        vec2 star_uv = view_dir.xz / (view_y + 0.8) * 120.0;
+        float star_noise = hash(floor(star_uv));
+        
+        if (star_noise > 0.982) { // 控制星星密度
+            float twinkle = sin(TIME * stars_twinkle_speed + star_noise * 100.0) * 0.5 + 0.5;
+            float star_brightness = (star_noise - 0.982) / 0.018 * twinkle;
+            final_sky += vec3(star_brightness) * night_factor * stars_intensity * smoothstep(-0.05, 0.15, view_y);
+        }
+    }
+
+    // 5. 太陽繪製
+    float sun_dot = max(dot(view_dir, sun_dir), 0.0);
+    float sun_disc = smoothstep(1.0 - sun_size, 1.0 - sun_size + sun_blur, sun_dot);
+    float sun_halo = pow(sun_dot, 6.0) * 0.5 + pow(sun_dot, 2.0) * 0.15;
+    
+    // 太陽顏色隨高度改變 (低角度偏紅橘，高角度偏黃白)
+    vec3 sun_color = mix(vec3(1.0, 0.35, 0.08), vec3(1.0, 0.96, 0.85), clamp(sun_y * 2.5, 0.0, 1.0));
+    final_sky += (sun_disc * 5.0 + sun_halo) * sun_color * clamp(sun_y + 0.2, 0.0, 1.0);
+
+    // 6. 月亮繪製
+    float moon_dot = max(dot(view_dir, moon_dir), 0.0);
+    float moon_disc = smoothstep(1.0 - moon_size, 1.0 - moon_size + moon_blur, moon_dot);
+    float moon_halo = pow(moon_dot, 10.0) * 0.3;
+    final_sky += (moon_disc * 1.8 + moon_halo) * vec3(0.85, 0.9, 1.0) * night_factor;
+
+    COLOR = final_sky;
+}</code></pre>
+                </div>
+
+                <!-- Integration Steps -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-800/40 border border-gray-700/80 rounded-xl p-5 space-y-3">
+                        <h3 class="font-bold text-base text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-gears"></i> Godot 設置步驟
+                        </h3>
+                        <ol class="list-decimal list-inside text-xs text-gray-300 space-y-2 leading-relaxed">
+                            <li>在 Godot 檔案庫中新建文檔，命名為 <code class="text-blue-300">dynamic_sky.gdshader</code> 並貼上上方代碼。</li>
+                            <li>建立一個 <code class="text-blue-300">WorldEnvironment</code> 節點。</li>
+                            <li>在右側 Inspect 面板設置 <code class="text-blue-300">Background -> Mode = Sky</code>。</li>
+                            <li>建立一個 <code class="text-blue-300">Sky Material</code> 選擇 <code class="text-blue-300">ShaderMaterial</code> 並指派剛剛建立的 Shader。</li>
+                            <li>展開 <code class="text-blue-300">Shader Parameters</code>，直接滑動 <code class="text-blue-300">time_of_day</code> 即可實時切換！</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-gray-800/40 border border-gray-700/80 rounded-xl p-5 space-y-3">
+                        <h3 class="font-bold text-base text-green-400 flex items-center gap-2">
+                            <i class="fa-solid fa-code-branch"></i> GDScript 代碼調用範例
+                        </h3>
+                        <p class="text-xs text-gray-400">你可以在 GDScript 中直接透過程式碼控制日夜循環：</p>
+                        <pre class="bg-gray-950 p-3 rounded-lg text-xs font-mono text-emerald-300 border border-gray-800"># 在 GDScript 中更新時間 (如 Main.gd)
+extends Node3D
+
+@export var environment: WorldEnvironment
+var current_time: float = 6.0 # 6:00 AM 日出
+
+func _process(delta: float) -> void:
+    # 每秒推進時間
+    current_time += delta * 0.2 
+    if current_time >= 24.0:
+        current_time = 0.0
+
+    # 更新 Sky Shader 中的 time_of_day 參數
+    var sky_mat = environment.environment.sky.sky_material
+    sky_mat.set_shader_parameter("time_of_day", current_time)</pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Shader Definition for WebGL Three.js Preview
+        const skyVertexShader = `
+            varying vec3 vWorldPosition;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const skyFragmentShader = `
+            uniform float u_time_of_day;
+            uniform float u_time;
+            varying vec3 vWorldPosition;
+
+            float hash(vec2 p) {
+                p = fract(p * vec2(123.34, 456.21));
+                p += dot(p, p + 45.32);
+                return fract(p.x * p.y);
+            }
+
+            void main() {
+                vec3 view_dir = normalize(vWorldPosition);
+                float view_y = view_dir.y;
+
+                // 1. Calculate Sun Direction based on time_of_day (0 to 24)
+                float time_rad = ((u_time_of_day - 6.0) / 24.0) * 6.2831853;
+                vec3 sun_dir = normalize(vec3(-cos(time_rad), sin(time_rad), sin(time_rad) * 0.25));
+                vec3 moon_dir = -sun_dir;
+
+                float sun_y = sun_dir.y;
+
+                // Sunset & Day & Night factors
+                float sunset_factor = clamp(1.0 - abs(sun_y - 0.02) / 0.3, 0.0, 1.0);
+                sunset_factor = pow(sunset_factor, 1.5);
+
+                float day_factor = smoothstep(-0.15, 0.25, sun_y);
+                float night_factor = 1.0 - day_factor;
+
+                // Horizon Gradient
+                float horizon_mask = pow(clamp(1.0 - max(view_y, 0.0), 0.0, 1.0), 3.0);
+
+                // Palette Definitions
+                vec3 day_top = vec3(0.22, 0.48, 0.88);
+                vec3 day_horizon = vec3(0.68, 0.85, 0.96);
+
+                vec3 sunset_top = vec3(0.18, 0.12, 0.35);
+                vec3 sunset_horizon = vec3(0.98, 0.38, 0.12);
+
+                vec3 night_top = vec3(0.02, 0.03, 0.08);
+                vec3 night_horizon = vec3(0.06, 0.10, 0.22);
+
+                vec3 day_sky = mix(day_top, day_horizon, horizon_mask);
+                vec3 sunset_sky = mix(sunset_top, sunset_horizon, horizon_mask);
+                vec3 night_sky = mix(night_top, night_horizon, horizon_mask);
+
+                // Golden glow towards sun at horizon
+                float sun_horizon_glow = max(dot(view_dir, vec3(sun_dir.x, 0.0, sun_dir.z)), 0.0);
+                sunset_sky += vec3(1.0, 0.45, 0.1) * pow(sun_horizon_glow, 4.0) * sunset_factor * 1.5;
+
+                // Blend Sky
+                vec3 final_sky = mix(night_sky, day_sky, day_factor);
+                final_sky = mix(final_sky, sunset_sky, sunset_factor * (1.0 - day_factor * 0.4));
+
+                // Stars
+                if (night_factor > 0.05 && view_y > -0.05) {
+                    vec2 star_uv = view_dir.xz / (view_y + 0.8) * 120.0;
+                    float star_noise = hash(floor(star_uv));
+                    if (star_noise > 0.982) {
+                        float twinkle = sin(u_time * 2.5 + star_noise * 100.0) * 0.5 + 0.5;
+                        float star_brightness = (star_noise - 0.982) / 0.018 * twinkle;
+                        final_sky += vec3(star_brightness) * night_factor * 1.2 * smoothstep(-0.05, 0.15, view_y);
+                    }
+                }
+
+                // Sun Disc & Halo
+                float sun_dot = max(dot(view_dir, sun_dir), 0.0);
+                float sun_disc = smoothstep(0.965, 0.965 + 0.08, sun_dot);
+                float sun_halo = pow(sun_dot, 6.0) * 0.5 + pow(sun_dot, 2.0) * 0.15;
+                vec3 sun_color = mix(vec3(1.0, 0.35, 0.08), vec3(1.0, 0.96, 0.85), clamp(sun_y * 2.5, 0.0, 1.0));
+                final_sky += (sun_disc * 5.0 + sun_halo) * sun_color * clamp(sun_y + 0.2, 0.0, 1.0);
+
+                // Moon Disc & Halo
+                float moon_dot = max(dot(view_dir, moon_dir), 0.0);
+                float moon_disc = smoothstep(0.975, 0.975 + 0.03, moon_dot);
+                float moon_halo = pow(moon_dot, 10.0) * 0.3;
+                final_sky += (moon_disc * 1.8 + moon_halo) * vec3(0.85, 0.9, 1.0) * night_factor;
+
+                gl_FragColor = vec4(final_sky, 1.0);
+            }
+        `;
+
+        // Application State Variables
+        let scene, camera, renderer, skyMesh, skyUniforms;
+        let isPlaying = false;
+        let animationFrameId;
+
+        // Initialize Three.js WebGL Scene
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 0.1);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableZoom = false;
+            controls.enablePan = false;
+            controls.rotateSpeed = -0.4; // Skybox feel
+
+            // Create Dome Sphere
+            const geometry = new THREE.SphereGeometry(500, 60, 40);
+            skyUniforms = {
+                u_time_of_day: { value: 6.5 },
+                u_time: { value: 0 }
+            };
+
+            const material = new THREE.ShaderMaterial({
+                vertexShader: skyVertexShader,
+                fragmentShader: skyFragmentShader,
+                uniforms: skyUniforms,
+                side: THREE.BackSide
+            });
+
+            skyMesh = new THREE.Mesh(geometry, material);
+            scene.add(skyMesh);
+
+            // Responsive Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            // Start Render Loop
+            let clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                skyUniforms.u_time.value = clock.getElapsedTime();
+
+                if (isPlaying) {
+                    let slider = document.getElementById('time-slider');
+                    let val = parseFloat(slider.value) + 0.015;
+                    if (val > 24) val = 0;
+                    slider.value = val;
+                    updateTimeFromSlider(val);
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // Update Time state based on slider
+        function updateTimeFromSlider(value) {
+            skyUniforms.u_time_of_day.value = parseFloat(value);
+            
+            // Format time display
+            const hours = Math.floor(value);
+            const minutes = Math.floor((value - hours) * 60);
+            const formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            
+            document.getElementById('time-display').childNodes[0].nodeValue = formattedTime + " ";
+
+            // Update Phase Badge & Icon
+            const badge = document.getElementById('phase-badge');
+            const icon = document.getElementById('time-icon');
+
+            if (value >= 5.5 && value < 7.5) {
+                badge.innerText = "日出 Sunrise";
+                badge.className = "ml-2 text-xs font-normal px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30";
+                icon.innerText = "🌅";
+            } else if (value >= 7.5 && value < 17.0) {
+                badge.innerText = "正午 Daylight";
+                badge.className = "ml-2 text-xs font-normal px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30";
+                icon.innerText = "☀️";
+            } else if (value >= 17.0 && value < 18.8) {
+                badge.innerText = "夕陽 Sunset";
+                badge.className = "ml-2 text-xs font-normal px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30";
+                icon.innerText = "🌇";
+            } else if (value >= 18.8 && value < 20.2) {
+                badge.innerText = "暮光/晚霞 Dusk";
+                badge.className = "ml-2 text-xs font-normal px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30";
+                icon.innerText = "🌆";
+            } else {
+                badge.innerText = "黑夜 Night";
+                badge.className = "ml-2 text-xs font-normal px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+                icon.innerText = "🌌";
+            }
+        }
+
+        // Slider Event Listener
+        document.getElementById('time-slider').addEventListener('input', (e) => {
+            updateTimeFromSlider(e.target.value);
+        });
+
+        // Set Presets
+        function setTime(val) {
+            document.getElementById('time-slider').value = val;
+            updateTimeFromSlider(val);
+        }
+
+        // Toggle Play/Pause
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btnText = document.getElementById('play-text');
+            const btnIcon = document.getElementById('play-icon');
+            if (isPlaying) {
+                btnText.innerText = "暫停時間推進";
+                btnIcon.className = "fa-solid fa-pause";
+            } else {
+                btnText.innerText = "自動播放時間";
+                btnIcon.className = "fa-solid fa-play";
+            }
+        }
+
+        // UI Tab Switcher
+        function switchTab(tab) {
+            const previewView = document.getElementById('view-preview');
+            const codeView = document.getElementById('view-code');
+            const btnPreview = document.getElementById('btn-preview');
+            const btnCode = document.getElementById('btn-code');
+
+            if (tab === 'preview') {
+                previewView.classList.remove('hidden');
+                codeView.classList.add('hidden');
+                btnPreview.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-blue-600 text-white shadow-md";
+                btnCode.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-white";
+            } else {
+                previewView.classList.add('hidden');
+                codeView.classList.remove('hidden');
+                btnCode.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-blue-600 text-white shadow-md";
+                btnPreview.className = "px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-400 hover:text-[#6b7280] hover:text-white";
+            }
+        }
+
+        // Copy Shader Code to Clipboard
+        function copyCode() {
+            const codeText = document.getElementById('shader-code-content').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const copyBtnText = document.getElementById('copy-btn-text');
+                copyBtnText.innerText = "已成功複製到剪貼簿！";
+                setTimeout(() => {
+                    copyBtnText.innerText = "複製完整 Shader 代碼";
+                }, 2000);
+            });
+        }
+
+        // Initialize on Load
+        window.onload = () => {
+            initScene();
+            updateTimeFromSlider(6.5);
+        };
+    </script>
+</body>
+</html>
