@@ -1,5 +1,6 @@
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> 
+1-2天法則
 
 <details><summary><h6>放棄idea</h6></summary>
   冲破次元壁的/商業化插圖
