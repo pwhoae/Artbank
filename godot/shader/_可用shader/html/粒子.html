@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Godot 4 GPUParticles3D 特效模擬器與配置器</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            godot: {
+              bg: '#12151c',
+              panel: '#1d222d',
+              header: '#252b3b',
+              border: '#333b4f',
+              accent: '#478cbf',
+              accentHover: '#58a0d3',
+              accentLight: '#6cb2e4',
+              highlight: '#e0e0e0',
+              text: '#cfd5e1'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Segoe UI', 'sans-serif'],
+            mono: ['Fira Code', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #181c26;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333b4f;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #478cbf;
+    }
+
+    /* Custom range slider styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: #12151c;
+      border-radius: 4px;
+      height: 6px;
+      border: 1px solid #333b4f;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #478cbf;
+      cursor: pointer;
+      transition: background 0.15s ease-in-out;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      background: #6cb2e4;
+      box-shadow: 0 0 8px rgba(71, 140, 191, 0.6);
+    }
+
+    .canvas-container {
+      background: radial-gradient(circle at center, #1a202c 0%, #0d1017 100%);
+    }
+
+    .tab-active {
+      border-bottom: 2px solid #478cbf;
+      color: #ffffff;
+      background-color: rgba(71, 140, 191, 0.1);
+    }
+  </style>
+</head>
+
+<body class="bg-godot-bg text-godot-text font-sans h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- Header Bar -->
+  <header class="bg-godot-header border-b border-godot-border px-4 py-2.5 flex items-center justify-between z-20 shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded bg-godot-accent flex items-center justify-center text-white font-bold text-lg shadow">
+        <i class="fa-solid fa-cubes-stacked"></i>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white tracking-wide flex items-center gap-2">
+          Godot 4 GPUParticles3D 模擬器 & 配置器
+          <span class="text-xs bg-godot-accent/20 text-godot-accentLight px-2 py-0.5 rounded-full border border-godot-accent/30 font-normal">v4.2 Preview</span>
+        </h1>
+        <p class="text-xs text-slate-400">即時 3D 粒子物理模擬與 GDScript 代碼生成器</p>
+      </div>
+    </div>
+
+    <!-- Quick Action Controls -->
+    <div class="flex items-center space-x-2">
+      <button id="btn-trigger" class="px-3 py-1.5 bg-godot-accent hover:bg-godot-accentHover text-white text-xs font-semibold rounded flex items-center gap-1.5 transition shadow">
+        <i class="fa-solid fa-play text-xs"></i> 觸發發射 (Trigger)
+      </button>
+      <button id="btn-reset-cam" class="px-3 py-1.5 bg-godot-panel hover:bg-godot-border text-godot-text text-xs rounded border border-godot-border flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-video text-xs"></i> 重置視角
+      </button>
+      <button id="btn-toggle-grid" class="px-3 py-1.5 bg-godot-panel hover:bg-godot-border text-godot-text text-xs rounded border border-godot-border flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-border-all text-xs"></i> 網格切換
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Work Area -->
+  <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- Left/Center 3D Viewport -->
+    <div class="flex-1 relative flex flex-col bg-black overflow-hidden min-h-[300px]">
+      <div id="webgl-canvas" class="w-full h-full canvas-container cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Floating Canvas HUD Overlays -->
+      <div class="absolute top-4 left-4 pointer-events-none flex flex-col gap-1 text-xs text-slate-300 bg-godot-panel/80 p-3 rounded-lg border border-godot-border/50 backdrop-blur">
+        <div class="flex items-center gap-2 font-mono"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> 粒子活動數量: <span id="hud-particle-count" class="font-bold text-emerald-400">0</span></div>
+        <div class="font-mono text-slate-400">FPS: <span id="hud-fps" class="text-white">60</span></div>
+        <div class="font-mono text-slate-400">預設模板: <span id="hud-preset-name" class="text-godot-accentLight font-semibold">聚能集中 (Gathering)</span></div>
+      </div>
+
+      <!-- Presets Toolbar (Floating at Bottom of Viewport) -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-godot-panel/90 border border-godot-border/80 rounded-xl p-1.5 backdrop-blur shadow-2xl flex items-center gap-1 z-10 overflow-x-auto max-w-[95%]">
+        <span class="text-xs text-slate-400 font-semibold px-2 py-1 flex items-center gap-1">
+          <i class="fa-solid fa-wand-magic-sparkles text-godot-accent"></i> 預設案例:
+        </span>
+        <button data-preset="gathering" class="preset-btn text-xs px-3 py-1.5 rounded-lg bg-godot-accent text-white font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-magnet"></i> 聚能集中
+        </button>
+        <button data-preset="orbiting" class="preset-btn text-xs px-3 py-1.5 rounded-lg hover:bg-godot-header text-slate-300 font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-arrows-spin"></i> 圍繞漩渦
+        </button>
+        <button data-preset="explosion" class="preset-btn text-xs px-3 py-1.5 rounded-lg hover:bg-godot-header text-slate-300 font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-burst"></i> 爆炸瞬發
+        </button>
+        <button data-preset="aura" class="preset-btn text-xs px-3 py-1.5 rounded-lg hover:bg-godot-header text-slate-300 font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-shield-halved"></i> 能量護盾
+        </button>
+        <button data-preset="flame" class="preset-btn text-xs px-3 py-1.5 rounded-lg hover:bg-godot-header text-slate-300 font-medium flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-fire"></i> 熾熱火柱
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Sidebar Inspector & Code Panel -->
+    <div class="w-full md:w-[380px] lg:w-[420px] bg-godot-panel border-l border-godot-border flex flex-col h-full shadow-xl z-10">
+      
+      <!-- Panel Header Tabs -->
+      <div class="flex border-b border-godot-border bg-godot-header text-xs font-semibold">
+        <button id="tab-btn-params" class="flex-1 py-3 px-4 text-center text-slate-300 hover:text-white transition flex items-center justify-center gap-2 tab-active">
+          <i class="fa-solid fa-sliders"></i> 粒子參數編輯器
+        </button>
+        <button id="tab-btn-code" class="flex-1 py-3 px-4 text-center text-slate-300 hover:text-white transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-code"></i> GDScript 代碼生成
+        </button>
+      </div>
+
+      <!-- Panel Body Container -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-5">
+
+        <!-- TAB 1: PARAMETER INSPECTOR -->
+        <div id="panel-params" class="space-y-4">
+          
+          <!-- Section 1: Emitter Main Settings -->
+          <div class="bg-godot-bg/60 p-3.5 rounded-lg border border-godot-border/60 space-y-3">
+            <h2 class="text-xs font-bold text-godot-accentLight uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-bullseye"></i> 發射器屬性 (Emitter Settings)
+            </h2>
+
+            <!-- Amount -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">粒子總數 (Amount)</span>
+                <span id="val-amount" class="font-mono text-godot-accent">120</span>
+              </div>
+              <input type="range" id="param-amount" min="10" max="500" step="5" value="120">
+            </div>
+
+            <!-- Lifetime -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">生命週期 (Lifetime - 秒)</span>
+                <span id="val-lifetime" class="font-mono text-godot-accent">1.5s</span>
+              </div>
+              <input type="range" id="param-lifetime" min="0.2" max="5.0" step="0.1" value="1.5">
+            </div>
+
+            <!-- One Shot Toggle & Explosiveness -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <div class="flex items-center justify-between bg-godot-panel p-2 rounded border border-godot-border">
+                <label for="param-oneshot" class="text-xs text-slate-300 cursor-pointer">單次爆發 (One-Shot)</label>
+                <input type="checkbox" id="param-oneshot" class="w-4 h-4 accent-godot-accent cursor-pointer">
+              </div>
+              <div class="flex flex-col justify-center bg-godot-panel p-2 rounded border border-godot-border">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">爆發度</span>
+                  <span id="val-explosiveness" class="font-mono text-godot-accent">0.0</span>
+                </div>
+                <input type="range" id="param-explosiveness" min="0.0" max="1.0" step="0.05" value="0.0">
+              </div>
+            </div>
+
+            <!-- Emission Shape Selector -->
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-slate-300">發射形狀 (Emission Shape)</span>
+              <select id="param-shape" class="bg-godot-panel border border-godot-border rounded text-xs text-slate-200 p-2 focus:outline-none focus:border-godot-accent">
+                <option value="sphere">Sphere (球體)</option>
+                <option value="ring">Ring (圓環)</option>
+                <option value="box">Box (方塊)</option>
+                <option value="point">Point (單點)</option>
+              </select>
+            </div>
+
+            <!-- Shape Radius -->
+            <div class="flex flex-col gap-1" id="box-radius">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">發射半徑 / 範圍 (Radius)</span>
+                <span id="val-radius" class="font-mono text-godot-accent">2.5</span>
+              </div>
+              <input type="range" id="param-radius" min="0.1" max="6.0" step="0.1" value="2.5">
+            </div>
+          </div>
+
+          <!-- Section 2: Particle Motion & Physics -->
+          <div class="bg-godot-bg/60 p-3.5 rounded-lg border border-godot-border/60 space-y-3">
+            <h2 class="text-xs font-bold text-godot-accentLight uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-atom"></i> 物理與加速度 (Particle Dynamics)
+            </h2>
+
+            <!-- Radial Acceleration (Key for Gathering!) -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300 flex items-center gap-1">
+                  徑向加速度 (Radial Accel) 
+                  <i class="fa-solid fa-circle-info text-slate-500 hover:text-godot-accent" title="負值會將粒子向中心拉扯，實現【集中/吸附】效果！"></i>
+                </span>
+                <span id="val-radial" class="font-mono text-godot-accent">-8.0</span>
+              </div>
+              <input type="range" id="param-radial" min="-25.0" max="25.0" step="0.5" value="-8.0">
+              <span class="text-[10px] text-slate-400 italic">提示：<span class="text-amber-300">負值</span>向內吸附 (集中)；<span class="text-emerald-300">正值</span>向外擴散。</span>
+            </div>
+
+            <!-- Tangential Acceleration (Key for Orbiting!) -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300 flex items-center gap-1">
+                  切向加速度 (Tangential Accel)
+                  <i class="fa-solid fa-circle-info text-slate-500 hover:text-godot-accent" title="切向加速度推動粒子繞中心旋轉，實現【圍繞/漩渦】效果！"></i>
+                </span>
+                <span id="val-tangential" class="font-mono text-godot-accent">0.0</span>
+              </div>
+              <input type="range" id="param-tangential" min="-20.0" max="20.0" step="0.5" value="0.0">
+            </div>
+
+            <!-- Initial Velocity -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">初始速度 (Initial Velocity)</span>
+                <span id="val-velocity" class="font-mono text-godot-accent">1.0</span>
+              </div>
+              <input type="range" id="param-velocity" min="0.0" max="20.0" step="0.5" value="1.0">
+            </div>
+
+            <!-- Damping -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">阻尼減速 (Damping)</span>
+                <span id="val-damping" class="font-mono text-godot-accent">2.0</span>
+              </div>
+              <input type="range" id="param-damping" min="0.0" max="15.0" step="0.5" value="2.0">
+            </div>
+
+            <!-- Gravity Y -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">重力 Y (Gravity)</span>
+                <span id="val-gravity" class="font-mono text-godot-accent">0.0</span>
+              </div>
+              <input type="range" id="param-gravity" min="-15.0" max="15.0" step="0.5" value="0.0">
+            </div>
+          </div>
+
+          <!-- Section 3: Visual Style & Colors -->
+          <div class="bg-godot-bg/60 p-3.5 rounded-lg border border-godot-border/60 space-y-3">
+            <h2 class="text-xs font-bold text-godot-accentLight uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-palette"></i> 視覺與顏色 (Visuals)
+            </h2>
+
+            <!-- Colors -->
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1">
+                <span class="text-xs text-slate-300">起始顏色 (Start)</span>
+                <input type="color" id="param-color-start" value="#33ccff" class="w-full h-8 bg-godot-panel border border-godot-border rounded cursor-pointer p-0.5">
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-xs text-slate-300">結束顏色 (End)</span>
+                <input type="color" id="param-color-end" value="#0033aa" class="w-full h-8 bg-godot-panel border border-godot-border rounded cursor-pointer p-0.5">
+              </div>
+            </div>
+
+            <!-- Particle Base Size -->
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">粒子尺寸 (Particle Scale)</span>
+                <span id="val-size" class="font-mono text-godot-accent">0.25</span>
+              </div>
+              <input type="range" id="param-size" min="0.05" max="1.0" step="0.05" value="0.25">
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 2: GDSCRIPT CODE GENERATOR -->
+        <div id="panel-code" class="hidden space-y-4">
+          <div class="bg-godot-bg/80 p-3 rounded-lg border border-godot-border flex items-center justify-between">
+            <span class="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-file-code text-godot-accent"></i> Godot 4 動態生成代碼
+            </span>
+            <button id="btn-copy-code" class="px-2.5 py-1 bg-godot-accent hover:bg-godot-accentHover text-white text-xs font-semibold rounded flex items-center gap-1 transition">
+              <i class="fa-regular fa-copy"></i> 複製代碼
+            </button>
+          </div>
+
+          <p class="text-xs text-slate-400">
+            你可以將下方代碼複製並直接貼入 Godot 4 的 GDScript 腳本中，即可動態產生並配置與上方 preview 一模一樣的 <code class="text-godot-accentLight bg-godot-bg px-1 rounded">GPUParticles3D</code> 效果：
+          </p>
+
+          <div class="relative">
+            <pre class="bg-[#0e1117] border border-godot-border/80 text-emerald-400 p-3 rounded-lg font-mono text-[11px] leading-relaxed overflow-x-auto h-[480px] selection:bg-godot-accent selection:text-white" id="code-output">
+# GDScript 代碼生成中...
+            </pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-2xl text-xs font-medium transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 z-50">
+    <i class="fa-solid fa-circle-check"></i> <span id="toast-msg">已成功複製到剪貼簿！</span>
+  </div>
+
+  <script>
+    /* ===================================================================
+       GODOT 4 GPUPARTICLES3D WEBGL SIMULATOR LOGIC
+       =================================================================== */
+
+    // --- State & Presets Configuration ---
+    const presets = {
+      gathering: {
+        name: "聚能集中 (Gathering)",
+        amount: 140,
+        lifetime: 1.6,
+        oneShot: false,
+        explosiveness: 0.0,
+        shape: "sphere",
+        radius: 3.0,
+        radialAccel: -12.0,
+        tangentialAccel: 0.0,
+        velocity: 0.5,
+        damping: 3.0,
+        gravity: 0.0,
+        colorStart: "#33ddff",
+        colorEnd: "#0022bb",
+        size: 0.22
+      },
+      orbiting: {
+        name: "圍繞漩渦 (Orbiting)",
+        amount: 160,
+        lifetime: 2.2,
+        oneShot: false,
+        explosiveness: 0.0,
+        shape: "ring",
+        radius: 2.2,
+        radialAccel: -4.0,
+        tangentialAccel: 12.0,
+        velocity: 1.0,
+        damping: 1.5,
+        gravity: 0.0,
+        colorStart: "#e040ff",
+        colorEnd: "#4400cc",
+        size: 0.25
+      },
+      explosion: {
+        name: "爆炸瞬發 (Explosion)",
+        amount: 180,
+        lifetime: 0.8,
+        oneShot: true,
+        explosiveness: 1.0,
+        shape: "point",
+        radius: 0.2,
+        radialAccel: 0.0,
+        tangentialAccel: 0.0,
+        velocity: 12.0,
+        damping: 9.0,
+        gravity: -4.0,
+        colorStart: "#ffcc22",
+        colorEnd: "#ff2200",
+        size: 0.35
+      },
+      aura: {
+        name: "能量護盾 (Energy Aura)",
+        amount: 120,
+        lifetime: 1.8,
+        oneShot: false,
+        explosiveness: 0.0,
+        shape: "ring",
+        radius: 1.5,
+        radialAccel: 3.0,
+        tangentialAccel: 4.0,
+        velocity: 0.5,
+        damping: 1.0,
+        gravity: 0.5,
+        colorStart: "#22ff88",
+        colorEnd: "#006633",
+        size: 0.20
+      },
+      flame: {
+        name: "熾熱火柱 (Flame Jet)",
+        amount: 150,
+        lifetime: 1.2,
+        oneShot: false,
+        explosiveness: 0.0,
+        shape: "point",
+        radius: 0.3,
+        radialAccel: -1.0,
+        tangentialAccel: 2.0,
+        velocity: 5.5,
+        damping: 2.0,
+        gravity: 6.0,
+        colorStart: "#ffff44",
+        colorEnd: "#cc1100",
+        size: 0.38
+      }
+    };
+
+    let params = { ...presets.gathering };
+
+    // --- Three.js Setup Variables ---
+    let scene, camera, renderer, controls;
+    let particleSystem, particleGeo, particleMat;
+    let particleData = [];
+    let gridHelper;
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fpsTimer = performance.now();
+
+    function initThree() {
+      const container = document.getElementById('webgl-canvas');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // 1. Scene
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x0d1017, 0.03);
+
+      // 2. Camera
+      camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+      camera.position.set(0, 3, 7);
+
+      // 3. Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x0d1017, 1);
+      container.appendChild(renderer.domElement);
+
+      // 4. Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+      // 5. Grid & Center Emitter Marker
+      gridHelper = new THREE.GridHelper(12, 12, 0x478cbf, 0x252b3b);
+      gridHelper.position.y = -0.01;
+      scene.add(gridHelper);
+
+      // Emitter Origin Core Mesh
+      const coreGeo = new THREE.SphereGeometry(0.12, 16, 16);
+      const coreMat = new THREE.MeshBasicMaterial({ color: 0x478cbf, wireframe: true });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      coreMesh.position.set(0, 1, 0);
+      scene.add(coreMesh);
+
+      // 6. Particle Texture Creation (Soft Glow Particle Texture via Canvas)
+      const particleTexture = createParticleTexture();
+
+      // 7. Particle System Setup
+      rebuildParticleSystem(particleTexture);
+
+      // 8. Event Listeners
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    /* Helper: Generate a soft glowing radial particle texture */
+    function createParticleTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+
+      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+      gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+      gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.2)');
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(32, 32, 32, 0, Math.PI * 2);
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    }
+
+    function rebuildParticleSystem(texture) {
+      if (particleSystem) scene.remove(particleSystem);
+
+      const maxCount = 600; // Buffer allocation limit
+      particleGeo = new THREE.BufferGeometry();
+
+      const positions = new Float32Array(maxCount * 3);
+      const colors = new Float32Array(maxCount * 3);
+      const sizes = new Float32Array(maxCount);
+
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+      particleMat = new THREE.PointsMaterial({
+        size: params.size,
+        vertexColors: true,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        map: texture || createParticleTexture(),
+        sizeAttenuation: true
+      });
+
+      particleSystem = new THREE.Points(particleGeo, particleMat);
+      scene.add(particleSystem);
+
+      // Initialize logic particle objects
+      particleData = [];
+      for (let i = 0; i < maxCount; i++) {
+        particleData.push({
+          active: false,
+          pos: new THREE.Vector3(0, 1, 0),
+          vel: new THREE.Vector3(),
+          life: 0,
+          maxLife: 1.0,
+          colorStart: new THREE.Color(),
+          colorEnd: new THREE.Color(),
+          baseSize: params.size
+        });
+      }
+
+      spawnAllParticles();
+    }
+
+    function spawnParticle(p, isInitialBurst = false) {
+      p.active = true;
+      p.life = isInitialBurst ? Math.random() * params.lifetime : 0;
+      p.maxLife = params.lifetime;
+      p.colorStart.set(params.colorStart);
+      p.colorEnd.set(params.colorEnd);
+      p.baseSize = params.size;
+
+      const origin = new THREE.Vector3(0, 1, 0);
+
+      // Calculate initial position according to emission shape
+      if (params.shape === 'sphere') {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const r = Math.cbrt(Math.random()) * params.radius;
+        const sinPhi = Math.sin(phi);
+        p.pos.set(
+          r * sinPhi * Math.cos(theta),
+          r * sinPhi * Math.sin(theta),
+          r * Math.cos(phi)
+        ).add(origin);
+      } else if (params.shape === 'ring') {
+        const angle = Math.random() * Math.PI * 2;
+        const r = params.radius * (0.8 + Math.random() * 0.2);
+        p.pos.set(
+          Math.cos(angle) * r,
+          (Math.random() - 0.5) * 0.2,
+          Math.sin(angle) * r
+        ).add(origin);
+      } else if (params.shape === 'box') {
+        p.pos.set(
+          (Math.random() - 0.5) * params.radius * 2,
+          (Math.random() - 0.5) * params.radius * 2,
+          (Math.random() - 0.5) * params.radius * 2
+        ).add(origin);
+      } else { // Point shape
+        p.pos.copy(origin);
+      }
+
+      // Initial Velocity Direction (Radial outwards + velocity)
+      const dir = p.pos.clone().sub(origin);
+      if (dir.lengthSq() < 0.001) {
+        dir.set((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
+      } else {
+        dir.normalize();
+      }
+
+      p.vel.copy(dir).multiplyScalar(params.velocity);
+      
+      // If explosion preset, add high spread velocity
+      if (params.explosiveness > 0.5) {
+        p.vel.add(new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2).multiplyScalar(params.velocity * 0.5));
+      }
+    }
+
+    function spawnAllParticles() {
+      for (let i = 0; i < particleData.length; i++) {
+        if (i < params.amount) {
+          spawnParticle(particleData[i], !params.oneShot);
+        } else {
+          particleData[i].active = false;
+        }
+      }
+    }
+
+    function updateParticles(dt) {
+      const positions = particleGeo.attributes.position.array;
+      const colors = particleGeo.attributes.color.array;
+      const sizes = particleGeo.attributes.size.array;
+
+      const origin = new THREE.Vector3(0, 1, 0);
+      const upAxis = new THREE.Vector3(0, 1, 0);
+
+      let activeCount = 0;
+
+      for (let i = 0; i < particleData.length; i++) {
+        const p = particleData[i];
+
+        if (!p.active) {
+          positions[i * 3] = 0;
+          positions[i * 3 + 1] = -999;
+          positions[i * 3 + 2] = 0;
+          sizes[i] = 0;
+          continue;
+        }
+
+        p.life += dt;
+
+        // Check Lifetime expiration
+        if (p.life >= p.maxLife) {
+          if (!params.oneShot) {
+            spawnParticle(p, false);
+          } else {
+            p.active = false;
+            sizes[i] = 0;
+            continue;
+          }
+        }
+
+        activeCount++;
+
+        // 1. Calculate Radial & Tangential Vectors
+        const radialDir = p.pos.clone().sub(origin);
+        const dist = radialDir.length();
+        
+        if (dist > 0.001) {
+          radialDir.normalize();
+        } else {
+          radialDir.set(0, 1, 0);
+        }
+
+        // Tangential direction = Radial x Up
+        const tangentialDir = new THREE.Vector3().crossVectors(radialDir, upAxis).normalize();
+
+        // 2. Physics Acceleration Integration
+        const accel = new THREE.Vector3();
+
+        // Gravity Y
+        accel.y += params.gravity;
+
+        // Radial Acceleration (Negative pulls inwards to center -> Gathering!)
+        accel.addScaledVector(radialDir, params.radialAccel);
+
+        // Tangential Acceleration (Creates swirling orbit -> Orbiting!)
+        accel.addScaledVector(tangentialDir, params.tangentialAccel);
+
+        // Apply Velocity and Damping
+        p.vel.addScaledVector(accel, dt);
+        if (params.damping > 0) {
+          p.vel.multiplyScalar(Math.max(0, 1.0 - params.damping * dt));
+        }
+
+        p.pos.addScaledVector(p.vel, dt);
+
+        // 3. Visual Interpolation (Color & Fade Scale)
+        const progress = p.life / p.maxLife; // 0.0 to 1.0
+
+        // Interpolate Color from Start to End
+        const curColor = new THREE.Color().copy(p.colorStart).lerp(p.colorEnd, progress);
+        
+        // Alpha/Size Fade curve
+        let fadeScale = 1.0;
+        if (progress < 0.2) {
+          fadeScale = progress / 0.2; // Fade in
+        } else {
+          fadeScale = 1.0 - (progress - 0.2) / 0.8; // Fade out
+        }
+
+        positions[i * 3] = p.pos.x;
+        positions[i * 3 + 1] = p.pos.y;
+        positions[i * 3 + 2] = p.pos.z;
+
+        colors[i * 3] = curColor.r * fadeScale;
+        colors[i * 3 + 1] = curColor.g * fadeScale;
+        colors[i * 3 + 2] = curColor.b * fadeScale;
+
+        sizes[i] = params.size * (0.5 + fadeScale * 0.5) * 10.0;
+      }
+
+      particleGeo.attributes.position.needsUpdate = true;
+      particleGeo.attributes.color.needsUpdate = true;
+      particleGeo.attributes.size.needsUpdate = true;
+
+      // Update HUD count
+      document.getElementById('hud-particle-count').innerText = activeCount;
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now();
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+
+      // FPS counter update
+      frameCount++;
+      if (now - fpsTimer >= 1000) {
+        document.getElementById('hud-fps').innerText = frameCount;
+        frameCount = 0;
+        fpsTimer = now;
+      }
+
+      updateParticles(dt);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('webgl-canvas');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function setupUIListeners() {
+      // Input Slider Binding Helper
+      function bindSlider(sliderId, valId, paramKey, formatter = (v) => v) {
+        const slider = document.getElementById(sliderId);
+        const valElem = document.getElementById(valId);
+
+        slider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          params[paramKey] = val;
+          valElem.innerText = formatter(val);
+          if (paramKey === 'amount' || paramKey === 'size') {
+            spawnAllParticles();
+          }
+          updateGDScriptOutput();
+        });
+      }
+
+      bindSlider('param-amount', 'val-amount', 'amount', v => v);
+      bindSlider('param-lifetime', 'val-lifetime', 'lifetime', v => v.toFixed(1) + 's');
+      bindSlider('param-explosiveness', 'val-explosiveness', 'explosiveness', v => v.toFixed(2));
+      bindSlider('param-radius', 'val-radius', 'radius', v => v.toFixed(1));
+      bindSlider('param-radial', 'val-radial', 'radialAccel', v => v.toFixed(1));
+      bindSlider('param-tangential', 'val-tangential', 'tangentialAccel', v => v.toFixed(1));
+      bindSlider('param-velocity', 'val-velocity', 'velocity', v => v.toFixed(1));
+      bindSlider('param-damping', 'val-damping', 'damping', v => v.toFixed(1));
+      bindSlider('param-gravity', 'val-gravity', 'gravity', v => v.toFixed(1));
+      bindSlider('param-size', 'val-size', 'size', v => v.toFixed(2));
+
+      // Checkbox
+      document.getElementById('param-oneshot').addEventListener('change', (e) => {
+        params.oneShot = e.target.checked;
+        spawnAllParticles();
+        updateGDScriptOutput();
+      });
+
+      // Emission Shape Select
+      document.getElementById('param-shape').addEventListener('change', (e) => {
+        params.shape = e.target.value;
+        spawnAllParticles();
+        updateGDScriptOutput();
+      });
+
+      // Colors
+      document.getElementById('param-color-start').addEventListener('input', (e) => {
+        params.colorStart = e.target.value;
+        updateGDScriptOutput();
+      });
+      document.getElementById('param-color-end').addEventListener('input', (e) => {
+        params.colorEnd = e.target.value;
+        updateGDScriptOutput();
+      });
+
+      // Presets Buttons
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('bg-godot-accent', 'text-white');
+            b.classList.add('hover:bg-godot-header', 'text-slate-300');
+          });
+          btn.classList.remove('hover:bg-godot-header', 'text-slate-300');
+          btn.classList.add('bg-godot-accent', 'text-white');
+
+          const key = btn.dataset.preset;
+          applyPreset(presets[key]);
+        });
+      });
+
+      // Action Buttons
+      document.getElementById('btn-trigger').addEventListener('click', () => {
+        spawnAllParticles();
+      });
+
+      document.getElementById('btn-reset-cam').addEventListener('click', () => {
+        camera.position.set(0, 3, 7);
+        controls.target.set(0, 1, 0);
+      });
+
+      document.getElementById('btn-toggle-grid').addEventListener('click', () => {
+        gridHelper.visible = !gridHelper.visible;
+      });
+
+      // Tab Switching
+      const tabParams = document.getElementById('tab-btn-params');
+      const tabCode = document.getElementById('tab-btn-code');
+      const panelParams = document.getElementById('panel-params');
+      const panelCode = document.getElementById('panel-code');
+
+      tabParams.addEventListener('click', () => {
+        tabParams.classList.add('tab-active');
+        tabCode.classList.remove('tab-active');
+        panelParams.classList.remove('hidden');
+        panelCode.classList.add('hidden');
+      });
+
+      tabCode.addEventListener('click', () => {
+        tabCode.classList.add('tab-active');
+        tabParams.classList.remove('tab-active');
+        panelCode.classList.remove('hidden');
+        panelParams.classList.add('hidden');
+        updateGDScriptOutput();
+      });
+
+      // Copy Code Button
+      document.getElementById('btn-copy-code').addEventListener('click', () => {
+        const codeText = document.getElementById('code-output').innerText;
+        
+        // Use document.execCommand fallback for iframe clipboard safety
+        const textarea = document.createElement('textarea');
+        textarea.value = codeText;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast("GDScript 已成功複製到剪貼簿！");
+        } catch (err) {
+          showToast("複製失敗，請手動全選複製。");
+        }
+        document.body.removeChild(textarea);
+      });
+    }
+
+    /* Apply Preset Values to UI Sliders and Simulation */
+    function applyPreset(preset) {
+      params = { ...preset };
+      document.getElementById('hud-preset-name').innerText = params.name;
+
+      document.getElementById('param-amount').value = params.amount;
+      document.getElementById('val-amount').innerText = params.amount;
+
+      document.getElementById('param-lifetime').value = params.lifetime;
+      document.getElementById('val-lifetime').innerText = params.lifetime.toFixed(1) + 's';
+
+      document.getElementById('param-oneshot').checked = params.oneShot;
+
+      document.getElementById('param-explosiveness').value = params.explosiveness;
+      document.getElementById('val-explosiveness').innerText = params.explosiveness.toFixed(2);
+
+      document.getElementById('param-shape').value = params.shape;
+
+      document.getElementById('param-radius').value = params.radius;
+      document.getElementById('val-radius').innerText = params.radius.toFixed(1);
+
+      document.getElementById('param-radial').value = params.radialAccel;
+      document.getElementById('val-radial').innerText = params.radialAccel.toFixed(1);
+
+      document.getElementById('param-tangential').value = params.tangentialAccel;
+      document.getElementById('val-tangential').innerText = params.tangentialAccel.toFixed(1);
+
+      document.getElementById('param-velocity').value = params.velocity;
+      document.getElementById('val-velocity').innerText = params.velocity.toFixed(1);
+
+      document.getElementById('param-damping').value = params.damping;
+      document.getElementById('val-damping').innerText = params.damping.toFixed(1);
+
+      document.getElementById('param-gravity').value = params.gravity;
+      document.getElementById('val-gravity').innerText = params.gravity.toFixed(1);
+
+      document.getElementById('param-color-start').value = params.colorStart;
+      document.getElementById('param-color-end').value = params.colorEnd;
+
+      document.getElementById('param-size').value = params.size;
+      document.getElementById('val-size').innerText = params.size.toFixed(2);
+
+      spawnAllParticles();
+      updateGDScriptOutput();
+    }
+
+    function updateGDScriptOutput() {
+      // Convert hex color to Godot Color(r, g, b, a)
+      function hexToGodotColor(hex) {
+        const c = new THREE.Color(hex);
+        return `Color(${c.r.toFixed(2)}, ${c.g.toFixed(2)}, ${c.b.toFixed(2)}, 1.0)`;
+      }
+
+      let shapeEnum = "ParticleProcessMaterial.EMISSION_SHAPE_SPHERE";
+      if (params.shape === 'ring') shapeEnum = "ParticleProcessMaterial.EMISSION_SHAPE_RING";
+      else if (params.shape === 'box') shapeEnum = "ParticleProcessMaterial.EMISSION_SHAPE_BOX";
+      else if (params.shape === 'point') shapeEnum = "ParticleProcessMaterial.EMISSION_SHAPE_POINT";
+
+      const scriptContent = `extends Node3D
+# ===================================================
+# Godot 4 GPUParticles3D 特效動態腳本 - ${params.name}
+# ===================================================
+
+func _ready() -> void:
+	create_particle_effect()
+
+func create_particle_effect() -> void:
+	# 1. 創建 3D 粒子節點
+	var particles := GPUParticles3D.new()
+	particles.amount = ${params.amount}
+	particles.lifetime = ${params.lifetime.toFixed(1)}
+	particles.one_shot = ${params.oneShot ? "true" : "false"}
+	particles.explosiveness = ${params.explosiveness.toFixed(2)}
+
+	# 2. 創建並配置 ParticleProcessMaterial
+	var process_mat := ParticleProcessMaterial.new()
+	
+	# 發射形狀與範圍
+	process_mat.emission_shape = ${shapeEnum}
+	process_mat.emission_sphere_radius = ${params.radius.toFixed(1)}
+	
+	# 重力 (Gravity)
+	process_mat.gravity = Vector3(0, ${params.gravity.toFixed(1)}, 0)
+	
+	# 徑向加速度 (Radial Acceleration: 負值集中，正值爆發)
+	process_mat.radial_accel_min = ${(params.radialAccel * 0.9).toFixed(1)}
+	process_mat.radial_accel_max = ${(params.radialAccel * 1.1).toFixed(1)}
+	
+	# 切向加速度 (Tangential Acceleration: 繞軸旋轉)
+	process_mat.tangential_accel_min = ${(params.tangentialAccel * 0.9).toFixed(1)}
+	process_mat.tangential_accel_max = ${(params.tangentialAccel * 1.1).toFixed(1)}
+	
+	# 初始速度與阻尼
+	process_mat.initial_velocity_min = ${(params.velocity * 0.8).toFixed(1)}
+	process_mat.initial_velocity_max = ${(params.velocity * 1.2).toFixed(1)}
+	process_mat.damping_min = ${(params.damping * 0.8).toFixed(1)}
+	process_mat.damping_max = ${(params.damping * 1.2).toFixed(1)}
+	
+	# 基礎顏色
+	process_mat.color = ${hexToGodotColor(params.colorStart)}
+
+	# 3. 創建 Particle Draw Pass (QuadMesh + StandardMaterial3D)
+	var quad_mesh := QuadMesh.new()
+	quad_mesh.size = Vector2(${(params.size * 1.2).toFixed(2)}, ${(params.size * 1.2).toFixed(2)})
+	
+	var pass_mat := StandardMaterial3D.new()
+	pass_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED # 自發光
+	pass_mat.vertex_color_use_as_albedo = true
+	pass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	pass_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLE_BILLBOARD
+	
+	quad_mesh.material = pass_mat
+	particles.draw_pass_1 = quad_mesh
+	particles.process_material = process_mat
+
+	# 4. 加載到場景中
+	add_child(particles)
+	particles.global_position = Vector3(0, 1, 0)
+	particles.emitting = true
+`;
+
+      document.getElementById('code-output').innerText = scriptContent;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // --- Start Application on Window Load ---
+    window.onload = function () {
+      initThree();
+      setupUIListeners();
+      updateGDScriptOutput();
+      animate();
+    };
+  </script>
+</body>
+</html>
