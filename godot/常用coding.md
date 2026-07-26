@@ -1,6 +1,7 @@
 ### 3D Notes
 ```
 ### 思考方向
+UI 与 3D 元素的结合
 收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
 >核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
 1.場景光照+環境光
