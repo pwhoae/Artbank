@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 動態卡通天空 Shader 與天氣控制器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f172a; color: #f8fafc; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+        .code-block { font-family: 'Fira Code', 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.5; }
+    </style>
+</head>
+<body class="select-none">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Header & Navigation Tabs -->
+    <div class="absolute top-4 left-4 right-4 z-10 flex flex-wrap justify-between items-center gap-4 pointer-events-none">
+        <div class="glass-panel px-5 py-3 rounded-2xl flex items-center gap-3 pointer-events-auto shadow-2xl">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid font-bold fa-cloud-sun text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-white">Godot 4.x 動態卡通天空 Shader</h1>
+                <p class="text-xs text-slate-400">支援卡通雲霧 + 太陽/月亮自訂位置 + 天氣切換系統</p>
+            </div>
+        </div>
+
+        <!-- View Switcher -->
+        <div class="glass-panel p-1.5 rounded-2xl flex gap-1 pointer-events-auto shadow-2xl">
+            <button id="tab-preview" onclick="switchTab('preview')" class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2">
+                <i class="fa-solid fa-vr-cardboard"></i> 實時 3D 預覽
+            </button>
+            <button id="tab-shader" onclick="switchTab('shader')" class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2">
+                <i class="fa-solid fa-code"></i> Shader 碼 (.gdshader)
+            </button>
+            <button id="tab-gdscript" onclick="switchTab('gdscript')" class="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2">
+                <i class="fa-solid fa-gears"></i> 控制腳本 (.gd)
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive Controls Drawer (Left Sidebar) -->
+    <div id="controls-panel" class="absolute top-24 left-4 bottom-6 w-80 max-w-[calc(100vw-32px)] z-10 glass-panel rounded-2xl p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar pointer-events-auto shadow-2xl transition-all duration-300">
+        
+        <!-- Weather Presets -->
+        <div>
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-cloud-bolt text-blue-400"></i> 天氣預設切換 (Weather Presets)
+            </label>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <button onclick="setWeather('clear')" class="weather-btn px-3 py-2.5 rounded-xl bg-slate-800/80 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500 text-xs font-medium flex items-center gap-2 transition-all" id="btn-weather-clear">
+                    <span class="text-yellow-400 text-base">☀️</span> 晴朗無雲
+                </button>
+                <button onclick="setWeather('cloudy')" class="weather-btn px-3 py-2.5 rounded-xl bg-slate-800/80 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500 text-xs font-medium flex items-center gap-2 transition-all" id="btn-weather-cloudy">
+                    <span class="text-blue-300 text-base">⛅</span> 舒適多雲
+                </button>
+                <button onclick="setWeather('overcast')" class="weather-btn px-3 py-2.5 rounded-xl bg-slate-800/80 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500 text-xs font-medium flex items-center gap-2 transition-all" id="btn-weather-overcast">
+                    <span class="text-slate-400 text-base">☁️</span> 陰暗多雲
+                </button>
+                <button onclick="setWeather('stormy')" class="weather-btn px-3 py-2.5 rounded-xl bg-slate-800/80 hover:bg-blue-600/30 border border-slate-700 hover:border-blue-500 text-xs font-medium flex items-center gap-2 transition-all" id="btn-weather-stormy">
+                    <span class="text-purple-400 text-base">⛈️</span> 雷雨暴風
+                </button>
+            </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Time & Orbit Control -->
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock text-amber-400"></i> 全天時間 (Time of Day)
+                </label>
+                <span id="time-display" class="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">12:00</span>
+            </div>
+            <input type="range" id="timeSlider" min="0" max="24" step="0.1" value="12" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Celestial Custom Control Switch -->
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-sun text-yellow-400"></i> 自訂天體位置 (Custom Celestial)
+                </label>
+                <input type="checkbox" id="customPosToggle" class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-blue-600 focus:ring-blue-500 cursor-pointer">
+            </div>
+
+            <div id="custom-pos-controls" class="space-y-3 opacity-50 pointer-events-none transition-all duration-200">
+                <div>
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>太陽方位角 (Sun Azimuth)</span>
+                        <span id="sun-azimuth-val" class="font-mono">45°</span>
+                    </div>
+                    <input type="range" id="sunAzimuth" min="0" max="360" step="1" value="45" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                        <span>太陽仰角 (Sun Elevation)</span>
+                        <span id="sun-elevation-val" class="font-mono">45°</span>
+                    </div>
+                    <input type="range" id="sunElevation" min="-90" max="90" step="1" value="45" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Toon Cloud Settings -->
+        <div class="space-y-3">
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-cloud text-sky-400"></i> 卡通雲霧參數 (Toon Clouds)
+            </label>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>雲朵覆蓋率 (Coverage)</span>
+                    <span id="cloud-cov-val" class="font-mono">0.45</span>
+                </div>
+                <input type="range" id="cloudCoverage" min="0" max="1" step="0.02" value="0.45" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>卡通硬邊緣 (Toon Step)</span>
+                    <span id="cloud-step-val" class="font-mono">0.05</span>
+                </div>
+                <input type="range" id="cloudToonStep" min="0.01" max="0.3" step="0.01" value="0.05" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+            </div>
+            <div>
+                <div class="flex justify-between text-xs text-slate-400 mb-1">
+                    <span>雲朵飄移速度 (Speed)</span>
+                    <span id="cloud-speed-val" class="font-mono">0.02</span>
+                </div>
+                <input type="range" id="cloudSpeed" min="0" max="0.1" step="0.005" value="0.02" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Display Panel (Hidden by default) -->
+    <div id="code-panel" class="absolute top-24 left-4 right-4 bottom-6 z-20 glass-panel rounded-2xl p-6 hidden flex-col transition-all duration-300">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2">
+                <i id="code-icon" class="fa-solid fa-file-code text-blue-400 text-xl"></i>
+                <h2 id="code-title" class="font-bold text-lg">Godot 4 Sky Shader Code</h2>
+            </div>
+            <button onclick="copyCode()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-lg active:scale-95">
+                <i class="fa-solid fa-copy"></i> 複製程式碼
+            </button>
+        </div>
+        <div class="flex-1 overflow-auto bg-slate-950/80 rounded-xl p-4 border border-slate-800 custom-scrollbar">
+            <pre><code id="code-content" class="code-block text-slate-300"></code></pre>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-8 right-8 z-50 glass-panel bg-emerald-600/90 border-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 translate-y-20 opacity-0 transition-all duration-300">
+        <i class="fa-solid fa-circle-check text-xl"></i>
+        <span id="toast-msg" class="text-sm font-medium">已成功複製到剪貼簿！</span>
+    </div>
+
+    <script>
+        // Shader Sources for Copying
+        const shaderCodeGD = `// =================================================================
+// Godot 4.x 高階動態卡通天空 Shader (Toon Sky & Cloud Shader)
+// 特色：
+// 1. 卡通硬邊雲霧 (Toon/Stylized Clouds) 與層次陰影
+// 2. 支持時間自動旋轉 OR 手動指定太陽/月亮方位角與仰角
+// 3. 支持天氣參數覆蓋 (晴天、多雲、陰天、暴風雨)
+// =================================================================
+shader_type sky;
+
+group_uniforms Celestial_Time;
+// 【核心時間】 0.0 ~ 24.0 小時
+uniform float time_of_day : hint_range(0.0, 24.0, 0.05) = 12.0;
+// 軌道傾角 (-45° ~ 45°)
+uniform float orbit_inclination : hint_range(-45.0, 45.0) = 15.0;
+
+group_uniforms Custom_Position;
+// 開啟手動天體位置控制 (勾選後忽略 time_of_day 自動軌道)
+uniform bool use_custom_celestial_pos = false;
+uniform float custom_sun_azimuth : hint_range(0.0, 360.0) = 45.0;
+uniform float custom_sun_elevation : hint_range(-90.0, 90.0) = 45.0;
+uniform float custom_moon_azimuth : hint_range(0.0, 360.0) = 225.0;
+uniform float custom_moon_elevation : hint_range(-90.0, 90.0) = -45.0;
+
+group_uniforms Sun_Moon_Appearance;
+uniform float sun_size : hint_range(0.005, 0.1) = 0.035;
+uniform float sun_blur : hint_range(0.001, 0.2) = 0.02; // 卡通風小 blur
+uniform float moon_size : hint_range(0.005, 0.1) = 0.025;
+uniform float moon_blur : hint_range(0.001, 0.2) = 0.01;
+
+group_uniforms SkyColors;
+uniform vec3 day_top_color : source_color = vec3(0.22, 0.52, 0.92);
+uniform vec3 day_horizon_color : source_color = vec3(0.68, 0.86, 0.98);
+
+uniform vec3 sunset_top_color : source_color = vec3(0.25, 0.15, 0.42);
+uniform vec3 sunset_horizon_color : source_color = vec3(0.98, 0.42, 0.15);
+
+uniform vec3 night_top_color : source_color = vec3(0.02, 0.04, 0.10);
+uniform vec3 night_horizon_color : source_color = vec3(0.08, 0.12, 0.25);
+
+group_uniforms Toon_Clouds;
+uniform float cloud_coverage : hint_range(0.0, 1.0) = 0.45;
+uniform float cloud_scale : hint_range(0.5, 10.0) = 2.5;
+uniform float cloud_speed : hint_range(0.0, 0.2) = 0.02;
+uniform float cloud_toon_step : hint_range(0.001, 0.2) = 0.05; // 控制卡通硬邊程度
+uniform vec3 cloud_color_day : source_color = vec3(1.0, 1.0, 1.0);
+uniform vec3 cloud_shadow_day : source_color = vec3(0.72, 0.80, 0.92);
+uniform vec3 cloud_color_sunset : source_color = vec3(1.0, 0.75, 0.65);
+uniform vec3 cloud_shadow_sunset : source_color = vec3(0.58, 0.32, 0.38);
+uniform vec3 cloud_color_night : source_color = vec3(0.20, 0.25, 0.38);
+
+group_uniforms WeatherSystem;
+// 天氣黑暗度遮罩 (暴風雨或陰天時調高)
+uniform float weather_darkness : hint_range(0.0, 1.0) = 0.0;
+uniform vec3 stormy_sky_tint : source_color = vec3(0.12, 0.15, 0.20);
+
+group_uniforms Stars;
+uniform float stars_intensity : hint_range(0.0, 3.0) = 1.2;
+uniform float stars_twinkle_speed : hint_range(0.0, 10.0) = 2.5;
+
+// 偽隨機與 2D 雜訊 (用於生成卡通雲與星星)
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+}
+
+float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    mat2 rot = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
+    for (int i = 0; i < 3; ++i) {
+        v += a * noise(p);
+        p = rot * p * 2.0;
+        a *= 0.5;
+    }
+    return v;
+}
+
+void sky() {
+    vec3 view_dir = EYEDIR;
+    float view_y = view_dir.y;
+
+    // 1. 計算太陽與月亮方向
+    vec3 sun_dir;
+    vec3 moon_dir;
+
+    if (use_custom_celestial_pos) {
+        float sun_az_rad = radians(custom_sun_azimuth);
+        float sun_el_rad = radians(custom_sun_elevation);
+        sun_dir = normalize(vec3(
+            cos(sun_el_rad) * sin(sun_az_rad),
+            sin(sun_el_rad),
+            cos(sun_el_rad) * cos(sun_az_rad)
+        ));
+
+        float moon_az_rad = radians(custom_moon_azimuth);
+        float moon_el_rad = radians(custom_moon_elevation);
+        moon_dir = normalize(vec3(
+            cos(moon_el_rad) * sin(moon_az_rad),
+            sin(moon_el_rad),
+            cos(moon_el_rad) * cos(moon_az_rad)
+        ));
+    } else {
+        float time_rad = ((time_of_day - 6.0) / 24.0) * 6.2831853;
+        float inc_rad = radians(orbit_inclination);
+        sun_dir = normalize(vec3(-cos(time_rad), sin(time_rad), sin(time_rad) * tan(inc_rad)));
+        moon_dir = -sun_dir;
+    }
+
+    // 2. 時間權重算繪
+    float sun_y = sun_dir.y;
+    float sunset_factor = clamp(1.0 - abs(sun_y - 0.02) / 0.3, 0.0, 1.0);
+    sunset_factor = pow(sunset_factor, 1.5);
+
+    float day_factor = smoothstep(-0.12, 0.20, sun_y);
+    float night_factor = 1.0 - day_factor;
+
+    // 3. 基礎天空顏色的混合
+    float horizon_mask = pow(clamp(1.0 - max(view_y, 0.0), 0.0, 1.0), 3.0);
+    vec3 day_sky = mix(day_top_color, day_horizon_color, horizon_mask);
+    vec3 sunset_sky = mix(sunset_top_color, sunset_horizon_color, horizon_mask);
+    vec3 night_sky = mix(night_top_color, night_horizon_color, horizon_mask);
+
+    // 夕陽金橘散射光暈
+    float sun_horizon_glow = max(dot(view_dir, vec3(sun_dir.x, 0.0, sun_dir.z)), 0.0);
+    sunset_sky += vec3(1.0, 0.4, 0.1) * pow(sun_horizon_glow, 4.0) * sunset_factor * 1.5;
+
+    vec3 final_sky = mix(night_sky, day_sky, day_factor);
+    final_sky = mix(final_sky, sunset_sky, sunset_factor * (1.0 - day_factor * 0.4));
+
+    // 套用天氣黑暗度 (Storm/Overcast Tint)
+    final_sky = mix(final_sky, stormy_sky_tint, weather_darkness);
+
+    // 4. 星空算繪
+    if (night_factor > 0.05 && view_y > 0.0) {
+        vec2 star_uv = view_dir.xz / (view_y + 0.7) * 120.0;
+        float star_noise = hash(floor(star_uv));
+        if (star_noise > 0.982) {
+            float twinkle = sin(TIME * stars_twinkle_speed + star_noise * 100.0) * 0.5 + 0.5;
+            float star_brightness = (star_noise - 0.982) / 0.018 * twinkle;
+            final_sky += vec3(star_brightness) * night_factor * stars_intensity * smoothstep(0.0, 0.2, view_y) * (1.0 - weather_darkness);
+        }
+    }
+
+    // 5. 太陽與月亮 (Toon Style 邊緣)
+    float sun_dot = max(dot(view_dir, sun_dir), 0.0);
+    float sun_disc = smoothstep(1.0 - sun_size, 1.0 - sun_size + sun_blur, sun_dot);
+    vec3 sun_color = mix(vec3(1.0, 0.35, 0.1), vec3(1.0, 0.96, 0.85), clamp(sun_y * 2.5, 0.0, 1.0));
+    final_sky += sun_disc * sun_color * 4.0 * clamp(sun_y + 0.2, 0.0, 1.0) * (1.0 - weather_darkness * 0.8);
+
+    float moon_dot = max(dot(view_dir, moon_dir), 0.0);
+    float moon_disc = smoothstep(1.0 - moon_size, 1.0 - moon_size + moon_blur, moon_dot);
+    final_sky += moon_disc * vec3(0.85, 0.92, 1.0) * 2.0 * night_factor * (1.0 - weather_darkness * 0.8);
+
+    // 6. 【卡通雲霧算繪 (Toon Clouds)】
+    if (view_y > 0.02 && cloud_coverage > 0.01) {
+        vec2 cloud_uv = view_dir.xz / (view_y + 0.15) * cloud_scale;
+        cloud_uv += vec2(TIME * cloud_speed, TIME * cloud_speed * 0.4);
+
+        float n = fbm(cloud_uv);
+        
+        // 使用 smoothstep 與 cloud_toon_step 切出卡通硬階梯效果
+        float cloud_threshold = 1.0 - cloud_coverage;
+        float cloud_alpha = smoothstep(cloud_threshold, cloud_threshold + cloud_toon_step, n);
+
+        // 卡通光影階梯 (Toon Lighting Step)
+        float light_dir_dot = max(dot(sun_dir, vec3(0.0, 1.0, 0.0)), 0.0);
+        float toon_light = smoothstep(0.4, 0.45, n);
+
+        // 雲色彩插值 (白天 / 夕陽 / 夜晚)
+        vec3 cur_cloud_main = mix(cloud_color_night, cloud_color_day, day_factor);
+        cur_cloud_main = mix(cur_cloud_main, cloud_color_sunset, sunset_factor);
+
+        vec3 cur_cloud_shadow = mix(cloud_color_night * 0.6, cloud_shadow_day, day_factor);
+        cur_cloud_shadow = mix(cur_cloud_shadow, cloud_shadow_sunset, sunset_factor);
+
+        // 暴風雨天氣時雲朵加深
+        cur_cloud_main = mix(cur_cloud_main, vec3(0.15), weather_darkness);
+        cur_cloud_shadow = mix(cur_cloud_shadow, vec3(0.08), weather_darkness);
+
+        vec3 toon_cloud_color = mix(cur_cloud_shadow, cur_cloud_main, toon_light);
+
+        // 地平線消融遮罩
+        cloud_alpha *= smoothstep(0.02, 0.25, view_y);
+
+        // 混合天空與卡通雲
+        final_sky = mix(final_sky, toon_cloud_color, cloud_alpha);
+    }
+
+    COLOR = final_sky;
+}`;
+
+        const gdScriptCode = `# =================================================================
+// SkyManager.gd - Godot 4 天空與天氣控制器腳本
+// 掛載於 WorldEnvironment 或 Dedicated Sky Controller Node
+// =================================================================
+extends Node
+
+@export var sky_material: ShaderMaterial
+
+enum Weather { CLEAR, CLOUDY, OVERCAST, STORMY }
+
+@export_category("Time Control")
+@export_range(0.0, 24.0) var time_of_day: float = 12.0:
+    set(value):
+        time_of_day = value
+        _update_shader()
+
+@export_category("Weather Settings")
+@export var current_weather: Weather = Weather.CLEAR:
+    set(value):
+        current_weather = value
+        apply_weather_preset(value)
+
+func _process(delta: float) -> void:
+    // 自動時間流逝範例 (如需要):
+    // time_of_day = fmod(time_of_day + delta * 0.1, 24.0)
+    pass
+
+func _update_shader() -> void:
+    if sky_material:
+        sky_material.set_shader_parameter("time_of_day", time_of_day)
+
+func apply_weather_preset(preset: Weather) -> void:
+    if not sky_material:
+        return
+        
+    var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC)
+    
+    match preset:
+        Weather.CLEAR:
+            tween.tween_property(sky_material, "shader_parameter/cloud_coverage", 0.05, 1.5)
+            tween.tween_property(sky_material, "shader_parameter/weather_darkness", 0.0, 1.5)
+        Weather.CLOUDY:
+            tween.tween_property(sky_material, "shader_parameter/cloud_coverage", 0.45, 1.5)
+            tween.tween_property(sky_material, "shader_parameter/weather_darkness", 0.0, 1.5)
+        Weather.OVERCAST:
+            tween.tween_property(sky_material, "shader_parameter/cloud_coverage", 0.75, 1.5)
+            tween.tween_property(sky_material, "shader_parameter/weather_darkness", 0.35, 1.5)
+        Weather.STORMY:
+            tween.tween_property(sky_material, "shader_parameter/cloud_coverage", 0.90, 1.5)
+            tween.tween_property(sky_material, "shader_parameter/weather_darkness", 0.75, 1.5)
+
+// 手動設置太陽位置 API
+func set_custom_sun_position(azimuth_deg: float, elevation_deg: float) -> void:
+    if sky_material:
+        sky_material.set_shader_parameter("use_custom_celestial_pos", true)
+        sky_material.set_shader_parameter("custom_sun_azimuth", azimuth_deg)
+        sky_material.set_shader_parameter("custom_sun_elevation", elevation_deg)
+`;
+
+        // WebGL / Three.js Interactive Sky Simulation Setup
+        let scene, camera, renderer, controls, skyMesh, skyUniforms;
+        let activeTab = 'preview';
+
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 8);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05; // Stay above ground level
+
+            // Add a stylized ground island for depth
+            const groundGeo = new THREE.CylinderGeometry(15, 16, 1, 32);
+            const groundMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.position.y = -1;
+            scene.add(ground);
+
+            // Sky Sphere GLSL Matching Godot Shader Logic
+            const skyGeo = new THREE.SphereGeometry(400, 64, 64);
+            skyUniforms = {
+                u_time: { value: 0 },
+                u_time_of_day: { value: 12.0 },
+                u_use_custom_pos: { value: 0.0 },
+                u_sun_azimuth: { value: 45.0 },
+                u_sun_elevation: { value: 45.0 },
+                u_cloud_coverage: { value: 0.45 },
+                u_cloud_toon_step: { value: 0.05 },
+                u_cloud_speed: { value: 0.02 },
+                u_weather_darkness: { value: 0.0 }
+            };
+
+            const vertexShader = `
+                varying vec3 vWorldPosition;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+
+            const fragmentShader = `
+                varying vec3 vWorldPosition;
+                uniform float u_time;
+                uniform float u_time_of_day;
+                uniform float u_use_custom_pos;
+                uniform float u_sun_azimuth;
+                uniform float u_sun_elevation;
+                uniform float u_cloud_coverage;
+                uniform float u_cloud_toon_step;
+                uniform float u_cloud_speed;
+                uniform float u_weather_darkness;
+
+                float hash(vec2 p) {
+                    p = fract(p * vec2(123.34, 456.21));
+                    p += dot(p, p + 45.32);
+                    return fract(p.x * p.y);
+                }
+
+                float noise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    vec2 u = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                               mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+                }
+
+                float fbm(vec2 p) {
+                    float v = 0.0;
+                    float a = 0.5;
+                    mat2 rot = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8));
+                    for (int i = 0; i < 3; ++i) {
+                        v += a * noise(p);
+                        p = rot * p * 2.0;
+                        a *= 0.5;
+                    }
+                    return v;
+                }
+
+                void main() {
+                    vec3 view_dir = normalize(vWorldPosition);
+                    float view_y = view_dir.y;
+
+                    vec3 sun_dir;
+                    if (u_use_custom_pos > 0.5) {
+                        float sun_az_rad = radians(u_sun_azimuth);
+                        float sun_el_rad = radians(u_sun_elevation);
+                        sun_dir = normalize(vec3(
+                            cos(sun_el_rad) * sin(sun_az_rad),
+                            sin(sun_el_rad),
+                            cos(sun_el_rad) * cos(sun_az_rad)
+                        ));
+                    } else {
+                        float time_rad = ((u_time_of_day - 6.0) / 24.0) * 6.2831853;
+                        sun_dir = normalize(vec3(-cos(time_rad), sin(time_rad), sin(time_rad) * 0.25));
+                    }
+
+                    vec3 moon_dir = -sun_dir;
+                    float sun_y = sun_dir.y;
+
+                    float sunset_factor = clamp(1.0 - abs(sun_y - 0.02) / 0.3, 0.0, 1.0);
+                    sunset_factor = pow(sunset_factor, 1.5);
+
+                    float day_factor = smoothstep(-0.12, 0.20, sun_y);
+                    float night_factor = 1.0 - day_factor;
+
+                    float horizon_mask = pow(clamp(1.0 - max(view_y, 0.0), 0.0, 1.0), 3.0);
+
+                    vec3 day_top = vec3(0.22, 0.52, 0.92);
+                    vec3 day_horizon = vec3(0.68, 0.86, 0.98);
+                    vec3 sunset_top = vec3(0.25, 0.15, 0.42);
+                    vec3 sunset_horizon = vec3(0.98, 0.42, 0.15);
+                    vec3 night_top = vec3(0.02, 0.04, 0.10);
+                    vec3 night_horizon = vec3(0.08, 0.12, 0.25);
+
+                    vec3 day_sky = mix(day_top, day_horizon, horizon_mask);
+                    vec3 sunset_sky = mix(sunset_top, sunset_horizon, horizon_mask);
+                    vec3 night_sky = mix(night_top, night_horizon, horizon_mask);
+
+                    vec3 final_sky = mix(night_sky, day_sky, day_factor);
+                    final_sky = mix(final_sky, sunset_sky, sunset_factor * (1.0 - day_factor * 0.4));
+                    final_sky = mix(final_sky, vec3(0.12, 0.15, 0.20), u_weather_darkness);
+
+                    // Sun & Moon
+                    float sun_dot = max(dot(view_dir, sun_dir), 0.0);
+                    float sun_disc = smoothstep(0.995, 0.998, sun_dot);
+                    vec3 sun_color = mix(vec3(1.0, 0.35, 0.1), vec3(1.0, 0.96, 0.85), clamp(sun_y * 2.5, 0.0, 1.0));
+                    final_sky += sun_disc * sun_color * 4.0 * (1.0 - u_weather_darkness * 0.8);
+
+                    float moon_dot = max(dot(view_dir, moon_dir), 0.0);
+                    float moon_disc = smoothstep(0.997, 0.999, moon_dot);
+                    final_sky += moon_disc * vec3(0.85, 0.92, 1.0) * 2.0 * night_factor;
+
+                    // Toon Clouds
+                    if (view_y > 0.02 && u_cloud_coverage > 0.01) {
+                        vec2 cloud_uv = view_dir.xz / (view_y + 0.15) * 2.5;
+                        cloud_uv += vec2(u_time * u_cloud_speed, u_time * u_cloud_speed * 0.4);
+
+                        float n = fbm(cloud_uv);
+                        float cloud_threshold = 1.0 - u_cloud_coverage;
+                        float cloud_alpha = smoothstep(cloud_threshold, cloud_threshold + u_cloud_toon_step, n);
+
+                        vec3 cloud_main = mix(vec3(0.2, 0.25, 0.38), vec3(1.0), day_factor);
+                        cloud_main = mix(cloud_main, vec3(1.0, 0.75, 0.65), sunset_factor);
+                        cloud_main = mix(cloud_main, vec3(0.15), u_weather_darkness);
+
+                        cloud_alpha *= smoothstep(0.02, 0.25, view_y);
+                        final_sky = mix(final_sky, cloud_main, cloud_alpha);
+                    }
+
+                    gl_FragColor = vec4(final_sky, 1.0);
+                }
+            `;
+
+            const skyMat = new THREE.ShaderMaterial({
+                vertexShader,
+                fragmentShader,
+                uniforms: skyUniforms,
+                side: THREE.BackSide
+            });
+
+            skyMesh = new THREE.Mesh(skyGeo, skyMat);
+            scene.add(skyMesh);
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            skyUniforms.u_time.value = time * 0.001;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+
+            // Setup Default Active Code
+            document.getElementById('code-content').textContent = shaderCodeGD;
+
+            // Sliders Binding
+            const timeSlider = document.getElementById('timeSlider');
+            const timeDisplay = document.getElementById('timeDisplay');
+            timeSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                skyUniforms.u_time_of_day.value = val;
+                const hours = Math.floor(val);
+                const mins = Math.floor((val - hours) * 60);
+                document.getElementById('time-display').textContent = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            });
+
+            // Custom Position Controls
+            const customPosToggle = document.getElementById('customPosToggle');
+            const customPosControls = document.getElementById('custom-pos-controls');
+            customPosToggle.addEventListener('change', (e) => {
+                const active = e.target.checked;
+                skyUniforms.u_use_custom_pos.value = active ? 1.0 : 0.0;
+                if (active) {
+                    customPosControls.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    customPosControls.classList.add('opacity-50', 'pointer-events-none');
+                }
+            });
+
+            document.getElementById('sunAzimuth').addEventListener('input', (e) => {
+                skyUniforms.u_sun_azimuth.value = parseFloat(e.target.value);
+                document.getElementById('sun-azimuth-val').textContent = `${e.target.value}°`;
+            });
+
+            document.getElementById('sunElevation').addEventListener('input', (e) => {
+                skyUniforms.u_sun_elevation.value = parseFloat(e.target.value);
+                document.getElementById('sun-elevation-val').textContent = `${e.target.value}°`;
+            });
+
+            // Cloud Sliders
+            document.getElementById('cloudCoverage').addEventListener('input', (e) => {
+                skyUniforms.u_cloud_coverage.value = parseFloat(e.target.value);
+                document.getElementById('cloud-cov-val').textContent = e.target.value;
+            });
+
+            document.getElementById('cloudToonStep').addEventListener('input', (e) => {
+                skyUniforms.u_cloud_toon_step.value = parseFloat(e.target.value);
+                document.getElementById('cloud-step-val').textContent = e.target.value;
+            });
+
+            document.getElementById('cloudSpeed').addEventListener('input', (e) => {
+                skyUniforms.u_cloud_speed.value = parseFloat(e.target.value);
+                document.getElementById('cloud-speed-val').textContent = e.target.value;
+            });
+
+            setWeather('cloudy');
+        });
+
+        // Weather Switching Helper
+        function setWeather(type) {
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'border-blue-400');
+                btn.classList.add('bg-slate-800/80', 'border-slate-700');
+            });
+            const activeBtn = document.getElementById(`btn-weather-${type}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-blue-600', 'border-blue-400');
+            }
+
+            const covSlider = document.getElementById('cloudCoverage');
+            if (type === 'clear') {
+                skyUniforms.u_cloud_coverage.value = 0.05;
+                skyUniforms.u_weather_darkness.value = 0.0;
+                covSlider.value = 0.05;
+            } else if (type === 'cloudy') {
+                skyUniforms.u_cloud_coverage.value = 0.45;
+                skyUniforms.u_weather_darkness.value = 0.0;
+                covSlider.value = 0.45;
+            } else if (type === 'overcast') {
+                skyUniforms.u_cloud_coverage.value = 0.75;
+                skyUniforms.u_weather_darkness.value = 0.35;
+                covSlider.value = 0.75;
+            } else if (type === 'stormy') {
+                skyUniforms.u_cloud_coverage.value = 0.90;
+                skyUniforms.u_weather_darkness.value = 0.75;
+                covSlider.value = 0.90;
+            }
+            document.getElementById('cloud-cov-val').textContent = covSlider.value;
+        }
+
+        // Tab Switching Logic
+        function switchTab(tab) {
+            activeTab = tab;
+            const previewBtn = document.getElementById('tab-preview');
+            const shaderBtn = document.getElementById('tab-shader');
+            const gdscriptBtn = document.getElementById('tab-gdscript');
+            const controlsPanel = document.getElementById('controls-panel');
+            const codePanel = document.getElementById('code-panel');
+            const codeContent = document.getElementById('code-content');
+            const codeTitle = document.getElementById('code-title');
+            const codeIcon = document.getElementById('code-icon');
+
+            [previewBtn, shaderBtn, gdscriptBtn].forEach(b => {
+                b.className = "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2";
+            });
+
+            if (tab === 'preview') {
+                previewBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2";
+                controlsPanel.classList.remove('hidden');
+                codePanel.classList.add('hidden');
+            } else {
+                controlsPanel.classList.add('hidden');
+                codePanel.classList.remove('hidden');
+                codePanel.classList.add('flex');
+
+                if (tab === 'shader') {
+                    shaderBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2";
+                    codeTitle.textContent = "ToonSky.gdshader (Godot 4 着色器)";
+                    codeIcon.className = "fa-solid fa-code text-blue-400 text-xl";
+                    codeContent.textContent = shaderCodeGD;
+                } else if (tab === 'gdscript') {
+                    gdscriptBtn.className = "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2";
+                    codeTitle.textContent = "SkyManager.gd (Godot 4 控制腳本)";
+                    codeIcon.className = "fa-solid fa-gears text-emerald-400 text-xl";
+                    codeContent.textContent = gdScriptCode;
+                }
+            }
+        }
+
+        function copyCode() {
+            const codeText = document.getElementById('code-content').textContent;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 2500);
+            });
+        }
+    </script>
+</body>
+</html>
