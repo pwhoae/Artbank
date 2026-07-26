@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D 窗戶與窗簾 互動效果演示</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+            touch-action: none;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen w-screen overflow-hidden">
+
+    <!-- 3D Canvas Area -->
+    <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+    <!-- UI Overlay Header -->
+    <header class="absolute top-4 left-4 right-4 z-10 flex flex-wrap justify-between items-center gap-4 pointer-events-none">
+        <div class="glass-panel px-5 py-3 rounded-2xl pointer-events-auto flex items-center gap-3 shadow-xl">
+            <div class="w-9 h-9 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-blue-400">
+                <i class="fa-solid fa-cubes text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-white">Godot 3D 窗戶與窗簾 模擬器</h1>
+                <p class="text-xs text-slate-400">PBR 玻璃材質 · Shader 風動窗簾 · 樞軸旋轉開關</p>
+            </div>
+        </div>
+
+        <div class="glass-panel px-4 py-2 rounded-xl pointer-events-auto flex items-center gap-2 shadow-lg text-xs text-slate-300">
+            <i class="fa-solid fa-hand-pointer text-blue-400"></i>
+            <span>點擊 3D 窗戶/窗簾可直接開關 | 滑鼠右鍵旋轉視角</span>
+        </div>
+    </header>
+
+    <!-- Sidebar Controls -->
+    <aside id="controls-panel" class="absolute top-20 right-4 bottom-4 w-80 z-10 glass-panel rounded-2xl p-4 overflow-y-auto shadow-2xl flex flex-col gap-5">
+        
+        <!-- Quick Actions -->
+        <div>
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-amber-400"></i> 快速互動操作
+            </h2>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btn-toggle-window" class="px-3 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-medium text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30">
+                    <i class="fa-solid fa-door-open"></i> <span>開/關 窗戶</span>
+                </button>
+                <button id="btn-toggle-curtain" class="px-3 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-medium text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-900/30">
+                    <i class="fa-solid fa-[#fa-bars-staggered] fa-scroll"></i> <span>拉開/收起 窗簾</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Window Settings -->
+        <div class="border-t border-slate-700/50 pt-4">
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-window-maximize text-blue-400"></i> 窗戶材質參數 (StandardMaterial3D)
+            </h2>
+            
+            <div class="space-y-3 text-xs">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">透明度 (Alpha)</span>
+                        <span id="val-glass-opacity" class="text-blue-400 font-mono">0.30</span>
+                    </div>
+                    <input type="range" id="input-glass-opacity" min="0.05" max="0.9" step="0.05" value="0.3" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">粗糙度 (Roughness)</span>
+                        <span id="val-glass-roughness" class="text-blue-400 font-mono">0.05</span>
+                    </div>
+                    <input type="range" id="input-glass-roughness" min="0.0" max="0.8" step="0.05" value="0.05" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">折射度 (Transmission)</span>
+                        <span id="val-glass-refraction" class="text-blue-400 font-mono">0.90</span>
+                    </div>
+                    <input type="range" id="input-glass-refraction" min="0.0" max="1.0" step="0.05" value="0.9" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Curtain Shader Settings -->
+        <div class="border-t border-slate-700/50 pt-4">
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-wind text-purple-400"></i> 窗簾風動 Shader 參數
+            </h2>
+
+            <div class="space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300">啟用頂點風擺 (Vertex Wind)</span>
+                    <input type="checkbox" id="input-wind-enable" checked class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-700 border-slate-600 cursor-pointer">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">風速 (Wind Speed)</span>
+                        <span id="val-wind-speed" class="text-purple-400 font-mono">2.5</span>
+                    </div>
+                    <input type="range" id="input-wind-speed" min="0.5" max="8.0" step="0.5" value="2.5" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">風力幅度 (Wind Strength)</span>
+                        <span id="val-wind-strength" class="text-purple-400 font-mono">0.18</span>
+                    </div>
+                    <input type="range" id="input-wind-strength" min="0.0" max="0.5" step="0.02" value="0.18" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Environment Controls -->
+        <div class="border-t border-slate-700/50 pt-4">
+            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-sun text-yellow-400"></i> 環境與陽光 (Environment)
+            </h2>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-slate-300">太陽角度 (Sun Angle)</span>
+                        <span id="val-sun-angle" class="text-yellow-400 font-mono">45°</span>
+                    </div>
+                    <input type="range" id="input-sun-angle" min="10" max="170" step="5" value="45" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Code Snippet Drawer Toggle -->
+        <div class="border-t border-slate-700/50 pt-4 mt-auto">
+            <button id="btn-show-code" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl flex items-center justify-center gap-2 border border-slate-700 transition">
+                <i class="fa-solid fa-code text-blue-400"></i> 檢視 Godot 核心程式碼
+            </button>
+        </div>
+    </aside>
+
+    <!-- Code Modal -->
+    <div id="code-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl max-h-[80vh] rounded-2xl flex flex-col shadow-2xl border border-slate-700">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-code text-blue-400"></i> Godot 實現邏輯說明
+                </h3>
+                <button id="btn-close-code" class="text-slate-400 hover:text-white text-lg px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-4 overflow-y-auto space-y-4 text-xs font-mono">
+                <div>
+                    <div class="text-blue-400 font-bold mb-1">// 1. 窗戶樞軸 (Pivot)Tween 旋轉 (GDScript)</div>
+                    <pre class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto">
+var tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+var target_y = initial_rotation.y + (90.0 if is_open else 0.0)
+tween.tween_property(window_pivot, "rotation_degrees:y", target_y, 0.8)</pre>
+                </div>
+                <div>
+                    <div class="text-purple-400 font-bold mb-1">// 2. 窗簾頂點風動 Shader (GDShader)</div>
+                    <pre class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-slate-300 overflow-x-auto">
+shader_type spatial;
+render_mode cull_disabled;
+
+uniform float wind_speed = 2.5;
+uniform float wind_strength = 0.18;
+
+void vertex() {
+    float factor = pow(UV.y, 1.5); // 越靠近底部擺動越大，頂部固定
+    float wave = sin(TIME * wind_speed + VERTEX.y * 3.0 + VERTEX.x) * wind_strength;
+    VERTEX.z += wave * factor;
+}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global State Variables ---
+        let scene, camera, renderer, controls;
+        let windowPivot, curtainMesh, sunLight;
+        let isWindowOpen = false;
+        let isCurtainOpen = false;
+        
+        // Target values for animations
+        let targetWindowRotation = 0;
+        let currentWindowRotation = 0;
+        
+        let targetCurtainOpenFactor = 0.0; // 0 = closed, 1 = fully open
+        let currentCurtainOpenFactor = 0.0;
+
+        // Curtain Shader Uniforms
+        const curtainUniforms = {
+            uTime: { value: 0.0 },
+            uWindSpeed: { value: 2.5 },
+            uWindStrength: { value: 0.18 },
+            uWindEnable: { value: 1.0 },
+            uOpenFactor: { value: 0.0 }
+        };
+
+        // Raycasting for interactive click on 3D meshes
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.onload = function() {
+            initScene();
+            buildRoom();
+            buildWindow();
+            buildCurtain();
+            setupLights();
+            setupUI();
+            setupEvents();
+            animate();
+        };
+
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0b1120);
+            scene.fog = new THREE.FogExp2(0x0b1120, 0.03);
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(2.5, 1.8, 4.5);
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05; // Prevents going below ground
+            controls.minDistance = 1.5;
+            controls.maxDistance = 10;
+            controls.target.set(0, 1.2, 0);
+        }
+
+        function buildRoom() {
+            // Room Wall Material
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+
+            // Floor Material
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                roughness: 0.4,
+                metalness: 0.2
+            });
+
+            // Floor Mesh
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Back Wall with Window Opening Frame
+            // We construct the wall surrounding the central window cutout (width 1.6, height 2.2)
+            const wallGroup = new THREE.Group();
+
+            // Left Wall Section
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.5, 0.2), wallMaterial);
+            leftWall.position.set(-2.05, 1.75, 0);
+            leftWall.receiveShadow = true;
+            wallGroup.add(leftWall);
+
+            // Right Wall Section
+            const rightWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.5, 0.2), wallMaterial);
+            rightWall.position.set(2.05, 1.75, 0);
+            rightWall.receiveShadow = true;
+            wallGroup.add(rightWall);
+
+            // Top Wall Section
+            const topWall = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.65, 0.2), wallMaterial);
+            topWall.position.set(0, 3.175, 0);
+            topWall.receiveShadow = true;
+            wallGroup.add(topWall);
+
+            // Bottom Wall Section (Sill)
+            const bottomWall = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.65, 0.2), wallMaterial);
+            bottomWall.position.set(0, 0.325, 0);
+            bottomWall.receiveShadow = true;
+            wallGroup.add(bottomWall);
+
+            // Window Wooden Outer Sill
+            const sillMaterial = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+            const sill = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.35), sillMaterial);
+            sill.position.set(0, 0.65, 0.05);
+            sill.castShadow = true;
+            sill.receiveShadow = true;
+            wallGroup.add(sill);
+
+            scene.add(wallGroup);
+        }
+
+        function buildWindow() {
+            // Window Pivot Container (Located at the left hinge point: x = -0.75, y = 1.75, z = 0)
+            windowPivot = new THREE.Group();
+            windowPivot.position.set(-0.75, 1.75, 0);
+
+            const frameWidth = 1.5;
+            const frameHeight = 2.1;
+            const thickness = 0.06;
+            const barThickness = 0.05;
+
+            const frameMaterial = new THREE.MeshStandardMaterial({
+                color: 0x475569,
+                roughness: 0.3,
+                metalness: 0.8
+            });
+
+            // Glass Physical Material
+            const glassMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xdbeafe,
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.05,
+                metalness: 0.1,
+                transmission: 0.9,
+                ior: 1.5,
+                reflectivity: 0.9,
+                thickness: 0.05,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.0
+            });
+
+            const sashGroup = new THREE.Group();
+            // Offset sash geometry so that pivot is along the left hinge
+            sashGroup.position.set(frameWidth / 2, 0, 0);
+
+            // Outer Sash Frame Mesh
+            const outerBox = new THREE.Mesh(new THREE.BoxGeometry(frameWidth, frameHeight, thickness), frameMaterial);
+            outerBox.castShadow = true;
+            outerBox.receiveShadow = true;
+
+            // Glass Pane Mesh
+            const glassPane = new THREE.Mesh(new THREE.BoxGeometry(frameWidth - 0.1, frameHeight - 0.1, 0.02), glassMaterial);
+            glassPane.castShadow = true;
+            glassPane.name = "GlassPane"; // For Raycasting identification
+
+            sashGroup.add(outerBox);
+            sashGroup.add(glassPane);
+
+            // Window Handle / Lock Detail
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+            const handleBase = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.04), handleMat);
+            handleBase.position.set(frameWidth / 2 - 0.08, 0, 0.04);
+            const handleLever = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.1, 0.08), handleMat);
+            handleLever.position.set(frameWidth / 2 - 0.08, -0.03, 0.08);
+            sashGroup.add(handleBase);
+            sashGroup.add(handleLever);
+
+            windowPivot.add(sashGroup);
+            scene.add(windowPivot);
+        }
+
+        function buildCurtain() {
+            // Curtain Rod
+            const rodMaterial = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 });
+            const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.0, 16), rodMaterial);
+            rod.rotation.z = Math.PI / 2;
+            rod.position.set(0, 2.9, 0.15);
+            scene.add(rod);
+
+            // Subdivided Plane Geometry for smooth curtain folds & vertex shader waves
+            const width = 1.8;
+            const height = 2.3;
+            const geometry = new THREE.PlaneGeometry(width, height, 40, 40);
+
+            // Custom Shader Material simulating Godot Vertex Shader + Subsurface Transmission
+            const customShaderMaterial = new THREE.ShaderMaterial({
+                uniforms: curtainUniforms,
+                side: THREE.DoubleSide,
+                transparent: true,
+                vertexShader: `
+                    uniform float uTime;
+                    uniform float uWindSpeed;
+                    uniform float uWindStrength;
+                    uniform float uWindEnable;
+                    uniform float uOpenFactor;
+
+                    varying vec2 vUv;
+                    varying vec3 vNormal;
+                    varying vec3 vWorldPosition;
+
+                    void main() {
+                        vUv = uv;
+                        vec3 pos = position;
+
+                        // Curtain Bunched/Slide Deformation when pulled open
+                        // Compress x coordinates towards left rod end based on uOpenFactor
+                        float openCompress = mix(1.0, 0.2, uOpenFactor);
+                        pos.x = (pos.x + 0.9) * openCompress - 0.9;
+
+                        // Natural cloth ripples along X
+                        float ripple = sin(uv.x * 25.0 * openCompress) * 0.05;
+                        pos.z += ripple;
+
+                        // Wind Shader Wave Physics (UV.y = 0 at top, 1 at bottom in Three.js Plane)
+                        // UV.y determines factor: top fixed (0.0), bottom max sway (1.0)
+                        float windFactor = pow(uv.y, 1.5) * uWindEnable;
+                        float wave = sin(uTime * uWindSpeed + pos.y * 3.0 + pos.x * 2.0) * uWindStrength;
+                        float wave2 = cos(uTime * uWindSpeed * 0.7 + pos.x * 4.0) * uWindStrength * 0.5;
+
+                        pos.z += (wave + wave2) * windFactor;
+                        pos.x += wave2 * 0.3 * windFactor;
+
+                        vNormal = normalize(normalMatrix * normal);
+                        vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+
+                        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform float uTime;
+                    varying vec2 vUv;
+                    varying vec3 vNormal;
+                    varying vec3 vWorldPosition;
+
+                    void main() {
+                        // Light direction approximation for soft translucency / SSS
+                        vec3 lightDir = normalize(vec3(-1.0, 1.0, -1.0));
+                        float NdotL = max(dot(vNormal, lightDir), 0.0);
+                        
+                        // Backlight translucency effect (Sun passing through fabric)
+                        float backlight = max(dot(-vNormal, lightDir), 0.0) * 0.6;
+
+                        vec3 fabricColor = vec3(0.85, 0.8, 0.95); // Light lavender translucent fabric
+                        vec3 finalColor = fabricColor * (0.4 + NdotL * 0.5 + backlight);
+
+                        gl_FragColor = vec4(finalColor, 0.92);
+                    }
+                `
+            });
+
+            curtainMesh = new THREE.Mesh(geometry, customShaderMaterial);
+            // Center curtain horizontally, position slightly inside room from glass
+            curtainMesh.position.set(0, 1.7, 0.14);
+            curtainMesh.castShadow = true;
+            curtainMesh.receiveShadow = true;
+            curtainMesh.name = "CurtainMesh";
+
+            scene.add(curtainMesh);
+        }
+
+        function setupLights() {
+            // Ambient Soft Room Light
+            const ambientLight = new THREE.AmbientLight(0x38bdf8, 0.4);
+            scene.add(ambientLight);
+
+            // Hemisphere Environment Light
+            const hemiLight = new THREE.HemisphereLight(0x93c5fd, 0x0f172a, 0.5);
+            scene.add(hemiLight);
+
+            // Sunlight Directional Light (Casting Shadows through Window)
+            sunLight = new THREE.DirectionalLight(0xfef08a, 2.2);
+            updateSunPosition(45); // Initial angle 45 deg
+
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 15;
+            sunLight.shadow.camera.left = -3;
+            sunLight.shadow.camera.right = 3;
+            sunLight.shadow.camera.top = 3;
+            sunLight.shadow.camera.bottom = -3;
+            sunLight.shadow.bias = -0.0005;
+
+            scene.add(sunLight);
+
+            // Indoor Accent Soft Point Light
+            const warmPointLight = new THREE.PointLight(0xfba518, 0.6, 6);
+            warmPointLight.position.set(1.5, 2.2, 1.5);
+            scene.add(warmPointLight);
+        }
+
+        function updateSunPosition(angleDegrees) {
+            const rad = (angleDegrees * Math.PI) / 180;
+            const dist = 6;
+            sunLight.position.set(-Math.cos(rad) * dist, Math.sin(rad) * dist, -dist * 0.8);
+        }
+
+        function setupUI() {
+            // Action Buttons
+            document.getElementById('btn-toggle-window').onclick = toggleWindow;
+            document.getElementById('btn-toggle-curtain').onclick = toggleCurtain;
+
+            // Glass Inputs
+            document.getElementById('input-glass-opacity').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-glass-opacity').innerText = val.toFixed(2);
+                const glass = windowPivot.getObjectByName("GlassPane");
+                if (glass) glass.material.opacity = val;
+            };
+
+            document.getElementById('input-glass-roughness').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-glass-roughness').innerText = val.toFixed(2);
+                const glass = windowPivot.getObjectByName("GlassPane");
+                if (glass) glass.material.roughness = val;
+            };
+
+            document.getElementById('input-glass-refraction').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-glass-refraction').innerText = val.toFixed(2);
+                const glass = windowPivot.getObjectByName("GlassPane");
+                if (glass) glass.material.transmission = val;
+            };
+
+            // Curtain Wind Inputs
+            document.getElementById('input-wind-enable').onchange = (e) => {
+                curtainUniforms.uWindEnable.value = e.target.checked ? 1.0 : 0.0;
+            };
+
+            document.getElementById('input-wind-speed').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-wind-speed').innerText = val.toFixed(1);
+                curtainUniforms.uWindSpeed.value = val;
+            };
+
+            document.getElementById('input-wind-strength').oninput = (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('val-wind-strength').innerText = val.toFixed(2);
+                curtainUniforms.uWindStrength.value = val;
+            };
+
+            // Sun Angle Input
+            document.getElementById('input-sun-angle').oninput = (e) => {
+                const val = parseInt(e.target.value);
+                document.getElementById('val-sun-angle').innerText = val + '°';
+                updateSunPosition(val);
+            };
+
+            // Code Modal Logic
+            const modal = document.getElementById('code-modal');
+            document.getElementById('btn-show-code').onclick = () => modal.classList.remove('hidden');
+            document.getElementById('btn-close-code').onclick = () => modal.classList.add('hidden');
+            modal.onclick = (e) => { if (e.target === modal) modal.classList.add('hidden'); };
+        }
+
+        function toggleWindow() {
+            isWindowOpen = !isWindowOpen;
+            targetWindowRotation = isWindowOpen ? -Math.PI * 0.55 : 0.0;
+        }
+
+        function toggleCurtain() {
+            isCurtainOpen = !isCurtainOpen;
+            targetCurtainOpenFactor = isCurtainOpen ? 0.8 : 0.0;
+        }
+
+        function setupEvents() {
+            window.addEventListener('resize', onWindowResize, false);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown, false);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onPointerDown(event) {
+            // Calculate mouse position in normalized device coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                const clickedObj = intersects[0].object;
+                
+                // Check if window glass or frame was clicked
+                if (clickedObj.name === "GlassPane" || clickedObj.parent === windowPivot.children[0]) {
+                    toggleWindow();
+                } 
+                // Check if curtain was clicked
+                else if (clickedObj.name === "CurtainMesh") {
+                    toggleCurtain();
+                }
+            }
+        }
+
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            const timeSec = (timestamp || 0) * 0.001;
+            curtainUniforms.uTime.value = timeSec;
+
+            // Smooth Interpolation (Lerp) for Window Rotation
+            currentWindowRotation += (targetWindowRotation - currentWindowRotation) * 0.08;
+            if (windowPivot) {
+                windowPivot.rotation.y = currentWindowRotation;
+            }
+
+            // Smooth Interpolation (Lerp) for Curtain Open/Close
+            currentCurtainOpenFactor += (targetCurtainOpenFactor - currentCurtainOpenFactor) * 0.06;
+            curtainUniforms.uOpenFactor.value = currentCurtainOpenFactor;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full bg-slate-900 text-slate-100 dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live2D 2.5D PSD 立绘拆分切片动效工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ag-psd CDN for client-side PSD parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-psd@0.10.1/dist/bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        studio: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                            600: '#475569',
+                            accent: '#6366f1',
+                            accentHover: '#4f46e5',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        
+        /* Canvas Checkered Background */
+        .checker-bg {
+            background-color: #182232;
+            background-image: 
+                linear-gradient(45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #0f172a 75%), 
+                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .layer-item:hover .layer-actions {
+            opacity: 1;
+        }
+
+        /* Smooth UI Transitions */
+        .btn-interactive {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-interactive:active {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans overflow-hidden select-none bg-slate-950 text-slate-200">
+
+    <!-- Navigation / Top Header -->
+    <header class="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid font-bold fa-cubes text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    Live2D 2.5D 立绘视差动效 Studio
+                    <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded font-mono">v2.5 Pro</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">分层 PSD/PNG 立绘微动效 & 鼠标跟踪合成器</p>
+            </div>
+        </div>
+
+        <!-- Top Action Controls -->
+        <div class="flex items-center space-x-2">
+            <!-- Upload Layer Images -->
+            <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 hover:border-slate-600 px-3 py-1.5 rounded-md flex items-center gap-1.5 btn-interactive">
+                <i class="fa-solid fa-folder-open text-indigo-400"></i>
+                <span>导入分层图(PNG)</span>
+                <input type="file" id="fileInputImages" multiple accept="image/png,image/jpeg,image/webp" class="hidden">
+            </label>
+
+            <!-- Upload PSD File -->
+            <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 hover:border-slate-600 px-3 py-1.5 rounded-md flex items-center gap-1.5 btn-interactive">
+                <i class="fa-solid fa-file-image text-cyan-400"></i>
+                <span>解析 PSD 文件</span>
+                <input type="file" id="fileInputPSD" accept=".psd" class="hidden">
+            </label>
+
+            <button id="btnLoadDemo" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-xs px-3 py-1.5 rounded-md flex items-center gap-1.5 btn-interactive">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>加载内置示例立绘</span>
+            </button>
+
+            <div class="h-4 w-[1px] bg-slate-800 mx-1"></div>
+
+            <!-- Export Options -->
+            <button id="btnExportHtml" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-lg shadow-emerald-900/30 font-medium btn-interactive">
+                <i class="fa-solid fa-code"></i>
+                <span>导出独立 HTML</span>
+            </button>
+            <button id="btnExportConfig" class="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 px-2.5 py-1.5 rounded-md btn-interactive" title="导出配置 JSON">
+                <i class="fa-solid fa-download"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Sidebar: Layer Manager -->
+        <aside class="w-80 bg-slate-900/90 border-r border-slate-800 flex flex-col z-10">
+            <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+                <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group text-indigo-400"></i> 图层层级及动作控制
+                </span>
+                <span id="layerCount" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">0 图层</span>
+            </div>
+
+            <!-- Layer List Scrollable -->
+            <div id="layerList" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Dynamic layers will be injected here -->
+            </div>
+
+            <!-- Layer Quick Helper -->
+            <div class="p-3 border-t border-slate-800 bg-slate-950/50 text-[11px] text-slate-400 space-y-1">
+                <div class="flex items-center justify-between text-slate-300 font-medium mb-1">
+                    <span>快捷提示:</span>
+                </div>
+                <p><i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i>列表靠上的图层渲染在前方 (Z轴顺序)。</p>
+                <p><i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i>调整<b>深度(Z-Depth)</b>改变鼠标移动时的视差位移量。</p>
+            </div>
+        </aside>
+
+        <!-- Central Main Viewport -->
+        <main class="flex-1 relative flex flex-col bg-slate-950 overflow-hidden">
+
+            <!-- Canvas Container -->
+            <div id="viewportContainer" class="flex-1 relative checker-bg flex items-center justify-center overflow-hidden cursor-crosshair">
+                
+                <!-- Main Animation Canvas -->
+                <canvas id="live2dCanvas" class="max-w-full max-h-full drop-shadow-2xl transition-transform duration-75 ease-out"></canvas>
+
+                <!-- Floating Canvas Toolbar -->
+                <div class="absolute top-4 right-4 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-lg p-1.5 flex items-center gap-1 shadow-xl">
+                    <button id="btnResetView" class="text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded hover:bg-slate-800 transition" title="重置视角">
+                        <i class="fa-solid fa-compress mr-1"></i> 重置位移
+                    </button>
+                    <div class="h-3 w-[1px] bg-slate-800"></div>
+                    <button id="btnToggleMesh" class="text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded hover:bg-slate-800 transition" title="网格线参考">
+                        <i class="fa-solid fa-border-none mr-1"></i> 网格
+                    </button>
+                    <button id="btnToggleBlink" class="text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded hover:bg-slate-800 transition" title="测试眨眼">
+                        <i class="fa-regular fa-eye-slash mr-1"></i> 眨眼
+                    </button>
+                </div>
+
+                <!-- Cursor Interaction Info Box -->
+                <div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur border border-slate-800/80 rounded-md px-3 py-1.5 text-[11px] text-slate-400 flex items-center gap-3">
+                    <span class="flex items-center gap-1.5">
+                        <span id="interactionIndicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="interactionText">视角跟随中 (移动鼠标)</span>
+                    </span>
+                    <span id="mouseCoords" class="font-mono text-slate-500">X: 0.00 Y: 0.00</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Motion & Global Physics Engine Tweaks -->
+        <aside class="w-80 bg-slate-900/90 border-l border-slate-800 flex flex-col z-10">
+            <div class="p-3 border-b border-slate-800 bg-slate-900 flex justify-between items-center">
+                <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i> 全局物理 & 动效参数
+                </span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-6 text-xs">
+
+                <!-- Parallax & Tilt -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-slate-200 font-medium">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-arrows-up-down-left-right text-indigo-400"></i> 视角视差强度</span>
+                        <span id="valParallax" class="font-mono text-indigo-400">1.0</span>
+                    </div>
+                    <input type="range" id="paramParallax" min="0" max="3" step="0.1" value="1.0" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    
+                    <div class="flex justify-between items-center text-slate-200 font-medium pt-1">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-rotate text-indigo-400"></i> 3D 倾斜旋转幅度</span>
+                        <span id="valTilt" class="font-mono text-indigo-400">12°</span>
+                    </div>
+                    <input type="range" id="paramTilt" min="0" max="35" step="1" value="12" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="h-[1px] bg-slate-800"></div>
+
+                <!-- Spring Physics (Hair / Sway Damping) -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-slate-200 font-medium">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-wind text-indigo-400"></i> 头发/饰品物理弹性 (Spring)</span>
+                        <span id="valSpring" class="font-mono text-indigo-400">0.08</span>
+                    </div>
+                    <input type="range" id="paramSpring" min="0.01" max="0.3" step="0.01" value="0.08" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+
+                    <div class="flex justify-between items-center text-slate-200 font-medium pt-1">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-water text-indigo-400"></i> 物理阻尼 (Damping)</span>
+                        <span id="valDamping" class="font-mono text-indigo-400">0.82</span>
+                    </div>
+                    <input type="range" id="paramDamping" min="0.5" max="0.98" step="0.01" value="0.82" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="h-[1px] bg-slate-800"></div>
+
+                <!-- Breathing Animation Settings -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-slate-200 font-medium">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-lungs text-indigo-400"></i> 呼吸频率 (Breathing Speed)</span>
+                        <span id="valBreathSpeed" class="font-mono text-indigo-400">1.2s</span>
+                    </div>
+                    <input type="range" id="paramBreathSpeed" min="0.2" max="3" step="0.1" value="1.2" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+
+                    <div class="flex justify-between items-center text-slate-200 font-medium pt-1">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-expand text-indigo-400"></i> 呼吸起伏幅度</span>
+                        <span id="valBreathAmp" class="font-mono text-indigo-400">0.025</span>
+                    </div>
+                    <input type="range" id="paramBreathAmp" min="0" max="0.08" step="0.005" value="0.025" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="h-[1px] bg-slate-800"></div>
+
+                <!-- Auto Blink Settings -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-slate-200 font-medium">
+                        <span class="flex items-center gap-1.5"><i class="fa-regular fa-eye text-indigo-400"></i> 自动眨眼间隔 (秒)</span>
+                        <span id="valBlinkFreq" class="font-mono text-indigo-400">3.5s</span>
+                    </div>
+                    <input type="range" id="paramBlinkFreq" min="1" max="10" step="0.5" value="3.5" class="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div class="h-[1px] bg-slate-800"></div>
+
+                <!-- Background Customization -->
+                <div class="space-y-3">
+                    <label class="block text-slate-200 font-medium mb-1"><i class="fa-solid fa-palette text-indigo-400 mr-1.5"></i> 调试背景填充</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="bg-slate-900 border border-slate-700 py-1.5 rounded text-[10px] text-slate-300 hover:border-indigo-500 btn-bg-option" data-bg="checker">棋盘透明</button>
+                        <button class="bg-slate-950 border border-slate-700 py-1.5 rounded text-[10px] text-slate-300 hover:border-indigo-500 btn-bg-option" data-bg="dark">深色灰色</button>
+                        <button class="bg-white border border-slate-700 py-1.5 rounded text-[10px] text-slate-800 hover:border-indigo-500 btn-bg-option" data-bg="light">明亮白底</button>
+                        <button class="bg-emerald-950 border border-slate-700 py-1.5 rounded text-[10px] text-emerald-300 hover:border-indigo-500 btn-bg-option" data-bg="green">绿幕扣像</button>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // Global Canvas & Context
+        const canvas = document.getElementById('live2dCanvas');
+        const ctx = canvas.getContext('2d');
+        const viewportContainer = document.getElementById('viewportContainer');
+
+        // Layers Store
+        let layers = []; // Array of Layer objects
+        let selectedLayerId = null;
+
+        // Mouse Tracking & Smooth Physics Variables
+        const mouse = {
+            x: 0,          // Target mouse normalized (-1 to 1)
+            y: 0,
+            currX: 0,      // Smooth interpolated mouse X
+            currY: 0,
+            velX: 0,       // Velocity for spring physics
+            velY: 0,
+            rawX: 0,       // Raw pixel position inside canvas
+            rawY: 0
+        };
+
+        // Global Dynamic Parameters
+        const params = {
+            parallaxScale: 1.0,
+            tiltMaxDeg: 12,
+            springTension: 0.08,
+            damping: 0.82,
+            breathSpeed: 1.2,
+            breathAmp: 0.025,
+            blinkIntervalSec: 3.5,
+            showGrid: false
+        };
+
+        // Animation Loop Variables
+        let animTime = 0;
+        let lastBlinkTime = performance.now();
+        let isBlinking = false;
+        let blinkProgress = 0;
+
+        // Default Layer Preset Model
+        class Layer {
+            constructor(id, name, img, options = {}) {
+                this.id = id;
+                this.name = name;
+                this.img = img; // HTMLImageElement
+                this.visible = options.visible !== undefined ? options.visible : true;
+                this.zDepth = options.zDepth || 1.0; // Parallax intensity (0: background, 1: face, 2+: front hair)
+                this.isEyeOpen = options.isEyeOpen || false;
+                this.isEyeClosed = options.isEyeClosed || false;
+                this.isBreathTarget = options.isBreathTarget || false;
+                this.hasSwayPhysics = options.hasSwayPhysics || false;
+                this.swayFactor = options.swayFactor || 0.5; // Physics sway coefficient
+                this.offsetX = options.offsetX || 0;
+                this.offsetY = options.offsetY || 0;
+            }
+        }
+
+        // Generate Default High-Quality Demo Anime Character (Rendered Procedurally onto offscreen canvases)
+        function generateDemoCharacter() {
+            const width = 600;
+            const height = 800;
+
+            const createLayerCanvas = (drawFn) => {
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = width;
+                offCanvas.height = height;
+                const offCtx = offCanvas.getContext('2d');
+                drawFn(offCtx, width, height);
+                const img = new Image();
+                img.src = offCanvas.toDataURL();
+                return img;
+            };
+
+            // 1. Background Aura Layer
+            const bgImg = createLayerCanvas((c, w, h) => {
+                const grad = c.createRadialGradient(w/2, h/2, 50, w/2, h/2, 280);
+                grad.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+                grad.addColorStop(0.7, 'rgba(168, 85, 247, 0.15)');
+                grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                c.fillStyle = grad;
+                c.beginPath();
+                c.arc(w/2, h/2, 280, 0, Math.PI * 2);
+                c.fill();
+            });
+
+            // 2. Back Hair Layer
+            const backHairImg = createLayerCanvas((c, w, h) => {
+                c.fillStyle = '#2d1b4e';
+                c.beginPath();
+                c.ellipse(w/2, h/2 + 20, 150, 220, 0, 0, Math.PI * 2);
+                c.fill();
+                // Hair strands
+                c.fillStyle = '#1e1135';
+                c.beginPath();
+                c.ellipse(w/2 - 60, h/2 + 100, 70, 180, 0.2, 0, Math.PI * 2);
+                c.ellipse(w/2 + 60, h/2 + 100, 70, 180, -0.2, 0, Math.PI * 2);
+                c.fill();
+            });
+
+            // 3. Body & Clothing Layer
+            const bodyImg = createLayerCanvas((c, w, h) => {
+                // Shoulders / Suit
+                c.fillStyle = '#1e293b';
+                c.beginPath();
+                c.moveTo(w/2 - 120, h);
+                c.quadraticCurveTo(w/2 - 100, h - 180, w/2 - 40, h - 220);
+                c.lineTo(w/2 + 40, h - 220);
+                c.quadraticCurveTo(w/2 + 100, h - 180, w/2 + 120, h);
+                c.closePath();
+                c.fill();
+
+                // Shirt Collar & Tie
+                c.fillStyle = '#f8fafc';
+                c.beginPath();
+                c.moveTo(w/2 - 35, h - 220);
+                c.lineTo(w/2, h - 160);
+                c.lineTo(w/2 + 35, h - 220);
+                c.fill();
+
+                c.fillStyle = '#6366f1';
+                c.beginPath();
+                c.moveTo(w/2 - 10, h - 190);
+                c.lineTo(w/2 + 10, h - 190);
+                c.lineTo(w/2 + 15, h - 80);
+                c.lineTo(w/2, h - 60);
+                c.lineTo(w/2 - 15, h - 80);
+                c.fill();
+            });
+
+            // 4. Head & Face Base Layer
+            const headImg = createLayerCanvas((c, w, h) => {
+                // Neck
+                c.fillStyle = '#f3d5c8';
+                c.fillRect(w/2 - 25, h/2, 50, 90);
+                c.fillStyle = '#e5bba8';
+                c.fillRect(w/2 - 25, h/2 + 20, 50, 30); // Neck shadow
+
+                // Face Shape
+                c.fillStyle = '#ffe4d6';
+                c.beginPath();
+                c.moveTo(w/2 - 80, h/2 - 40);
+                c.quadraticCurveTo(w/2 - 80, h/2 + 60, w/2, h/2 + 105);
+                c.quadraticCurveTo(w/2 + 80, h/2 + 60, w/2 + 80, h/2 - 40);
+                c.quadraticCurveTo(w/2, h/2 - 110, w/2 - 80, h/2 - 40);
+                c.fill();
+
+                // Nose & Mouth
+                c.strokeStyle = '#d49b84';
+                c.lineWidth = 3;
+                c.lineCap = 'round';
+                // Nose
+                c.beginPath();
+                c.moveTo(w/2, h/2 + 25);
+                c.lineTo(w/2 - 2, h/2 + 30);
+                c.stroke();
+                // Smile
+                c.beginPath();
+                c.arc(w/2, h/2 + 55, 16, 0.2, Math.PI - 0.2);
+                c.stroke();
+
+                // Blush
+                c.fillStyle = 'rgba(244, 114, 182, 0.3)';
+                c.beginPath();
+                c.ellipse(w/2 - 45, h/2 + 30, 18, 10, 0, 0, Math.PI*2);
+                c.ellipse(w/2 + 45, h/2 + 30, 18, 10, 0, 0, Math.PI*2);
+                c.fill();
+            });
+
+            // 5. Eyes Open Layer
+            const eyesOpenImg = createLayerCanvas((c, w, h) => {
+                const drawEye = (cx, cy) => {
+                    // White
+                    c.fillStyle = '#ffffff';
+                    c.beginPath();
+                    c.ellipse(cx, cy, 22, 28, 0, 0, Math.PI * 2);
+                    c.fill();
+
+                    // Iris Gradient
+                    const irisGrad = c.createLinearGradient(cx, cy - 25, cx, cy + 25);
+                    irisGrad.addColorStop(0, '#4f46e5');
+                    irisGrad.addColorStop(0.5, '#06b6d4');
+                    irisGrad.addColorStop(1, '#a855f7');
+                    c.fillStyle = irisGrad;
+                    c.beginPath();
+                    c.ellipse(cx, cy, 14, 22, 0, 0, Math.PI * 2);
+                    c.fill();
+
+                    // Pupil
+                    c.fillStyle = '#0f172a';
+                    c.beginPath();
+                    c.arc(cx, cy, 6, 0, Math.PI * 2);
+                    c.fill();
+
+                    // Highlights
+                    c.fillStyle = '#ffffff';
+                    c.beginPath();
+                    c.arc(cx - 5, cy - 8, 5, 0, Math.PI * 2);
+                    c.arc(cx + 5, cy + 6, 3, 0, Math.PI * 2);
+                    c.fill();
+
+                    // Eyelashes
+                    c.strokeStyle = '#1e1135';
+                    c.lineWidth = 4;
+                    c.beginPath();
+                    c.arc(cx, cy - 4, 24, Math.PI + 0.5, -0.3);
+                    c.stroke();
+                };
+
+                drawEye(w/2 - 36, h/2 + 5);
+                drawEye(w/2 + 36, h/2 + 5);
+            });
+
+            // 6. Eyes Closed / Blink Layer
+            const eyesClosedImg = createLayerCanvas((c, w, h) => {
+                const drawClosedEye = (cx, cy) => {
+                    c.strokeStyle = '#1e1135';
+                    c.lineWidth = 4;
+                    c.lineCap = 'round';
+                    c.beginPath();
+                    c.arc(cx, cy + 5, 20, Math.PI + 0.4, -0.4);
+                    c.stroke();
+                };
+                drawClosedEye(w/2 - 36, h/2 + 5);
+                drawClosedEye(w/2 + 36, h/2 + 5);
+            });
+
+            // 7. Front Hair Bangs Layer
+            const frontHairImg = createLayerCanvas((c, w, h) => {
+                c.fillStyle = '#3b2166';
+                
+                // Side Bangs
+                c.beginPath();
+                c.moveTo(w/2 - 80, h/2 - 80);
+                c.quadraticCurveTo(w/2 - 95, h/2 + 20, w/2 - 70, h/2 + 110);
+                c.quadraticCurveTo(w/2 - 50, h/2 + 30, w/2 - 60, h/2 - 60);
+                c.fill();
+
+                c.beginPath();
+                c.moveTo(w/2 + 80, h/2 - 80);
+                c.quadraticCurveTo(w/2 + 95, h/2 + 20, w/2 + 70, h/2 + 110);
+                c.quadraticCurveTo(w/2 + 50, h/2 + 30, w/2 + 60, h/2 - 60);
+                c.fill();
+
+                // Front Center Bangs
+                c.beginPath();
+                c.moveTo(w/2 - 70, h/2 - 70);
+                c.quadraticCurveTo(w/2 - 30, h/2 - 10, w/2 - 20, h/2 - 15);
+                c.quadraticCurveTo(w/2, h/2 + 15, w/2 + 15, h/2 - 20);
+                c.quadraticCurveTo(w/2 + 45, h/2 - 10, w/2 + 70, h/2 - 70);
+                c.quadraticCurveTo(w/2, h/2 - 130, w/2 - 70, h/2 - 70);
+                c.fill();
+
+                // Hair Highlight Glint
+                c.fillStyle = 'rgba(216, 180, 254, 0.4)';
+                c.beginPath();
+                c.ellipse(w/2, h/2 - 60, 50, 8, -0.1, 0, Math.PI * 2);
+                c.fill();
+            });
+
+            // 8. Hair Accessories / Ribbon
+            const accessoryImg = createLayerCanvas((c, w, h) => {
+                c.fillStyle = '#f43f5e';
+                // Ribbon Bow
+                c.beginPath();
+                c.ellipse(w/2 + 65, h/2 - 85, 25, 14, 0.4, 0, Math.PI * 2);
+                c.ellipse(w/2 + 105, h/2 - 65, 25, 14, -0.4, 0, Math.PI * 2);
+                c.fill();
+                c.fillStyle = '#be123c';
+                c.beginPath();
+                c.arc(w/2 + 85, h/2 - 75, 8, 0, Math.PI * 2);
+                c.fill();
+            });
+
+            // Populate Layers List
+            layers = [
+                new Layer('bg', '背景光晕', bgImg, { zDepth: 0.2 }),
+                new Layer('backHair', '后发/头发底层', backHairImg, { zDepth: 0.6, hasSwayPhysics: true, swayFactor: 0.3 }),
+                new Layer('body', '身体 & 服装', bodyImg, { zDepth: 0.8, isBreathTarget: true }),
+                new Layer('head', '头部 / 脸型基底', headImg, { zDepth: 1.0, isBreathTarget: true }),
+                new Layer('eyesOpen', '眼睛 (睁眼)', eyesOpenImg, { zDepth: 1.15, isEyeOpen: true }),
+                new Layer('eyesClosed', '眼睛 (闭眼)', eyesClosedImg, { zDepth: 1.15, isEyeClosed: true, visible: false }),
+                new Layer('frontHair', '前发/刘海', frontHairImg, { zDepth: 1.4, hasSwayPhysics: true, swayFactor: 0.8 }),
+                new Layer('accessory', '发饰 / 蝴蝶结', accessoryImg, { zDepth: 1.6, hasSwayPhysics: true, swayFactor: 1.2 })
+            ];
+
+            // Set canvas natural dimensions
+            canvas.width = width;
+            canvas.height = height;
+
+            updateLayerUI();
+        }
+
+        // Process uploaded PSD file using ag-psd library
+        async function handlePSDUpload(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                if (typeof agPsd === 'undefined') {
+                    alert('PSD 解析库尚未就绪，请检查网络连接或改用多张 PNG 导入。');
+                    return;
+                }
+
+                const psd = agPsd.readPsd(arrayBuffer);
+                if (!psd.children || psd.children.length === 0) {
+                    alert('未在 PSD 中检测到可用的分层！');
+                    return;
+                }
+
+                canvas.width = psd.width;
+                canvas.height = psd.height;
+
+                layers = [];
+                let layerIdx = 0;
+
+                const processPsdChildren = (children) => {
+                    // ag-psd loads layers from top to bottom, reverse for bottom-to-top Z ordering
+                    [...children].reverse().forEach((child) => {
+                        if (child.canvas) {
+                            const img = new Image();
+                            img.src = child.canvas.toDataURL();
+
+                            const layerName = child.name || `图层 ${layerIdx + 1}`;
+                            const isEyeC = layerName.includes('闭眼') || layerName.toLowerCase().includes('blink');
+                            const isEyeO = layerName.includes('眼') && !isEyeC;
+                            const isHair = layerName.includes('发') || layerName.toLowerCase().includes('hair');
+
+                            const newLayer = new Layer(
+                                'psd_layer_' + Date.now() + '_' + layerIdx,
+                                layerName,
+                                img,
+                                {
+                                    zDepth: 0.3 + (layerIdx * 0.2),
+                                    visible: child.hidden ? false : (!isEyeC),
+                                    isEyeOpen: isEyeO,
+                                    isEyeClosed: isEyeC,
+                                    hasSwayPhysics: isHair,
+                                    swayFactor: isHair ? 0.7 : 0.2
+                                }
+                            );
+                            layers.push(newLayer);
+                            layerIdx++;
+                        }
+                    });
+                };
+
+                processPsdChildren(psd.children);
+                updateLayerUI();
+
+            } catch (err) {
+                console.error('PSD parsing failed:', err);
+                alert('PSD 解析失败: ' + err.message);
+            }
+        }
+
+        // Process batch uploaded PNG images
+        function handleBatchImagesUpload(files) {
+            if (!files || files.length === 0) return;
+
+            const loadedImages = [];
+            let loadedCount = 0;
+
+            Array.from(files).forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        loadedCount++;
+                        loadedImages.push({
+                            name: file.name.replace(/\.[^/.]+$/, ""),
+                            img: img,
+                            idx: idx
+                        });
+
+                        if (loadedCount === files.length) {
+                            // Set canvas dimension based on first image
+                            canvas.width = loadedImages[0].img.width;
+                            canvas.height = loadedImages[0].img.height;
+
+                            // Re-order based on selection sequence
+                            loadedImages.sort((a, b) => a.idx - b.idx);
+
+                            layers = loadedImages.map((item, i) => {
+                                const isEyeC = item.name.includes('闭眼') || item.name.toLowerCase().includes('blink');
+                                const isEyeO = item.name.includes('眼') && !isEyeC;
+                                const isHair = item.name.includes('发') || item.name.toLowerCase().includes('hair');
+
+                                return new Layer(
+                                    'img_layer_' + Date.now() + '_' + i,
+                                    item.name,
+                                    item.img,
+                                    {
+                                        zDepth: 0.3 + (i * 0.25),
+                                        visible: !isEyeC,
+                                        isEyeOpen: isEyeO,
+                                        isEyeClosed: isEyeC,
+                                        hasSwayPhysics: isHair
+                                    }
+                                );
+                            });
+
+                            updateLayerUI();
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Dynamic UI Renderer for Layer Sidebar
+        function updateLayerUI() {
+            const container = document.getElementById('layerList');
+            document.getElementById('layerCount').textContent = `${layers.length} 图层`;
+            container.innerHTML = '';
+
+            // Display layers in stack order (reversed for visual hierarchy: Top of list = Frontmost layer)
+            const renderStack = [...layers].reverse();
+
+            renderStack.forEach((layer) => {
+                const card = document.createElement('div');
+                card.className = `layer-item bg-slate-800/70 border ${selectedLayerId === layer.id ? 'border-indigo-500 bg-indigo-950/20' : 'border-slate-700/60'} rounded-lg p-2.5 transition text-xs space-y-2`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 overflow-hidden flex-1 cursor-pointer layer-title-btn">
+                            <button class="toggle-vis text-slate-400 hover:text-white transition">
+                                <i class="fa-solid ${layer.visible ? 'fa-eye text-indigo-400' : 'fa-eye-slash text-slate-600'}"></i>
+                            </button>
+                            <span class="font-medium text-slate-200 truncate" title="${layer.name}">${layer.name}</span>
+                        </div>
+                        
+                        <!-- Order Adjust Buttons -->
+                        <div class="layer-actions flex items-center gap-1 opacity-70 transition">
+                            <button class="btn-move-up hover:bg-slate-700 p-1 rounded text-slate-400 hover:text-white" title="上移图层">
+                                <i class="fa-solid fa-chevron-up text-[10px]"></i>
+                            </button>
+                            <button class="btn-move-down hover:bg-slate-700 p-1 rounded text-slate-400 hover:text-white" title="下移图层">
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </button>
+                            <button class="btn-delete hover:bg-rose-900/50 p-1 rounded text-slate-400 hover:text-rose-400" title="删除">
+                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Slider for Z-Depth Parallax -->
+                    <div class="space-y-1 pt-1 border-t border-slate-700/40">
+                        <div class="flex justify-between items-center text-[10px] text-slate-400">
+                            <span>Z-Depth (视差偏移量)</span>
+                            <span class="font-mono text-indigo-400 val-zdepth">${layer.zDepth.toFixed(2)}</span>
+                        </div>
+                        <input type="range" min="0" max="3" step="0.05" value="${layer.zDepth}" class="slider-zdepth w-full accent-indigo-500 bg-slate-900 h-1 rounded appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Quick Toggles for Dynamic Behavior -->
+                    <div class="flex flex-wrap gap-1.5 pt-1 text-[10px]">
+                        <button class="toggle-sway px-1.5 py-0.5 rounded border ${layer.hasSwayPhysics ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-slate-900 border-slate-700 text-slate-500'}" title="头发/饰品物理甩动">
+                            <i class="fa-solid fa-wind mr-1"></i>物理甩动
+                        </button>
+                        <button class="toggle-breath px-1.5 py-0.5 rounded border ${layer.isBreathTarget ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-slate-900 border-slate-700 text-slate-500'}" title="跟随胸腔呼吸起伏">
+                            <i class="fa-solid fa-lungs mr-1"></i>呼吸关联
+                        </button>
+                        <button class="toggle-eyeopen px-1.5 py-0.5 rounded border ${layer.isEyeOpen ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300' : 'bg-slate-900 border-slate-700 text-slate-500'}" title="设为睁眼图层">
+                            <i class="fa-regular fa-eye mr-0.5"></i>睁眼
+                        </button>
+                        <button class="toggle-eyeclosed px-1.5 py-0.5 rounded border ${layer.isEyeClosed ? 'bg-rose-500/20 border-rose-500/50 text-rose-300' : 'bg-slate-900 border-slate-700 text-slate-500'}" title="设为眨眼/闭眼图层">
+                            <i class="fa-regular fa-eye-slash mr-0.5"></i>闭眼
+                        </button>
+                    </div>
+                `;
+
+                // Bind Layer Item Events
+                card.querySelector('.layer-title-btn').onclick = () => {
+                    selectedLayerId = layer.id;
+                    updateLayerUI();
+                };
+
+                card.querySelector('.toggle-vis').onclick = (e) => {
+                    e.stopPropagation();
+                    layer.visible = !layer.visible;
+                    updateLayerUI();
+                };
+
+                const sliderZ = card.querySelector('.slider-zdepth');
+                sliderZ.oninput = (e) => {
+                    layer.zDepth = parseFloat(e.target.value);
+                    card.querySelector('.val-zdepth').textContent = layer.zDepth.toFixed(2);
+                };
+
+                card.querySelector('.toggle-sway').onclick = (e) => {
+                    e.stopPropagation();
+                    layer.hasSwayPhysics = !layer.hasSwayPhysics;
+                    updateLayerUI();
+                };
+
+                card.querySelector('.toggle-breath').onclick = (e) => {
+                    e.stopPropagation();
+                    layer.isBreathTarget = !layer.isBreathTarget;
+                    updateLayerUI();
+                };
+
+                card.querySelector('.toggle-eyeopen').onclick = (e) => {
+                    e.stopPropagation();
+                    layer.isEyeOpen = !layer.isEyeOpen;
+                    if (layer.isEyeOpen) layer.isEyeClosed = false;
+                    updateLayerUI();
+                };
+
+                card.querySelector('.toggle-eyeclosed').onclick = (e) => {
+                    e.stopPropagation();
+                    layer.isEyeClosed = !layer.isEyeClosed;
+                    if (layer.isEyeClosed) layer.isEyeOpen = false;
+                    updateLayerUI();
+                };
+
+                card.querySelector('.btn-move-up').onclick = (e) => {
+                    e.stopPropagation();
+                    const idx = layers.findIndex(l => l.id === layer.id);
+                    if (idx < layers.length - 1) {
+                        const temp = layers[idx];
+                        layers[idx] = layers[idx + 1];
+                        layers[idx + 1] = temp;
+                        updateLayerUI();
+                    }
+                };
+
+                card.querySelector('.btn-move-down').onclick = (e) => {
+                    e.stopPropagation();
+                    const idx = layers.findIndex(l => l.id === layer.id);
+                    if (idx > 0) {
+                        const temp = layers[idx];
+                        layers[idx] = layers[idx - 1];
+                        layers[idx - 1] = temp;
+                        updateLayerUI();
+                    }
+                };
+
+                card.querySelector('.btn-delete').onclick = (e) => {
+                    e.stopPropagation();
+                    layers = layers.filter(l => l.id !== layer.id);
+                    updateLayerUI();
+                };
+
+                container.appendChild(card);
+            });
+        }
+
+        // Main Animation Loop
+        function renderLoop(timestamp) {
+            animTime = timestamp * 0.001;
+
+            // 1. Calculate Eye Blinking Timer Logic
+            const timeSinceLastBlink = timestamp - lastBlinkTime;
+            if (timeSinceLastBlink > params.blinkIntervalSec * 1000) {
+                isBlinking = true;
+                blinkProgress = 0;
+                lastBlinkTime = timestamp;
+            }
+
+            if (isBlinking) {
+                blinkProgress += 0.12; // Blink animation speed
+                if (blinkProgress >= Math.PI) {
+                    isBlinking = false;
+                    blinkProgress = 0;
+                }
+            }
+
+            // 2. Spring Physics Calculation for Mouse Tracking
+            const dx = mouse.x - mouse.currX;
+            const dy = mouse.y - mouse.currY;
+
+            // Hooke's Law Spring Acceleration
+            const ax = dx * params.springTension;
+            const ay = dy * params.springTension;
+
+            mouse.velX = (mouse.velX + ax) * params.damping;
+            mouse.velY = (mouse.velY + ay) * params.damping;
+
+            mouse.currX += mouse.velX;
+            mouse.currY += mouse.velY;
+
+            // 3. Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate Breathing Cycle
+            const breathSin = Math.sin(animTime * (Math.PI * 2 / params.breathSpeed));
+            const breathOffsetScale = 1 + (breathSin * params.breathAmp);
+            const breathOffsetY = breathSin * 3;
+
+            // Calculate Mouse Parallax Factors
+            const parallaxX = mouse.currX * 45 * params.parallaxScale;
+            const parallaxY = mouse.currY * 35 * params.parallaxScale;
+
+            // Global 3D Perspective Tilt Transform
+            const tiltXDeg = mouse.currY * params.tiltMaxDeg;
+            const tiltYDeg = -mouse.currX * params.tiltMaxDeg;
+
+            // 4. Render Layers from Bottom to Top
+            layers.forEach((layer) => {
+                if (!layer.visible) return;
+
+                // Handle Blinking Visibility Swap
+                if (isBlinking && Math.sin(blinkProgress) > 0.3) {
+                    if (layer.isEyeOpen) return; // Hide open eyes during blink
+                } else {
+                    if (layer.isEyeClosed) return; // Hide closed eyes during normal state
+                }
+
+                ctx.save();
+
+                // Center pivot point for canvas transforms
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                ctx.translate(centerX, centerY);
+
+                // Compute layer parallax offset based on Z-depth
+                let offsetX = parallaxX * layer.zDepth + layer.offsetX;
+                let offsetY = parallaxY * layer.zDepth + layer.offsetY;
+
+                // Apply Spring Sway Physics to hair / accessories
+                if (layer.hasSwayPhysics) {
+                    const swayAngle = mouse.velX * layer.swayFactor * 0.8;
+                    ctx.rotate(swayAngle);
+                    offsetX += mouse.velX * 80 * layer.swayFactor;
+                }
+
+                // Apply Breathing scale/translation
+                if (layer.isBreathTarget) {
+                    ctx.scale(1, breathOffsetScale);
+                    offsetY += breathOffsetY * layer.zDepth;
+                }
+
+                ctx.translate(-centerX + offsetX, -centerY + offsetY);
+
+                // Draw layer image
+                if (layer.img && layer.img.complete) {
+                    ctx.drawImage(layer.img, 0, 0, canvas.width, canvas.height);
+                }
+
+                ctx.restore();
+            });
+
+            // Optional Grid Debug Overlay
+            if (params.showGrid) {
+                drawDebugGrid();
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // Draw Debug Grid Helper
+        function drawDebugGrid() {
+            ctx.strokeStyle = 'rgba(99, 102, 241, 0.2)';
+            ctx.lineWidth = 1;
+            const step = 40;
+            for (let x = 0; x < canvas.width; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        // Mouse and Touch Movement Tracking
+        function handlePointerMove(e) {
+            const rect = viewportContainer.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // Calculate normalized position (-1.0 to 1.0) from canvas center
+            const normX = ((clientX - rect.left) / rect.width) * 2 - 1;
+            const normY = ((clientY - rect.top) / rect.height) * 2 - 1;
+
+            // Clamp bounds
+            mouse.x = Math.max(-1, Math.min(1, normX));
+            mouse.y = Math.max(-1, Math.min(1, normY));
+
+            document.getElementById('mouseCoords').textContent = `X: ${mouse.x.toFixed(2)} Y: ${mouse.y.toFixed(2)}`;
+        }
+
+        // Reset Tracking Position when mouse leaves viewport
+        function handlePointerLeave() {
+            mouse.x = 0;
+            mouse.y = 0;
+            document.getElementById('mouseCoords').textContent = `X: 0.00 Y: 0.00`;
+        }
+
+        // Initialize UI Control Listeners
+        function initEventListeners() {
+            // Viewport tracking
+            viewportContainer.addEventListener('mousemove', handlePointerMove);
+            viewportContainer.addEventListener('touchmove', handlePointerMove);
+            viewportContainer.addEventListener('mouseleave', handlePointerLeave);
+
+            // Import File Inputs
+            document.getElementById('fileInputPSD').addEventListener('change', (e) => {
+                if (e.target.files[0]) handlePSDUpload(e.target.files[0]);
+            });
+
+            document.getElementById('fileInputImages').addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleBatchImagesUpload(e.target.files);
+            });
+
+            document.getElementById('btnLoadDemo').addEventListener('click', () => {
+                generateDemoCharacter();
+            });
+
+            // Viewport Floating Buttons
+            document.getElementById('btnResetView').onclick = () => {
+                mouse.x = 0;
+                mouse.y = 0;
+                mouse.currX = 0;
+                mouse.currY = 0;
+            };
+
+            document.getElementById('btnToggleMesh').onclick = () => {
+                params.showGrid = !params.showGrid;
+            };
+
+            document.getElementById('btnToggleBlink').onclick = () => {
+                isBlinking = true;
+                blinkProgress = 0;
+            };
+
+            // Global Sliders Binding
+            const bindSlider = (id, paramKey, displayId, formatter = (v) => v) => {
+                const el = document.getElementById(id);
+                const disp = document.getElementById(displayId);
+                el.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    params[paramKey] = val;
+                    disp.textContent = formatter(val);
+                });
+            };
+
+            bindSlider('paramParallax', 'parallaxScale', 'valParallax', v => v.toFixed(1));
+            bindSlider('paramTilt', 'tiltMaxDeg', 'valTilt', v => `${v}°`);
+            bindSlider('paramSpring', 'springTension', 'valSpring', v => v.toFixed(2));
+            bindSlider('paramDamping', 'damping', 'valDamping', v => v.toFixed(2));
+            bindSlider('paramBreathSpeed', 'breathSpeed', 'valBreathSpeed', v => `${v.toFixed(1)}s`);
+            bindSlider('paramBreathAmp', 'breathAmp', 'valBreathAmp', v => v.toFixed(3));
+            bindSlider('paramBlinkFreq', 'blinkIntervalSec', 'valBlinkFreq', v => `${v.toFixed(1)}s`);
+
+            // Background Switcher
+            document.querySelectorAll('.btn-bg-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const bgType = btn.dataset.bg;
+                    viewportContainer.className = 'flex-1 relative flex items-center justify-center overflow-hidden cursor-crosshair ';
+                    if (bgType === 'checker') viewportContainer.classList.add('checker-bg');
+                    else if (bgType === 'dark') viewportContainer.classList.add('bg-slate-950');
+                    else if (bgType === 'light') viewportContainer.classList.add('bg-slate-100');
+                    else if (bgType === 'green') viewportContainer.classList.add('bg-emerald-600');
+                });
+            });
+
+            // Export Configuration JSON
+            document.getElementById('btnExportConfig').onclick = () => {
+                const configData = {
+                    version: "2.5",
+                    params: params,
+                    layers: layers.map(l => ({
+                        id: l.id,
+                        name: l.name,
+                        zDepth: l.zDepth,
+                        visible: l.visible,
+                        hasSwayPhysics: l.hasSwayPhysics,
+                        isBreathTarget: l.isBreathTarget,
+                        isEyeOpen: l.isEyeOpen,
+                        isEyeClosed: l.isEyeClosed
+                    }))
+                };
+                const blob = new Blob([JSON.stringify(configData, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'live2d_parallax_config.json';
+                a.click();
+            };
+
+            // Export Standalone Executable HTML File
+            document.getElementById('btnExportHtml').onclick = () => {
+                // Export single web bundle with embedded layer images
+                const layerDataUrls = layers.map(l => {
+                    return {
+                        id: l.id,
+                        name: l.name,
+                        zDepth: l.zDepth,
+                        visible: l.visible,
+                        hasSwayPhysics: l.hasSwayPhysics,
+                        isBreathTarget: l.isBreathTarget,
+                        isEyeOpen: l.isEyeOpen,
+                        isEyeClosed: l.isEyeClosed,
+                        src: l.img.src
+                    };
+                });
+
+                const standaloneHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live2D Parallax Interactive Viewer</title>
+    <style>
+        body { margin: 0; padding: 0; background: #090d16; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { max-width: 100%; max-height: 100vh; display: block; filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5)); }
+    </style>
+</head>
+<body>
+    <canvas id="stage"></canvas>
+    <script>
+        const canvas = document.getElementById('stage');
+        const ctx = canvas.getContext('2d');
+        canvas.width = ${canvas.width};
+        canvas.height = ${canvas.height};
+
+        const layersData = ${JSON.stringify(layerDataUrls)};
+        const layers = layersData.map(d => {
+            const img = new Image();
+            img.src = d.src;
+            return { ...d, img };
+        });
+
+        const mouse = { x: 0, y: 0, currX: 0, currY: 0, velX: 0, velY: 0 };
+        let animTime = 0, lastBlink = 0, isBlinking = false, blinkProgress = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
+        });
+
+        function loop(timestamp) {
+            animTime = timestamp * 0.001;
+            if (timestamp - lastBlink > ${params.blinkIntervalSec * 1000}) {
+                isBlinking = true; blinkProgress = 0; lastBlink = timestamp;
+            }
+            if (isBlinking) {
+                blinkProgress += 0.12;
+                if (blinkProgress >= Math.PI) isBlinking = false;
+            }
+
+            mouse.velX = (mouse.velX + (mouse.x - mouse.currX) * ${params.springTension}) * ${params.damping};
+            mouse.velY = (mouse.velY + (mouse.y - mouse.currY) * ${params.springTension}) * ${params.damping};
+            mouse.currX += mouse.velX;
+            mouse.currY += mouse.velY;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const breathSin = Math.sin(animTime * (Math.PI * 2 / ${params.breathSpeed}));
+            const breathScale = 1 + (breathSin * ${params.breathAmp});
+            const breathY = breathSin * 3;
+
+            const px = mouse.currX * 45 * ${params.parallaxScale};
+            const py = mouse.currY * 35 * ${params.parallaxScale};
+
+            layers.forEach(l => {
+                if (!l.visible) return;
+                if (isBlinking && Math.sin(blinkProgress) > 0.3) { if (l.isEyeOpen) return; }
+                else { if (l.isEyeClosed) return; }
+
+                ctx.save();
+                const cx = canvas.width / 2, cy = canvas.height / 2;
+                ctx.translate(cx, cy);
+
+                let ox = px * l.zDepth;
+                let oy = py * l.zDepth;
+
+                if (l.hasSwayPhysics) {
+                    ctx.rotate(mouse.velX * 0.4);
+                    ox += mouse.velX * 60;
+                }
+                if (l.isBreathTarget) {
+                    ctx.scale(1, breathScale);
+                    oy += breathY * l.zDepth;
+                }
+
+                ctx.translate(-cx + ox, -cy + oy);
+                if (l.img.complete) ctx.drawImage(l.img, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            });
+
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    <\/script>
+</body>
+</html>`;
+
+                const blob = new Blob([standaloneHTML], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'live2d_character_standalone.html';
+                a.click();
+            };
+        }
+
+        // Window Initialization
+        window.onload = () => {
+            initEventListeners();
+            generateDemoCharacter(); // Load initial procedural demo character
+            requestAnimationFrame(renderLoop);
+        };
+    </script>
+</body>
+</html>
