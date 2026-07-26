@@ -1,0 +1,52 @@
+[gd_scene format=3 uid="uid://cbclwajnd6ft7"]
+
+[ext_resource type="PackedScene" uid="uid://ccere5k8mbqrh" path="res://場景裝飾/窗框.tscn" id="1_8n642"]
+[ext_resource type="Shader" uid="uid://1bg4800hxkn6" path="res://場景裝飾/shader/透明玻璃.gdshader" id="2_ymopd"]
+[ext_resource type="Shader" uid="uid://7fpmrtfoqwfy" path="res://場景裝飾/shader/窗簾.gdshader" id="3_ymopd"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ft4oo"]
+render_priority = 0
+shader = ExtResource("2_ymopd")
+shader_parameter/glass_color = Color(0.047058824, 0.92156863, 1, 0.6509804)
+shader_parameter/roughness = 0.03
+shader_parameter/metallic = 0.1
+shader_parameter/fresnel_power = 4.0
+shader_parameter/refraction_strength = 0.015
+shader_parameter/normal_depth = 0.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_fafup"]
+material = SubResource("ShaderMaterial_ft4oo")
+size = Vector3(4.8, 4.8, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vs7po"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_blmb3"]
+material = SubResource("StandardMaterial3D_vs7po")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fafup"]
+render_priority = 0
+shader = ExtResource("3_ymopd")
+shader_parameter/wind_speed = 2.5
+shader_parameter/wind_strength = 0.5
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_vs7po"]
+material = SubResource("ShaderMaterial_fafup")
+size = Vector2(3, 3)
+subdivide_width = 20
+subdivide_depth = 30
+
+[node name="窗戶" type="Node3D" unique_id=5956532]
+
+[node name="窗框" parent="." unique_id=578845709 instance=ExtResource("1_8n642")]
+
+[node name="glass" type="MeshInstance3D" parent="." unique_id=1794848120]
+mesh = SubResource("BoxMesh_fafup")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=92090171]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01353097, -0.07580161, -1.7039686)
+visible = false
+mesh = SubResource("BoxMesh_blmb3")
+
+[node name="窗簾" type="MeshInstance3D" parent="." unique_id=1162409171]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.887324, 0.8765974, 0)
+mesh = SubResource("PlaneMesh_vs7po")

@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://danm7q3doj0vi"]
+
+[ext_resource type="PackedScene" uid="uid://cemlule486wf1" path="res://_工具箱/Assets/gltf/Primitive_Floor.gltf" id="1_4i1nb"]
+[ext_resource type="Script" uid="uid://dhq8a5m14t2u0" path="res://3d學習/腳本/jump_pad.gd" id="1_jc6pu"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2pdxq"]
+size = Vector3(1.9157715, 0.42041016, 1.9770508)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_jc6pu"]
+particle_flag_align_y = true
+emission_shape_scale = Vector3(0, 1, 0)
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 1.0
+emission_ring_radius = 1.0
+emission_ring_inner_radius = 0.0
+emission_ring_cone_angle = 90.0
+direction = Vector3(0, 1, 0)
+spread = 158.65
+initial_velocity_min = 5.0
+initial_velocity_max = 6.0
+linear_accel_min = -12.920002
+linear_accel_max = 99.99999
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2pdxq"]
+albedo_color = Color(1, 0.91764706, 0.53333336, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_vrw1r"]
+material = SubResource("StandardMaterial3D_2pdxq")
+size = Vector3(0.1, 0.1, 0.1)
+
+[node name="Jump_pad" type="Area3D" unique_id=1145440253 node_paths=PackedStringArray("particle_system")]
+script = ExtResource("1_jc6pu")
+particle_system = NodePath("GPUParticles3D")
+
+[node name="Primitive_Floor2" parent="." unique_id=974505022 instance=ExtResource("1_4i1nb")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=466622319]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.029907227, 0.28979492, 0.00048828125)
+shape = SubResource("BoxShape3D_2pdxq")
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="." unique_id=192003444]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07120833, 0.38939548, 0.07292318)
+emitting = false
+process_material = SubResource("ParticleProcessMaterial_jc6pu")
+draw_pass_1 = SubResource("BoxMesh_vrw1r")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
