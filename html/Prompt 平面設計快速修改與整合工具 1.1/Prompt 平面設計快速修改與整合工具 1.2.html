@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt 平面設計快速修改與整合工具 1.1</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --border-color: #e2e8f0;
+            --active-bg: #3b82f6;
+            --active-text: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 70px 20px 20px 20px;
+            min-height: 100vh;
+        }
+
+        /* 頂部固定欄 */
+        .fixed-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1030;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* 工作區雙欄佈局 */
+        .workspace {
+            display: flex;
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+
+        .left-panel {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .right-panel {
+            flex: 2;
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .grid-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .grid-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        /* Details 折疊面板 */
+        details {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card-bg);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+            overflow: hidden;
+            transition: border-color 0.2s ease;
+        }
+
+        details[open] {
+            border-color: #cbd5e1;
+        }
+
+        summary {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            border-bottom: 1px solid transparent;
+            transition: background-color 0.2s ease;
+        }
+
+        summary:hover {
+            background-color: #f1f5f9;
+        }
+
+        details[open] summary {
+            border-bottom-color: var(--border-color);
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .details-content {
+            padding: 16px;
+        }
+
+        /* 表單輸入框 */
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* 多選按鈕標籤 */
+        .category-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .category-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .category-title {
+            font-weight: 600;
+            color: var(--text-sub);
+            font-size: 12px;
+            width: 100%;
+            margin-top: 4px;
+            margin-bottom: 2px;
+        }
+
+        .btn-multi {
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .btn-multi:hover {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .btn-multi.active {
+            background-color: var(--active-bg);
+            border-color: var(--active-bg);
+            color: var(--active-text);
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+
+        /* 右側預覽輸出面板 */
+        .output-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .output-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        textarea {
+            width: 100%;
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background-color: #f8fafc;
+            color: #334155;
+            resize: none;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* 按鈕樣式 */
+        .btn-copy {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-copy:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-copy:active {
+            transform: scale(0.98);
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* RWD 響應式佈局 */
+        @media (max-width: 1024px) {
+            .workspace {
+                flex-direction: column;
+            }
+
+            .right-panel {
+                position: static;
+                height: 300px;
+            }
+
+            .grid-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 固定置頂列 -->
+    <header class="fixed-top">
+        <div class="header-title">Prompt 平面設計快速修改與整合工具 1.1</div>
+        <button class="btn-copy" onclick="copyPrompt()">一鍵複製完整 Prompt</button>
+    </header>
+
+    <div class="workspace">
+        <!-- 左側編輯區 -->
+        <div class="left-panel">
+
+            <div class="grid-row">
+                <!-- 0.文案編輯 -->
+                <details open>
+                    <summary>0. 文案編輯</summary>
+                    <div class="details-content">
+                        <div class="input-grid">
+                            <div class="input-group">
+                                <label for="p_main_title">主標題</label>
+                                <input type="text" id="p_main_title" placeholder="輸入主標題內容" oninput="updatePrompt()">
+                            </div>
+                            <div class="input-group">
+                                <label for="p_sub_title">副標題</label>
+                                <input type="text" id="p_sub_title" placeholder="輸入副標題內容" oninput="updatePrompt()">
+                            </div>
+                            <div class="input-group">
+                                <label for="p_sub_left_1">左側區塊一</label>
+                                <input type="text" id="p_sub_left_1" placeholder="左側文字一" oninput="updatePrompt()">
+                            </div>
+                            <div class="input-group">
+                                <label for="p_sub_left_2">左側區塊二</label>
+                                <input type="text" id="p_sub_left_2" placeholder="左側文字二" oninput="updatePrompt()">
+                            </div>
+                            <div class="input-group">
+                                <label for="p_sub_right_1">右側區塊一</label>
+                                <input type="text" id="p_sub_right_1" placeholder="右側文字一" oninput="updatePrompt()">
+                            </div>
+                            <div class="input-group">
+                                <label for="p_sub_right_2">右側區塊二</label>
+                                <input type="text" id="p_sub_right_2" placeholder="右側文字二" oninput="updatePrompt()">
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- 2.背景效果 -->
+                <details open>
+                    <summary>2. 背景效果</summary>
+                    <div class="details-content">
+                        <div class="category-group" id="group_bg">
+                            <div class="category-row">
+                                <span class="category-title">【視覺材質】</span>
+                                <button type="button" class="btn-multi active" data-value="打光">打光</button>
+                                <button type="button" class="btn-multi" data-value="金屬紋路">金屬紋路</button>
+                                <button type="button" class="btn-multi" data-value="提取角色顏色調整漸變疊加">角色色彩漸變疊加</button>
+                                <button type="button" class="btn-multi" data-value="漸變">漸變</button>
+                                <button type="button" class="btn-multi active" data-value="雙邊框斜線飾條">雙邊框斜線飾條</button>
+                            </div>
+                            <div class="category-row">
+                                <span class="category-title">【特定主題】</span>
+                                <button type="button" class="btn-multi" data-value="太極">太極</button>
+                                <button type="button" class="btn-multi" data-value="星座">星座</button>
+                                <button type="button" class="btn-multi" data-value="極光">極光</button>
+                                <button type="button" class="btn-multi" data-value="漫畫遮罩">漫畫遮罩</button>
+                                <button type="button" class="btn-multi" data-value="角色海報">角色海報</button>
+                                <button type="button" class="btn-multi" data-value="拍立得">拍立得</button>
+                            </div>
+                            <div class="category-row">
+                                <span class="category-title">【特殊氛圍】</span>
+                                <button type="button" class="btn-multi" data-value="懸疑感:{報紙揭開,警戒線}">懸疑感 (報紙,警戒線)</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="grid-row">
+                <!-- 4.文字風格 -->
+                <details open>
+                    <summary>4. 文字風格</summary>
+                    <div class="details-content">
+                        <div class="category-group" id="group_text">
+                            <div class="category-row">
+                                <span class="category-title">【排版與顏色】</span>
+                                <button type="button" class="btn-multi" data-value="人物名字加大放在人物背後">名字加大放人物背後</button>
+                                <button type="button" class="btn-multi active" data-value="文字顏色漸變">文字顏色漸變</button>
+                                <button type="button" class="btn-multi active" data-value="對比強烈風格">對比強烈風格</button>
+                            </div>
+                            <div class="category-row">
+                                <span class="category-title">【字體與風格】</span>
+                                <button type="button" class="btn-multi" data-value="立體動漫文字">立體動漫</button>
+                                <button type="button" class="btn-multi active" data-value="英文字體加工首字母特別處理,其餘正楷">英文加工</button>
+                                <button type="button" class="btn-multi" data-value="書法風格">書法</button>
+                                <button type="button" class="btn-multi" data-value="幾何圓形風格">幾何圓形</button>
+                                <button type="button" class="btn-multi" data-value="偽3D名牌">偽3D名牌</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- 5.人物元素 -->
+                <details open>
+                    <summary>5. 人物元素 (左上右下)</summary>
+                    <div class="details-content">
+                        <div class="category-group" id="group_elements">
+                            <div class="category-row">
+                                <span class="category-title">【基礎元素】</span>
+                                <button type="button" class="btn-multi active" data-value="彈幕">彈幕</button>
+                                <button type="button" class="btn-multi active" data-value="鼠標點">鼠標點</button>
+                                <button type="button" class="btn-multi active" data-value="4角星">4角星</button>
+                                <button type="button" class="btn-multi active" data-value="對話框">對話框</button>
+                                <button type="button" class="btn-multi active" data-value="圈">圈</button>
+                                <button type="button" class="btn-multi active" data-value="愛心,蝴蝶結,花瓣">愛心/蝴蝶結/花瓣</button>
+                            </div>
+                            <div class="category-row">
+                                <span class="category-title">【風格配件】</span>
+                                <button type="button" class="btn-multi" data-value="復古風:{蒸汽波,舊式報紙,CRT大電視,街機,卡帶,唱片,磁帶}">復古風</button>
+                                <button type="button" class="btn-multi" data-value="潮流風:{鐳射/金框卡牌,票根,街頭壁畫}">潮流風</button>
+                                <button type="button" class="btn-multi" data-value="可愛風:{小表情,音軌,貼紙,裝飾膠帶,軟乎乎}">可愛風</button>
+                                <button type="button" class="btn-multi" data-value="潮玩風:{浮雕谷子,扭蛋,透明亞克力,鍵帽,鐳射光}">潮玩風</button>
+                                <button type="button" class="btn-multi" data-value="懸疑風:{人物藏文字}">懸疑風</button>
+                                <button type="button" class="btn-multi" data-value="彈幕內嵌角色">彈幕內嵌角色</button>
+                                <button type="button" class="btn-multi" data-value="漫畫分割遮罩效果">漫畫分割遮罩</button>
+                            </div>
+                            <div class="category-row">
+                                <span class="category-title">【視覺質感】</span>
+                                <button type="button" class="btn-multi" data-value="近中遠景 史詩感">近中遠景史詩感</button>
+                                <button type="button" class="btn-multi" data-value="視覺張力">視覺張力</button>
+                                <button type="button" class="btn-multi" data-value="光影渲染">光影渲染</button>
+                                <button type="button" class="btn-multi" data-value="機能風">機能風</button>
+                                <button type="button" class="btn-multi" data-value="質感:衣服服飾高質感">高質感服飾</button>
+                                <button type="button" class="btn-multi" data-value="冷暖對比光影">冷暖對比光影</button>
+                                <button type="button" class="btn-multi" data-value="音頻可視化">音頻可視化</button>
+                                <button type="button" class="btn-multi" data-value="電影風:大量運用煙霧,灰塵,光束,動態模糊">電影風(煙霧/光束)</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+            <div class="grid-row single">
+                <!-- 6.焦點結構 -->
+                <details open>
+                    <summary>6. 焦點 結構暗示</summary>
+                    <div class="details-content">
+                        <div class="category-group" id="group_focus">
+                            <div class="category-row">
+                                <button type="button" class="btn-multi active" data-value="結構暗示：整體排版構成形狀為拱形，暗示結構,重心集中在上半部分">拱形結構</button>
+                                <button type="button" class="btn-multi active" data-value="高斯模糊給前景感增加層次">高斯模糊前景</button>
+                                <button type="button" class="btn-multi" data-value="照片">照片</button>
+                                <button type="button" class="btn-multi" data-value="眼睛打高光">眼睛打高光</button>
+                                <button type="button" class="btn-multi" data-value="角色範圍打高光,其他漸變暗">角色範圍高光/周圍暗</button>
+                                <button type="button" class="btn-multi" data-value="近中遠景">近/中/遠景</button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+
+        </div>
+
+        <!-- 右側固定預覽面板 -->
+        <div class="right-panel">
+            <div class="output-panel">
+                <div class="output-header">
+                    <h3>即時 Prompt 預覽</h3>
+                </div>
+                <textarea id="output-prompt" readonly spellcheck="false"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- 複製成功提示 -->
+    <div class="toast" id="toast">已成功複製 Prompt 到剪貼簿！</div>
+
+    <script>
+        function getSelectedValues(groupId) {
+            const activeButtons = document.querySelectorAll(`#${groupId} .btn-multi.active`);
+            return Array.from(activeButtons).map(btn => btn.getAttribute('data-value')).join(', ');
+        }
+
+        function updatePrompt() {
+            const main_title = document.getElementById('p_main_title').value;
+            const sub_title = document.getElementById('p_sub_title').value;
+            const sub_left_1 = document.getElementById('p_sub_left_1').value;
+            const sub_left_2 = document.getElementById('p_sub_left_2').value;
+            const sub_right_1 = document.getElementById('p_sub_right_1').value;
+            const sub_right_2 = document.getElementById('p_sub_right_2').value;
+
+            const bg = getSelectedValues('group_bg');
+            const text = getSelectedValues('group_text');
+            const elements = getSelectedValues('group_elements');
+            const focus = getSelectedValues('group_focus');
+
+            const fullPrompt = `平面設計 1920x1080 image
+0.文案 ["config": { "main_title": "${main_title}", "heading": "h1" ; "sub_title": "${sub_title}", "heading": "h2" ;  "sub_left_1": "${sub_left_1}", "heading": "h3" ;  "sub_left_2": "${sub_left_2}", "heading": "h4" ;  "sub_right_1": "${sub_right_1}", "heading": "h3" ;  "sub_right_2": "${sub_right_2}" , "heading": "h4" ; }] 信息集中在人物左右,底部不多
+1.人物 [用陰影增加層次感]
+2.背景 [${bg}]
+3.主色調 [人物取色塊]
+4.文字 [${text}]
+5.人物元素 [${elements}]
+6.焦點 [${focus}]`;
+
+            document.getElementById('output-prompt').value = fullPrompt;
+        }
+
+        function copyPrompt() {
+            const outputTextarea = document.getElementById('output-prompt');
+            outputTextarea.select();
+
+            navigator.clipboard.writeText(outputTextarea.value).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.add('show');
+                
+                // 按鈕微視覺反饋
+                const copyBtn = document.querySelector('.btn-copy');
+                const originalText = copyBtn.innerText;
+                copyBtn.innerText = '✓ 已複製';
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    copyBtn.innerText = originalText;
+                }, 2000);
+            }).catch(err => {
+                alert('複製失敗，請手動全選複製。');
+            });
+        }
+
+        window.onload = function () {
+            const allMultiButtons = document.querySelectorAll('.btn-multi');
+            allMultiButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    this.classList.toggle('active');
+                    updatePrompt();
+                });
+            });
+
+            updatePrompt();
+        };
+    </script>
+</body>
+
+</html>
