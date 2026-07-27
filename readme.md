@@ -1,4 +1,5 @@
 [回到底部](#readme)<a id="readme_begin"></a><br>
+update:Dribbble,ArtStation,Pinterest,UI中国,站酷
 * 📄 [GPT 生成 README 歷史版本](https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md)  
 * 🔒 [Artbank Private Repo](https://github.com/pwhoae/artbank_private)  
 * **本機自寫去背工具**：.html  
