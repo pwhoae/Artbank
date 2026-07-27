@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 3D 纸糊风格 (Papercraft) Shader 预览与代码生成器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #111827; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        .tab-btn.active { border-bottom: 2px solid #f59e0b; color: #fbbf24; font-weight: 600; }
+        .subtab-btn.active { background-color: #1f2937; color: #f59e0b; font-weight: 600; border-color: #374151; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 h-screen overflow-hidden flex flex-col select-none">
+
+    <!-- Top Navigation Header -->
+    <header class="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-4 z-10 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+                <i data-lucide="scissors" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold leading-none text-white flex items-center gap-2">
+                    Godot 4 3D 纸糊/纸艺 Shader 套件
+                    <span class="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono rounded-full">Papercraft Toon Style</span>
+                </h1>
+                <p class="text-xs text-gray-400 mt-1">纸质折痕 + 手绘描边 + 受击边缘闪光 + 死亡全息数码故障消解</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-reset-cam" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded-md transition flex items-center gap-1.5 text-gray-300">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 重置视角
+            </button>
+            <span class="px-2 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-mono rounded">Godot 4.x Compliant</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Left: Interactive 3D Paper Model Viewport -->
+        <div class="flex-1 relative bg-gradient-to-b from-gray-950 via-gray-900 to-black overflow-hidden flex flex-col">
+            <!-- 3D Canvas Target -->
+            <div id="webgl-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+            <!-- Action Floating Trigger Panel -->
+            <div class="absolute bottom-5 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur border border-gray-800 p-2.5 rounded-2xl shadow-2xl flex items-center gap-3 z-10">
+                <button id="trigger-hit-btn" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-gray-950 font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-lg shadow-amber-500/20">
+                    <i data-lucide="zap" class="w-4 h-4 fill-current"></i> 触发受击闪光 (Hit)
+                </button>
+                <div class="h-5 w-[1px] bg-gray-700"></div>
+                <button id="trigger-death-btn" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 shadow-lg shadow-rose-600/20">
+                    <i data-lucide="skull" class="w-4 h-4"></i> 播放死亡消解 (Death)
+                </button>
+                <button id="reset-character-btn" class="px-3.5 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium text-xs rounded-xl transition border border-gray-700">
+                    复原状态
+                </button>
+            </div>
+
+            <!-- Papercraft Feature Overview Overlay -->
+            <div class="absolute top-4 left-4 bg-gray-900/85 backdrop-blur p-3.5 rounded-xl border border-gray-800 text-xs space-y-2 max-w-xs shadow-xl">
+                <div class="font-bold text-amber-400 border-b border-gray-800 pb-1.5 flex items-center gap-2">
+                    <i data-lucide="layers" class="w-4 h-4"></i> 纸糊质感 (Papercraft) 特性
+                </div>
+                <div class="text-gray-300 space-y-1 text-[11px] leading-relaxed">
+                    <p class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> 顶点微抖动 (Paper Jitter / Wobble)</p>
+                    <p class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-400"></span> 纸张褶皱与纤维高光 (Paper Grain / Creases)</p>
+                    <p class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 剪纸反向外壳描边 (Inverted Hull Outline)</p>
+                    <p class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> 动态受击边缘光 (Rim Light Flash)</p>
+                    <p class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> 全息数码错位消解 (Glitch Dissolve)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Realtime Parameter Control & Export Code Tabs -->
+        <div class="w-96 bg-gray-900 border-l border-gray-800 flex flex-col shrink-0">
+            <!-- Sidebar Tab Switches -->
+            <div class="flex border-b border-gray-800 bg-gray-900/60">
+                <button id="tab-controls-btn" class="tab-btn active flex-1 py-3 text-xs text-center text-gray-300 hover:text-white transition flex items-center justify-center gap-2">
+                    <i data-lucide="sliders" class="w-3.5 h-3.5"></i> 实时参数调试
+                </button>
+                <button id="tab-code-btn" class="tab-btn flex-1 py-3 text-xs text-center text-gray-400 hover:text-white transition flex items-center justify-center gap-2">
+                    <i data-lucide="code-2" class="w-3.5 h-3.5"></i> Godot 4 代码与 Var 调用
+                </button>
+            </div>
+
+            <!-- Tab 1: Parameter Control Panel -->
+            <div id="panel-controls" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+
+                <!-- Section 1: Papercraft Material Options -->
+                <div class="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800 space-y-3">
+                    <label class="text-xs font-bold text-amber-400 flex items-center gap-2">
+                        <i data-lucide="box" class="w-4 h-4"></i> 1. 纸糊质感设置 (Papercraft FX)
+                    </label>
+                    <div class="space-y-2.5">
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>纸张褶皱感 (Paper Crease Scale)</span>
+                                <span id="val-crease-scale" class="font-mono text-gray-200">12.0</span>
+                            </div>
+                            <input type="range" id="ctrl-crease-scale" min="2" max="30" step="0.5" value="12" class="w-full accent-amber-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>褶皱凹凸强度 (Crease Depth)</span>
+                                <span id="val-crease-strength" class="font-mono text-gray-200">0.25</span>
+                            </div>
+                            <input type="range" id="ctrl-crease-strength" min="0" max="0.8" step="0.02" value="0.25" class="w-full accent-amber-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>剪纸边缘抖动 (Vertex Wobble)</span>
+                                <span id="val-wobble-amount" class="font-mono text-gray-200">0.015</span>
+                            </div>
+                            <input type="range" id="ctrl-wobble-amount" min="0" max="0.05" step="0.002" value="0.015" class="w-full accent-amber-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>纸张基色 (Base Paper Tint)</span>
+                            </div>
+                            <input type="color" id="ctrl-paper-color" value="#ded6c5" class="w-full h-8 bg-gray-800 border border-gray-700 rounded cursor-pointer p-0.5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Outline Pass -->
+                <div class="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-emerald-400 flex items-center gap-2">
+                            <i data-lucide="pen-tool" class="w-4 h-4"></i> 2. 剪纸描边设置 (Outline Pass)
+                        </label>
+                        <input type="checkbox" id="ctrl-outline-enable" checked class="rounded border-gray-700 text-amber-500 focus:ring-0">
+                    </div>
+                    <div class="space-y-2.5">
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>描边粗细 (Thickness)</span>
+                                <span id="val-outline-size" class="font-mono text-gray-200">0.030</span>
+                            </div>
+                            <input type="range" id="ctrl-outline-size" min="0" max="0.08" step="0.002" value="0.030" class="w-full accent-emerald-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>描边颜色 (Color)</span>
+                            </div>
+                            <input type="color" id="ctrl-outline-color" value="#1a1412" class="w-full h-8 bg-gray-800 border border-gray-700 rounded cursor-pointer p-0.5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Hit Rim Light -->
+                <div class="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800 space-y-3">
+                    <label class="text-xs font-bold text-yellow-400 flex items-center gap-2">
+                        <i data-lucide="sun" class="w-4 h-4"></i> 3. 受击边缘光 (Hit Rim Light)
+                    </label>
+                    <div class="space-y-2.5">
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>受击闪光强度 (hit_flash_intensity)</span>
+                                <span id="val-hit-intensity" class="font-mono text-gray-200">0.00</span>
+                            </div>
+                            <input type="range" id="ctrl-hit-intensity" min="0" max="3" step="0.05" value="0" class="w-full accent-yellow-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>边缘光指数 (hit_rim_power)</span>
+                                <span id="val-hit-power" class="font-mono text-gray-200">2.5</span>
+                            </div>
+                            <input type="range" id="ctrl-hit-power" min="0.5" max="8" step="0.1" value="2.5" class="w-full accent-yellow-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>受击边缘颜色 (hit_rim_color)</span>
+                            </div>
+                            <input type="color" id="ctrl-hit-color" value="#ffbe1a" class="w-full h-8 bg-gray-800 border border-gray-700 rounded cursor-pointer p-0.5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Hologram Glitch Dissolve -->
+                <div class="bg-gray-950/70 p-3.5 rounded-xl border border-gray-800 space-y-3">
+                    <label class="text-xs font-bold text-cyan-400 flex items-center gap-2">
+                        <i data-lucide="sparkle" class="w-4 h-4"></i> 4. 死亡全息故障消解 (Glitch Dissolve)
+                    </label>
+                    <div class="space-y-2.5">
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>消解进度 (dissolve_progress)</span>
+                                <span id="val-dissolve-prog" class="font-mono text-gray-200">0.00</span>
+                            </div>
+                            <input type="range" id="ctrl-dissolve-prog" min="0" max="1" step="0.01" value="0" class="w-full accent-cyan-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>全息切片错位 (glitch_intensity)</span>
+                                <span id="val-glitch-amount" class="font-mono text-gray-200">0.00</span>
+                            </div>
+                            <input type="range" id="ctrl-glitch-amount" min="0" max="1" step="0.02" value="0" class="w-full accent-cyan-500 bg-gray-800 h-1.5 rounded-lg">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                                <span>消解边缘高亮色 (dissolve_edge_color)</span>
+                            </div>
+                            <input type="color" id="ctrl-dissolve-color" value="#00f0ff" class="w-full h-8 bg-gray-800 border border-gray-700 rounded cursor-pointer p-0.5">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Tab 2: Godot Code Viewer & Export -->
+            <div id="panel-code" class="hidden flex-1 flex flex-col overflow-hidden bg-gray-950">
+                <!-- Code Subtabs Navigation -->
+                <div class="flex border-b border-gray-800 bg-gray-900/80 px-2 pt-2 gap-1 shrink-0 overflow-x-auto">
+                    <button id="subtab-main-btn" class="subtab-btn active px-2.5 py-1.5 text-[11px] font-mono rounded-t border-t border-x border-gray-800 text-gray-300">
+                        papercraft_toon.gdshader
+                    </button>
+                    <button id="subtab-outline-btn" class="subtab-btn px-2.5 py-1.5 text-[11px] font-mono rounded-t border-t border-x border-transparent text-gray-400 hover:text-gray-200">
+                        paper_outline.gdshader
+                    </button>
+                    <button id="subtab-script-btn" class="subtab-btn px-2.5 py-1.5 text-[11px] font-mono rounded-t border-t border-x border-transparent text-gray-400 hover:text-gray-200">
+                        paper_character.gd
+                    </button>
+                </div>
+
+                <!-- Code Container -->
+                <div class="flex-1 relative overflow-hidden">
+                    <pre class="w-full h-full p-4 text-[11px] font-mono text-gray-300 overflow-auto custom-scrollbar bg-gray-950 leading-relaxed selection:bg-amber-900/50" id="code-content-block"></pre>
+                    <!-- Copy Button -->
+                    <button id="copy-code-btn" class="absolute top-3 right-3 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs rounded-lg shadow-lg flex items-center gap-1.5 transition">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i> 复制代码
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Godot 4 Main Spatial Shader Source for 3D Papercraft
+        const mainPaperGdshaderCode = `// ====================================================================
+// Godot 4 Spatial Shader: 3D 纸糊/纸艺卡通 (Papercraft Toon) Shader
+// 特性: 纸张褶皱纹理 + 剪纸抖动 + 受击边缘闪光 + 死亡全息故障消解
+// ====================================================================
+shader_type spatial;
+render_mode cull_back, diffuse_toon, specular_toon;
+
+group_uniforms Base_PaperMaterial;
+uniform vec4 albedo_color : source_color = vec4(0.87, 0.84, 0.77, 1.0);
+uniform sampler2D albedo_texture : source_color, filter_linear_mipmap;
+uniform float metallic : hint_range(0.0, 1.0) = 0.05;
+uniform float roughness : hint_range(0.0, 1.0) = 0.85;
+
+group_uniforms Papercraft_FX;
+// 纸张褶皱纹理缩放与强度
+uniform float paper_crease_scale : hint_range(1.0, 50.0) = 12.0;
+uniform float paper_crease_strength : hint_range(0.0, 1.0) = 0.25;
+// 剪纸边缘定帧顶点抖动
+uniform float paper_wobble_amount : hint_range(0.0, 0.1) = 0.015;
+uniform float paper_wobble_speed : hint_range(0.0, 30.0) = 10.0;
+
+group_uniforms Hit_Feedback;
+// Var 变量控制: 受击动画触发强光（从 0.0 -> 2.5 -> 0.0）
+uniform float hit_flash_intensity : hint_range(0.0, 5.0) = 0.0;
+uniform vec4 hit_rim_color : source_color = vec4(1.0, 0.75, 0.1, 1.0); // 暖金/纸张燃烧爆彩
+uniform float hit_rim_power : hint_range(0.1, 10.0) = 2.5;
+
+group_uniforms Holographic_Death_Dissolve;
+// Var 变量控制: 死亡消解进度 (0.0 = 正常, 1.0 = 完全消失)
+uniform float dissolve_progress : hint_range(0.0, 1.0) = 0.0;
+// Var 变量控制: 故障切片错位强度 (0.0 = 平滑, 1.0 = 剧烈错位)
+uniform float glitch_intensity : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 dissolve_edge_color : source_color = vec4(0.0, 0.95, 1.0, 1.0);
+uniform float dissolve_edge_width : hint_range(0.001, 0.2) = 0.05;
+uniform float noise_scale = 18.0;
+
+// 伪随机噪声生成器
+float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+// 纸张折痕 Voronoi 噪波模拟
+float paper_noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+
+void vertex() {
+    // 1. 纸剪艺术的定帧顶点微抖动 (Stop-Motion Paper Wobble)
+    if (paper_wobble_amount > 0.0001) {
+        float stepped_time = floor(TIME * paper_wobble_speed);
+        float wobble = (random(VERTEX.xy + vec2(stepped_time)) - 0.5) * paper_wobble_amount;
+        VERTEX += NORMAL * wobble;
+    }
+
+    // 2. 全息数码切片错位 (Hologram Glitch Slicing)
+    if (glitch_intensity > 0.001 || dissolve_progress > 0.001) {
+        float slice_noise = sin(VERTEX.y * 35.0 + TIME * 25.0);
+        if (slice_noise > 0.5) {
+            float offset = (random(vec2(floor(VERTEX.y * 15.0), TIME)) - 0.5) * glitch_intensity * 0.25;
+            VERTEX.x += offset;
+        }
+        // 死亡消解时纸张散裂扩展
+        float n = random(VERTEX.xy * noise_scale);
+        float dis_factor = smoothstep(dissolve_progress - 0.1, dissolve_progress + 0.1, n);
+        VERTEX += NORMAL * dis_factor * dissolve_progress * 0.15;
+    }
+}
+
+void fragment() {
+    // 3. 纸张纹理与褶皱计算
+    vec2 paper_uv = UV * paper_crease_scale;
+    float crease = paper_noise(paper_uv) * paper_crease_strength;
+
+    // RGB 色散错位 UV (Glitch Chromatic Aberration)
+    vec2 uv_r = UV + vec2(glitch_intensity * 0.015 * sin(TIME * 40.0), 0.0);
+    vec2 uv_b = UV - vec2(glitch_intensity * 0.015 * cos(TIME * 35.0), 0.0);
+
+    vec4 tex_center = texture(albedo_texture, UV);
+    vec4 tex_r = texture(albedo_texture, uv_r);
+    vec4 tex_b = texture(albedo_texture, uv_b);
+
+    vec3 base_tex = vec3(tex_r.r, tex_center.g, tex_b.b);
+    // 混合纸张基色与褶皱微暗调
+    vec3 base_color = albedo_color.rgb * base_tex * (1.0 - crease * 0.4);
+
+    // 4. 死亡消解计算 (Dissolve Calculation)
+    float noise_val = random(UV * noise_scale);
+    float dissolve_map = mix(noise_val, UV.y, 0.35);
+
+    if (dissolve_progress > 0.001) {
+        if (dissolve_map < dissolve_progress) {
+            discard; // 彻底消解剔除像素
+        }
+    }
+
+    // 消解边缘高亮发光带 (Dissolve Edge Glow)
+    float edge_mask = smoothstep(dissolve_progress, dissolve_progress + dissolve_edge_width, dissolve_map);
+    vec3 dissolve_glow = (1.0 - edge_mask) * dissolve_edge_color.rgb * 6.0;
+
+    // 5. 受击反馈边缘光 (Hit Rim Light Glow)
+    float NdotV = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+    float rim = pow(1.0 - NdotV, hit_rim_power);
+    vec3 hit_glow = hit_rim_color.rgb * rim * hit_flash_intensity * 4.0;
+    vec3 hit_flash_base = hit_rim_color.rgb * hit_flash_intensity * 0.35;
+
+    // 6. 最终 Shader 属性输出
+    ALBEDO = base_color;
+    EMISSION = dissolve_glow + hit_glow + hit_flash_base;
+    METALLIC = metallic;
+    ROUGHNESS = roughness;
+}`;
+
+        // Godot 4 Inverted Hull Paper Outline Pass Shader
+        const outlinePaperGdshaderCode = `// ====================================================================
+// Godot 4 剪纸手绘风格描边 (Inverted Hull Outline Pass)
+// 使用说明: 在 MeshInstance3D 的 Material Next Pass 中引用
+// ====================================================================
+shader_type spatial;
+render_mode cull_front, unshaded;
+
+uniform float outline_thickness : hint_range(0.0, 0.1) = 0.030;
+uniform vec4 outline_color : source_color = vec4(0.10, 0.08, 0.07, 1.0);
+uniform float paper_wobble_amount : hint_range(0.0, 0.1) = 0.015;
+uniform float dissolve_progress : hint_range(0.0, 1.0) = 0.0;
+
+float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+void vertex() {
+    // 剪纸线条不规则抖动
+    float wobble = (random(VERTEX.xy + vec2(floor(TIME * 10.0))) - 0.5) * paper_wobble_amount;
+    // 沿法线外扩生成描边轮廓壳
+    VERTEX += NORMAL * (outline_thickness + wobble);
+}
+
+void fragment() {
+    // 同步主体消解裁切
+    if (dissolve_progress > 0.001) {
+        float noise_val = random(UV * 18.0);
+        float dissolve_map = mix(noise_val, UV.y, 0.35);
+        if (dissolve_map < dissolve_progress) {
+            discard;
+        }
+    }
+
+    ALBEDO = outline_color.rgb;
+    ALPHA = outline_color.a;
+}`;
+
+        // GDScript Controller Script with Variables Invocation
+        const gdscriptPaperControllerCode = `extends Node3D
+
+# ====================================================================
+# Godot 4 GDScript 控制脚本: 纸糊角色受击/死亡/参数 Var 调用接口
+# 挂载说明: 将此脚本挂载在 3D 角色根节点上，指定 target_mesh
+# ====================================================================
+class_name PapercraftCharacterController
+
+@export_category("Node References")
+@export var target_mesh : MeshInstance3D
+@export var surface_index : int = 0
+
+@export_category("Paper Material Overrides")
+@export var base_paper_color : Color = Color("ded6c5")
+@export var paper_crease_strength : float = 0.25
+@export var paper_wobble_amount : float = 0.015
+
+var paper_material : ShaderMaterial
+var hit_tween : Tween
+var death_tween : Tween
+
+func _ready() -> void:
+	if target_mesh:
+		var mat = target_mesh.get_surface_override_material(surface_index)
+		if mat is ShaderMaterial:
+			paper_material = mat
+			# 初始化应用 Var 参数
+			_apply_initial_parameters()
+
+## 更新与应用基础纸质参数 Var
+func _apply_initial_parameters() -> void:
+	if not paper_material: return
+	set_paper_color(base_paper_color)
+	set_crease_strength(paper_crease_strength)
+	set_paper_wobble(paper_wobble_amount)
+
+# ====================================================================
+# Var 调用公共 API 接口 (Public Parameter Control Methods)
+# ====================================================================
+
+## 1. 改变纸张颜色
+func set_paper_color(color : Color) -> void:
+	if paper_material:
+		paper_material.set_shader_parameter("albedo_color", color)
+
+## 2. 调整纸张褶皱感 (0.0 - 1.0)
+func set_crease_strength(strength : float) -> void:
+	if paper_material:
+		paper_material.set_shader_parameter("paper_crease_strength", strength)
+
+## 3. 调整剪纸抖动程度 (0.0 - 0.05)
+func set_paper_wobble(amount : float) -> void:
+	if paper_material:
+		paper_material.set_shader_parameter("paper_wobble_amount", amount)
+
+## 4. 触发受击闪光效果 (Hit Rim Flash Var Animation)
+func trigger_hit_flash(intensity : float = 2.5, duration : float = 0.35) -> void:
+	if not paper_material: return
+	if hit_tween and hit_tween.is_running():
+		hit_tween.kill()
+
+	hit_tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# 瞬间爆闪 Var -> intensity
+	hit_tween.tween_property(paper_material, "shader_parameter/hit_flash_intensity", intensity, 0.06)
+	# 缓退回 0.0
+	hit_tween.tween_property(paper_material, "shader_parameter/hit_flash_intensity", 0.0, duration - 0.06)
+
+## 5. 播放死亡全息消解动画 (Death Disintegrate Var Tween)
+func play_death_dissolve(duration : float = 1.2) -> void:
+	if not paper_material: return
+	if death_tween and death_tween.is_running():
+		death_tween.kill()
+
+	death_tween = create_tween().set_parallel(true)
+	# 消解 Var 推进: 0.0 -> 1.0
+	death_tween.tween_property(paper_material, "shader_parameter/dissolve_progress", 1.0, duration)\\
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	# 全息错位 Var 闪烁
+	death_tween.tween_property(paper_material, "shader_parameter/glitch_intensity", 0.75, duration * 0.3)
+	death_tween.chain().tween_property(paper_material, "shader_parameter/glitch_intensity", 0.0, duration * 0.7)
+
+## 6. 复原角色受击与消失状态
+func reset_character_state() -> void:
+	if not paper_material: return
+	if hit_tween: hit_tween.kill()
+	if death_tween: death_tween.kill()
+	paper_material.set_shader_parameter("hit_flash_intensity", 0.0)
+	paper_material.set_shader_parameter("dissolve_progress", 0.0)
+	paper_material.set_shader_parameter("glitch_intensity", 0.0)
+`;
+    </script>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let characterGroup, toonMesh, outlineMesh, particlesGroup;
+        let customPaperMaterial, outlineMaterial;
+
+        // Current Interactive Parameter State
+        const params = {
+            creaseScale: 12.0,
+            creaseStrength: 0.25,
+            wobbleAmount: 0.015,
+            paperColor: '#ded6c5',
+
+            outlineEnable: true,
+            outlineSize: 0.030,
+            outlineColor: '#1a1412',
+
+            hitIntensity: 0.0,
+            hitPower: 2.5,
+            hitColor: '#ffbe1a',
+
+            dissolveProg: 0.0,
+            glitchAmount: 0.0,
+            dissolveColor: '#00f0ff'
+        };
+
+        let currentCodeTab = 'main';
+
+        // Initialize Three.js WebGL Scene
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c0f14);
+            scene.fog = new THREE.FogExp2(0x0c0f14, 0.04);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 1.3, 3.8);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05;
+            controls.target.set(0, 0.9, 0);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xfff8ed, 0.7);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0xfffaea, 1.2);
+            mainLight.position.set(3, 5, 4);
+            scene.add(mainLight);
+
+            const fillLight = new THREE.DirectionalLight(0x507090, 0.5);
+            fillLight.position.set(-3, 2, -2);
+            scene.add(fillLight);
+
+            // Ground Paper Floor Grid
+            const gridHelper = new THREE.GridHelper(12, 24, 0xf59e0b, 0x1f2937);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            buildPapercraftCharacter();
+            buildParticleSystem();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Custom Simulation Material matching Godot Papercraft Logic
+        function createPaperSimulationMaterial() {
+            return new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uAlbedoColor: { value: new THREE.Color(params.paperColor) },
+                    uCreaseScale: { value: params.creaseScale },
+                    uCreaseStrength: { value: params.creaseStrength },
+                    uWobbleAmount: { value: params.wobbleAmount },
+
+                    uHitIntensity: { value: params.hitIntensity },
+                    uHitPower: { value: params.hitPower },
+                    uHitColor: { value: new THREE.Color(params.hitColor) },
+
+                    uDissolveProg: { value: params.dissolveProg },
+                    uGlitchAmount: { value: params.glitchAmount },
+                    uDissolveColor: { value: new THREE.Color(params.dissolveColor) },
+                    uLightDir: { value: new THREE.Vector3(0.5, 0.8, 0.6).normalize() }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform float uWobbleAmount;
+                    uniform float uGlitchAmount;
+                    uniform float uDissolveProg;
+
+                    varying vec3 vNormal;
+                    varying vec3 vWorldPosition;
+                    varying vec2 vUv;
+                    varying float vNoise;
+
+                    float rand(vec2 co){
+                        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+                    }
+
+                    void main() {
+                        vUv = uv;
+                        vNormal = normalize(normalMatrix * normal);
+                        vec3 pos = position;
+
+                        // Paper wobble
+                        if (uWobbleAmount > 0.0001) {
+                            float stepTime = floor(uTime * 10.0);
+                            float wobble = (rand(pos.xy + vec2(stepTime)) - 0.5) * uWobbleAmount;
+                            pos += normal * wobble;
+                        }
+
+                        // Glitch slicing
+                        if (uGlitchAmount > 0.001 || uDissolveProg > 0.001) {
+                            float slice = sin(pos.y * 35.0 + uTime * 25.0);
+                            if (slice > 0.5) {
+                                pos.x += (rand(vec2(floor(pos.y * 15.0), uTime)) - 0.5) * uGlitchAmount * 0.25;
+                            }
+                        }
+
+                        // Dissolve push
+                        vNoise = rand(pos.xy * 12.0);
+                        if (uDissolveProg > 0.001) {
+                            pos += normal * smoothstep(uDissolveProg - 0.1, uDissolveProg, vNoise) * uDissolveProg * 0.15;
+                        }
+
+                        vec4 worldPos = modelMatrix * vec4(pos, 1.0);
+                        vWorldPosition = worldPos.xyz;
+                        gl_Position = projectionMatrix * viewMatrix * worldPos;
+                    }
+                `,
+                fragmentShader: `
+                    uniform float uTime;
+                    uniform vec3 uAlbedoColor;
+                    uniform float uCreaseScale;
+                    uniform float uCreaseStrength;
+
+                    uniform float uHitIntensity;
+                    uniform float uHitPower;
+                    uniform vec3 uHitColor;
+
+                    uniform float uDissolveProg;
+                    uniform float uGlitchAmount;
+                    uniform vec3 uDissolveColor;
+                    uniform vec3 uLightDir;
+
+                    varying vec3 vNormal;
+                    varying vec3 vWorldPosition;
+                    varying vec2 vUv;
+                    varying float vNoise;
+
+                    float rand(vec2 co){
+                        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+                    }
+
+                    float paperNoise(vec2 p) {
+                        vec2 i = floor(p);
+                        vec2 f = fract(p);
+                        float a = rand(i);
+                        float b = rand(i + vec2(1.0, 0.0));
+                        float c = rand(i + vec2(0.0, 1.0));
+                        float d = rand(i + vec2(1.0, 1.0));
+                        vec2 u = f * f * (3.0 - 2.0 * f);
+                        return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+                    }
+
+                    void main() {
+                        // Dissolve check
+                        float dissolveMap = mix(vNoise, vUv.y, 0.35);
+                        if (uDissolveProg > 0.001 && dissolveMap < uDissolveProg) {
+                            discard;
+                        }
+
+                        // Paper Crease
+                        float crease = paperNoise(vUv * uCreaseScale) * uCreaseStrength;
+
+                        // Toon lighting steps
+                        vec3 N = normalize(vNormal);
+                        float NdotL = max(0.0, dot(N, uLightDir));
+                        float toonLight = smoothstep(0.3, 0.35, NdotL) * 0.5 + 0.5;
+
+                        vec3 color = uAlbedoColor * (1.0 - crease * 0.4) * toonLight;
+
+                        // Hit rim light
+                        vec3 V = normalize(cameraPosition - vWorldPosition);
+                        float NdotV = max(0.0, dot(N, V));
+                        float rim = pow(1.0 - NdotV, uHitPower);
+                        vec3 hitGlow = uHitColor * rim * uHitIntensity * 3.5;
+                        vec3 hitFlashBase = uHitColor * uHitIntensity * 0.3;
+
+                        // Dissolve edge glow
+                        float edgeWidth = 0.06;
+                        float edgeMask = smoothstep(uDissolveProg, uDissolveProg + edgeWidth, dissolveMap);
+                        vec3 dissolveGlow = (1.0 - edgeMask) * uDissolveColor * 5.0;
+
+                        gl_FragColor = vec4(color + hitGlow + hitFlashBase + dissolveGlow, 1.0);
+                    }
+                `,
+                side: THREE.DoubleSide
+            });
+        }
+
+        // Outline Hull Material Simulation
+        function createOutlineSimulationMaterial() {
+            return new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uOutlineSize: { value: params.outlineSize },
+                    uOutlineColor: { value: new THREE.Color(params.outlineColor) },
+                    uWobbleAmount: { value: params.wobbleAmount },
+                    uDissolveProg: { value: params.dissolveProg }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform float uOutlineSize;
+                    uniform float uWobbleAmount;
+                    varying vec2 vUv;
+                    varying vec3 vPos;
+
+                    float rand(vec2 co){
+                        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+                    }
+
+                    void main() {
+                        vUv = uv;
+                        vPos = position;
+                        float wobble = (rand(position.xy + vec2(floor(uTime * 10.0))) - 0.5) * uWobbleAmount;
+                        vec3 pushed = position + normal * (uOutlineSize + wobble);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pushed, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 uOutlineColor;
+                    uniform float uDissolveProg;
+                    varying vec2 vUv;
+                    varying vec3 vPos;
+
+                    float rand(vec2 co){
+                        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+                    }
+
+                    void main() {
+                        float noise = rand(vPos.xy * 12.0);
+                        float dissolveMap = mix(noise, vUv.y, 0.35);
+                        if (uDissolveProg > 0.001 && dissolveMap < uDissolveProg) {
+                            discard;
+                        }
+                        gl_FragColor = vec4(uOutlineColor, 1.0);
+                    }
+                `,
+                side: THREE.BackSide
+            });
+        }
+
+        // Build Stylized Folded Papercraft Model (Origami Knight Mannequin)
+        function buildPapercraftCharacter() {
+            characterGroup = new THREE.Group();
+
+            const bodyParts = [];
+
+            // Paper Origami Head (Cube/Box with chamfered flaps)
+            const headGeo = new THREE.BoxGeometry(0.38, 0.38, 0.38, 2, 2, 2);
+            headGeo.translate(0, 1.62, 0);
+            bodyParts.push(headGeo);
+
+            // Paper Folded Crown / Ears
+            const earL = new THREE.ConeGeometry(0.12, 0.35, 4);
+            earL.rotateZ(0.2);
+            earL.translate(-0.18, 1.9, 0);
+            bodyParts.push(earL);
+
+            const earR = new THREE.ConeGeometry(0.12, 0.35, 4);
+            earR.rotateZ(-0.2);
+            earR.translate(0.18, 1.9, 0);
+            bodyParts.push(earR);
+
+            // Paper Chest Plate Box
+            const chestGeo = new THREE.BoxGeometry(0.48, 0.55, 0.35, 2, 2, 2);
+            chestGeo.translate(0, 1.15, 0);
+            bodyParts.push(chestGeo);
+
+            // Paper Folded Shoulder Pads
+            const shoulderL = new THREE.BoxGeometry(0.25, 0.22, 0.28, 2, 2, 2);
+            shoulderL.rotateZ(0.15);
+            shoulderL.translate(-0.36, 1.35, 0);
+            bodyParts.push(shoulderL);
+
+            const shoulderR = new THREE.BoxGeometry(0.25, 0.22, 0.28, 2, 2, 2);
+            shoulderR.rotateZ(-0.15);
+            shoulderR.translate(0.36, 1.35, 0);
+            bodyParts.push(shoulderR);
+
+            // Paper Arms
+            const armL = new THREE.CylinderGeometry(0.08, 0.07, 0.48, 6);
+            armL.translate(-0.38, 0.92, 0);
+            bodyParts.push(armL);
+
+            const armR = new THREE.CylinderGeometry(0.08, 0.07, 0.48, 6);
+            armR.translate(0.38, 0.92, 0);
+            bodyParts.push(armR);
+
+            // Paper Folded Skirt / Belt Flaps
+            const beltGeo = new THREE.CylinderGeometry(0.26, 0.32, 0.3, 6);
+            beltGeo.translate(0, 0.75, 0);
+            bodyParts.push(beltGeo);
+
+            // Paper Legs
+            const legL = new THREE.BoxGeometry(0.14, 0.6, 0.14);
+            legL.translate(-0.15, 0.32, 0);
+            bodyParts.push(legL);
+
+            const legR = new THREE.BoxGeometry(0.14, 0.6, 0.14);
+            legR.translate(0.15, 0.32, 0);
+            bodyParts.push(legR);
+
+            // Merge geometries
+            let combinedGeo;
+            if (THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeBufferGeometries) {
+                combinedGeo = THREE.BufferGeometryUtils.mergeBufferGeometries(bodyParts);
+            } else {
+                combinedGeo = new THREE.BoxGeometry(0.5, 1.6, 0.4);
+                combinedGeo.translate(0, 0.8, 0);
+            }
+
+            // Paper Main Mesh
+            customPaperMaterial = createPaperSimulationMaterial();
+            toonMesh = new THREE.Mesh(combinedGeo, customPaperMaterial);
+            characterGroup.add(toonMesh);
+
+            // Paper Outline Pass
+            outlineMaterial = createOutlineSimulationMaterial();
+            outlineMesh = new THREE.Mesh(combinedGeo, outlineMaterial);
+            characterGroup.add(outlineMesh);
+
+            scene.add(characterGroup);
+        }
+
+        // Particle disintegration system
+        function buildParticleSystem() {
+            const count = 180;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const vels = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+                positions[i*3] = (Math.random() - 0.5) * 0.9;
+                positions[i*3+1] = Math.random() * 1.8;
+                positions[i*3+2] = (Math.random() - 0.5) * 0.9;
+
+                vels[i*3] = (Math.random() - 0.5) * 0.012;
+                vels[i*3+1] = Math.random() * 0.02 + 0.01;
+                vels[i*3+2] = (Math.random() - 0.5) * 0.012;
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.userData = { vels };
+
+            const pMat = new THREE.PointsMaterial({
+                size: 0.035,
+                color: new THREE.Color(params.dissolveColor),
+                transparent: true,
+                opacity: 0.0
+            });
+
+            particlesGroup = new THREE.Points(geo, pMat);
+            scene.add(particlesGroup);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('webgl-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+
+            // Gently rotate character
+            if (characterGroup) {
+                characterGroup.rotation.y = Math.sin(elapsedTime * 0.4) * 0.25;
+            }
+
+            // Sync uniforms to custom shader materials
+            if (customPaperMaterial) {
+                customPaperMaterial.uniforms.uTime.value = elapsedTime;
+                customPaperMaterial.uniforms.uAlbedoColor.value.set(params.paperColor);
+                customPaperMaterial.uniforms.uCreaseScale.value = params.creaseScale;
+                customPaperMaterial.uniforms.uCreaseStrength.value = params.creaseStrength;
+                customPaperMaterial.uniforms.uWobbleAmount.value = params.wobbleAmount;
+
+                customPaperMaterial.uniforms.uHitIntensity.value = params.hitIntensity;
+                customPaperMaterial.uniforms.uHitPower.value = params.hitPower;
+                customPaperMaterial.uniforms.uHitColor.value.set(params.hitColor);
+
+                customPaperMaterial.uniforms.uDissolveProg.value = params.dissolveProg;
+                customPaperMaterial.uniforms.uGlitchAmount.value = params.glitchAmount;
+                customPaperMaterial.uniforms.uDissolveColor.value.set(params.dissolveColor);
+            }
+
+            if (outlineMaterial) {
+                outlineMaterial.uniforms.uTime.value = elapsedTime;
+                outlineMaterial.uniforms.uOutlineSize.value = params.outlineEnable ? params.outlineSize : 0.0;
+                outlineMaterial.uniforms.uOutlineColor.value.set(params.outlineColor);
+                outlineMaterial.uniforms.uWobbleAmount.value = params.wobbleAmount;
+                outlineMaterial.uniforms.uDissolveProg.value = params.dissolveProg;
+            }
+
+            // Particle movement during death dissolve
+            if (particlesGroup) {
+                particlesGroup.material.opacity = params.dissolveProg * 0.85;
+                particlesGroup.material.color.set(params.dissolveColor);
+                if (params.dissolveProg > 0.05) {
+                    const pos = particlesGroup.geometry.attributes.position.array;
+                    const vels = particlesGroup.geometry.userData.vels;
+                    for (let i = 0; i < pos.length / 3; i++) {
+                        pos[i*3] += vels[i*3];
+                        pos[i*3+1] += vels[i*3+1];
+                        pos[i*3+2] += vels[i*3+2];
+
+                        if (pos[i*3+1] > 2.1) {
+                            pos[i*3+1] = 0.1;
+                        }
+                    }
+                    particlesGroup.geometry.attributes.position.needsUpdate = true;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function setupUIControls() {
+            // Paper controls
+            document.getElementById('ctrl-crease-scale').addEventListener('input', (e) => {
+                params.creaseScale = parseFloat(e.target.value);
+                document.getElementById('val-crease-scale').innerText = params.creaseScale.toFixed(1);
+            });
+            document.getElementById('ctrl-crease-strength').addEventListener('input', (e) => {
+                params.creaseStrength = parseFloat(e.target.value);
+                document.getElementById('val-crease-strength').innerText = params.creaseStrength.toFixed(2);
+            });
+            document.getElementById('ctrl-wobble-amount').addEventListener('input', (e) => {
+                params.wobbleAmount = parseFloat(e.target.value);
+                document.getElementById('val-wobble-amount').innerText = params.wobbleAmount.toFixed(3);
+            });
+            document.getElementById('ctrl-paper-color').addEventListener('input', (e) => {
+                params.paperColor = e.target.value;
+            });
+
+            // Outline controls
+            document.getElementById('ctrl-outline-enable').addEventListener('change', (e) => {
+                params.outlineEnable = e.target.checked;
+            });
+            document.getElementById('ctrl-outline-size').addEventListener('input', (e) => {
+                params.outlineSize = parseFloat(e.target.value);
+                document.getElementById('val-outline-size').innerText = params.outlineSize.toFixed(3);
+            });
+            document.getElementById('ctrl-outline-color').addEventListener('input', (e) => {
+                params.outlineColor = e.target.value;
+            });
+
+            // Hit feedback controls
+            const hitIntensitySlider = document.getElementById('ctrl-hit-intensity');
+            hitIntensitySlider.addEventListener('input', (e) => {
+                params.hitIntensity = parseFloat(e.target.value);
+                document.getElementById('val-hit-intensity').innerText = params.hitIntensity.toFixed(2);
+            });
+            document.getElementById('ctrl-hit-power').addEventListener('input', (e) => {
+                params.hitPower = parseFloat(e.target.value);
+                document.getElementById('val-hit-power').innerText = params.hitPower.toFixed(1);
+            });
+            document.getElementById('ctrl-hit-color').addEventListener('input', (e) => {
+                params.hitColor = e.target.value;
+            });
+
+            // Death dissolve controls
+            const dissolveProgSlider = document.getElementById('ctrl-dissolve-prog');
+            const glitchAmountSlider = document.getElementById('ctrl-glitch-amount');
+
+            dissolveProgSlider.addEventListener('input', (e) => {
+                params.dissolveProg = parseFloat(e.target.value);
+                document.getElementById('val-dissolve-prog').innerText = params.dissolveProg.toFixed(2);
+            });
+            glitchAmountSlider.addEventListener('input', (e) => {
+                params.glitchAmount = parseFloat(e.target.value);
+                document.getElementById('val-glitch-amount').innerText = params.glitchAmount.toFixed(2);
+            });
+            document.getElementById('ctrl-dissolve-color').addEventListener('input', (e) => {
+                params.dissolveColor = e.target.value;
+            });
+
+            // Trigger Buttons
+            document.getElementById('trigger-hit-btn').addEventListener('click', () => {
+                let intensity = 2.5;
+                params.hitIntensity = intensity;
+                hitIntensitySlider.value = intensity;
+                document.getElementById('val-hit-intensity').innerText = intensity.toFixed(2);
+
+                const fadeInterval = setInterval(() => {
+                    intensity -= 0.12;
+                    if (intensity <= 0) {
+                        intensity = 0;
+                        clearInterval(fadeInterval);
+                    }
+                    params.hitIntensity = intensity;
+                    hitIntensitySlider.value = intensity;
+                    document.getElementById('val-hit-intensity').innerText = intensity.toFixed(2);
+                }, 20);
+            });
+
+            document.getElementById('trigger-death-btn').addEventListener('click', () => {
+                let prog = 0.0;
+                let glitch = 0.75;
+
+                const animInterval = setInterval(() => {
+                    prog += 0.02;
+                    glitch = Math.max(0, glitch - 0.012);
+
+                    if (prog >= 1.0) {
+                        prog = 1.0;
+                        glitch = 0.0;
+                        clearInterval(animInterval);
+                    }
+
+                    params.dissolveProg = prog;
+                    params.glitchAmount = glitch;
+
+                    dissolveProgSlider.value = prog;
+                    glitchAmountSlider.value = glitch;
+                    document.getElementById('val-dissolve-prog').innerText = prog.toFixed(2);
+                    document.getElementById('val-glitch-amount').innerText = glitch.toFixed(2);
+                }, 25);
+            });
+
+            document.getElementById('reset-character-btn').addEventListener('click', () => {
+                params.dissolveProg = 0.0;
+                params.glitchAmount = 0.0;
+                params.hitIntensity = 0.0;
+
+                dissolveProgSlider.value = 0;
+                glitchAmountSlider.value = 0;
+                hitIntensitySlider.value = 0;
+
+                document.getElementById('val-dissolve-prog').innerText = "0.00";
+                document.getElementById('val-glitch-amount').innerText = "0.00";
+                document.getElementById('val-hit-intensity').innerText = "0.00";
+            });
+
+            document.getElementById('btn-reset-cam').addEventListener('click', () => {
+                camera.position.set(0, 1.3, 3.8);
+                controls.target.set(0, 0.9, 0);
+            });
+
+            // Tabs Switch
+            const tabControlsBtn = document.getElementById('tab-controls-btn');
+            const tabCodeBtn = document.getElementById('tab-code-btn');
+            const panelControls = document.getElementById('panel-controls');
+            const panelCode = document.getElementById('panel-code');
+
+            tabControlsBtn.addEventListener('click', () => {
+                tabControlsBtn.classList.add('active');
+                tabCodeBtn.classList.remove('active');
+                panelControls.classList.remove('hidden');
+                panelCode.classList.add('hidden');
+            });
+
+            tabCodeBtn.addEventListener('click', () => {
+                tabCodeBtn.classList.add('active');
+                tabControlsBtn.classList.remove('active');
+                panelCode.classList.remove('hidden');
+                panelControls.classList.add('hidden');
+                updateCodeBlock();
+            });
+
+            // Code Subtabs
+            const subtabMainBtn = document.getElementById('subtab-main-btn');
+            const subtabOutlineBtn = document.getElementById('subtab-outline-btn');
+            const subtabScriptBtn = document.getElementById('subtab-script-btn');
+
+            function setSubtabActive(activeBtn) {
+                [subtabMainBtn, subtabOutlineBtn, subtabScriptBtn].forEach(btn => {
+                    btn.className = "subtab-btn px-2.5 py-1.5 text-[11px] font-mono rounded-t border-t border-x border-transparent text-gray-400 hover:text-gray-200";
+                });
+                activeBtn.className = "subtab-btn active px-2.5 py-1.5 text-[11px] font-mono rounded-t border-t border-x border-gray-800 text-amber-400 font-semibold bg-gray-900";
+            }
+
+            subtabMainBtn.addEventListener('click', () => {
+                currentCodeTab = 'main';
+                setSubtabActive(subtabMainBtn);
+                updateCodeBlock();
+            });
+
+            subtabOutlineBtn.addEventListener('click', () => {
+                currentCodeTab = 'outline';
+                setSubtabActive(subtabOutlineBtn);
+                updateCodeBlock();
+            });
+
+            subtabScriptBtn.addEventListener('click', () => {
+                currentCodeTab = 'script';
+                setSubtabActive(subtabScriptBtn);
+                updateCodeBlock();
+            });
+
+            // Copy Button Logic
+            const copyBtn = document.getElementById('copy-code-btn');
+            copyBtn.addEventListener('click', () => {
+                const codeText = document.getElementById('code-content-block').innerText;
+                const tempTextarea = document.createElement('textarea');
+                tempTextarea.value = codeText;
+                document.body.appendChild(tempTextarea);
+                tempTextarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextarea);
+
+                copyBtn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> 已复制到剪贴板!`;
+                setTimeout(() => {
+                    copyBtn.innerHTML = `<i data-lucide="copy" class="w-3.5 h-3.5"></i> 复制代码`;
+                    lucide.createIcons();
+                }, 2000);
+            });
+        }
+
+        function updateCodeBlock() {
+            const block = document.getElementById('code-content-block');
+            if (currentCodeTab === 'main') {
+                block.innerText = mainPaperGdshaderCode;
+            } else if (currentCodeTab === 'outline') {
+                block.innerText = outlinePaperGdshaderCode;
+            } else if (currentCodeTab === 'script') {
+                block.innerText = gdscriptPaperControllerCode;
+            }
+        }
+
+        // Initialize App on DOM Loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            initScene();
+            animate();
+            setupUIControls();
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
