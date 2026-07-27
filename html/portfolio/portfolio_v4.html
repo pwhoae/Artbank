@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HO PO WA | Interactive Apple-Retro Tech Portfolio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                    colors: {
+                        appleLight: '#F5F5F7',
+                        appleGray: '#E8E8ED',
+                        retroCyan: '#00F2FE',
+                        retroPink: '#FF0844',
+                        retroPurple: '#7F00FF',
+                        accentOrange: '#FF5E36',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Spotlight and Custom Background */
+        body {
+            background-color: #f7f7fa;
+            color: #1d1d1f;
+            overflow-x: hidden;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Focus Light Spotlight background dynamic tracking */
+        .spotlight-bg {
+            background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.95), rgba(240, 242, 248, 0.7) 40%, rgba(225, 230, 240, 0.4) 100%);
+        }
+
+        /* Tension Typography Weight mix rule: Heavy 60%, Thin 40% */
+        .text-tension-heavy {
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+        .text-tension-thin {
+            font-weight: 200;
+            font-style: italic;
+            letter-spacing: 0.05em;
+        }
+
+        /* Glass Reflection Effect for Header & Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hover Sheen Light Reflection */
+        .glass-sheen::after {
+            content: '';
+            position: absolute;
+            top: -150%;
+            left: -150%;
+            width: 300%;
+            height: 300%;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.03) 40%,
+                rgba(255, 255, 255, 0.6) 50%,
+                rgba(255, 255, 255, 0.03) 60%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(30deg);
+            transition: transform 0.8s ease;
+            pointer-events: none;
+        }
+        .glass-sheen:hover::after {
+            transform: rotate(30deg) translate(30%, 30%);
+        }
+
+        /* 3D Outline Jitter Effect */
+        .jitter-outline {
+            position: relative;
+        }
+        .jitter-outline:hover {
+            animation: jitterAnim 0.2s infinite alternate;
+        }
+        @keyframes jitterAnim {
+            0% { transform: translate(1px, 1px) skew(0.5deg); box-shadow: -3px 3px 0 #00f2fe; }
+            100% { transform: translate(-1px, -1px) skew(-0.5deg); box-shadow: 3px -3px 0 #ff0844; }
+        }
+
+        /* Rotating Gradient Border for Projects Stack */
+        .gradient-border-card {
+            position: relative;
+            border-radius: 1.5rem;
+            background: #ffffff;
+            z-index: 1;
+        }
+        .gradient-border-card::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: conic-gradient(from var(--border-angle, 0deg), #ff5e36, #00f2fe, #7f00ff, #ff0844, #ff5e36);
+            border-radius: 1.6rem;
+            z-index: -1;
+            animation: spinBorder 4s linear infinite;
+        }
+        @property --border-angle {
+            syntax: '<angle>';
+            inherits: false;
+            initial-value: 0deg;
+        }
+        @keyframes spinBorder {
+            0% { --border-angle: 0deg; }
+            100% { --border-angle: 360deg; }
+        }
+
+        /* Resizable Container Styles */
+        .resizable-box {
+            resize: both;
+            overflow: auto;
+            min-width: 280px;
+            min-height: 200px;
+        }
+
+        /* Venetian Blind (百葉窗) Hover Effect for Skill Cards */
+        .venetian-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .venetian-blind {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(127, 0, 255, 0.1), rgba(0, 242, 254, 0.1));
+            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+            transition: clip-path 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .venetian-container:hover .venetian-blind {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+
+        /* Wipe Text Animation */
+        .wipe-text {
+            background: linear-gradient(90deg, #1d1d1f 50%, #7f00ff 50%);
+            background-size: 200% 100%;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: background-position 0.4s ease-in-out;
+        }
+        .wipe-container:hover .wipe-text {
+            background-position: -100% 0;
+        }
+
+        /* Magnetic Hover Effect */
+        .magnetic-btn {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Custom Clip Path Shapes for Tech Tool Icons */
+        .clip-polygon-1 { clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); }
+        .clip-polygon-2 { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+
+        /* Custom Scroll Bar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f4; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="spotlight-bg min-h-screen relative text-slate-800">
+
+    <!-- Background SVG Pattern Dynamic Floating Elements -->
+    <div class="fixed inset-0 pointer-events-none z-0 opacity-40">
+        <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" stroke-width="1.5" />
+                    <circle cx="40" cy="40" r="1.5" fill="#cbd5e1" />
+                </pattern>
+                <linearGradient id="retroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00f2fe" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#7f00ff" stop-opacity="0.2"/>
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+            <!-- Floating SVG Interactive Blobs -->
+            <circle cx="15%" cy="25%" r="180" fill="url(#retroGrad)" class="animate-pulse" style="animation-duration: 8s;"/>
+            <circle cx="85%" cy="75%" r="220" fill="url(#retroGrad)" class="animate-pulse" style="animation-duration: 12s;"/>
+        </svg>
+    </div>
+
+    <!-- TOP NAVIGATION BAR (Frosted Glass + Music Circular Progress + Search Bar) -->
+    <header class="fixed top-4 left-1/2 -translate-x-1/2 w-[92%] max-w-7xl z-50 rounded-2xl glass-card glass-sheen px-4 py-2.5 flex items-center justify-between transition-all duration-300">
+        <!-- Logo Branding -->
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 via-cyan-500 to-rose-400 p-[2px] shadow-md flex items-center justify-center cursor-pointer group" onclick="scrollToTop()">
+                <div class="w-full h-full bg-white rounded-[10px] flex items-center justify-center group-hover:bg-opacity-0 transition-all">
+                    <span class="font-mono font-black text-slate-800 group-hover:text-white transition-colors">PW</span>
+                </div>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm tracking-tight text-slate-900 leading-none">
+                    <span class="text-tension-heavy">HO PO WA</span>
+                    <span class="text-tension-thin text-xs text-indigo-600 font-serif">/ Portfolio</span>
+                </h1>
+                <p class="text-[10px] text-slate-500 font-mono">HKUST BEng CE • Tech Art & AI</p>
+            </div>
+        </div>
+
+        <!-- Center Search Bar with Cat Easter Egg -->
+        <div class="relative hidden md:block w-72">
+            <div class="relative flex items-center">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 text-xs text-slate-400"></i>
+                <input type="text" id="searchInput" placeholder="Search or type 'cat:' for secret..." 
+                       class="w-full bg-white/70 backdrop-blur border border-slate-200/80 rounded-full py-1.5 pl-8 pr-8 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-inner"
+                       onkeydown="checkSearchEasterEgg(event)">
+                <span class="absolute right-2 text-[10px] bg-slate-200/80 text-slate-600 font-mono px-1.5 py-0.5 rounded-md">↵</span>
+            </div>
+            <div id="searchTip" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-indigo-100 rounded-lg p-2 text-xs shadow-xl text-indigo-600 font-mono text-center animate-bounce">
+                🐾 Try searching "cat" or "cat:" to unlock http.cat!
+            </div>
+        </div>
+
+        <!-- Right Side Nav Items + Tech Audio Progress Ring -->
+        <div class="flex items-center gap-3">
+            <!-- Audio Dynamic Circular Progress Ring -->
+            <div class="flex items-center gap-2 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60" title="Interactive Audio Synthesizer Toggle">
+                <div class="relative w-7 h-7 flex items-center justify-center cursor-pointer" onclick="toggleAudioProgress()">
+                    <svg class="w-7 h-7 transform -rotate-90">
+                        <circle cx="14" cy="14" r="11" stroke="currentColor" stroke-width="2.5" class="text-slate-200" fill="transparent"/>
+                        <circle id="audioProgressCircle" cx="14" cy="14" r="11" stroke="currentColor" stroke-width="2.5" class="text-violet-600 stroke-dashoffset-70" stroke-dasharray="69" stroke-linecap="round" fill="transparent"/>
+                    </svg>
+                    <i id="audioIcon" class="fa-solid fa-play text-[9px] text-violet-700 absolute"></i>
+                </div>
+                <span class="text-[11px] font-mono font-medium text-slate-600 hidden sm:inline">2026.FM</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden lg:flex items-center gap-4 text-xs font-semibold text-slate-600">
+                <a href="#edu" class="hover:text-violet-600 transition-colors">Education</a>
+                <a href="#projects" class="hover:text-violet-600 transition-colors">Projects</a>
+                <a href="#techart" class="hover:text-violet-600 transition-colors">Tech Art</a>
+                <a href="#skills" class="hover:text-violet-600 transition-colors">Skills</a>
+            </nav>
+
+            <!-- Quick Contact Button -->
+            <a href="#contact" class="bg-slate-900 hover:bg-violet-700 text-white text-xs font-mono px-3.5 py-1.5 rounded-full transition-all duration-300 shadow-md hover:shadow-violet-300/50 flex items-center gap-1.5">
+                <span>CONNECT</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- EASTER EGG RIGHT DRAWER (Drag / Pull Right Edge to Reveal Author Info) -->
+    <div id="easterEggHandle" class="fixed right-0 top-1/2 -translate-y-1/2 z-50 bg-slate-900/90 text-white p-2 rounded-l-xl shadow-2xl cursor-pointer hover:bg-violet-600 transition-all flex flex-col items-center gap-2 group" onclick="toggleEasterEggDrawer()">
+        <i class="fa-solid fa-chevron-left group-hover:-translate-x-1 transition-transform text-xs"></i>
+        <span class="text-[10px] font-mono tracking-widest uppercase [writing-mode:vertical-rl]">AUTHOR CREDITS</span>
+        <i class="fa-solid fa-user-ninja text-xs"></i>
+    </div>
+
+    <div id="easterEggDrawer" class="fixed top-0 right-0 h-full w-80 bg-white/95 backdrop-blur-2xl z-50 shadow-2xl border-l border-slate-200 transform translate-x-full transition-transform duration-500 ease-in-out p-6 flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+                <h3 class="font-mono font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-code text-violet-600"></i> AUTHOR CREDITS
+                </h3>
+                <button onclick="toggleEasterEggDrawer()" class="text-slate-400 hover:text-slate-800 text-lg">&times;</button>
+            </div>
+
+            <div class="mt-6 space-y-4 text-xs font-mono text-slate-600">
+                <div class="p-3 bg-violet-50 rounded-xl border border-violet-100">
+                    <p class="font-bold text-violet-900 mb-1">Interactive Portfolio v2026</p>
+                    <p class="text-[11px] text-violet-700">Designed & Engineered by <span class="underline font-bold">HO PO WA</span> (pwhoae).</p>
+                </div>
+
+                <div>
+                    <span class="text-slate-400 text-[10px] uppercase font-semibold">Special Tech Stack</span>
+                    <ul class="mt-2 space-y-1.5 list-disc list-inside text-slate-700">
+                        <li>HTML5 Canvas + Interactive WebGL</li>
+                        <li>Tailwind Dynamic Glassmorphism</li>
+                        <li>Apple-Retro Spotlight Shader</li>
+                        <li>Godot 3D Water & Tween Emulation</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <span class="text-slate-400 text-[10px] uppercase font-semibold">Secret Commands</span>
+                    <p class="mt-1 text-[11px] bg-slate-100 p-2 rounded-lg text-slate-800">
+                        Type <code class="text-rose-600 font-bold">cat</code> in search bar to summon the Cat Status portal!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 text-center">
+            <p class="text-[10px] text-slate-400 font-mono">HKUST Graduate • Tech Art Portfolio</p>
+        </div>
+    </div>
+
+    <!-- HERO SECTION (HKUST Parallax Connection + Light Contrast Spotlight) -->
+    <section class="relative pt-32 pb-20 px-6 max-w-7xl mx-auto min-h-screen flex flex-col justify-center">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            <!-- Left Bio Intro -->
+            <div class="lg:col-span-7 space-y-6">
+                <!-- Status Badge -->
+                <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full text-emerald-700 font-mono text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>HKSTP Talent Foundry Fellow 2025-2026</span>
+                </div>
+
+                <!-- Heavy vs Thin Weight Typography -->
+                <h1 class="text-5xl sm:text-6xl md:text-7xl tracking-tight leading-[1.08] text-slate-900">
+                    <span class="text-tension-heavy block">CREATIVE</span>
+                    <span class="text-tension-thin text-indigo-600 font-serif block">ENGINEER &</span>
+                    <span class="text-tension-heavy bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 bg-clip-text text-transparent block">TECH ARTIST</span>
+                </h1>
+
+                <p class="text-slate-600 text-base sm:text-lg max-w-2xl font-sans leading-relaxed">
+                    Graduate from <strong class="text-slate-900 font-semibold underline decoration-indigo-300">The Hong Kong University of Science and Technology (HKUST)</strong> in BEng Computer Engineering. Crafting high-performance AI systems, shaders, game engines, and interactive visual experiences.
+                </p>
+
+                <!-- Action CTA & Resizable Toggle Indicator -->
+                <div class="flex flex-wrap items-center gap-4 pt-4">
+                    <a href="#projects" class="group bg-slate-900 text-white font-mono text-xs px-6 py-3.5 rounded-xl hover:bg-violet-600 transition-all shadow-xl hover:shadow-violet-200 flex items-center gap-3">
+                        <span>EXPLORE PROJECTS</span>
+                        <i class="fa-solid fa-arrow-down group-hover:translate-y-1 transition-transform"></i>
+                    </a>
+                    
+                    <a href="https://github.com/pwhoae" target="_blank" class="bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 font-mono text-xs px-5 py-3.5 rounded-xl transition-all shadow-sm flex items-center gap-2">
+                        <i class="fa-brands fa-github text-base"></i>
+                        <span>GitHub Profile</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Visual Interactive 3D Canvas (HKUST Visual Effect + Mouse Depth) -->
+            <div class="lg:col-span-5 relative">
+                <div class="resizable-box glass-card rounded-3xl p-6 shadow-2xl jitter-outline border border-white/90 relative group transition-all duration-300" title="Drag corner to resize element!">
+                    <!-- Resize Handle Indicator -->
+                    <div class="absolute top-3 right-3 text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full pointer-events-none">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center mr-1"></i>RESIZABLE
+                    </div>
+
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                        <span class="ml-2 font-mono text-xs text-slate-500 font-bold">HKUST_3D_Viewport.canvas</span>
+                    </div>
+
+                    <!-- Canvas Interactive Simulation -->
+                    <div class="relative w-full h-64 sm:h-72 bg-gradient-to-b from-slate-900 to-indigo-950 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
+                        <canvas id="hkust3dCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                        
+                        <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700 text-[10px] font-mono text-slate-300 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                            <span>Interactive Parallax Canvas • Drag Mouse</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Animated Scroll Indicator -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+            <span class="font-mono text-[10px] tracking-widest text-slate-400 uppercase">SCROLL TO DISCOVER</span>
+            <div class="w-5 h-8 border-2 border-slate-400 rounded-full flex justify-center p-1">
+                <div class="w-1 h-2 bg-slate-600 rounded-full animate-bounce"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vertical Parallax Connector Line -->
+    <div class="w-px h-24 mx-auto bg-gradient-to-b from-transparent via-indigo-400 to-transparent my-4"></div>
+
+    <!-- BODY 0: EDUCATION & EXPERIENCE CARDS (Hover Image/Card Swap Effect) -->
+    <section id="edu" class="py-16 px-6 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+            <div>
+                <span class="text-xs font-mono font-bold text-violet-600 tracking-wider uppercase">[ BODY 00 ]</span>
+                <h2 class="text-3xl sm:text-4xl tracking-tight text-slate-900 mt-1">
+                    <span class="text-tension-heavy">ACADEMIC &</span>
+                    <span class="text-tension-thin text-indigo-600 font-serif"> Experience</span>
+                </h2>
+            </div>
+            <p class="text-xs font-mono text-slate-500 mt-2 md:mt-0">Hover cards to swap details & visual focus</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Experience Card 1: HKSTP -->
+            <div class="glass-card glass-sheen rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 border border-slate-200/80 group">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-[11px] font-mono font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-md border border-violet-100">2025 - 2026</span>
+                        <h3 class="text-xl font-bold text-slate-900 mt-3 group-hover:text-violet-600 transition-colors">Hong Kong Science and Technology Parks Corporation</h3>
+                        <p class="text-xs font-mono text-slate-500 mt-0.5">Talent Foundry Bootcamp Fellow</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-microchip text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200/60 text-xs text-slate-600 space-y-2">
+                    <p>• Trained under NVIDIA, AWS, and Huawei programs covering Generative AI, LLMs, and NLP.</p>
+                    <p>• Engineered multi-step reasoning AI Agent workflows and deployed full-stack generative media pipelines.</p>
+                </div>
+            </div>
+
+            <!-- Education Card 2: HKUST -->
+            <div class="glass-card glass-sheen rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 border border-slate-200/80 group">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-[11px] font-mono font-semibold text-cyan-600 bg-cyan-50 px-2.5 py-1 rounded-md border border-cyan-100">2022 - 2025</span>
+                        <h3 class="text-xl font-bold text-slate-900 mt-3 group-hover:text-cyan-600 transition-colors">The Hong Kong University of Science and Technology</h3>
+                        <p class="text-xs font-mono text-slate-500 mt-0.5">BEng in Computer Engineering (Second Class Honors, Div I)</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-cyan-100 flex items-center justify-center text-cyan-600 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200/60 text-xs text-slate-600 space-y-2">
+                    <p>• Focus on Embedded Systems, Computer Vision, Game Development, and Web Architectures.</p>
+                    <p>• Final Year Project: UST Simulator 3D / Godot Card Engine Interactive System.</p>
+                </div>
+            </div>
+
+            <!-- Experience Card 3: MTR -->
+            <div class="glass-card glass-sheen rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 border border-slate-200/80 group">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-[11px] font-mono font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">2024</span>
+                        <h3 class="text-xl font-bold text-slate-900 mt-3 group-hover:text-emerald-600 transition-colors">MTR Corporation Limited</h3>
+                        <p class="text-xs font-mono text-slate-500 mt-0.5">Summer Intern • Project 3036</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-train text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200/60 text-xs text-slate-600 space-y-2">
+                    <p>• Participated in "Project 3036", compiled project reports and organized structured data.</p>
+                    <p>• Enhanced engineering workflow efficiency through drawing verification and cross-team coordination.</p>
+                </div>
+            </div>
+
+            <!-- Education Card 4: HKCC -->
+            <div class="glass-card glass-sheen rounded-2xl p-6 transition-all duration-500 hover:-translate-y-2 border border-slate-200/80 group">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="text-[11px] font-mono font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-100">2020 - 2022</span>
+                        <h3 class="text-xl font-bold text-slate-900 mt-3 group-hover:text-rose-600 transition-colors">PolyU Hong Kong Community College</h3>
+                        <p class="text-xs font-mono text-slate-500 mt-0.5">Associate in Information Technology</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-laptop-code text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200/60 text-xs text-slate-600 space-y-2">
+                    <p>• Core programming fundamentals, algorithms, database systems, and networking.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BODY 1: GITHUB PROJECTS (Stacked Deck Carousel with Rotating Gradient Border) -->
+    <section id="projects" class="py-16 px-6 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-8">
+            <div>
+                <span class="text-xs font-mono font-bold text-rose-500 tracking-wider uppercase">[ BODY 01 ]</span>
+                <h2 class="text-3xl sm:text-4xl tracking-tight text-slate-900 mt-1">
+                    <span class="text-tension-heavy">FEATURED</span>
+                    <span class="text-tension-thin text-rose-600 font-serif"> Projects Deck</span>
+                </h2>
+            </div>
+            <div class="flex items-center gap-2 mt-4 md:mt-0">
+                <button onclick="prevProjectCard()" class="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white transition-colors shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <button onclick="nextProjectCard()" class="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-900 hover:text-white transition-colors shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stack Carousel Container -->
+        <div class="relative w-full max-w-4xl mx-auto h-[420px] flex items-center justify-center">
+            
+            <!-- Project Card 1: UST Simulator -->
+            <div class="project-stack-card absolute w-full max-w-2xl p-6 sm:p-8 gradient-border-card shadow-2xl transition-all duration-700 ease-out cursor-pointer" data-index="0">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <span class="bg-violet-100 text-violet-800 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md">Godot Game / FYP</span>
+                    <span class="font-mono text-xs text-slate-400">01 / 05</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mt-4">UST Simulator (Godot Card Game)</h3>
+                <p class="text-xs font-sans text-slate-600 mt-2 leading-relaxed">
+                    Interactive HKUST Campus Simulation and card battle game powered by Godot Engine. Features custom game logic, rich UI, and interactive card mechanics.
+                </p>
+                <div class="flex flex-wrap gap-2 mt-6">
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Godot Engine</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">GDScript</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Card Physics</span>
+                </div>
+                <div class="mt-8 pt-4 flex items-center justify-between">
+                    <a href="https://github.com/LHanss/2024FYP---UST-Simulator" target="_blank" class="bg-slate-900 text-white font-mono text-xs px-5 py-2.5 rounded-xl hover:bg-violet-600 transition-colors flex items-center gap-2">
+                        <i class="fa-brands fa-github"></i>
+                        <span>View Repository</span>
+                    </a>
+                    <i class="fa-solid fa-gamepad text-2xl text-violet-500"></i>
+                </div>
+            </div>
+
+            <!-- Project Card 2: Search Engine Website -->
+            <div class="project-stack-card absolute w-full max-w-2xl p-6 sm:p-8 gradient-border-card shadow-2xl transition-all duration-700 ease-out cursor-pointer opacity-0 pointer-events-none" data-index="1">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <span class="bg-cyan-100 text-cyan-800 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md">Web Scraper / Search</span>
+                    <span class="font-mono text-xs text-slate-400">02 / 05</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mt-4">Search Engine Website & Web Scraper</h3>
+                <p class="text-xs font-sans text-slate-600 mt-2 leading-relaxed">
+                    High-performance Web Scraping and Indexing search engine architecture capable of real-time query resolution and rank evaluation.
+                </p>
+                <div class="flex flex-wrap gap-2 mt-6">
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Python</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Web Scraping</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Search Algorithms</span>
+                </div>
+                <div class="mt-8 pt-4 flex items-center justify-between">
+                    <a href="https://github.com/Skyturtl/Web-Scraper" target="_blank" class="bg-slate-900 text-white font-mono text-xs px-5 py-2.5 rounded-xl hover:bg-cyan-600 transition-colors flex items-center gap-2">
+                        <i class="fa-brands fa-github"></i>
+                        <span>View Repository</span>
+                    </a>
+                    <i class="fa-solid fa-magnifying-glass text-2xl text-cyan-500"></i>
+                </div>
+            </div>
+
+            <!-- Project Card 3: USTLink Campus Forum -->
+            <div class="project-stack-card absolute w-full max-w-2xl p-6 sm:p-8 gradient-border-card shadow-2xl transition-all duration-700 ease-out cursor-pointer opacity-0 pointer-events-none" data-index="2">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <span class="bg-indigo-100 text-indigo-800 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md">Mobile Forum App</span>
+                    <span class="font-mono text-xs text-slate-400">03 / 05</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mt-4">USTLink (Campus Forum & GPT App)</h3>
+                <p class="text-xs font-sans text-slate-600 mt-2 leading-relaxed">
+                    Dedicated HKUST campus community platform integrated with GPT features, realtime posts, anonymous threads, and interactive course ratings.
+                </p>
+                <div class="flex flex-wrap gap-2 mt-6">
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Flutter</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Firebase</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">GPT Integration</span>
+                </div>
+                <div class="mt-8 pt-4 flex items-center justify-between">
+                    <a href="https://github.com/pwhoae/pwhoae/blob/main/images/USTLink%20GPT.jpg" target="_blank" class="bg-slate-900 text-white font-mono text-xs px-5 py-2.5 rounded-xl hover:bg-indigo-600 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-image"></i>
+                        <span>View Preview Image</span>
+                    </a>
+                    <i class="fa-solid fa-mobile-screen text-2xl text-indigo-500"></i>
+                </div>
+            </div>
+
+            <!-- Project Card 4: Real-Time Posture Recognition -->
+            <div class="project-stack-card absolute w-full max-w-2xl p-6 sm:p-8 gradient-border-card shadow-2xl transition-all duration-700 ease-out cursor-pointer opacity-0 pointer-events-none" data-index="3">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <span class="bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md">AI / Computer Vision</span>
+                    <span class="font-mono text-xs text-slate-400">04 / 05</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mt-4">Real-Time Posture Recognition System</h3>
+                <p class="text-xs font-sans text-slate-600 mt-2 leading-relaxed">
+                    Computer vision solution using MediaPipe and Deep Learning algorithms to detect ergonomic posture anomalies and provide real-time alerts.
+                </p>
+                <div class="flex flex-wrap gap-2 mt-6">
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">MediaPipe</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Python</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">OpenCV</span>
+                </div>
+                <div class="mt-8 pt-4 flex items-center justify-between">
+                    <a href="https://github.com/pwhoae/pwhoae/blob/main/images/Real-Time%20Posture%20Recognition%20System.png" target="_blank" class="bg-slate-900 text-white font-mono text-xs px-5 py-2.5 rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-image"></i>
+                        <span>View Architecture</span>
+                    </a>
+                    <i class="fa-solid fa-eye text-2xl text-emerald-500"></i>
+                </div>
+            </div>
+
+            <!-- Project Card 5: N-bit Audio Converter -->
+            <div class="project-stack-card absolute w-full max-w-2xl p-6 sm:p-8 gradient-border-card shadow-2xl transition-all duration-700 ease-out cursor-pointer opacity-0 pointer-events-none" data-index="4">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <span class="bg-amber-100 text-amber-800 font-mono text-[10px] font-bold px-2.5 py-1 rounded-md">Web Audio Tool</span>
+                    <span class="font-mono text-xs text-slate-400">05 / 05</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mt-4">N-bit Audio Converter</h3>
+                <p class="text-xs font-sans text-slate-600 mt-2 leading-relaxed">
+                    Interactive web tool for converting and downsampling standard audio files into customized retro N-bit bitcrushed audio format.
+                </p>
+                <div class="flex flex-wrap gap-2 mt-6">
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">JavaScript</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">Web Audio API</span>
+                    <span class="bg-slate-100 text-slate-700 text-[11px] font-mono px-2.5 py-1 rounded-lg">DSP</span>
+                </div>
+                <div class="mt-8 pt-4 flex items-center justify-between">
+                    <a href="https://test-n-bit-audio-converter.vercel.app/" target="_blank" class="bg-slate-900 text-white font-mono text-xs px-5 py-2.5 rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span>Launch Live App</span>
+                    </a>
+                    <i class="fa-solid fa-music text-2xl text-amber-500"></i>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- BODY 2: TECHNICAL ART & SHADERS (Interactive Canvas 3D Water Shader Emulation) -->
+    <section id="techart" class="py-16 px-6 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-8">
+            <div>
+                <span class="text-xs font-mono font-bold text-cyan-600 tracking-wider uppercase">[ BODY 02 ]</span>
+                <h2 class="text-3xl sm:text-4xl tracking-tight text-slate-900 mt-1">
+                    <span class="text-tension-heavy">TECHNICAL ART</span>
+                    <span class="text-tension-thin text-cyan-600 font-serif"> & Shaders</span>
+                </h2>
+            </div>
+            <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader" target="_blank" class="text-xs font-mono text-indigo-600 hover:underline flex items-center gap-1 mt-2 md:mt-0">
+                <span>View Godot Shader Artbank</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Shader Live Simulation Box -->
+            <div class="lg:col-span-7 glass-card rounded-3xl p-6 shadow-xl border border-white/90">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-droplet text-cyan-500"></i>
+                        <span class="font-mono text-xs font-bold text-slate-800">3D Interactive Water Shader (Godot Glsl)</span>
+                    </div>
+                    <span class="text-[10px] font-mono bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-md">Procedural Wave</span>
+                </div>
+
+                <!-- WebGL Interactive Shader Canvas -->
+                <div class="relative w-full h-72 rounded-2xl overflow-hidden bg-slate-950">
+                    <canvas id="waterShaderCanvas" class="w-full h-full cursor-pointer" title="Click or move cursor to ripple water surface"></canvas>
+                    
+                    <div class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-[10px] font-mono text-cyan-300">
+                        <span>Wave Frequency & Ripple Physics Engine</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between text-xs font-mono text-slate-500">
+                    <span>Reference Shader: <a href="https://github.com/pwhoae/Artbank/blob/main/godot/shader/demo%20res/%E5%A0%B4%E6%99%AF%203D%20water.gif" target="_blank" class="text-cyan-600 underline">3D Water Demo GIF</a></span>
+                    <button onclick="triggerWaterRipple()" class="bg-cyan-500 hover:bg-cyan-600 text-white px-3 py-1 rounded-lg transition-colors">
+                        Splash Wave
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tween Cheatsheet & GenAI Showcase -->
+            <div class="lg:col-span-5 space-y-6">
+                <!-- Tween Cheatsheet Card -->
+                <div class="glass-card rounded-3xl p-6 shadow-xl border border-white/90">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-indigo-500"></i>
+                        <span>Godot Tween Easing Curve Visualizer</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                        Fine-tuned animation interpolation using Godot's Tween cheatsheet curve mathematics.
+                    </p>
+                    <div class="mt-4 p-3 bg-slate-100 rounded-xl flex items-center justify-between border border-slate-200">
+                        <div id="tweenDemoBox" class="w-8 h-8 rounded-lg bg-indigo-600 shadow-md"></div>
+                        <button onclick="playTweenDemo()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-xs px-3 py-1.5 rounded-lg transition-colors">
+                            Test EaseInOutBounce
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GenAI Gemini/ChatGPT Integration -->
+                <div class="glass-card rounded-3xl p-6 shadow-xl border border-white/90">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles text-rose-500"></i>
+                            <span>Generative AI (Gemini / ChatGPT)</span>
+                        </h3>
+                        <span class="text-[10px] font-mono bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md">LLM Workflows</span>
+                    </div>
+                    <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                        Prompt Engineering, AI Agent reasoning loops, n8n automated generation, and LLM API integrations.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BODY 3: TOOLBAR (Unique Clip-Path Geometric Shapes + Wipe Text) -->
+    <section class="py-16 px-6 max-w-7xl mx-auto">
+        <div class="mb-8">
+            <span class="text-xs font-mono font-bold text-violet-600 tracking-wider uppercase">[ BODY 03 ]</span>
+            <h2 class="text-3xl sm:text-4xl tracking-tight text-slate-900 mt-1">
+                <span class="text-tension-heavy">CREATIVE</span>
+                <span class="text-tension-thin text-violet-600 font-serif"> Toolkit & Stack</span>
+            </h2>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+            <!-- Tool Item: GitHub -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-1 bg-slate-900 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-brands fa-github"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">GitHub</span>
+            </div>
+
+            <!-- Tool Item: Godot Engine -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-2 bg-indigo-600 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">Godot</span>
+            </div>
+
+            <!-- Tool Item: VS Code -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-1 bg-blue-600 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">VS Code</span>
+            </div>
+
+            <!-- Tool Item: Blender -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-2 bg-orange-500 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">Blender</span>
+            </div>
+
+            <!-- Tool Item: ChatGPT -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-1 bg-emerald-600 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">ChatGPT</span>
+            </div>
+
+            <!-- Tool Item: Gemini -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-2 bg-cyan-600 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">Gemini</span>
+            </div>
+
+            <!-- Tool Item: Obsidian -->
+            <div class="wipe-container glass-card p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border border-slate-200 cursor-pointer group hover:scale-105 transition-transform">
+                <div class="w-12 h-12 clip-polygon-1 bg-purple-700 text-white flex items-center justify-center text-xl group-hover:rotate-12 transition-transform">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                </div>
+                <span class="wipe-text font-mono text-xs font-bold mt-2">Obsidian</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- BODY 4: TECHNICAL SKILLS (Infinite Scrolling Marquee + Venetian Blind Hover Cards) -->
+    <section id="skills" class="py-16 px-6 max-w-7xl mx-auto overflow-hidden">
+        <div class="mb-8">
+            <span class="text-xs font-mono font-bold text-indigo-600 tracking-wider uppercase">[ BODY 04 ]</span>
+            <h2 class="text-3xl sm:text-4xl tracking-tight text-slate-900 mt-1">
+                <span class="text-tension-heavy">TECHNICAL</span>
+                <span class="text-tension-thin text-indigo-600 font-serif"> Proficiency</span>
+            </h2>
+        </div>
+
+        <!-- Infinite Ticker Marquee -->
+        <div class="relative w-full overflow-hidden bg-slate-900 text-white py-3 rounded-2xl mb-12 shadow-lg">
+            <div class="flex whitespace-nowrap animate-[marquee_20s_linear_infinite] gap-8 font-mono text-xs font-semibold tracking-wider">
+                <span>PYTHON • C++ • JAVA • GDSCRIPT • JAVASCRIPT • KOTLIN • SQL • FLUTTER • MEDIAPIPE • PYTORCH • DEEP LEARNING • RASPBERRY PI • STM32 • ARDUINO • LINUX • GIT • GCP</span>
+                <span>PYTHON • C++ • JAVA • GDSCRIPT • JAVASCRIPT • KOTLIN • SQL • FLUTTER • MEDIAPIPE • PYTORCH • DEEP LEARNING • RASPBERRY PI • STM32 • ARDUINO • LINUX • GIT • GCP</span>
+            </div>
+        </div>
+
+        <!-- Skill Cards with Venetian Blind Hover Effect -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- Skill Category 1 -->
+            <div class="venetian-container glass-card rounded-2xl p-6 border border-slate-200 shadow-md">
+                <div class="venetian-blind"></div>
+                <div class="relative z-10">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-code text-indigo-600"></i> Programming Languages
+                    </h3>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <div>
+                            <span class="font-semibold text-slate-700">Primary / Advanced:</span>
+                            <p class="text-slate-500 font-mono">Python, C++, Java, GDScript</p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-700">Secondary / Web & Mobile:</span>
+                            <p class="text-slate-500 font-mono">JavaScript, Kotlin, SQL (MySQL), HTML</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Category 2 -->
+            <div class="venetian-container glass-card rounded-2xl p-6 border border-slate-200 shadow-md">
+                <div class="venetian-blind"></div>
+                <div class="relative z-10">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-violet-600"></i> AI & Computer Vision
+                    </h3>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <div>
+                            <span class="font-semibold text-slate-700">LLM & GenAI:</span>
+                            <p class="text-slate-500 font-mono">LLMs, GenAI, AI Agents, Prompt Eng.</p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-700">Core ML & Vision:</span>
+                            <p class="text-slate-500 font-mono">Deep Learning, Computer Vision, MediaPipe</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Category 3 -->
+            <div class="venetian-container glass-card rounded-2xl p-6 border border-slate-200 shadow-md">
+                <div class="venetian-blind"></div>
+                <div class="relative z-10">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen-button text-cyan-600"></i> Mobile & Software
+                    </h3>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <div>
+                            <span class="font-semibold text-slate-700">Frameworks:</span>
+                            <p class="text-slate-500 font-mono">Flutter, Android Studio, Firebase, Flask</p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-700">Concepts & Arch:</span>
+                            <p class="text-slate-500 font-mono">OOP, Verification & Validation, UML</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Category 4 -->
+            <div class="venetian-container glass-card rounded-2xl p-6 border border-slate-200 shadow-md">
+                <div class="venetian-blind"></div>
+                <div class="relative z-10">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-rose-600"></i> Game & Multimedia
+                    </h3>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <p class="text-slate-700 font-semibold">Unity 3D (C#) & Godot Engine (GDScript)</p>
+                        <p class="text-slate-500 font-mono">Interactive UI/UX Design & Shaders</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Category 5 -->
+            <div class="venetian-container glass-card rounded-2xl p-6 border border-slate-200 shadow-md">
+                <div class="venetian-blind"></div>
+                <div class="relative z-10">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-emerald-600"></i> Embedded Systems
+                    </h3>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <p class="text-slate-700 font-semibold">Raspberry Pi, STM32, Arduino</p>
+                        <p class="text-slate-500 font-mono">Linux Operating Systems & C/C++ Drivers</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Category 6 -->
+            <div class="venetian-container glass-card rounded-2xl p-6 border border-slate-200 shadow-md">
+                <div class="venetian-blind"></div>
+                <div class="relative z-10">
+                    <h3 class="font-mono text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-cloud text-amber-600"></i> Tools & Cloud Infrastructure
+                    </h3>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <p class="text-slate-700 font-semibold">Git, GitHub, GCP, RESTful JSON/XML</p>
+                        <p class="text-slate-500 font-mono">XAMPP, SQL Queries & SEO</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- EXPANDABLE FOUR SEASONS CAROUSEL + SCRATCHCARD EFFECT (JUST FOR FUN) -->
+    <section class="py-16 px-6 max-w-7xl mx-auto">
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <span class="text-xs font-mono font-bold text-rose-500 tracking-wider uppercase">[ EASTER EGG WIDGET ]</span>
+                <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">Four Seasons Scratchcard</h2>
+            </div>
+            <span class="text-xs font-mono bg-rose-100 text-rose-700 px-3 py-1 rounded-full font-bold">Scratch surface to reveal text!</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Spring Card -->
+            <div class="relative glass-card rounded-2xl p-6 border border-pink-200 overflow-hidden text-center flex flex-col items-center justify-center h-48">
+                <i class="fa-solid fa-seedling text-3xl text-pink-500 mb-2"></i>
+                <h4 class="font-mono font-bold text-sm text-slate-800">Spring • 櫻花</h4>
+                <p class="text-xs font-mono text-slate-500 mt-1">"just for fun"</p>
+                <canvas class="scratch-canvas absolute inset-0 w-full h-full cursor-crosshair" data-text="🌸 Bloom & Code"></canvas>
+            </div>
+
+            <!-- Summer Card -->
+            <div class="relative glass-card rounded-2xl p-6 border border-amber-200 overflow-hidden text-center flex flex-col items-center justify-center h-48">
+                <i class="fa-solid fa-sun text-3xl text-amber-500 mb-2"></i>
+                <h4 class="font-mono font-bold text-sm text-slate-800">Summer • 盛夏</h4>
+                <p class="text-xs font-mono text-slate-500 mt-1">"just for fun"</p>
+                <canvas class="scratch-canvas absolute inset-0 w-full h-full cursor-crosshair" data-text="☀️ Sun & Shaders"></canvas>
+            </div>
+
+            <!-- Autumn Card -->
+            <div class="relative glass-card rounded-2xl p-6 border border-orange-200 overflow-hidden text-center flex flex-col items-center justify-center h-48">
+                <i class="fa-solid fa-leaf text-3xl text-orange-500 mb-2"></i>
+                <h4 class="font-mono font-bold text-sm text-slate-800">Autumn • 楓葉</h4>
+                <p class="text-xs font-mono text-slate-500 mt-1">"just for fun"</p>
+                <canvas class="scratch-canvas absolute inset-0 w-full h-full cursor-crosshair" data-text="🍂 Harvest Logic"></canvas>
+            </div>
+
+            <!-- Winter Card -->
+            <div class="relative glass-card rounded-2xl p-6 border border-cyan-200 overflow-hidden text-center flex flex-col items-center justify-center h-48">
+                <i class="fa-solid fa-snowflake text-3xl text-cyan-500 mb-2"></i>
+                <h4 class="font-mono font-bold text-sm text-slate-800">Winter • 凜冬</h4>
+                <p class="text-xs font-mono text-slate-500 mt-1">"just for fun"</p>
+                <canvas class="scratch-canvas absolute inset-0 w-full h-full cursor-crosshair" data-text="❄️ Freeze Bugs"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT SECTION (3D Parallax Rotating Card + Copy Contact & Magnetic Link Hover) -->
+    <section id="contact" class="py-20 px-6 max-w-7xl mx-auto">
+        <div class="relative glass-card rounded-3xl p-8 sm:p-12 border border-white/90 shadow-2xl max-w-3xl mx-auto text-center overflow-hidden" id="contact3DCard">
+            <span class="text-xs font-mono font-bold text-violet-600 tracking-widest uppercase">[ LET'S CONNECT ]</span>
+            <h2 class="text-3xl sm:text-5xl font-bold text-slate-900 mt-2 tracking-tight">HO PO WA</h2>
+            <p class="text-xs sm:text-sm font-mono text-slate-500 mt-2">Hong Kong Science and Technology Parks / HKUST BEng Computer Engineering</p>
+
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <!-- Copy Email Button -->
+                <button onclick="copyContact('pwhoae@connect.ust.hk', 'Email')" class="magnetic-btn w-full sm:w-auto bg-slate-900 text-white font-mono text-xs px-6 py-3.5 rounded-xl hover:bg-violet-600 transition-all shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>pwhoae@connect.ust.hk</span>
+                    <i class="fa-solid fa-copy text-[10px] ml-1"></i>
+                </button>
+
+                <!-- Copy Phone Button -->
+                <button onclick="copyContact('+852 9856 1688', 'Phone')" class="magnetic-btn w-full sm:w-auto bg-white border border-slate-200 text-slate-800 font-mono text-xs px-6 py-3.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-phone"></i>
+                    <span>+852 9856 1688</span>
+                    <i class="fa-solid fa-copy text-[10px] ml-1"></i>
+                </button>
+            </div>
+
+            <!-- Magnetic Hover Social Links -->
+            <div class="mt-8 flex items-center justify-center gap-6 text-slate-600 text-lg">
+                <a href="https://github.com/pwhoae" target="_blank" class="magnetic-btn hover:text-violet-600 transition-colors flex items-center gap-1 font-mono text-xs font-bold">
+                    <span>GitHub</span>
+                    <i class="fa-solid fa-location-arrow text-[10px]"></i>
+                </a>
+                <a href="https://www.linkedin.com/in/po-wa-ho-b10928352/" target="_blank" class="magnetic-btn hover:text-violet-600 transition-colors flex items-center gap-1 font-mono text-xs font-bold">
+                    <span>LinkedIn</span>
+                    <i class="fa-solid fa-location-arrow text-[10px]"></i>
+                </a>
+            </div>
+
+            <!-- Toast Notification Container -->
+            <div id="copyToast" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-mono text-xs px-4 py-1.5 rounded-full shadow-lg transition-all animate-bounce">
+                Copied to clipboard!
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER WIDGETS (Next Year Countdown + Today Clock) -->
+    <footer class="border-t border-slate-200/80 bg-white/50 backdrop-blur-md py-8 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-500">
+            <!-- Today Clock Display -->
+            <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                <i class="fa-regular fa-clock text-slate-700"></i>
+                <span>Today Time: </span>
+                <span id="liveClock" class="font-bold text-slate-800">--:--:--</span>
+            </div>
+
+            <!-- Copyright -->
+            <div>
+                © <span id="currentYear"></span> HO PO WA. HKUST BEng CE. All rights reserved.
+            </div>
+
+            <!-- Next Year Countdown Timer -->
+            <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                <i class="fa-solid fa-hourglass-half text-violet-600"></i>
+                <span>2027 Countdown: </span>
+                <span id="countdownTimer" class="font-bold text-violet-700">--d --h --m --s</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+    <script>
+        /* Mouse Spotlight Follower */
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            document.body.style.setProperty('--mouse-x', `${x}%`);
+            document.body.style.setProperty('--mouse-y', `${y}%`);
+        });
+
+        /* Search Bar Easter Egg */
+        function checkSearchEasterEgg(event) {
+            if (event.key === 'Enter') {
+                const val = document.getElementById('searchInput').value.trim().toLowerCase();
+                if (val === 'cat' || val === 'cat:' || val.includes('cat')) {
+                    window.open('https://http.cat/', '_blank');
+                } else {
+                    const tip = document.getElementById('searchTip');
+                    tip.classList.remove('hidden');
+                    setTimeout(() => tip.classList.add('hidden'), 3000);
+                }
+            }
+        }
+
+        /* Circular Audio Progress Ring Toggle */
+        let isAudioPlaying = false;
+        let audioProgress = 20;
+        let audioInterval;
+
+        function toggleAudioProgress() {
+            isAudioPlaying = !isAudioPlaying;
+            const icon = document.getElementById('audioIcon');
+            const circle = document.getElementById('audioProgressCircle');
+
+            if (isAudioPlaying) {
+                icon.className = "fa-solid fa-pause text-[9px] text-violet-700 absolute";
+                audioInterval = setInterval(() => {
+                    audioProgress = (audioProgress + 2) % 100;
+                    const offset = 69 - (69 * audioProgress) / 100;
+                    circle.style.strokeDashoffset = offset;
+                }, 200);
+            } else {
+                icon.className = "fa-solid fa-play text-[9px] text-violet-700 absolute";
+                clearInterval(audioInterval);
+            }
+        }
+
+        /* Easter Egg Drawer Toggle */
+        function toggleEasterEggDrawer() {
+            const drawer = document.getElementById('easterEggDrawer');
+            drawer.classList.toggle('translate-x-full');
+        }
+
+        /* HKUST 3D Parallax Canvas Rendering */
+        const canvas = document.getElementById('hkust3dCanvas');
+        const ctx = canvas.getContext('2d');
+        let mouseX = 0, mouseY = 0;
+
+        function resizeCanvas() {
+            if (canvas && canvas.parentElement) {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left - canvas.width / 2;
+            mouseY = e.clientY - rect.top - canvas.height / 2;
+        });
+
+        function renderHKUSTCanvas() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // Draw glowing 3D cube / geometric particle web
+            const time = Date.now() * 0.002;
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.4)';
+            ctx.lineWidth = 1.5;
+
+            for (let i = 0; i < 6; i++) {
+                const radius = 30 + i * 18;
+                const offsetX = (mouseX * 0.05) * (i + 1);
+                const offsetY = (mouseY * 0.05) * (i + 1);
+
+                ctx.beginPath();
+                ctx.arc(centerX + offsetX, centerY + offsetY, radius + Math.sin(time + i) * 5, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Central HKUST Core Emblem
+            ctx.fillStyle = '#00f2fe';
+            ctx.font = 'bold 16px Space Grotesk';
+            ctx.textAlign = 'center';
+            ctx.fillText('HKUST CE', centerX + mouseX * 0.08, centerY + mouseY * 0.08 + 5);
+
+            requestAnimationFrame(renderHKUSTCanvas);
+        }
+        renderHKUSTCanvas();
+
+        /* Stacked Projects Auto-Play Carousel */
+        let currentProjectIndex = 0;
+        const projectCards = document.querySelectorAll('.project-stack-card');
+
+        function updateProjectStack() {
+            projectCards.forEach((card, i) => {
+                const offset = (i - currentProjectIndex + projectCards.length) % projectCards.length;
+                if (offset === 0) {
+                    card.style.transform = 'translateY(0px) scale(1)';
+                    card.style.zIndex = '30';
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                } else if (offset === 1) {
+                    card.style.transform = 'translateY(20px) scale(0.95)';
+                    card.style.zIndex = '20';
+                    card.style.opacity = '0.7';
+                    card.style.pointerEvents = 'none';
+                } else if (offset === 2) {
+                    card.style.transform = 'translateY(40px) scale(0.9)';
+                    card.style.zIndex = '10';
+                    card.style.opacity = '0.4';
+                    card.style.pointerEvents = 'none';
+                } else {
+                    card.style.transform = 'translateY(60px) scale(0.85)';
+                    card.style.zIndex = '0';
+                    card.style.opacity = '0';
+                    card.style.pointerEvents = 'none';
+                }
+            });
+        }
+        updateProjectStack();
+
+        function nextProjectCard() {
+            currentProjectIndex = (currentProjectIndex + 1) % projectCards.length;
+            updateProjectStack();
+        }
+        function prevProjectCard() {
+            currentProjectIndex = (currentProjectIndex - 1 + projectCards.length) % projectCards.length;
+            updateProjectStack();
+        }
+        setInterval(nextProjectCard, 6000);
+
+        /* Procedural Water Shader Emulation */
+        const waterCanvas = document.getElementById('waterShaderCanvas');
+        const waterCtx = waterCanvas.getContext('2d');
+        let ripples = [];
+
+        function resizeWaterCanvas() {
+            if (waterCanvas && waterCanvas.parentElement) {
+                waterCanvas.width = waterCanvas.parentElement.clientWidth;
+                waterCanvas.height = waterCanvas.parentElement.clientHeight;
+            }
+        }
+        window.addEventListener('resize', resizeWaterCanvas);
+        resizeWaterCanvas();
+
+        waterCanvas.addEventListener('click', (e) => {
+            const rect = waterCanvas.getBoundingClientRect();
+            ripples.push({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                radius: 2,
+                alpha: 1
+            });
+        });
+
+        function triggerWaterRipple() {
+            ripples.push({
+                x: waterCanvas.width / 2,
+                y: waterCanvas.height / 2,
+                radius: 2,
+                alpha: 1
+            });
+        }
+
+        function renderWaterShader() {
+            if (!waterCtx) return;
+            waterCtx.fillStyle = '#0a0f1d';
+            waterCtx.fillRect(0, 0, waterCanvas.width, waterCanvas.height);
+
+            const time = Date.now() * 0.003;
+            // Draw gradient wave lines
+            for (let y = 0; y < waterCanvas.height; y += 12) {
+                waterCtx.beginPath();
+                for (let x = 0; x < waterCanvas.width; x += 10) {
+                    const waveY = y + Math.sin(x * 0.02 + time + y * 0.01) * 8;
+                    if (x === 0) waterCtx.moveTo(x, waveY);
+                    else waterCtx.lineTo(x, waveY);
+                }
+                waterCtx.strokeStyle = `rgba(0, 242, 254, ${0.1 + (y / waterCanvas.height) * 0.25})`;
+                waterCtx.stroke();
+            }
+
+            // Draw click ripples
+            ripples.forEach((r, idx) => {
+                waterCtx.beginPath();
+                waterCtx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                waterCtx.strokeStyle = `rgba(0, 242, 254, ${r.alpha})`;
+                waterCtx.lineWidth = 2;
+                waterCtx.stroke();
+
+                r.radius += 2.5;
+                r.alpha -= 0.02;
+
+                if (r.alpha <= 0) ripples.splice(idx, 1);
+            });
+
+            requestAnimationFrame(renderWaterShader);
+        }
+        renderWaterShader();
+
+        /* Godot Tween Demo Animation */
+        function playTweenDemo() {
+            const box = document.getElementById('tweenDemoBox');
+            box.style.transition = 'transform 1s cubic-bezier(0.68, -0.6, 0.32, 1.6)';
+            box.style.transform = 'translateX(180px) rotate(360deg) scale(1.2)';
+            setTimeout(() => {
+                box.style.transform = 'translateX(0px) rotate(0deg) scale(1)';
+            }, 1200);
+        }
+
+        /* Four Seasons Scratchcard Effect */
+        document.querySelectorAll('.scratch-canvas').forEach(canvas => {
+            const ctx = canvas.getContext('2d');
+            const text = canvas.getAttribute('data-text') || "just for fun";
+
+            function setupScratch() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+
+                // Silver Scratch Layer
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Overlay Text
+                ctx.fillStyle = '#475569';
+                ctx.font = 'bold 12px Space Grotesk';
+                ctx.textAlign = 'center';
+                ctx.fillText('SCRATCH ME', canvas.width / 2, canvas.height / 2 + 4);
+            }
+            setupScratch();
+
+            let isDrawing = false;
+            function scratch(e) {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+                const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 18, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            canvas.addEventListener('mousedown', (e) => { isDrawing = true; scratch(e); });
+            canvas.addEventListener('mousemove', scratch);
+            window.addEventListener('mouseup', () => { isDrawing = false; });
+
+            canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); });
+            canvas.addEventListener('touchmove', scratch);
+            window.addEventListener('touchend', () => { isDrawing = false; });
+        });
+
+        /* 3D Contact Card Rotation Effect */
+        const contactCard = document.getElementById('contact3DCard');
+        if (contactCard) {
+            contactCard.addEventListener('mousemove', (e) => {
+                const rect = contactCard.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                contactCard.style.transform = `perspective(1000px) rotateY(${x * 0.03}deg) rotateX(${-y * 0.03}deg)`;
+            });
+            contactCard.addEventListener('mouseleave', () => {
+                contactCard.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg)';
+            });
+        }
+
+        /* Copy Contact Helper */
+        function copyContact(text, label) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            const toast = document.getElementById('copyToast');
+            toast.innerText = `${label} copied to clipboard!`;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2500);
+        }
+
+        /* Live Clock & Next Year Countdown */
+        function updateClocks() {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toLocaleTimeString();
+
+            const nextYear = new Date(now.getFullYear() + 1, 0, 1);
+            const diff = nextYear - now;
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / 1000 / 60) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            document.getElementById('countdownTimer').innerText = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            document.getElementById('currentYear').innerText = now.getFullYear();
+        }
+        setInterval(updateClocks, 1000);
+        updateClocks();
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
