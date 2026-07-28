@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任意傳送面板 (Teleport Panel) - Godot 實作與互動原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0b0f19',
+                            card: '#151c2e',
+                            border: '#2a3654',
+                            accent: '#00f0ff',
+                            purple: '#7000ff',
+                            pink: '#ff007f'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Glowing & Grid styles */
+        body {
+            background-color: #0b0f19;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .cyber-grid {
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(112, 0, 255, 0.4);
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3654;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+    </style>
+</head>
+<body class="cyber-grid min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="border-b border-cyber-border bg-cyber-card/80 backdrop-blur sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyber-accent to-cyber-purple flex items-center justify-center glow-cyan">
+                    <i class="fa-solid fa-door-open text-slate-900 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyber-accent via-white to-cyber-purple text-glow">
+                        任意傳送門系統 (Teleport Panel System)
+                    </h1>
+                    <p class="text-xs text-slate-400">Godot 遊戲開發 · 動態 UI 面板生成與角色傳送實作</p>
+                </div>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="flex items-center bg-cyber-bg p-1 rounded-xl border border-cyber-border">
+                <button id="tab-demo-btn" onclick="switchTab('demo')" class="px-4 py-2 text-sm font-semibold rounded-lg bg-cyber-accent text-slate-950 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-gamepad"></i> 互動模擬器
+                </button>
+                <button id="tab-code-btn" onclick="switchTab('code')" class="px-4 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-code"></i> Godot 腳本與架構
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+        <!-- ================= DEMO VIEW ================= -->
+        <div id="view-demo" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left: Interactive World Map / Game Simulation Canvas -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <h2 class="font-bold text-slate-200">2D 世界地圖模擬器 (`傳送門` 節點樹)</h2>
+                        </div>
+                        <div class="text-xs text-slate-400 flex items-center gap-3">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-user text-amber-400"></i> 玩家 (Player)</span>
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-location-dot text-cyber-accent"></i> 傳送門 (Portal)</span>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Box -->
+                    <div class="relative w-full aspect-video bg-slate-950/80 rounded-xl border border-cyber-border/60 overflow-hidden group">
+                        <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+                        <!-- Canvas HUD Overlay -->
+                        <div class="absolute top-3 left-3 bg-slate-900/80 border border-cyber-border backdrop-blur rounded-lg p-2.5 text-xs text-slate-300 pointer-events-none">
+                            <div><strong class="text-cyber-accent">Player Pos:</strong> <span id="hud-player-pos">(0, 0)</span></div>
+                            <div><strong class="text-purple-400">Total Portals:</strong> <span id="hud-portal-count">0</span></div>
+                        </div>
+
+                        <!-- Quick Trigger Button Overlay -->
+                        <button onclick="toggleTeleportModal(true)" class="absolute bottom-4 right-4 bg-gradient-to-r from-cyber-accent to-cyber-purple text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 glow-cyan">
+                            <i class="fa-solid fa-bolt text-lg"></i> 開啟任意傳送面板
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2 bg-cyber-bg/50 p-2.5 rounded-xl border border-cyber-border/40">
+                        <p><i class="fa-solid fa-hand-pointer text-cyber-accent"></i> 點擊地圖任意處可移動玩家或新增傳送門。</p>
+                        <div class="flex items-center gap-2">
+                            <button onclick="addRandomPortal()" class="px-2.5 py-1 bg-cyber-border hover:bg-slate-700 text-slate-200 rounded border border-slate-600 transition">
+                                <i class="fa-solid fa-plus text-xs"></i> 新增隨機傳送門
+                            </button>
+                            <button onclick="resetPlayerPos()" class="px-2.5 py-1 bg-cyber-border hover:bg-slate-700 text-slate-200 rounded border border-slate-600 transition">
+                                <i class="fa-solid fa-rotate-left text-xs"></i> 重置玩家
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Godot Array Status Log -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-mono uppercase tracking-wider text-cyber-accent flex items-center gap-2">
+                            <i class="fa-solid fa-terminal"></i> 即時 Godot 變數狀態 (`player_傳送門_array`)
+                        </h3>
+                        <span class="text-[10px] text-slate-500 font-mono">print(player_傳送門_array)</span>
+                    </div>
+                    <pre id="code-output-log" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-emerald-400 font-mono text-xs overflow-x-auto max-h-28">[]</pre>
+                </div>
+            </div>
+
+            <!-- Right: Control Panel / Active Portal List -->
+            <div class="flex flex-col gap-4">
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 flex flex-col gap-4 flex-1">
+                    <div class="flex items-center justify-between border-b border-cyber-border/60 pb-3">
+                        <h2 class="font-bold text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-cyber-purple"></i> 傳送門節點清單
+                        </h2>
+                        <span class="text-xs bg-cyber-purple/20 text-purple-300 border border-cyber-purple/40 px-2 py-0.5 rounded-full" id="portal-badge-count">0 個子節點</span>
+                    </div>
+
+                    <!-- Search Filter -->
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                        <input type="text" id="portal-search" oninput="renderPortalList()" placeholder="搜尋傳送門名稱或區域..." class="w-full bg-cyber-bg border border-cyber-border rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyber-accent">
+                    </div>
+
+                    <!-- Portal Items Scroll Container -->
+                    <div id="portal-node-list" class="flex flex-col gap-2 overflow-y-auto max-h-[380px] pr-1">
+                        <!-- Dynamic Portal Items -->
+                    </div>
+
+                    <div class="mt-auto border-t border-cyber-border/60 pt-3 flex items-center justify-between">
+                        <button onclick="toggleTeleportModal(true)" class="w-full py-2.5 bg-cyber-accent/10 border border-cyber-accent/40 text-cyber-accent hover:bg-cyber-accent hover:text-slate-950 font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-expand"></i> 預覽完整「任意傳送」彈出UI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- TELEPORT MODAL UI (Simulating Godot Control / Panel Node) -->
+        <div id="teleport-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0">
+            <div class="bg-cyber-card border-2 border-cyber-accent/50 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl glow-cyan flex flex-col transform scale-95 transition-transform duration-300" id="modal-box">
+                
+                <!-- Panel Header -->
+                <div class="bg-slate-900/90 border-b border-cyber-border px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-cyber-accent/20 border border-cyber-accent flex items-center justify-center text-cyber-accent">
+                            <i class="fa-solid fa-atom animate-spin-slow"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-white">任意傳送門 UI (Teleport Panel)</h3>
+                            <p class="text-xs text-slate-400">請選擇欲前往的傳送門座標 (`player_傳送門_array`)</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleTeleportModal(false)" class="w-8 h-8 rounded-full bg-cyber-bg hover:bg-red-500/20 hover:text-red-400 text-slate-400 flex items-center justify-center border border-cyber-border transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Filter & Quick Tabs -->
+                <div class="px-6 py-3 bg-cyber-bg/60 border-b border-cyber-border/60 flex items-center justify-between text-xs gap-3">
+                    <div class="flex items-center gap-2">
+                        <button class="px-3 py-1 rounded-lg bg-cyber-accent text-slate-950 font-bold">全部門點</button>
+                        <button class="px-3 py-1 rounded-lg bg-cyber-card border border-cyber-border text-slate-400 hover:text-white">最愛收藏</button>
+                    </div>
+                    <span class="text-slate-400">按 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700 text-slate-300">ESC</kbd> 關閉面板</span>
+                </div>
+
+                <!-- Modal Grid Content (Portal Selection Buttons) -->
+                <div class="p-6 overflow-y-auto max-h-[60vh]">
+                    <div id="modal-portal-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Dynamic Buttons generated from GDScript array -->
+                    </div>
+                </div>
+
+                <!-- Panel Footer -->
+                <div class="bg-slate-900/90 border-t border-cyber-border px-6 py-3 flex items-center justify-between text-xs text-slate-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-cyber-accent"></i>
+                        <span>點擊門點即可執行 `player.global_position = target_pos`</span>
+                    </div>
+                    <button onclick="toggleTeleportModal(false)" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-600">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ================= CODE & DOCUMENTATION VIEW ================= -->
+        <div id="view-code" class="hidden flex flex-col gap-6">
+            
+            <!-- Explanation Card -->
+            <div class="bg-cyber-card border border-cyber-border rounded-2xl p-5 flex flex-col gap-3">
+                <h2 class="text-lg font-bold text-cyber-accent flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb"></i> GDScript 邏輯重構與語法優化指南
+                </h2>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                    在 Godot 中，透過 `傳送門.get_children()` 獲取所有子節點位置並存入 `player_傳送門_array` 是非常經典的做法。為了實現 **「任意傳送面板」**，我們需要：
+                </p>
+                <ul class="list-disc list-inside text-sm text-slate-400 space-y-1.5">
+                    <li><strong class="text-slate-200">動態生成 UI 按鈕</strong>：遍歷傳送門陣列，為每個門生成一個 `Button` 節點。</li>
+                    <li><strong class="text-slate-200">閉包與訊號綁定 (Signal Binding)</strong>：將門的索引與座標傳遞給按鈕的 `pressed` 訊號。</li>
+                    <li><strong class="text-slate-200">平滑傳送與畫面漸變</strong>：傳送時加上 Fade Out / Fade In 視覺過場，避免玩家視覺突兀。</li>
+                </ul>
+            </div>
+
+            <!-- Code Blocks -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Godot 4.x Script -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-cyber-border/60 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                            <h3 class="font-bold text-slate-200 text-sm">Godot 4.x - 完整 TeleportPanel.gd</h3>
+                        </div>
+                        <button onclick="copyCode('code-godot4')" class="text-xs text-cyber-accent hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-copy"></i> 複製程式碼
+                        </button>
+                    </div>
+                    <pre id="code-godot4" class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300 font-mono text-xs overflow-x-auto leading-relaxed">
+<span class="text-purple-400">extends</span> Control
+
+<span class="text-slate-500"># 節點引用 (請依專案節點樹調整路徑)</span>
+<span class="text-purple-400">@onready var</span> portal_container = <span class="text-emerald-300">$"../傳送門"</span>
+<span class="text-purple-400">@onready var</span> player = <span class="text-emerald-300">$"../Player"</span>
+<span class="text-purple-400">@onready var</span> grid_container = <span class="text-emerald-300">$"Panel/ScrollContainer/GridContainer"</span>
+
+<span class="text-slate-500"># 儲存傳送門座標陣列與資料</span>
+<span class="text-purple-400">var</span> player_傳送門_array: Array[Vector2] = []
+
+<span class="text-purple-400">func</span> _ready() -> <span class="text-yellow-400">void</span>:
+	update_portal_data()
+	generate_teleport_panel()
+
+<span class="text-slate-500"># 1. 取得所有傳送門座標</span>
+<span class="text-purple-400">func</span> update_portal_data() -> <span class="text-yellow-400">void</span>:
+	player_傳送門_array.clear()
+	<span class="text-purple-400">for</span> portal <span class="text-purple-400">in</span> portal_container.get_children():
+		player_傳送門_array.append(portal.global_position)
+	print(<span class="text-emerald-300">"已載入傳送點陣列: "</span>, player_傳送門_array)
+
+<span class="text-slate-500"># 2. 動態生成 UI 傳送面板按鈕</span>
+<span class="text-purple-400">func</span> generate_teleport_panel() -> <span class="text-yellow-400">void</span>:
+	<span class="text-slate-500"># 清除舊UI內容</span>
+	<span class="text-purple-400">for</span> child <span class="text-purple-400">in</span> grid_container.get_children():
+		child.queue_free()
+		
+	<span class="text-slate-500"># 遍歷門點動態生成 Button</span>
+	<span class="text-purple-400">var</span> children = portal_container.get_children()
+	<span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> range(children.size()):
+		<span class="text-purple-400">var</span> portal_node = children[i]
+		<span class="text-purple-400">var</span> pos = player_傳送門_array[i]
+		<span class="text-purple-400">var</span> portal_name = portal_node.name
+		
+		<span class="text-purple-400">var</span> btn = Button.new()
+		btn.text = <span class="text-emerald-300">"%d. %s\n(%d, %d)"</span> % [i + 1, portal_name, pos.x, pos.y]
+		btn.custom_minimum_size = Vector2(160, 60)
+		
+		<span class="text-slate-500"># Godot 4 閉包綁定按鈕點擊事件</span>
+		<span class="text-purple-400">var</span> target_index = i
+		btn.pressed.connect(<span class="text-purple-400">func</span>(): teleport_to(target_index))
+		
+		grid_container.add_child(btn)
+
+<span class="text-slate-500"># 3. 執行角色傳送</span>
+<span class="text-purple-400">func</span> teleport_to(portal_index: int) -> <span class="text-yellow-400">void</span>:
+	<span class="text-purple-400">if</span> portal_index >= 0 <span class="text-purple-400">and</span> portal_index < player_傳送門_array.size():
+		<span class="text-purple-400">var</span> target_pos = player_傳送門_array[portal_index]
+		
+		<span class="text-slate-500"># 設定玩家座標</span>
+		player.global_position = target_pos
+		print(<span class="text-emerald-300">"玩家已傳送至傳送門 ["</span>, portal_index, <span class="text-emerald-300">"]: "</span>, target_pos)
+		
+		<span class="text-slate-500"># 關閉傳送面板</span>
+		hide()
+</pre>
+                </div>
+
+                <!-- Godot UI Scene Tree Structure -->
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-4 flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-cyber-border/60 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                            <h3 class="font-bold text-slate-200 text-sm">Godot 節點樹結構 (Scene Tree)</h3>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto">
+                        <p class="text-cyber-accent font-bold">Node2D (Main Scene)</p>
+                        <p class="pl-4 border-l border-slate-800 text-slate-400">├── Player (CharacterBody2D)</p>
+                        <p class="pl-4 border-l border-slate-800 text-slate-400">├── 傳送門 (Node2D Container)</p>
+                        <p class="pl-8 border-l border-slate-800 text-slate-500">├── 傳送門A (Area2D / Node2D)</p>
+                        <p class="pl-8 border-l border-slate-800 text-slate-500">├── 傳送門B (Area2D / Node2D)</p>
+                        <p class="pl-8 border-l border-slate-800 text-slate-500">└── 傳送門C (Area2D / Node2D)</p>
+                        <p class="pl-4 border-l border-slate-800 text-slate-400">└── CanvasLayer (UI)</p>
+                        <p class="pl-8 border-l border-slate-800 text-amber-300">└── TeleportPanel (Control) <span class="text-slate-500">← 掛載腳本</span></p>
+                        <p class="pl-12 border-l border-slate-800 text-slate-400">└── Panel (PanelContainer)</p>
+                        <p class="pl-16 border-l border-slate-800 text-slate-400">└── ScrollContainer</p>
+                        <p class="pl-20 border-l border-slate-800 text-emerald-400">└── GridContainer <span class="text-slate-500">← 動態生成 Button</span></p>
+                    </div>
+
+                    <div class="bg-cyber-bg p-3 rounded-xl border border-cyber-border/80 text-xs text-slate-300 space-y-2 mt-auto">
+                        <div class="font-bold text-cyber-accent flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i> 進階提醒與最佳實踐
+                        </div>
+                        <p class="text-slate-400">
+                            1. <strong>名稱自訂</strong>：可在門點節點上新增導出變數 `export var portal_display_name: String`，顯示自訂選單中文名稱。<br>
+                            2. <strong>畫面過場</strong>：建議搭配 `Tween` 製作 `CanvasLayer` 的 `modulate:a` 透明度淡入淡出。
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Message Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <script>
+        // Game Application State
+        const state = {
+            player: { x: 100, y: 150, size: 10 },
+            portals: [
+                { id: 1, name: "主城廣場門", x: 80, y: 80, color: "#00f0ff", zone: "中央城區" },
+                { id: 2, name: "森林入口門", x: 380, y: 70, color: "#10b981", zone: "迷霧森林" },
+                { id: 3, name: "火山口傳送門", x: 450, y: 260, color: "#ef4444", zone: "熾熱荒原" },
+                { id: 4, name: "神殿遺蹟門", x: 120, y: 280, color: "#a855f7", zone: "遠古遺蹟" }
+            ],
+            teleportParticles: [],
+            selectedPortalIndex: null
+        };
+
+        // DOM Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Web Audio API Sound Synthesizer (No external audio files needed)
+        function playSound(type) {
+            try {
+                const ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctxAudio.createOscillator();
+                const gain = ctxAudio.createGain();
+                osc.connect(gain);
+                gain.connect(ctxAudio.destination);
+
+                if (type === 'teleport') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, ctxAudio.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, ctxAudio.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, ctxAudio.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctxAudio.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctxAudio.currentTime + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, ctxAudio.currentTime);
+                    gain.gain.setValueAtTime(0.1, ctxAudio.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctxAudio.currentTime + 0.08);
+                    osc.start();
+                    osc.stop(ctxAudio.currentTime + 0.08);
+                }
+            } catch (e) {
+                // Audio context block handles
+            }
+        }
+
+        // Game Loop Rendering
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Background Grid Pattern
+            ctx.strokeStyle = "rgba(42, 54, 84, 0.3)";
+            ctx.lineWidth = 1;
+            const gridSize = 25;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Draw Portals (`傳送門` children)
+            state.portals.forEach((p, index) => {
+                // Pulsing outer aura
+                const pulse = Math.sin(Date.now() * 0.005 + index) * 4;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 14 + pulse, 0, Math.PI * 2);
+                ctx.fillStyle = p.color + "33";
+                ctx.fill();
+
+                // Core Portal
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Text Label
+                ctx.font = "10px Inter, sans-serif";
+                ctx.fillStyle = "#cbd5e1";
+                ctx.fillText(`${index + 1}. ${p.name}`, p.x - 20, p.y - 18);
+            });
+
+            // Draw Teleport Warp Particles
+            state.teleportParticles.forEach((pt, index) => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 240, 255, ${pt.alpha})`;
+                ctx.fill();
+
+                pt.y -= pt.speed;
+                pt.alpha -= 0.03;
+                if (pt.alpha <= 0) state.teleportParticles.splice(index, 1);
+            });
+
+            // Draw Player Avatar
+            ctx.beginPath();
+            ctx.arc(state.player.x, state.player.y, state.player.size, 0, Math.PI * 2);
+            ctx.fillStyle = "#f59e0b";
+            ctx.fill();
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Player Halo
+            ctx.beginPath();
+            ctx.arc(state.player.x, state.player.y, state.player.size + 4, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // HUD update
+            document.getElementById('hud-player-pos').innerText = `(${Math.round(state.player.x)}, ${Math.round(state.player.y)})`;
+            document.getElementById('hud-portal-count').innerText = state.portals.length;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Canvas Click -> Move or Add
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Check if clicked near an existing portal
+            const clickedPortal = state.portals.find(p => Math.hypot(p.x - mouseX, p.y - mouseY) < 18);
+
+            if (clickedPortal) {
+                // Clicked portal directly -> Teleport there
+                teleportPlayerTo(clickedPortal.x, clickedPortal.y, clickedPortal.name);
+            } else {
+                // Move player to clicked position smoothly
+                state.player.x = mouseX;
+                state.player.y = mouseY;
+                playSound('click');
+                updateLog();
+            }
+        });
+
+        // Teleport Logic
+        function teleportPlayerTo(x, y, portalName) {
+            playSound('teleport');
+
+            // Spawn Particles at target
+            for (let i = 0; i < 25; i++) {
+                state.teleportParticles.push({
+                    x: x + (Math.random() - 0.5) * 30,
+                    y: y + (Math.random() - 0.5) * 30,
+                    size: Math.random() * 4 + 1,
+                    speed: Math.random() * 2 + 1,
+                    alpha: 1
+                });
+            }
+
+            // Set Player Position (player.global_position = target_pos)
+            state.player.x = x;
+            state.player.y = y;
+
+            showToast(`已成功傳送至「${portalName}」座標 (${Math.round(x)}, ${Math.round(y)})`);
+            toggleTeleportModal(false);
+            updateLog();
+        }
+
+        // Add Random Portal
+        function addRandomPortal() {
+            const names = ["秘密天台門", "地下金庫門", "高空浮島門", "賽博酒吧門", "星際港口門"];
+            const colors = ["#ec4899", "#3b82f6", "#eab308", "#06b6d4", "#8b5cf6"];
+            const randomName = names[Math.floor(Math.random() * names.length)] + " " + (state.portals.length + 1);
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+            const newPortal = {
+                id: Date.now(),
+                name: randomName,
+                x: Math.floor(Math.random() * (canvas.width - 100) + 50),
+                y: Math.floor(Math.random() * (canvas.height - 100) + 50),
+                color: randomColor,
+                zone: "探索新區域"
+            };
+
+            state.portals.push(newPortal);
+            renderPortalList();
+            updateLog();
+            showToast(`新增傳送門子節點: ${newPortal.name}`);
+        }
+
+        function resetPlayerPos() {
+            state.player.x = 100;
+            state.player.y = 150;
+            updateLog();
+            showToast("已重置玩家初始位置");
+        }
+
+        // Render Portal List Side View
+        function renderPortalList() {
+            const container = document.getElementById('portal-node-list');
+            const searchVal = document.getElementById('portal-search').value.toLowerCase();
+            container.innerHTML = '';
+
+            const filtered = state.portals.filter(p => p.name.toLowerCase().includes(searchVal) || p.zone.toLowerCase().includes(searchVal));
+
+            document.getElementById('portal-badge-count').innerText = `${state.portals.length} 個子節點`;
+
+            filtered.forEach((portal, index) => {
+                const item = document.createElement('div');
+                item.className = "p-3 bg-cyber-bg/80 border border-cyber-border rounded-xl flex items-center justify-between hover:border-cyber-accent/60 transition group";
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-3 rounded-full shadow" style="background-color: ${portal.color}"></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-200 group-hover:text-cyber-accent transition">${index + 1}. ${portal.name}</p>
+                            <p class="text-[10px] text-slate-500 font-mono">Vector2(${Math.round(portal.x)}, ${Math.round(portal.y)}) · ${portal.zone}</p>
+                        </div>
+                    </div>
+                    <button onclick="teleportPlayerTo(${portal.x}, ${portal.y}, '${portal.name}')" class="px-2.5 py-1 bg-cyber-accent/20 border border-cyber-accent/40 text-cyber-accent text-[11px] rounded-lg hover:bg-cyber-accent hover:text-slate-950 transition">
+                        傳送
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Render Modal Buttons Grid
+        function renderModalGrid() {
+            const grid = document.getElementById('modal-portal-grid');
+            grid.innerHTML = '';
+
+            state.portals.forEach((portal, index) => {
+                const btn = document.createElement('button');
+                btn.onclick = () => teleportPlayerTo(portal.x, portal.y, portal.name);
+                btn.className = "p-4 bg-cyber-bg/90 border border-cyber-border rounded-2xl flex flex-col gap-2 hover:border-cyber-accent hover:scale-[1.02] active:scale-95 transition-all text-left group glow-purple/20";
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono font-bold text-cyber-accent">INDEX [ ${index} ]</span>
+                        <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${portal.color}"></div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-100 group-hover:text-cyber-accent transition">${portal.name}</h4>
+                        <p class="text-xs text-slate-400 font-mono mt-0.5">global_position: (${Math.round(portal.x)}, ${Math.round(portal.y)})</p>
+                    </div>
+                    <div class="mt-2 text-[10px] text-slate-500 flex items-center justify-between border-t border-slate-800 pt-2">
+                        <span>${portal.zone}</span>
+                        <span class="text-cyber-accent font-semibold group-hover:translate-x-1 transition-transform">點擊傳送 →</span>
+                    </div>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        // Toggle Modal
+        function toggleTeleportModal(show) {
+            const modal = document.getElementById('teleport-modal');
+            const box = document.getElementById('modal-box');
+            if (show) {
+                renderModalGrid();
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    box.classList.remove('scale-95');
+                }, 10);
+            } else {
+                modal.classList.add('opacity-0');
+                box.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Update Log output
+        function updateLog() {
+            const logArray = state.portals.map(p => `Vector2(${Math.round(p.x)}, ${Math.round(p.y)})`);
+            document.getElementById('code-output-log').innerText = `player_傳送門_array = [\n  ${logArray.join(',\n  ')}\n]`;
+        }
+
+        // Switch Tabs
+        function switchTab(tab) {
+            const demoView = document.getElementById('view-demo');
+            const codeView = document.getElementById('view-code');
+            const demoBtn = document.getElementById('tab-demo-btn');
+            const codeBtn = document.getElementById('tab-code-btn');
+
+            if (tab === 'demo') {
+                demoView.classList.remove('hidden');
+                codeView.classList.add('hidden');
+                demoBtn.className = "px-4 py-2 text-sm font-semibold rounded-lg bg-cyber-accent text-slate-950 transition-all flex items-center gap-2";
+                codeBtn.className = "px-4 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2";
+            } else {
+                demoView.classList.add('hidden');
+                codeView.classList.remove('hidden');
+                codeBtn.className = "px-4 py-2 text-sm font-semibold rounded-lg bg-cyber-accent text-slate-950 transition-all flex items-center gap-2";
+                demoBtn.className = "px-4 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2";
+            }
+        }
+
+        // Toast notification system
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-cyber-card border border-cyber-accent text-slate-200 px-4 py-3 rounded-xl shadow-xl text-xs flex items-center gap-2 transition-all transform translate-y-2 opacity-0 glow-cyan";
+            toast.innerHTML = `<i class="fa-solid fa-circle-check text-cyber-accent"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Copy Code Helper
+        function copyCode(id) {
+            const codeText = document.getElementById(id).innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = codeText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("Godot 腳本已成功複製至剪貼簿！");
+        }
+
+        // Keyboard listener for ESC key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') toggleTeleportModal(false);
+        });
+
+        // Initialize App
+        window.onload = function() {
+            resizeCanvas();
+            renderPortalList();
+            updateLog();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
