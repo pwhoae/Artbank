@@ -1,3 +1,5 @@
+Photoshop 拆圖 → After Effects（Puppet + Camera + 特效） → AI 補充自然運動（Kling / Vidu） → 剪輯軟體合成輸出 24fps。 <br>
+
 tool:
 Powerpoint (PPT)<br>
 HTML:https://github.com/Unclecheng-li/AI_Animation<br>
