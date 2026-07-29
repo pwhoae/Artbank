@@ -1,7 +1,9 @@
 ### 3D Notes
 tools:
 輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)<br>
-貼圖:https://ambientcg.com/ 
+貼圖:https://ambientcg.com/<br>
+地编:https://www.artstation.com/artwork/dyk3nQ
+
 ```
 ### 思考方向
 marker2d/3d
