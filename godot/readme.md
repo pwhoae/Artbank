@@ -47,9 +47,3 @@
 * 📄 [常用coding.md](http://docs.google.com/常用coding.md) \- 常用 GDScript 代碼片段與邏輯參考  
 * 📄 [godot-shader-developer.md](http://docs.google.com/godot-shader-developer.md) \- Shader 開發與調優指南  
 * 📄 [Godot 4 大脚车教程.txt](http://docs.google.com/Godot%204%20%E5%A4%A7%E8%84%9A%E8%BD%A6%E6%95%99%E7%A8%8B.txt) \- Godot 4 3D 載具/大腳車開發教程
-
-## **💡 使用說明**
-
-1. **複製或下載本倉庫**：可以直接 Download ZIP 或使用 Git Clone。  
-2. **開啟專案**：建議使用 **Godot 4.x** 最新穩定版本開啟。  
-3. **查閱教學筆記**：針對特定玩法或 Shader 效果，可直接查閱對應資料夾內的 .md 或 .txt 文件。
