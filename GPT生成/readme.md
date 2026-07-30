@@ -2,7 +2,13 @@
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> 
 1-2天法則
 https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
+### **想像力**
 
+| 設計(8) | 審美提升「四字訣」——看、想、抄、問 敘事性時尚海報|去像素+賽璐璐畫風|商業化插圖 粗字重(60%)：提供视觉密度、主导性与力量感，在潜意识中与权威与冲击力相关联。细字重(40%)：通过丰富的留白带来细腻与克制，传递出精致与奢华的情绪。设计不是追求绝对的物理平衡，而是追求适合项目需求的“张力”。 先有角色,再來故事:世界（原型) X 扁型（外表,招牌特點) X 個性（內部) 參考:[SSR人物 \- 碧蓝幻想中文维基](https://gbf.huijiwiki.com/wiki/SSR%E4%BA%BA%E7%89%A9) ,柚,dona 角色設計 「由大到小、由遠及近、由整體到細節」 核心風格與背景 (Core Style & Setting) 藝術風格： 世界觀/美學： 角色基礎與體態 (Character Base & Anatomy) 角色主體： 身材體態： 姿態動作： 非人/人特徵 頭部與面部細節 (Head & Facial Details) 角色的靈魂所在，包含髮型、眼睛與五官精細度。 面部特徵： 髮型造型： 眼神與瞳色： 服裝與穿搭細節 (Outfit & Clothing Layers) 整體風格： 上衣細節： 下裝細節： 配飾 裝備與手持道具 (Equipment & Weapons) 武器類： 道具類： 角色氣質與氛圍 (Aura & Attributes) 內在屬性： |
+| ----- | :---- |
+| 拍攝(7) | gemini |
+| 遊戲(7) | **Godot**  |
+|  | 棄置:漫畫》動畫/建模/角設/遊戲動畫研究//動畫:**升天轉場** 動畫要靈活感 頭髮飄動,呼吸,眨眼,輕微身體搖擺,衣服飄動 tool: Powerpoint (PPT)HTML:[https://github.com/Unclecheng-li/AI\_Animation](https://github.com/Unclecheng-li/AI_Animation)CSP 动画的12项基本法则》*\#\#\#\# 1\. 挤压与拉伸  \#\#\#\# 12\. 吸引力 (Appeal) —— (21:38) \#\#\#\# 7\. 弧线运动 (Arcs) —— (12:57)* |
 ```
 ### 1. 核心風格與比例 (Core Style & Proportions) * **Chibi / Super Deformed (SD):** 經典的二次元 Q 版身形，通常是 2 頭身到 2.5 頭身。 * **Anime chibi style:** 動漫 Q 版風格，強調大頭、大眼睛、小嘴巴以及簡化但精緻的四肢。 * **Dynamic pose:** 雖然是 Q 版，但動作極具動感、張力與浮空感，不是死板的站姿。 ### 2. 線條與上色技法 (Lineart & Coloring) * **Clean line art / Crisp outlines:** 線條乾淨俐落，邊緣清晰，粗細有致，沒有雜亂的草稿感。 * **Soft shading / Cel-shaded hybrid:** 採用半賽璐珞（Cel-shading）搭配軟陰影（Soft shading）的現代日系上色。陰影邊緣有明確的切面，但在頭髮、腮紅等細節上有細緻的漸層過渡。 * **Vibrant accents / High contrast:** 基礎色彩以沉穩的深色（黑、深灰）為主，但搭配了高飽和度的亮色（如亮金、紫色、黃色）作為點綴，呈現出霓虹般的潮流感。 * **Subtle gradients:** 頭髮和眼睛帶有細微的色彩漸層與透明感，增加精緻度。
 ```
