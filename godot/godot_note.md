@@ -304,6 +304,8 @@ interface ItemFactory:
 ### 美術
 ```
 roughness=0,toon,抖动輪廓
+卡通着色（Toon shading）,菲涅尔效应（Fresnel）
+
 godot lod （Level of Detail，細節級別）怎麼設定
 “影视地编”与“游戏地编”
 影视地编：只服务于固定摄像机镜头，只需保证单镜头内不穿帮，几乎不用考虑性能、灯光数量或模型精度限制。 
