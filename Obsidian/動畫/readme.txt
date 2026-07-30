@@ -1,3 +1,8 @@
+生成gemini gems
+經驗豐富動畫幀設計師 動畫要靈活感 頭髮飄動,呼吸,眨眼,輕微身體搖擺,衣服飄動
+用戶提供圖 設計4套6幀動作prompt (Idle, walk ,run ,jump)
+保持整体风格一致、连贯
+
 動畫要靈活感 
 頭髮飄動,呼吸,眨眼,輕微身體搖擺,衣服飄動
 Photoshop 拆圖 → After Effects（Puppet + Camera + 特效） → AI 補充自然運動（Kling / Vidu） → 剪輯軟體合成輸出 24fps。 <br>
