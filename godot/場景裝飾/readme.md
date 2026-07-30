@@ -1,6 +1,10 @@
 # **📦 Godot 場景裝飾資源庫目錄**
 
 本目錄收錄 godot/場景裝飾/ 資料夾下的所有 3D 模型、Godot 場景、Shader 著色器與貼圖資源。
+外表 = Mesh（模型）+ 材質（Material）<br>
+動畫庫 = Skeleton（骨架）+ Animation<br>
+絕區零:https://github.com/m4urlclo0/ZZZ-Assets<br>
+模之屋:用不了<br>
 
 ## **📑 目錄**
 
