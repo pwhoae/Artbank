@@ -1,6 +1,49 @@
 update 2026/07/25:
+空间斩
+UI 与 3D 元素的结合： 3D 角色動作
+畫廊_Gallery
+登入介面_Login_Interface
+特殊按鈕效果_Special_Button_Effect
+專業暫停選單_Pro_Pause_Menu
+玩法demo
+拼圖 https://share.gemini.google/ac76sJCbDNhN
+真相 https://share.gemini.google/wy5j3uOwUBrV
+spatial https://share.gemini.google/K7ICxv7pyfmO
+生成鏡面反射光遊戲:https://share.gemini.google/m1Z6quBNjlHY /磁吸/一筆畫/
+无限世界！Godot 3D 无限生成地形演示/ZZZ_傳送
+
 窗戶 https://share.gemini.google/aRsbtrc7Ieg5<br>
 粒子 https://share.gemini.google/ekn3VVYPBLo7
+加卡通云雾shader https://share.gemini.google/UpQ4vrbmgJeE   
+怎麼在godot 3d 做出地圖定位 https://share.gemini.google/iF3gt5YpsXzo
+生成不同的表面电流godot shader:https://share.gemini.google/I9vB4VkqVb8G
+能量光束:https://share.gemini.google/fHcImOVBS6jx 
+透明融球:https://share.gemini.google/tiI3RXPMClho
+Godot 4 潮酷UI介面動效範例 :https://share.gemini.google/1F99lgOI0K0j 
+生成godot角色圖鑑系統: https://share.gemini.google/qAqopwJdfPJd  
+Camera2D 與 Camera3D 指南https://share.gemini.google/Am9kqlaP6O8U
+
+背包:有優質的生活機能，像是清楚的圖示/圖片，還有一些標題讓你快速知道那是什麼東西;紀錄功能，讓你看看最近拿了什麼東西，如果你想知道有沒有拿到特定的戰利品。可以快速整理、篩選，有分類清楚的「分頁」/區塊，而且還可以快速操作，像是輕鬆使用道具、輕鬆切換裝備。
+
+https://share.gemini.google/83jVlKP3dB3u 
+玩法：玩家躲避+敵人攻擊+ 能量開招秒敵人https://share.gemini.google/FhFQodvH9Ylx    
+設定
+玩家：血量/能量（閃避成功回能）
+血量歸零結束
+敵人：隨機攻擊（但有預判）+增加打擊感 例如震動屏 追加動作遊戲的小技巧
+動畫：待機/攻擊/跳/閃避/受擊/死亡
+
+空洞bgm
+
+3.0鈴妹
+佩洛伊斯
+星見雅 
+
+殘影
+fairy
+打擊感 
+跟鐵軌跑？https://share.gemini.google/KBxgNKkyBLtd 
+
 # **🎨 Godot Shader & VFX 著色器資源庫**
 
 本倉庫收集並整理了適用於 Godot Engine 的各類 **3D/2D Shader 著色器**、**HTML 可視化預覽工具** 以及相關 AI 提示詞與參考資源。
