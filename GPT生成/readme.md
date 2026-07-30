@@ -3,25 +3,10 @@
 1-2天法則
 https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 
-<details><summary><h6>放棄idea</h6></summary>
-  冲破次元壁的/商業化插圖
-
-棄置:漫畫》動畫/建模/角設<BR>
-遊戲動畫研究                        
-</details>
-
-md/bili/圖
-鈴打哈欠+伸懶腰/燈塔維 廣下雪
-滑板跑酷,streak連勝,草莓巴菲,掃雷
 ```
 ### 1. 核心風格與比例 (Core Style & Proportions) * **Chibi / Super Deformed (SD):** 經典的二次元 Q 版身形，通常是 2 頭身到 2.5 頭身。 * **Anime chibi style:** 動漫 Q 版風格，強調大頭、大眼睛、小嘴巴以及簡化但精緻的四肢。 * **Dynamic pose:** 雖然是 Q 版，但動作極具動感、張力與浮空感，不是死板的站姿。 ### 2. 線條與上色技法 (Lineart & Coloring) * **Clean line art / Crisp outlines:** 線條乾淨俐落，邊緣清晰，粗細有致，沒有雜亂的草稿感。 * **Soft shading / Cel-shaded hybrid:** 採用半賽璐珞（Cel-shading）搭配軟陰影（Soft shading）的現代日系上色。陰影邊緣有明確的切面，但在頭髮、腮紅等細節上有細緻的漸層過渡。 * **Vibrant accents / High contrast:** 基礎色彩以沉穩的深色（黑、深灰）為主，但搭配了高飽和度的亮色（如亮金、紫色、黃色）作為點綴，呈現出霓虹般的潮流感。 * **Subtle gradients:** 頭髮和眼睛帶有細微的色彩漸層與透明感，增加精緻度。
 ```
 
-|設計(8)|敘事性時尚海報<br>去像素+賽璐璐畫風|
-|------|---------|
-|音樂(7)|https://suno.com/create?wid=default|
-|拍攝(7)|gemini|
-|遊戲(7)|Godot|
 <br>
 
 ### 整活>過程要好玩快樂
