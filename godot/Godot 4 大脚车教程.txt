@@ -1,0 +1,191 @@
+🚙 Godot 4 3D 大脚车特技 Demo 策划与 AI 素材提示词指南
+
+本策划案基于 GW TUTS 的 Godot 4 Monster Truck 教程架构，旨在帮助你快速搭建一个具有高拟真悬挂物理、粒子特效、动态音效与可破坏场景交互的 3D 大脚车游戏 Demo。
+
+一、 Demo 核心概览 (Demo Overview)
+
+游戏名称（暂定）：Monster Arena: Nitro Crash（巨兽竞技场：硝基冲撞）
+
+游戏类型：3D 物理驾驶 / 越野特技休闲游戏
+
+引擎版本：Godot 4.x (建议 4.2+)
+
+核心玩法：
+
+玩家驾驶高悬挂大脚车在封闭沙地竞技场中越野冲刺。
+
+利用斜坡进行高空飞跃与翻转，冲撞可摧毁的木箱、油桶与旧车障碍物。
+
+结合轮胎烧胎烟雾粒子、发动机音调变化与速度表 UI，提供爽快的驾驶反馈。
+
+二、 系统架构与关卡设计 (System Architecture)
+
+1. 车辆节点结构 (Godot Node Hierarchy)
+
+MonsterTruck (VehicleBody3D)
+├── MeshInstance3D (车身模型)
+├── CollisionShape3D (车身碰撞体)
+├── VehicleWheel3D_FL (左前轮)
+├── VehicleWheel3D_FR (右前轮)
+├── VehicleWheel3D_BL (左后轮)
+├── VehicleWheel3D_BR (右后轮)
+├── CameraPivot (Node3D)
+│   └── SpringArm3D
+│       └── Camera3D (第三人称跟随相机)
+├── FX (Node3D)
+│   ├── ExhaustSmoke (GPUParticles3D - 尾气)
+│   ├── TireDust_L (GPUParticles3D - 轮胎胎噪沙尘)
+│   └── TireDust_R (GPUParticles3D)
+├── Audio (Node3D)
+│   ├── EngineSound (AudioStreamPlayer3D - 引擎声)
+│   └── BrakeSqueal (AudioStreamPlayer3D - 刹车声)
+└── UI (CanvasLayer)
+    └── Speedometer (Control - 仪表盘)
+
+
+2. 数学物理调优参数公式
+
+在 Godot 4 中，动态调整引擎声音 Pitch 缩放比例可参考以下公式：
+
+
+$$\text{Pitch} = \text{Clamp}\left(\text{MinPitch} + \left(\frac{\text{CurrentSpeed}}{\text{MaxSpeed}}\right) \times (\text{MaxPitch} - \text{MinPitch}), \text{MinPitch}, \text{MaxPitch}\right)$$
+
+通过线性插值（lerp）平滑过渡，使车辆加速时的声浪反馈更加逼真。
+
+三、 5 阶段开发路线图 (Development Roadmap)
+
+Part 1: Blender 绑定与模型准备
+
+目标：车身与 4 个轮胎独立拆分，重心（Origin Point）设置在车辆中心偏下位置。
+
+导图与设置：导出 .gltf 或 .glb 格式，确保 Z 轴朝前（Forward direction）。
+
+Part 2: Godot 物理与悬挂配置
+
+使用 VehicleBody3D 节点作为根节点。
+
+配置 VehicleWheel3D 参数：
+
+Suspension Distance: 0.3 ~ 0.5 m
+
+Suspension Stiffness: 30.0 ~ 50.0
+
+Wheel Friction Slip: 2.0 ~ 3.5（调低可实现漂移甩尾）
+
+Part 3: 动态声音与 GPU 粒子特效
+
+引擎音效：使用循环 Engine Noise，根据当前速度 $v$ 实时计算并更改 AudioStreamPlayer3D.pitch_scale。
+
+粒子系统：在后轮位置创建 GPUParticles3D，当 VehicleWheel3D.is_in_contact() 且速度大于阀值时激活粒子发射（沙尘/烧胎烟雾）。
+
+Part 4: CSG 关卡与可破坏障碍物
+
+使用 CSGBox3D / CSGPolygon3D 快速构建陡坡（Ramps）、拱门与赛道边界。
+
+创建可被冲撞飞出的道具（旧轮胎堆、木箱），使用 RigidBody3D 节点，撞击后产生真实物理散射。
+
+Part 5: UI 与翻车复位机制
+
+UI 速度表：通过 VehicleBody3D.linear_velocity.length() * 3.6 计算 $km/h$，并映射指针旋转角度。
+
+复位逻辑：检测车身 $Up$ 向量，若 $Y$ 轴朝下超过 2 秒，按下 R 键重置位置与角度（global_transform）。
+
+四、 美术素材 AI Prompt 生成清单 (AI Asset Prompts)
+
+本部分提供可在 Midjourney / Stable Diffusion / Tripo3D / Meshy 等 AI 工具中直接使用的提示词。
+
+1. 3D 模型生成 (针对 Tripo3D / Meshy / Rodin)
+
+🚙 核心车辆：大脚越野车 (Monster Truck)
+
+Prompt:
+
+3D low-poly stylised monster truck, giant oversized off-road tires, heavy duty lifted suspension, aggressive front grill, bright neon orange and matte black paint job, racing decals, clean game asset, PBR texture, isolatd white background --no light fixtures, soft shadows
+
+📦 障碍物道具：旧油桶与木箱 (Obstacles)
+
+Prompt:
+
+Low-poly 3D asset set of rusty industrial oil drums and broken wooden cargo crates, stylized game props, game ready, isolated on neutral background
+
+🏁 场景斜坡与拱门 (CSG Texture Reference)
+
+Prompt:
+
+Stylized dirt track ramp, mud pattern, seamless game texture, off-road racing game environment asset, 3D style
+
+2. 2D 贴图与纹理 (针对 Midjourney / SD XL)
+
+🏜️ 沙地/泥地地面 PBR 无缝纹理 (Terrain Texture)
+
+Prompt:
+
+Seamless texture of dry cracked dirt and tire tracks, stylized video game terrain map, top-down view, high detail, PBR tileable --tile --v 6.0
+
+🏎️ 车辆涂装/贴纸纹理 (Decal & Livery)
+
+Prompt:
+
+Flame decals graphic vector, racing livery design pattern, bright yellow and red flames on transparent background, flat design, vector style
+
+3. UI 与 图标素材 (针对 Midjourney)
+
+⏱️ 仪表盘 UI 控件 (Speedometer Canvas)
+
+Prompt:
+
+UI element speedometer for a racing game, dark sci-fi metal texture, glowing blue digital numbers and red gauge needle, transparent background, clean vector HUD interface, game design asset --v 6.0
+
+🔄 翻车复位 / 轮胎图标 (UI Icons)
+
+Prompt:
+
+A set of 2D game UI icons: reset car icon, engine icon, tire icon, nitro boost icon, flat vector style, glowing neon accents, dark round buttons
+
+五、 音效与粒子参数参数表 (Audio & Particle Specifications)
+
+素材类型
+
+名称
+
+参数 / 说明
+
+音效
+
+engine_loop.wav
+
+低沉柴油引擎循环声，基础 Pitch = 0.8
+
+音效
+
+tire_skid.wav
+
+轮胎摩擦地面尖锐声，设为按需播放
+
+音效
+
+crash_wood.wav
+
+撞击木箱物理碰撞音效
+
+粒子
+
+DustParticles
+
+褐色 / 灰白色，受重力 Gravity.y = -2.0，生命周期 0.6s
+
+粒子
+
+ExhaustSmoke
+
+黑色 / 暗灰色，向上飘散 Gravity.y = 1.5，尺寸随时间放大
+
+六、 总结与快速启动指南 (Quick Start)
+
+在 Blender 中快速用基本体拼装大脚车，将轮轴设置好层次关系。
+
+将 AI 生成的 PBR 材质赋予大脚车并导出 .glb 导入 Godot 4。
+
+挂载 VehicleBody3D 脚本，将控制绑定在 InputMap（ui_up, ui_down, ui_left, ui_right）。
+
+部署 GPUParticles3D 与 AudioStreamPlayer3D 提高游戏反馈感。
