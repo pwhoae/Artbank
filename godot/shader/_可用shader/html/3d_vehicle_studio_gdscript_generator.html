@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 VehicleBody3D Studio & 3D Testbench</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#20252b',
+                            panel: '#282e36',
+                            accent: '#41b883',
+                            highlight: '#00a8e8'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #121519;
+            color: #e2e8f0;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .glass-panel {
+            background: rgba(32, 37, 43, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <!-- Main UI Container -->
+    <div id="ui-container" class="relative z-10 w-full h-screen pointer-events-none flex flex-col justify-between p-4">
+        
+        <!-- Top Bar Header -->
+        <header class="flex justify-between items-center w-full pointer-events-auto">
+            <div class="glass-panel px-4 py-2.5 rounded-xl flex items-center space-x-3 shadow-lg">
+                <div class="w-8 h-8 rounded-lg bg-godot-blue flex items-center justify-center text-white font-bold">
+                    <i class="fa-solid fa-car text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm text-white tracking-wide flex items-center gap-2">
+                        Godot 4 VehicleBody3D Controller
+                        <span class="text-[10px] bg-godot-accent/20 text-godot-accent border border-godot-accent/30 px-1.5 py-0.5 rounded font-mono">v4.3+ GDScript</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Interactive 3D Testbench & Node Logic Generator</p>
+                </div>
+            </div>
+
+            <!-- View Modes & Tabs -->
+            <div class="glass-panel p-1.5 rounded-xl flex space-x-1 shadow-lg pointer-events-auto">
+                <button id="tab-sim-btn" onclick="switchTab('sim')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-godot-blue text-white shadow">
+                    <i class="fa-solid fa-gamepad mr-1.5"></i>3D Simulation
+                </button>
+                <button id="tab-code-btn" onclick="switchTab('code')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all duration-200">
+                    <i class="fa-solid fa-code mr-1.5"></i>GDScript Code
+                </button>
+                <button id="tab-node-btn" onclick="switchTab('node')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all duration-200">
+                    <i class="fa-solid fa-diagram-project mr-1.5"></i>Scene Setup Guide
+                </button>
+            </div>
+        </header>
+
+        <!-- Center Bottom Telemetry Overlay (Drive Mode) -->
+        <div id="telemetry-hud" class="self-center glass-panel px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-8 border border-white/10 pointer-events-auto transition-all duration-300">
+            <!-- Speedometer -->
+            <div class="flex flex-col items-center">
+                <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">Speed</div>
+                <div class="flex items-baseline">
+                    <span id="speed-display" class="text-3xl font-black font-mono text-white tracking-tight">0</span>
+                    <span class="text-xs font-semibold text-godot-blue ml-1">KM/H</span>
+                </div>
+            </div>
+
+            <div class="h-8 w-px bg-white/10"></div>
+
+            <!-- RPM / Gear Gauge -->
+            <div class="flex flex-col items-center">
+                <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">Transmission</div>
+                <div class="flex items-center space-x-2">
+                    <span id="gear-display" class="px-2 py-0.5 bg-godot-blue/20 text-godot-blue border border-godot-blue/40 rounded font-mono font-bold text-xs">D</span>
+                    <div class="w-20 bg-slate-800 rounded-full h-2.5 overflow-hidden border border-white/5">
+                        <div id="rpm-bar" class="bg-gradient-to-r from-godot-blue via-godot-accent to-red-500 h-full w-0 transition-all duration-75"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="h-8 w-px bg-white/10"></div>
+
+            <!-- Steering Angle -->
+            <div class="flex flex-col items-center">
+                <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">Steer Angle</div>
+                <div id="steer-indicator" class="text-sm font-mono font-bold text-slate-200">0.0°</div>
+            </div>
+
+            <div class="h-8 w-px bg-white/10"></div>
+
+            <!-- Controls Quick Reference -->
+            <div class="text-xs text-slate-400 font-mono space-y-0.5">
+                <div><span class="text-white bg-slate-800 px-1 rounded">W/S</span> or <span class="text-white bg-slate-800 px-1 rounded">↑/↓</span> : Throttle/Brake</div>
+                <div><span class="text-white bg-slate-800 px-1 rounded">A/D</span> or <span class="text-white bg-slate-800 px-1 rounded">←/→</span> : Steering</div>
+                <div><span class="text-white bg-slate-800 px-1 rounded">SPACE</span> : Handbrake | <span class="text-white bg-slate-800 px-1 rounded">R</span> : Reset</div>
+            </div>
+        </div>
+
+        <!-- Right Side Panel: Live Tuning Controls -->
+        <div id="tuning-panel" class="absolute top-20 right-4 w-80 glass-panel rounded-2xl p-4 shadow-2xl pointer-events-auto custom-scrollbar overflow-y-auto max-h-[calc(100vh-120px)] border border-white/10 transition-all duration-300">
+            <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+                <h2 class="text-xs font-bold font-mono text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-godot-blue"></i>
+                    Vehicle Tuning & Physics
+                </h2>
+                <button onclick="resetTuningDefaults()" class="text-[10px] text-slate-400 hover:text-white transition-colors">Reset</button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Engine Force -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Engine Force (Max HP)</label>
+                        <span id="val-engine" class="font-mono text-godot-blue">400</span>
+                    </div>
+                    <input type="range" id="param-engine" min="50" max="1000" step="10" value="400" oninput="updateVehicleParams()" class="w-full accent-godot-blue cursor-pointer">
+                </div>
+
+                <!-- Brake Force -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Brake Force</label>
+                        <span id="val-brake" class="font-mono text-godot-blue">60</span>
+                    </div>
+                    <input type="range" id="param-brake" min="10" max="200" step="5" value="60" oninput="updateVehicleParams()" class="w-full accent-godot-blue cursor-pointer">
+                </div>
+
+                <!-- Max Steer Angle -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Max Steer Angle (Deg)</label>
+                        <span id="val-steer" class="font-mono text-godot-blue">28°</span>
+                    </div>
+                    <input type="range" id="param-steer" min="10" max="50" step="1" value="28" oninput="updateVehicleParams()" class="w-full accent-godot-blue cursor-pointer">
+                </div>
+
+                <!-- Steer Speed -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Steering Responsiveness</label>
+                        <span id="val-steerspeed" class="font-mono text-godot-blue">6.0</span>
+                    </div>
+                    <input type="range" id="param-steerspeed" min="1" max="15" step="0.5" value="6.0" oninput="updateVehicleParams()" class="w-full accent-godot-blue cursor-pointer">
+                </div>
+
+                <!-- Suspension Stiffness -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Suspension Stiffness</label>
+                        <span id="val-stiffness" class="font-mono text-godot-accent">35</span>
+                    </div>
+                    <input type="range" id="param-stiffness" min="10" max="100" step="5" value="35" oninput="updateVehicleParams()" class="w-full accent-godot-accent cursor-pointer">
+                </div>
+
+                <!-- Suspension Travel / Height -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Ride Height</label>
+                        <span id="val-height" class="font-mono text-godot-accent">0.45m</span>
+                    </div>
+                    <input type="range" id="param-height" min="0.2" max="0.8" step="0.05" value="0.45" oninput="updateVehicleParams()" class="w-full accent-godot-accent cursor-pointer">
+                </div>
+
+                <!-- Traction / Grip -->
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-slate-300 font-medium">Tire Grip (Friction)</label>
+                        <span id="val-grip" class="font-mono text-godot-accent">1.2</span>
+                    </div>
+                    <input type="range" id="param-grip" min="0.3" max="2.5" step="0.1" value="1.2" oninput="updateVehicleParams()" class="w-full accent-godot-accent cursor-pointer">
+                </div>
+
+                <!-- Camera Follow Mode -->
+                <div class="pt-2 border-t border-white/10">
+                    <label class="text-slate-300 font-medium block mb-2">Camera Perspective</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setCameraMode('chase')" id="cam-chase-btn" class="py-1.5 px-2 bg-godot-blue text-white rounded font-mono text-[11px] font-bold border border-godot-blue">Chase Cam</button>
+                        <button onclick="setCameraMode('orbit')" id="cam-orbit-btn" class="py-1.5 px-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-mono text-[11px] font-bold border border-white/10">Free Orbit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full-screen GDScript Code Editor Display (Code Tab) -->
+        <div id="code-panel" class="hidden fixed inset-16 z-20 glass-panel rounded-2xl p-6 shadow-2xl pointer-events-auto flex flex-col border border-white/10">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="font-mono text-xs text-slate-300 font-bold ml-2">res://scripts/vehicle_3d.gd</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="copyGDScript()" class="px-3 py-1.5 bg-godot-blue hover:bg-sky-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow">
+                        <i class="fa-regular fa-copy"></i> Copy Code
+                    </button>
+                    <button onclick="downloadGDScript()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Save file
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex-1 relative overflow-hidden rounded-xl border border-white/5 bg-[#181c21]">
+                <textarea id="gdscript-textarea" readonly class="w-full h-full p-4 font-mono text-xs leading-relaxed text-slate-200 bg-transparent resize-none focus:outline-none custom-scrollbar" spellcheck="false"></textarea>
+            </div>
+        </div>
+
+        <!-- Scene Setup Guide Panel (Node Tab) -->
+        <div id="node-panel" class="hidden fixed inset-16 z-20 glass-panel rounded-2xl p-6 shadow-2xl pointer-events-auto flex flex-col border border-white/10 custom-scrollbar overflow-y-auto">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sitemap text-godot-blue"></i>
+                    Godot 4 Vehicle Node Tree & Inspector Setup Guide
+                </h2>
+                <span class="text-xs text-slate-400 font-mono">Matches your Testscene.tscn structure</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs text-slate-300">
+                <!-- Left: Node Hierarchy -->
+                <div class="bg-[#181c21] p-4 rounded-xl border border-white/5 font-mono space-y-2">
+                    <div class="text-godot-accent font-bold mb-3 border-b border-white/10 pb-1">Recommended Scene Tree Structure</div>
+                    <div class="pl-0 text-slate-200"><i class="fa-solid fa-folder-open text-amber-400 mr-2"></i>Testscene (Node3D)</div>
+                    <div class="pl-4 text-sky-400 font-bold"><i class="fa-solid fa-car text-godot-blue mr-2"></i>v (VehicleBody3D) <span class="text-[10px] text-slate-400 font-normal">← Attach vehicle_3d.gd script here</span></div>
+                    <div class="pl-8 text-slate-300"><i class="fa-solid fa-cube text-slate-400 mr-2"></i>CollisionShape3D <span class="text-[10px] text-slate-500">(BoxShape3D for car body)</span></div>
+                    <div class="pl-8 text-slate-300"><i class="fa-solid fa-truck-monster text-amber-300 mr-2"></i>monster_truck (MeshInstance3D)</div>
+                    <div class="pl-8 text-emerald-400"><i class="fa-solid fa-circle text-emerald-400 mr-2"></i>Wheel_FL (VehicleWheel3D) <span class="text-[10px] text-slate-400">(Use Steering: True, Engine: True)</span></div>
+                    <div class="pl-8 text-emerald-400"><i class="fa-solid fa-circle text-emerald-400 mr-2"></i>Wheel_FR (VehicleWheel3D) <span class="text-[10px] text-slate-400">(Use Steering: True, Engine: True)</span></div>
+                    <div class="pl-8 text-emerald-400"><i class="fa-solid fa-circle text-emerald-400 mr-2"></i>Wheel_RL (VehicleWheel3D) <span class="text-[10px] text-slate-400">(Use Steering: False, Engine: True)</span></div>
+                    <div class="pl-8 text-emerald-400"><i class="fa-solid fa-circle text-emerald-400 mr-2"></i>Wheel_RR (VehicleWheel3D) <span class="text-[10px] text-slate-400">(Use Steering: False, Engine: True)</span></div>
+                    <div class="pl-8 text-purple-400"><i class="fa-solid fa-arrows-to-eye text-purple-400 mr-2"></i>SpringArm3D <span class="text-[10px] text-slate-400">(Spring Length: 5.0m, Position: 0, 1.5, 0)</span></div>
+                    <div class="pl-12 text-purple-300"><i class="fa-solid fa-video text-purple-300 mr-2"></i>Camera3D</div>
+                    <div class="pl-4 text-slate-300"><i class="fa-solid fa-border-all text-slate-400 mr-2"></i>GridMap <span class="text-[10px] text-slate-500">(Terrain / Obstacles with StaticBody3D colliders)</span></div>
+                </div>
+
+                <!-- Right: Important Tips & Configuration -->
+                <div class="space-y-4">
+                    <div class="bg-[#181c21] p-4 rounded-xl border border-white/5">
+                        <h3 class="font-bold text-godot-blue mb-2 flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> VehicleBody3D Configuration Tips</h3>
+                        <ul class="list-disc list-inside space-y-1.5 text-slate-300">
+                            <li><strong class="text-white">Mass:</strong> Set <code class="bg-slate-800 px-1 rounded text-godot-accent">VehicleBody3D.mass</code> between <code class="bg-slate-800 px-1 rounded">1000.0</code> and <code class="bg-slate-800 px-1 rounded">1800.0 kg</code>.</li>
+                            <li><strong class="text-white">Center of Mass:</strong> Move the center of mass lower (Y: -0.3 to -0.5) to prevent easy flipping when drifting or turning sharp corners.</li>
+                            <li><strong class="text-white">Wheel Placement:</strong> Assign each <code class="bg-slate-800 px-1 rounded text-godot-accent">VehicleWheel3D</code> as a direct child of <code class="bg-slate-800 px-1 rounded">VehicleBody3D</code>. Ensure wheel radii match your visual wheel mesh.</li>
+                            <li><strong class="text-white">Wheel Drive:</strong> Enable <code class="bg-slate-800 px-1 rounded text-emerald-400">Use Steering</code> on front wheels, and <code class="bg-slate-800 px-1 rounded text-emerald-400">Use Engine</code> on rear wheels (RWD) or all 4 wheels (4WD).</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-[#181c21] p-4 rounded-xl border border-white/5">
+                        <h3 class="font-bold text-godot-accent mb-2 flex items-center gap-2"><i class="fa-solid fa-keyboard"></i> Project Input Map Actions</h3>
+                        <p class="mb-2">Ensure your Godot Project Settings → Input Map has the following keybindings configured:</p>
+                        <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                            <div class="bg-slate-800/80 p-2 rounded border border-white/5"><span class="text-godot-blue">ui_up</span> : W / Up Arrow</div>
+                            <div class="bg-slate-800/80 p-2 rounded border border-white/5"><span class="text-godot-blue">ui_down</span> : S / Down Arrow</div>
+                            <div class="bg-slate-800/80 p-2 rounded border border-white/5"><span class="text-godot-blue">ui_left</span> : A / Left Arrow</div>
+                            <div class="bg-slate-800/80 p-2 rounded border border-white/5"><span class="text-godot-blue">ui_right</span> : D / Right Arrow</div>
+                            <div class="bg-slate-800/80 p-2 rounded border border-white/5"><span class="text-godot-blue">ui_select</span> : Spacebar (Handbrake)</div>
+                            <div class="bg-slate-800/80 p-2 rounded border border-white/5"><span class="text-godot-blue">reset_vehicle</span> : R key</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Global State & Simulation Variables
+        let scene, camera, renderer, orbitControls;
+        let vehicleGroup, chassisMesh, wheelMeshes = [];
+        let terrainGroup;
+        let cameraMode = 'chase'; // 'chase' or 'orbit'
+
+        // Vehicle Physics State
+        let vehicleState = {
+            position: new THREE.Vector3(0, 1.2, 0),
+            velocity: new THREE.Vector3(0, 0, 0),
+            rotationY: 0,
+            pitch: 0,
+            roll: 0,
+            steeringAngle: 0,
+            speedKmh: 0,
+            engineForce: 400,
+            brakeForce: 60,
+            maxSteerAngleDeg: 28,
+            steerSpeed: 6.0,
+            suspensionStiffness: 35,
+            rideHeight: 0.45,
+            grip: 1.2,
+            gear: 'D',
+            isHandbraking: false
+        };
+
+        // Keyboard State
+        const keys = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            handbrake: false
+        };
+
+        function init3D() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x121519);
+            scene.fog = new THREE.FogExp2(0x121519, 0.015);
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 4, -8);
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            // Orbit Controls (for orbit mode)
+            orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.enabled = false;
+
+            // Ambient & Directional Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+            sunLight.position.set(30, 50, 20);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 150;
+            const d = 40;
+            sunLight.shadow.camera.left = -d;
+            sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d;
+            sunLight.shadow.camera.bottom = -d;
+            scene.add(sunLight);
+
+            // Build Ground and Grid Map Simulation
+            buildTerrain();
+
+            // Build 3D Monster Truck Model
+            buildVehicle();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', (e) => handleKey(e, true));
+            window.addEventListener('keyup', (e) => handleKey(e, false));
+
+            // Generate initial GDScript text
+            updateGDScriptOutput();
+
+            // Start Animation Loop
+            animate();
+        }
+
+        function buildTerrain() {
+            terrainGroup = new THREE.Group();
+
+            // Ground plane with grid texture style
+            const floorGeo = new THREE.PlaneGeometry(300, 300, 60, 60);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x1e242c,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            terrainGroup.add(floor);
+
+            // Grid overlay helper
+            const gridHelper = new THREE.GridHelper(300, 150, 0x478cbf, 0x2e3640);
+            gridHelper.position.y = 0.01;
+            terrainGroup.add(gridHelper);
+
+            // Ramps & Stunt Obstacles (simulating GridMap blocks)
+            const blockMat = new THREE.MeshStandardMaterial({ color: 0x2d3540, roughness: 0.5 });
+            const rampMat = new THREE.MeshStandardMaterial({ color: 0x478cbf, roughness: 0.4 });
+
+            // Curved Ramp
+            const rampGeo = new THREE.BoxGeometry(10, 3, 12);
+            const ramp = new THREE.Mesh(rampGeo, rampMat);
+            ramp.position.set(0, 1.5, 25);
+            ramp.rotation.x = -0.25;
+            ramp.castShadow = true;
+            ramp.receiveShadow = true;
+            terrainGroup.add(ramp);
+
+            // Side Blocks / Obstacles
+            for (let i = -3; i <= 3; i++) {
+                if (i === 0) continue;
+                const boxGeo = new THREE.BoxGeometry(3, 2, 3);
+                const box = new THREE.Mesh(boxGeo, blockMat);
+                box.position.set(i * 12, 1, 15);
+                box.castShadow = true;
+                box.receiveShadow = true;
+                terrainGroup.add(box);
+            }
+
+            scene.add(terrainGroup);
+        }
+
+        function buildVehicle() {
+            vehicleGroup = new THREE.Group();
+
+            // Chassis Body (Monster Truck Style)
+            const bodyGeo = new THREE.BoxGeometry(1.8, 0.9, 3.6);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0x00a8e8, // Godot Blue/Highlight accent
+                roughness: 0.3,
+                metalness: 0.6
+            });
+            chassisMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            chassisMesh.position.y = 0.8;
+            chassisMesh.castShadow = true;
+            vehicleGroup.add(chassisMesh);
+
+            // Cabin / Roof
+            const cabinGeo = new THREE.BoxGeometry(1.4, 0.7, 1.8);
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x121519, roughness: 0.2 });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 1.5, -0.2);
+            cabin.castShadow = true;
+            vehicleGroup.add(cabin);
+
+            // Headlights
+            const lightGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            
+            const hlLeft = new THREE.Mesh(lightGeo, lightMat);
+            hlLeft.rotation.x = Math.PI / 2;
+            hlLeft.position.set(-0.6, 0.8, 1.81);
+            vehicleGroup.add(hlLeft);
+
+            const hlRight = hlLeft.clone();
+            hlRight.position.x = 0.6;
+            vehicleGroup.add(hlRight);
+
+            // Wheels setup (4x Big Monster Wheels)
+            const wheelGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.45, 24);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.9 });
+            const hubMat = new THREE.MeshStandardMaterial({ color: 0x478cbf, roughness: 0.2, metalness: 0.8 });
+
+            const wheelPositions = [
+                { name: 'FL', x: -1.05, y: 0.55, z: 1.2, isFront: true },
+                { name: 'FR', x: 1.05, y: 0.55, z: 1.2, isFront: true },
+                { name: 'RL', x: -1.05, y: 0.55, z: -1.2, isFront: false },
+                { name: 'RR', x: 1.05, y: 0.55, z: -1.2, isFront: false }
+            ];
+
+            wheelMeshes = [];
+
+            wheelPositions.forEach(pos => {
+                const wheelPivot = new THREE.Group();
+                wheelPivot.position.set(pos.x, pos.y, pos.z);
+
+                const wheelMesh = new THREE.Mesh(wheelGeo, wheelMat);
+                wheelMesh.rotation.z = Math.PI / 2;
+                wheelMesh.castShadow = true;
+
+                // Wheel Rim/Hub detail
+                const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.46, 12), hubMat);
+                hub.rotation.z = Math.PI / 2;
+                wheelMesh.add(hub);
+
+                wheelPivot.add(wheelMesh);
+                vehicleGroup.add(wheelPivot);
+
+                wheelMeshes.push({
+                    pivot: wheelPivot,
+                    mesh: wheelMesh,
+                    isFront: pos.isFront,
+                    basePos: new THREE.Vector3(pos.x, pos.y, pos.z)
+                });
+            });
+
+            scene.add(vehicleGroup);
+        }
+
+        function handleKey(e, isPressed) {
+            if (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT') return;
+
+            switch (e.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    keys.forward = isPressed;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    keys.backward = isPressed;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    keys.left = isPressed;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    keys.right = isPressed;
+                    break;
+                case 'Space':
+                    keys.handbrake = isPressed;
+                    break;
+                case 'KeyR':
+                    if (isPressed) resetVehiclePosition();
+                    break;
+            }
+        }
+
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const now = performance.now();
+            const delta = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            updateVehiclePhysics(delta);
+            updateCamera();
+
+            if (cameraMode === 'orbit') {
+                orbitControls.update();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function updateVehiclePhysics(delta) {
+            // Target Steering Angle
+            let steerTarget = 0;
+            if (keys.left) steerTarget += 1;
+            if (keys.right) steerTarget -= 1;
+
+            const maxSteerRad = (vehicleState.maxSteerAngleDeg * Math.PI) / 180;
+            const currentSpeed = vehicleState.velocity.length() * 3.6; // km/h
+
+            // Steering speed damping at high speeds
+            const speedDamping = Math.max(0.3, 1.0 - (currentSpeed / 180));
+            const targetAngle = steerTarget * maxSteerRad * speedDamping;
+
+            vehicleState.steeringAngle += (targetAngle - vehicleState.steeringAngle) * Math.min(1.0, delta * vehicleState.steerSpeed);
+
+            // Forward / Reverse Acceleration logic
+            const forwardDir = new THREE.Vector3(
+                Math.sin(vehicleState.rotationY),
+                0,
+                Math.cos(vehicleState.rotationY)
+            );
+
+            let accelForce = 0;
+            if (keys.forward) {
+                accelForce += vehicleState.engineForce * 0.08;
+                vehicleState.gear = 'D';
+            }
+            if (keys.backward) {
+                accelForce -= vehicleState.engineForce * 0.05;
+                vehicleState.gear = 'R';
+            }
+
+            // Handbrake & Friction
+            let drag = 0.98;
+            if (keys.handbrake) {
+                drag = 0.92;
+                accelForce *= 0.1;
+                vehicleState.isHandbraking = true;
+            } else {
+                vehicleState.isHandbraking = false;
+            }
+
+            // Apply acceleration along heading
+            vehicleState.velocity.addScaledVector(forwardDir, accelForce * delta);
+            vehicleState.velocity.multiplyScalar(drag);
+
+            // Yaw steering torque rotation based on forward movement
+            const forwardSpeed = vehicleState.velocity.dot(forwardDir);
+            const turnFactor = (forwardSpeed >= 0 ? 1 : -1);
+            vehicleState.rotationY += vehicleState.steeringAngle * forwardSpeed * delta * 0.35 * turnFactor;
+
+            // Position update
+            vehicleState.position.addScaledVector(vehicleState.velocity, delta);
+
+            // Ground plane bounce constraint
+            if (vehicleState.position.y < 0.5) {
+                vehicleState.position.y = 0.5;
+                vehicleState.velocity.y = 0;
+            }
+
+            // Apply transforms to vehicle group
+            vehicleGroup.position.copy(vehicleState.position);
+            vehicleGroup.rotation.y = vehicleState.rotationY;
+
+            // Body tilt on acceleration / turning (pitch & roll physics simulation)
+            const sideDir = new THREE.Vector3(forwardDir.z, 0, -forwardDir.x);
+            const sideSpeed = vehicleState.velocity.dot(sideDir);
+
+            vehicleState.roll = THREE.MathUtils.lerp(vehicleState.roll, -sideSpeed * 0.05, delta * 5);
+            vehicleState.pitch = THREE.MathUtils.lerp(vehicleState.pitch, -accelForce * 0.001, delta * 5);
+
+            chassisMesh.rotation.z = vehicleState.roll;
+            chassisMesh.rotation.x = vehicleState.pitch;
+
+            // Wheel Steering & Rotation animation
+            wheelMeshes.forEach(w => {
+                if (w.isFront) {
+                    w.pivot.rotation.y = vehicleState.steeringAngle;
+                }
+                // Roll wheels based on forward distance moved
+                w.mesh.rotation.x += forwardSpeed * delta * 1.8;
+
+                // Suspension spring offset simulation
+                const springOffset = Math.sin(now * 0.005 + w.basePos.x) * 0.02;
+                w.pivot.position.y = vehicleState.rideHeight + springOffset;
+            });
+
+            // Update Telemetry UI
+            vehicleState.speedKmh = Math.round(Math.abs(forwardSpeed) * 3.6);
+            document.getElementById('speed-display').innerText = vehicleState.speedKmh;
+            document.getElementById('steer-indicator').innerText = (vehicleState.steeringAngle * 180 / Math.PI).toFixed(1) + '°';
+            document.getElementById('gear-display').innerText = keys.handbrake ? 'P' : vehicleState.gear;
+            
+            const rpmPercent = Math.min(100, (vehicleState.speedKmh / 140) * 100);
+            document.getElementById('rpm-bar').style.width = rpmPercent + '%';
+        }
+
+        function updateCamera() {
+            if (cameraMode === 'chase') {
+                const offset = new THREE.Vector3(0, 3.5, -7.5);
+                offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicleState.rotationY);
+
+                const targetCamPos = vehicleState.position.clone().add(offset);
+                camera.position.lerp(targetCamPos, 0.1);
+
+                const lookAtPos = vehicleState.position.clone().add(new THREE.Vector3(0, 1.2, 0));
+                camera.lookAt(lookAtPos);
+            }
+        }
+
+        function resetVehiclePosition() {
+            vehicleState.position.set(0, 0.8, 0);
+            vehicleState.velocity.set(0, 0, 0);
+            vehicleState.rotationY = 0;
+            vehicleState.roll = 0;
+            vehicleState.pitch = 0;
+        }
+
+        function updateVehicleParams() {
+            vehicleState.engineForce = parseFloat(document.getElementById('param-engine').value);
+            vehicleState.brakeForce = parseFloat(document.getElementById('param-brake').value);
+            vehicleState.maxSteerAngleDeg = parseFloat(document.getElementById('param-steer').value);
+            vehicleState.steerSpeed = parseFloat(document.getElementById('param-steerspeed').value);
+            vehicleState.suspensionStiffness = parseFloat(document.getElementById('param-stiffness').value);
+            vehicleState.rideHeight = parseFloat(document.getElementById('param-height').value);
+            vehicleState.grip = parseFloat(document.getElementById('param-grip').value);
+
+            document.getElementById('val-engine').innerText = vehicleState.engineForce;
+            document.getElementById('val-brake').innerText = vehicleState.brakeForce;
+            document.getElementById('val-steer').innerText = vehicleState.maxSteerAngleDeg + '°';
+            document.getElementById('val-steerspeed').innerText = vehicleState.steerSpeed;
+            document.getElementById('val-stiffness').innerText = vehicleState.suspensionStiffness;
+            document.getElementById('val-height').innerText = vehicleState.rideHeight + 'm';
+            document.getElementById('val-grip').innerText = vehicleState.grip;
+
+            updateGDScriptOutput();
+        }
+
+        function resetTuningDefaults() {
+            document.getElementById('param-engine').value = 400;
+            document.getElementById('param-brake').value = 60;
+            document.getElementById('param-steer').value = 28;
+            document.getElementById('param-steerspeed').value = 6.0;
+            document.getElementById('param-stiffness').value = 35;
+            document.getElementById('param-height').value = 0.45;
+            document.getElementById('param-grip').value = 1.2;
+            updateVehicleParams();
+        }
+
+        function setCameraMode(mode) {
+            cameraMode = mode;
+            const chaseBtn = document.getElementById('cam-chase-btn');
+            const orbitBtn = document.getElementById('cam-orbit-btn');
+
+            if (mode === 'chase') {
+                chaseBtn.className = "py-1.5 px-2 bg-godot-blue text-white rounded font-mono text-[11px] font-bold border border-godot-blue";
+                orbitBtn.className = "py-1.5 px-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-mono text-[11px] font-bold border border-white/10";
+                orbitControls.enabled = false;
+            } else {
+                orbitBtn.className = "py-1.5 px-2 bg-godot-blue text-white rounded font-mono text-[11px] font-bold border border-godot-blue";
+                chaseBtn.className = "py-1.5 px-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded font-mono text-[11px] font-bold border border-white/10";
+                orbitControls.enabled = true;
+                orbitControls.target.copy(vehicleState.position);
+            }
+        }
+
+        function updateGDScriptOutput() {
+            const steerRad = ((vehicleState.maxSteerAngleDeg * Math.PI) / 180).toFixed(3);
+            const scriptContent = `extends VehicleBody3D
+## Godot 4.3+ VehicleBody3D Controller
+## Designed for Monster Truck / Arcade & Realistic Driving Physics
+
+@export_group("Engine & Transmission")
+## Maximum motor force applied to driven wheels (Newtons)
+@export var max_engine_force: float = ${vehicleState.engineForce}.0
+## Max braking force applied when stopping or handbraking
+@export var max_brake_force: float = ${vehicleState.brakeForce}.0
+## Reverse force applied when backing up
+@export var reverse_force: float = ${(vehicleState.engineForce * 0.6).toFixed(0)}.0
+## Speed limiter in km/h
+@export var max_speed_kmh: float = 140.0
+
+@export_group("Steering Settings")
+## Maximum steering angle in radians (~${vehicleState.maxSteerAngleDeg} degrees)
+@export var max_steer_angle: float = ${steerRad}
+## Smooth steering transition rate
+@export var steer_speed: float = ${vehicleState.steerSpeed}
+## High speed steering damping factor (prevents flipping during fast turns)
+@export var speed_steering_damping: float = 0.004
+
+@export_group("Stabilization & Recovery")
+## Center of mass offset to lower center of gravity
+@export var center_of_mass_offset: Vector3 = Vector3(0.0, -0.35, 0.0)
+## Auto-upright flip torque strength
+@export var flip_recovery_speed: float = 8.0
+
+# Internal variables
+var current_steer: float = 0.0
+
+func _ready() -> void:
+	# Configure center of mass to reduce rollover tendency
+	center_of_mass = center_of_mass_offset
+	
+	# Ensure wheels are initialized properly
+	_apply_wheel_tuning()
+
+func _physics_process(delta: float) -> void:
+	_handle_steering(delta)
+	_handle_acceleration_and_brakes(delta)
+	_handle_flip_recovery(delta)
+
+## Smoothly interpolates wheel steering input
+func _handle_steering(delta: float) -> void:
+	# Get input axis fromui_left and ui_right (A/D or Arrow Keys)
+	var raw_steer_input: float = Input.get_axis("ui_right", "ui_left")
+	
+	# Reduce max steering angle as speed increases for stability
+	var speed_kmh: float = linear_velocity.length() * 3.6
+	var adjusted_max_steer: float = max_steer_angle / (1.0 + speed_kmh * speed_steering_damping)
+	
+	# Smooth steer transition
+	var target_steer: float = raw_steer_input * adjusted_max_steer
+	current_steer = move_toward(current_steer, target_steer, steer_speed * delta)
+	
+	# Apply steering angle directly to VehicleBody3D property
+	steering = current_steer
+
+## Handles drive motor force, automatic reverse, and handbrake logic
+func _handle_acceleration_and_brakes(delta: float) -> void:
+	var forward_speed: float = transform.basis.z.dot(linear_velocity)
+	var speed_kmh: float = linear_velocity.length() * 3.6
+	var throttle_input: float = Input.get_action_strength("ui_up") - Input.get_action_strength("ui_down")
+	
+	# Handbrake check (Spacebar default)
+	if Input.is_action_pressed("ui_select"):
+		brake = max_brake_force * 2.5
+		engine_force = 0.0
+		return
+
+	if throttle_input > 0.0:
+		if forward_speed < -0.5:
+			# Vehicle is rolling backwards -> Apply Brakes first
+			brake = max_brake_force
+			engine_force = 0.0
+		elif speed_kmh < max_speed_kmh:
+			# Accelerate Forward
+			brake = 0.0
+			engine_force = throttle_input * max_engine_force
+		else:
+			# Top speed reached
+			engine_force = 0.0
+			brake = 0.0
+	elif throttle_input < 0.0:
+		if forward_speed > 0.5:
+			# Vehicle is rolling forward -> Apply Brakes first
+			brake = max_brake_force
+			engine_force = 0.0
+		else:
+			# Accelerate Reverse
+			brake = 0.0
+			engine_force = throttle_input * reverse_force
+	else:
+		# Engine coasting / Natural deceleration
+		engine_force = 0.0
+		brake = move_toward(brake, max_brake_force * 0.08, delta * 5.0)
+
+## Resets vehicle orientation if rolled over or 'R' key is pressed
+func _handle_flip_recovery(delta: float) -> void:
+	if Input.is_action_just_pressed("reset_vehicle") or Input.is_key_pressed(KEY_R):
+		_reset_upright()
+
+func _reset_upright() -> void:
+	global_transform.basis = Basis.IDENTITY
+	global_position.y += 1.5
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+
+## Configures suspension parameters on child VehicleWheel3D nodes dynamically
+func _apply_wheel_tuning() -> void:
+	for child in get_children():
+		if child is VehicleWheel3D:
+			child.suspension_stiffness = ${vehicleState.suspensionStiffness}.0
+			child.suspension_travel = ${vehicleState.rideHeight}
+			child.wheel_friction_slip = ${vehicleState.grip}
+`;
+            document.getElementById('gdscript-textarea').value = scriptContent;
+        }
+
+        function switchTab(tab) {
+            const simBtn = document.getElementById('tab-sim-btn');
+            const codeBtn = document.getElementById('tab-code-btn');
+            const nodeBtn = document.getElementById('tab-node-btn');
+
+            const tuningPanel = document.getElementById('tuning-panel');
+            const telemetryHud = document.getElementById('telemetry-hud');
+            const codePanel = document.getElementById('code-panel');
+            const nodePanel = document.getElementById('node-panel');
+
+            // Reset tab styles
+            [simBtn, codeBtn, nodeBtn].forEach(b => {
+                b.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all duration-200";
+            });
+
+            // Hide panels
+            codePanel.classList.add('hidden');
+            nodePanel.classList.add('hidden');
+
+            if (tab === 'sim') {
+                simBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-godot-blue text-white shadow";
+                tuningPanel.classList.remove('hidden');
+                telemetryHud.classList.remove('hidden');
+            } else if (tab === 'code') {
+                codeBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-godot-blue text-white shadow";
+                tuningPanel.classList.add('hidden');
+                telemetryHud.classList.add('hidden');
+                codePanel.classList.remove('hidden');
+            } else if (tab === 'node') {
+                nodeBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-godot-blue text-white shadow";
+                tuningPanel.classList.add('hidden');
+                telemetryHud.classList.add('hidden');
+                nodePanel.classList.remove('hidden');
+            }
+        }
+
+        function copyGDScript() {
+            const textarea = document.getElementById('gdscript-textarea');
+            textarea.select();
+            document.execCommand('copy');
+        }
+
+        function downloadGDScript() {
+            const text = document.getElementById('gdscript-textarea').value;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const anchor = document.createElement('a');
+            anchor.download = 'vehicle_3d.gd';
+            anchor.href = window.URL.createObjectURL(blob);
+            anchor.click();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize on page load
+        window.onload = init3D;
+    </script>
+</body>
+</html>
