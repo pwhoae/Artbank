@@ -10,8 +10,19 @@ https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9
 | 遊戲(7) | **Godot**  |
 |  | 棄置:漫畫》動畫/建模/角設/遊戲動畫研究//動畫:**升天轉場** 動畫要靈活感 頭髮飄動,呼吸,眨眼,輕微身體搖擺,衣服飄動 tool: Powerpoint (PPT)HTML:[https://github.com/Unclecheng-li/AI\_Animation](https://github.com/Unclecheng-li/AI_Animation)CSP 动画的12项基本法则》*\#\#\#\# 1\. 挤压与拉伸  \#\#\#\# 12\. 吸引力 (Appeal) —— (21:38) \#\#\#\# 7\. 弧线运动 (Arcs) —— (12:57)* |
 
+```
+{
+  "dimensions": {
+    "width": 1600,
+    "height": 1200
+  },
 
+  "角色畫風": ’3渲2畫風‘，
+  "場景畫風": ’3A遊戲畫風‘，
+  "chinese_prompt": "一張照片，展示了一名參考圖中年輕的女子盤腿坐在綠草如茵的山坡上，背景是廣闊連綿的丘陵景觀和部分多雲的藍天。表情特寫：‘她從側面被拍攝，凝視著遠處的山谷和山脈，右手托著下巴，呈現沉思的姿態。’山坡上綠草叢生，點綴著小野花。許多大型風力發電機分佈在遠處的山頂上，最右邊有一座顯眼的風力發電機，背景中還有幾座風力發電機，形成了一個風力發電場。遠處的山脈呈現朦朧的藍色，天空是明亮的藍色，點綴著潔白的積雲。自然日光照亮了場景。構圖將女子置於左下角前景，與廣闊的風景形成比例對比。"
+}
 
+```
 ```
 ### 1. 核心風格與比例 (Core Style & Proportions) * **Chibi / Super Deformed (SD):** 經典的二次元 Q 版身形，通常是 2 頭身到 2.5 頭身。 * **Anime chibi style:** 動漫 Q 版風格，強調大頭、大眼睛、小嘴巴以及簡化但精緻的四肢。 * **Dynamic pose:** 雖然是 Q 版，但動作極具動感、張力與浮空感，不是死板的站姿。 ### 2. 線條與上色技法 (Lineart & Coloring) * **Clean line art / Crisp outlines:** 線條乾淨俐落，邊緣清晰，粗細有致，沒有雜亂的草稿感。 * **Soft shading / Cel-shaded hybrid:** 採用半賽璐珞（Cel-shading）搭配軟陰影（Soft shading）的現代日系上色。陰影邊緣有明確的切面，但在頭髮、腮紅等細節上有細緻的漸層過渡。 * **Vibrant accents / High contrast:** 基礎色彩以沉穩的深色（黑、深灰）為主，但搭配了高飽和度的亮色（如亮金、紫色、黃色）作為點綴，呈現出霓虹般的潮流感。 * **Subtle gradients:** 頭髮和眼睛帶有細微的色彩漸層與透明感，增加精緻度。
 ```
