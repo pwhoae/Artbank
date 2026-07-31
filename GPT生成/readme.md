@@ -2,6 +2,41 @@
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> 
 1-2天法則
 https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
+```
+{
+  "prompt": "一個風景如畫的廣角風景鏡頭，捕捉到連綿起伏、被充滿活力的綠色草地覆蓋的山丘，位於藍天白雲之下。在前景和中景，幾座高大的白色風力發電機（風車）分佈在山坡上，葉片緩慢轉動，展示在廣闊的場景中。前景的草地茂密且紋理豐富，有小野花。地平線由一排層疊的藍色遠山界定，逐漸消失在霧氣中。天空是充滿活力的藍色，點綴著分散、蓬鬆的白色積雲。自然光線充足，投下柔和的影子，凸顯了山丘的形狀和發電機的細節。場景寧靜而開闊，構圖平衡，景深良好。圖像質量高，具有逼真的紋理和色彩。",
+  "dimensions": {
+    "width": 1600,
+    "height": 1200
+  },
+  "visual_details": {
+    "foreground": {
+      "element": "vibrant green grassy hills",
+      "texture": "lush, detailed, small wildflowers"
+    },
+    "midground": {
+      "elements": "multiple large white wind turbines",
+      "arrangement": "scattered across hillsides",
+      "activity": "blades rotating"
+    },
+    "background": {
+      "elements": "rolling distant mountains",
+      "appearance": "layering of blue hues, slightly hazy"
+    },
+    "sky": {
+      "condition": "clear blue sky",
+      "clouds": "scattered fluffy white cumulus clouds"
+    },
+    "lighting": {
+      "type": "natural daylight",
+      "quality": "even, bright, distinct shadows"
+    },
+    "perspective": "wide-angle landscape view"
+  },
+  "style": "photorealistic landscape photography"
+}
+```
+
 ### **想像力**
 
 | 設計(8) | 審美提升「四字訣」——看、想、抄、問 敘事性時尚海報|去像素+賽璐璐畫風|商業化插圖 粗字重(60%)：提供视觉密度、主导性与力量感，在潜意识中与权威与冲击力相关联。细字重(40%)：通过丰富的留白带来细腻与克制，传递出精致与奢华的情绪。设计不是追求绝对的物理平衡，而是追求适合项目需求的“张力”。 先有角色,再來故事:世界（原型) X 扁型（外表,招牌特點) X 個性（內部) 參考:[SSR人物 \- 碧蓝幻想中文维基](https://gbf.huijiwiki.com/wiki/SSR%E4%BA%BA%E7%89%A9) ,柚,dona 角色設計 「由大到小、由遠及近、由整體到細節」 核心風格與背景 (Core Style & Setting) 藝術風格： 世界觀/美學： 角色基礎與體態 (Character Base & Anatomy) 角色主體： 身材體態： 姿態動作： 非人/人特徵 頭部與面部細節 (Head & Facial Details) 角色的靈魂所在，包含髮型、眼睛與五官精細度。 面部特徵： 髮型造型： 眼神與瞳色： 服裝與穿搭細節 (Outfit & Clothing Layers) 整體風格： 上衣細節： 下裝細節： 配飾 裝備與手持道具 (Equipment & Weapons) 武器類： 道具類： 角色氣質與氛圍 (Aura & Attributes) 內在屬性： |
