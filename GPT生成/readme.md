@@ -1,72 +1,21 @@
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> 
 1-2天法則
-https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
-動畫放棄
-動作指導動畫幀 補4幀
-跟距首尾幀
-保持一致
-普a 派生
-Normal 原形
-idle walk run jump
-閃 death
-wall
-```
-{
-  "prompt": "一個風景如畫的廣角風景鏡頭，捕捉到連綿起伏、被充滿活力的綠色草地覆蓋的山丘，位於藍天白雲之下。在前景和中景，幾座高大的白色風力發電機（風車）分佈在山坡上，葉片緩慢轉動，展示在廣闊的場景中。前景的草地茂密且紋理豐富，有小野花。地平線由一排層疊的藍色遠山界定，逐漸消失在霧氣中。天空是充滿活力的藍色，點綴著分散、蓬鬆的白色積雲。自然光線充足，投下柔和的影子，凸顯了山丘的形狀和發電機的細節。場景寧靜而開闊，構圖平衡，景深良好。圖像質量高，具有逼真的紋理和色彩。",
-  "dimensions": {
-    "width": 1600,
-    "height": 1200
-  },
-  "visual_details": {
-    "foreground": {
-      "element": "vibrant green grassy hills",
-      "texture": "lush, detailed, small wildflowers"
-    },
-    "midground": {
-      "elements": "multiple large white wind turbines",
-      "arrangement": "scattered across hillsides",
-      "activity": "blades rotating"
-    },
-    "background": {
-      "elements": "rolling distant mountains",
-      "appearance": "layering of blue hues, slightly hazy"
-    },
-    "sky": {
-      "condition": "clear blue sky",
-      "clouds": "scattered fluffy white cumulus clouds"
-    },
-    "lighting": {
-      "type": "natural daylight",
-      "quality": "even, bright, distinct shadows"
-    },
-    "perspective": "wide-angle landscape view"
-  },
-  "style": "photorealistic landscape photography"
-}
-```
+<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
+">glb</a><br> 
 
+```
+ "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
+```
 ### **想像力**
 
-| 設計(8) | 審美提升「四字訣」——看、想、抄、問 敘事性時尚海報|去像素+賽璐璐畫風|商業化插圖 粗字重(60%)：提供视觉密度、主导性与力量感，在潜意识中与权威与冲击力相关联。细字重(40%)：通过丰富的留白带来细腻与克制，传递出精致与奢华的情绪。设计不是追求绝对的物理平衡，而是追求适合项目需求的“张力”。 先有角色,再來故事:世界（原型) X 扁型（外表,招牌特點) X 個性（內部) 參考:[SSR人物 \- 碧蓝幻想中文维基](https://gbf.huijiwiki.com/wiki/SSR%E4%BA%BA%E7%89%A9) ,柚,dona 角色設計 「由大到小、由遠及近、由整體到細節」 核心風格與背景 (Core Style & Setting) 藝術風格： 世界觀/美學： 角色基礎與體態 (Character Base & Anatomy) 角色主體： 身材體態： 姿態動作： 非人/人特徵 頭部與面部細節 (Head & Facial Details) 角色的靈魂所在，包含髮型、眼睛與五官精細度。 面部特徵： 髮型造型： 眼神與瞳色： 服裝與穿搭細節 (Outfit & Clothing Layers) 整體風格： 上衣細節： 下裝細節： 配飾 裝備與手持道具 (Equipment & Weapons) 武器類： 道具類： 角色氣質與氛圍 (Aura & Attributes) 內在屬性： |
+| 能力 | idea |
 | ----- | :---- |
+| 設計(8) | 看、想、抄、問 <br>敘事性時尚海報<br>去像素+賽璐璐畫風+商業化插圖<br>粗(6)：密度+主导性+力量感+权威+冲击力 <br> 细(4)：细腻+精致+奢华<br>设计非追求物理平衡->追求适合项目需求的“张力”。 |
 | 拍攝(7) | gemini |
 | 遊戲(7) | **Godot**  |
-|  | 棄置:漫畫》動畫/建模/角設/遊戲動畫研究//動畫:**升天轉場** 動畫要靈活感 頭髮飄動,呼吸,眨眼,輕微身體搖擺,衣服飄動 tool: Powerpoint (PPT)HTML:[https://github.com/Unclecheng-li/AI\_Animation](https://github.com/Unclecheng-li/AI_Animation)CSP 动画的12项基本法则》*\#\#\#\# 1\. 挤压与拉伸  \#\#\#\# 12\. 吸引力 (Appeal) —— (21:38) \#\#\#\# 7\. 弧线运动 (Arcs) —— (12:57)* |
 
-```
-{
-  "dimensions": {
-    "width": 1600,
-    "height": 1200
-  },
 
-  "角色畫風": ’3渲2畫風‘，
-  "場景畫風": ’3A遊戲畫風‘，
-  "chinese_prompt": "一張照片，展示了一名參考圖中年輕的女子盤腿坐在綠草如茵的山坡上，背景是廣闊連綿的丘陵景觀和部分多雲的藍天。表情特寫：‘她從側面被拍攝，凝視著遠處的山谷和山脈，右手托著下巴，呈現沉思的姿態。’山坡上綠草叢生，點綴著小野花。許多大型風力發電機分佈在遠處的山頂上，最右邊有一座顯眼的風力發電機，背景中還有幾座風力發電機，形成了一個風力發電場。遠處的山脈呈現朦朧的藍色，天空是明亮的藍色，點綴著潔白的積雲。自然日光照亮了場景。構圖將女子置於左下角前景，與廣闊的風景形成比例對比。"
-}
-
-```
 ```
 ### 1. 核心風格與比例 (Core Style & Proportions) * **Chibi / Super Deformed (SD):** 經典的二次元 Q 版身形，通常是 2 頭身到 2.5 頭身。 * **Anime chibi style:** 動漫 Q 版風格，強調大頭、大眼睛、小嘴巴以及簡化但精緻的四肢。 * **Dynamic pose:** 雖然是 Q 版，但動作極具動感、張力與浮空感，不是死板的站姿。 ### 2. 線條與上色技法 (Lineart & Coloring) * **Clean line art / Crisp outlines:** 線條乾淨俐落，邊緣清晰，粗細有致，沒有雜亂的草稿感。 * **Soft shading / Cel-shaded hybrid:** 採用半賽璐珞（Cel-shading）搭配軟陰影（Soft shading）的現代日系上色。陰影邊緣有明確的切面，但在頭髮、腮紅等細節上有細緻的漸層過渡。 * **Vibrant accents / High contrast:** 基礎色彩以沉穩的深色（黑、深灰）為主，但搭配了高飽和度的亮色（如亮金、紫色、黃色）作為點綴，呈現出霓虹般的潮流感。 * **Subtle gradients:** 頭髮和眼睛帶有細微的色彩漸層與透明感，增加精緻度。
 ```
