@@ -2,6 +2,8 @@
 動畫幀(派生) 首+補4幀+尾</h1>
 
 先有角色,再來故事:世界（原型) X 扁型（外表,招牌特點) X 個性（內部) 參考:[SSR人物 \- 碧蓝幻想中文维基](https://gbf.huijiwiki.com/wiki/SSR%E4%BA%BA%E7%89%A9) ,柚,dona 角色設計 「由大到小、由遠及近、由整體到細節」 核心風格與背景 (Core Style & Setting) 藝術風格： 世界觀/美學： 角色基礎與體態 (Character Base & Anatomy) 角色主體： 身材體態： 姿態動作： 非人/人特徵 頭部與面部細節 (Head & Facial Details) 角色的靈魂所在，包含髮型、眼睛與五官精細度。 面部特徵： 髮型造型： 眼神與瞳色： 服裝與穿搭細節 (Outfit & Clothing Layers) 整體風格： 上衣細節： 下裝細節： 配飾 裝備與手持道具 (Equipment & Weapons) 武器類： 道具類： 角色氣質與氛圍 (Aura & Attributes) 內在屬性： 
+|  | 棄置:漫畫》動畫/建模/角設/遊戲動畫研究//動畫:**升天轉場** 動畫要靈活感 頭髮飄動,呼吸,眨眼,輕微身體搖擺,衣服飄動 tool: Powerpoint (PPT)HTML:[https://github.com/Unclecheng-li/AI\_Animation](https://github.com/Unclecheng-li/AI_Animation)CSP 动画的12项基本法则》*\#\#\#\# 1\. 挤压与拉伸  \#\#\#\# 12\. 吸引力 (Appeal) —— (21:38) \#\#\#\# 7\. 弧线运动 (Arcs) —— (12:57)* |
+
 
 
 生成gemini gems
