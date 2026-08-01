@@ -3,7 +3,13 @@ tools:
 輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)<br>
 貼圖:https://ambientcg.com/<br>
 地编參考:https://www.artstation.com/artwork/dyk3nQ
+解刨示意圖:tripoai
 
+tripoai 2.5
+https://studio.tripo3d.ai?invite_code=O0E0Z6
+```
+把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
+```
 ```
 ### 思考方向
 marker2d/3d
