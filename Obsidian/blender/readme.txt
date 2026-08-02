@@ -1,3 +1,5 @@
+blender 吸咐插件
+
 角色設計
 「由大到小、由遠及近、由整體到細節」 
 1. 核心風格與背景 (Core Style & Setting)
