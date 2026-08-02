@@ -7,6 +7,14 @@
 ```
  "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
 ```
+```
+truck方案:
+x軸positive向前,reverse
+z軸positive向右
+depend on z軸 控制輪胎 rotate.y 25 to -25 (左to 右)
+怎麼生成斜路  怎麼跑斜路
+```
+
 ### **想像力**
 
 | 能力 | idea |
