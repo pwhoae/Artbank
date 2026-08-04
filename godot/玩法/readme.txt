@@ -5,3 +5,19 @@
 4. 
 
 
+Monster Truck Demo
+你曾經構想：
+怪獸卡車 Demo
+需要：
+HP System
+Upgrade System
+Vehicle Physics
+Terrain
+Collision
+Wheel Steering
+Acceleration
+Traction
+UI
+Game Loop
+美術資產
+AI Prompt
