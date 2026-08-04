@@ -4,6 +4,12 @@
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 ">glb</a><br> 
 
+勾索
+傳送門槍
+coin〉升級
+垃圾桶的咪
+視差省MB
+搞怪bgm suno
 ```
  "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
 ```
