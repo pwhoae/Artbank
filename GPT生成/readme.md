@@ -8,6 +8,11 @@
  "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
 ```
 ```
+「生成一張動漫圖」Prompt Framework。
+常見結構：Image Size ↓ Character ↓ Pose ↓ Composition ↓ Lighting ↓ Color ↓ Background ↓ Camera ↓ Style ↓ Quality ↓ Consistency
+[1920×1080 + Character + Pose + Cinematic Lighting + Cold/Warm Contrast + AAA Game Artwork + Character Consistency]
+```
+```
 truck方案:
 x軸positive向前,reverse
 z軸positive向右
