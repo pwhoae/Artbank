@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 select-none overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 Character Reveal Intro - Anime Showcase</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;600;800&family=Teko:wght@600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js & Tween.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        teko: ['Teko', 'sans-serif'],
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            cyan: '#00f0ff',
+                            magenta: '#ff0055',
+                            yellow: '#ffea00',
+                            dark: '#0a0b10',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .font-outline {
+            -webkit-text-stroke: 2px rgba(255, 255, 255, 0.15);
+            color: transparent;
+        }
+        .glow-cyan {
+            filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.6));
+        }
+        .glow-magenta {
+            filter: drop-shadow(0 0 12px rgba(255, 0, 85, 0.6));
+        }
+        /* Custom Vinyl Rotation */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 8s linear infinite;
+        }
+        /* Speed line canvas overlay styling */
+        #speedLinesCanvas {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="h-full w-full relative font-sans antialiased bg-slate-950 text-white overflow-hidden">
+
+    <!-- WebGL Canvas for 3D Camera / Shader Effects -->
+    <div id="webgl-container" class="absolute inset-0 w-full h-full z-0"></div>
+    
+    <!-- 2D Canvas overlay for Speed Lines & Whip FX -->
+    <canvas id="speedLinesCanvas" class="absolute inset-0 w-full h-full z-10 opacity-0 transition-opacity duration-200"></canvas>
+
+    <!-- Transition Arrow Canvas Overlay -->
+    <div id="transitionArrow" class="absolute inset-0 pointer-events-none z-20 flex items-center justify-center opacity-0 scale-50 transition-all duration-300">
+        <div class="relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center">
+            <svg viewBox="0 0 100 100" class="w-full h-full text-cyber-cyan glow-cyan transform -rotate-45">
+                <path fill="currentColor" d="M10,50 L50,10 L50,35 L90,35 L90,65 L50,65 L50,90 Z" />
+            </svg>
+            <div class="absolute inset-0 bg-cyber-cyan/20 blur-xl rounded-full"></div>
+        </div>
+    </div>
+
+    <!-- UI Canvas Layer (Godot UI Simulation) -->
+    <div id="uiLayer" class="absolute inset-0 z-30 pointer-events-none flex flex-col justify-between p-6 md:p-12">
+        
+        <!-- Background Typography ("NORMA") -->
+        <div id="bgTypography" class="absolute inset-0 flex items-center justify-center opacity-0 transform scale-125 transition-transform duration-700 ease-out pointer-events-none">
+            <h1 class="text-[18vw] font-black font-orbitron tracking-tighter leading-none select-none text-transparent bg-clip-text bg-gradient-to-b from-slate-100/20 to-slate-500/5 font-outline drop-shadow-2xl">
+                NORMA
+            </h1>
+        </div>
+
+        <!-- Top Header Bar -->
+        <div class="relative z-10 flex items-center justify-between">
+            <div class="flex items-center space-x-3 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-800 pointer-events-auto">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-orbitron text-xs tracking-widest text-slate-300 uppercase">GODOT 4 REVEAL ENGINE v1.0</span>
+            </div>
+
+            <!-- Dynamic Status Badge -->
+            <div class="bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-800 text-xs font-mono text-cyber-cyan flex items-center space-x-2 pointer-events-auto">
+                <i class="fa-solid fa-camera"></i>
+                <span id="cameraStateLabel">CAM: FACE_CLOSEUP</span>
+            </div>
+        </div>
+
+        <!-- Middle / Main Overlay Area -->
+        <div class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-end my-auto">
+            
+            <!-- Left Info Panel (Appears later) -->
+            <div id="leftMeta" class="md:col-span-4 opacity-0 transform -translate-x-8 transition-all duration-500">
+                <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 p-5 rounded-2xl shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-cyber-cyan/10 rounded-full blur-2xl"></div>
+                    <div class="text-xs font-orbitron text-cyber-cyan tracking-widest uppercase mb-1">DESIGNATION</div>
+                    <div class="text-3xl font-black font-orbitron text-white tracking-wider">UNIT-09 // NORMA</div>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        High-agility cybernetic vanguard unit optimized for rapid close-quarters engagement and kinetic whip pan maneuvers.
+                    </p>
+                    <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-800/60 text-center font-mono">
+                        <div class="bg-slate-950/50 p-2 rounded-lg">
+                            <div class="text-[10px] text-slate-500">SPD</div>
+                            <div class="text-sm font-bold text-cyber-cyan">98.4</div>
+                        </div>
+                        <div class="bg-slate-950/50 p-2 rounded-lg">
+                            <div class="text-[10px] text-slate-500">PWR</div>
+                            <div class="text-sm font-bold text-cyber-magenta">88.1</div>
+                        </div>
+                        <div class="bg-slate-950/50 p-2 rounded-lg">
+                            <div class="text-[10px] text-slate-500">SYNC</div>
+                            <div class="text-sm font-bold text-cyber-yellow">100%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Character Details Card (Godot character_card) -->
+            <div id="characterCard" class="md:col-start-9 md:col-span-4 opacity-0 transform translate-x-12 transition-all duration-500">
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-xl border border-cyber-cyan/30 p-6 rounded-2xl shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyber-cyan via-cyber-magenta to-transparent"></div>
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="px-2 py-0.5 text-[10px] font-mono bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40 rounded">CLASS A</span>
+                            <h2 class="text-2xl font-bold font-orbitron mt-1">NORMA VANGUARD</h2>
+                        </div>
+                        <i class="fa-solid fa-bolt text-cyber-yellow text-xl"></i>
+                    </div>
+
+                    <div class="space-y-3 text-xs font-mono">
+                        <div>
+                            <div class="flex justify-between text-slate-400 mb-1">
+                                <span>KINETIC SHARK BOOTS</span>
+                                <span class="text-cyber-cyan">READY</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-cyber-cyan h-full w-[90%]"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-slate-400 mb-1">
+                                <span>CHROMATIC ABERRATION</span>
+                                <span class="text-cyber-magenta">ACTIVE</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-cyber-magenta h-full w-[75%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar / Vinyl Record & Controls -->
+        <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800/40">
+            
+            <!-- Vinyl Record Widget (Godot vinyl_record) -->
+            <div id="vinylRecord" class="flex items-center space-x-4 transform translate-y-16 opacity-0 transition-all duration-700">
+                <div class="relative w-14 h-14 md:w-16 md:h-16 flex-shrink-0">
+                    <div class="w-full h-full rounded-full bg-slate-900 border-2 border-slate-700 shadow-xl flex items-center justify-center animate-spin-slow">
+                        <!-- Record grooves -->
+                        <div class="w-10 h-10 rounded-full border border-slate-800 flex items-center justify-center">
+                            <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-cyber-cyan to-cyber-magenta flex items-center justify-center">
+                                <div class="w-2 h-2 rounded-full bg-slate-950"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs font-orbitron text-slate-400">NOW PLAYING</div>
+                    <div class="text-sm font-bold text-white font-mono">CYBER_REVEAL_INTRO.WAV</div>
+                    <div class="text-[10px] text-cyber-cyan flex items-center space-x-1 mt-0.5">
+                        <i class="fa-solid fa-music"></i>
+                        <span>140 BPM // SYNTHWAVE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Interactive Controls (Always Clickable) -->
+            <div class="pointer-events-auto flex flex-wrap items-center justify-center gap-2 bg-slate-900/90 backdrop-blur-xl px-5 py-3 rounded-2xl border border-slate-800 shadow-2xl">
+                
+                <button id="btnReplay" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyber-cyan to-blue-600 text-slate-950 font-orbitron font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-cyber-cyan/20">
+                    <i class="fa-solid fa-play"></i>
+                    <span>PLAY REVEAL INTRO</span>
+                </button>
+
+                <div class="h-6 w-px bg-slate-800 mx-1"></div>
+
+                <!-- Camera Focus Controls -->
+                <button id="btnFocusFace" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono transition-all" title="Focus Face">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </button>
+                <button id="btnFocusBoots" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono transition-all" title="Focus Boots">
+                    <i class="fa-solid fa-shoe-prints"></i>
+                </button>
+                <button id="btnFocusFull" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono transition-all" title="Focus Full Body">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+
+                <div class="h-6 w-px bg-slate-800 mx-1"></div>
+
+                <!-- Color Palette Swapper -->
+                <button id="btnThemeToggle" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-cyber-cyan text-xs font-mono transition-all" title="Change Neon Theme">
+                    <i class="fa-solid fa-palette"></i>
+                </button>
+
+                <!-- Sound Toggle -->
+                <button id="btnAudioToggle" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-400 text-xs font-mono transition-all" title="Toggle Sound FX">
+                    <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+        // Scene setup
+        let scene, camera, renderer, renderTarget, postScene, postCamera, postMaterial;
+        let characterGroup, headMesh, torsoMesh, bootsMesh, weaponMesh;
+        let speedLinesCanvas, speedCtx;
+
+        // Godot 4 Camera Targets (Local positions simulated in WebGL)
+        const POS_FACE = new THREE.Vector3(0, 2.2, 0);
+        const POS_BOOTS = new THREE.Vector3(0, -2.4, 0);
+        const POS_FULL = new THREE.Vector3(0, 0, 0);
+
+        // State variables matching Godot Script
+        let shakeIntensity = 0.0;
+        let shakeDecay = 5.0;
+        let isAnimating = false;
+        let audioEnabled = true;
+
+        // Custom Shader Uniforms matching Godot SHADER_CODE
+        const shaderUniforms = {
+            tDiffuse: { value: null },
+            blur_amount: { value: 0.0 },
+            chromatic_aberration: { value: 0.0 },
+            radial_blur_strength: { value: 0.0 },
+            focus_center: { value: new THREE.Vector2(0.5, 0.5) }
+        };
+
+        // Audio Context Synthesizer
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioEnabled || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const now = audioCtx.currentTime;
+
+                if (type === 'whip') {
+                    // White noise sweep for whip pan
+                    const bufferSize = audioCtx.sampleRate * 0.2;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(400, now);
+                    filter.frequency.exponentialRampToValueAtTime(3200, now + 0.15);
+
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    noise.start(now);
+
+                } else if (type === 'impact') {
+                    // Sub-bass sine drop on camera impact
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(160, now);
+                    osc.frequency.exponentialRampToValueAtTime(35, now + 0.35);
+
+                    gain.gain.setValueAtTime(0.6, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+
+                } else if (type === 'card') {
+                    // UI pop blip
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.08);
+
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                }
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0b10);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(0, 2.2, 3.2);
+
+            // Offscreen Render Target for Shader Post-Processing
+            renderTarget = new THREE.WebGLRenderTarget(width, height, {
+                minFilter: THREE.LinearFilter,
+                magFilter: THREE.LinearFilter,
+                format: THREE.RGBAFormat
+            });
+
+            // Post Processing Scene
+            postScene = new THREE.Scene();
+            postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            // Fragment Shader recreation of Godot Shader Code
+            const fragmentShader = `
+                uniform sampler2D tDiffuse;
+                uniform float blur_amount;
+                uniform float chromatic_aberration;
+                uniform float radial_blur_strength;
+                uniform vec2 focus_center;
+                varying vec2 vUv;
+
+                void main() {
+                    vec2 uv = vUv;
+                    vec2 dir = uv - focus_center;
+                    vec4 color = vec4(0.0);
+                    int samples = 8;
+
+                    for (int i = 0; i < 8; i++) {
+                        float scale = 1.0 - radial_blur_strength * (float(i) / 8.0);
+                        vec2 sampled_uv = (uv - focus_center) * scale + focus_center;
+                        
+                        vec2 ca_offset = dir * chromatic_aberration;
+                        float r = texture2D(tDiffuse, sampled_uv - ca_offset).r;
+                        float g = texture2D(tDiffuse, sampled_uv).g;
+                        float b = texture2D(tDiffuse, sampled_uv + ca_offset).b;
+                        float a = texture2D(tDiffuse, sampled_uv).a;
+                        
+                        color += vec4(r, g, b, a);
+                    }
+
+                    gl_FragColor = color / 8.0;
+                }
+            `;
+
+            const vertexShader = `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
+                }
+            `;
+
+            postMaterial = new THREE.ShaderMaterial({
+                uniforms: shaderUniforms,
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader
+            });
+
+            const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial);
+            postScene.add(postQuad);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const cyanLight = new THREE.DirectionalLight(0x00f0ff, 2.5);
+            cyanLight.position.set(5, 5, 5);
+            scene.add(cyanLight);
+
+            const magentaLight = new THREE.DirectionalLight(0xff0055, 2.0);
+            magentaLight.position.set(-5, -2, 3);
+            scene.add(magentaLight);
+
+            // Create Procedural Anime Character Visuals
+            createCharacter();
+
+            // Background Grid & Ring Elements
+            createBackground();
+
+            // Speed Lines Canvas
+            speedLinesCanvas = document.getElementById('speedLinesCanvas');
+            speedLinesCanvas.width = width;
+            speedLinesCanvas.height = height;
+            speedCtx = speedLinesCanvas.getContext('2d');
+        }
+
+        function createCharacter() {
+            characterGroup = new THREE.Group();
+
+            // 1. HEAD / VISOR (Face Area)
+            const headGeo = new THREE.IcosahedronGeometry(0.45, 2);
+            const headMat = new THREE.MeshStandardMaterial({
+                color: 0x111827,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            headMesh = new THREE.Mesh(headGeo, headMat);
+            headMesh.position.set(0, 2.2, 0);
+
+            // Visor Glow Mask
+            const visorGeo = new THREE.BoxGeometry(0.5, 0.15, 0.4);
+            const visorMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 2.25, 0.25);
+            headMesh.add(visor);
+
+            // Anime Hair Spikes (Procedural cones)
+            for (let i = 0; i < 7; i++) {
+                const hairGeo = new THREE.ConeGeometry(0.12, 0.6, 4);
+                const hairMat = new THREE.MeshStandardMaterial({ color: 0xff0055, roughness: 0.3 });
+                const hair = new THREE.Mesh(hairGeo, hairMat);
+                hair.rotation.z = (i - 3) * 0.3;
+                hair.rotation.x = -0.2;
+                hair.position.set((i - 3) * 0.12, 2.55, 0.05);
+                headMesh.add(hair);
+            }
+
+            characterGroup.add(headMesh);
+
+            // 2. TORSO / ARMOR
+            const torsoGeo = new THREE.CylinderGeometry(0.45, 0.3, 1.4, 6);
+            const torsoMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            torsoMesh = new THREE.Mesh(torsoGeo, torsoMat);
+            torsoMesh.position.set(0, 1.0, 0);
+
+            // Chest Core Glow
+            const coreGeo = new THREE.OctahedronGeometry(0.2);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            core.position.set(0, 1.2, 0.3);
+            torsoMesh.add(core);
+
+            // Cyber Katana/Weapon
+            const weaponGeo = new THREE.BoxGeometry(0.06, 2.2, 0.06);
+            const weaponMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+            weaponMesh = new THREE.Mesh(weaponGeo, weaponMat);
+            weaponMesh.position.set(0.65, 0.9, -0.2);
+            weaponMesh.rotation.z = -0.35;
+            torsoMesh.add(weaponMesh);
+
+            characterGroup.add(torsoMesh);
+
+            // 3. BOOTS / LEGS
+            const bootsGroup = new THREE.Group();
+            
+            const bootMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+
+            // Left Boot
+            const bootL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.2, 0.5), bootMat);
+            bootL.position.set(-0.4, -1.8, 0.1);
+
+            // Right Boot
+            const bootR = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.2, 0.5), bootMat);
+            bootR.position.set(0.4, -1.8, 0.1);
+
+            // Neon Soles
+            const soleMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
+            const soleL = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.1, 0.55), soleMat);
+            soleL.position.set(0, -0.6, 0);
+            bootL.add(soleL);
+
+            const soleR = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.1, 0.55), soleMat);
+            soleR.position.set(0, -0.6, 0);
+            bootR.add(soleR);
+
+            bootsGroup.add(bootL);
+            bootsGroup.add(bootR);
+            bootsMesh = bootsGroup;
+
+            characterGroup.add(bootsMesh);
+            scene.add(characterGroup);
+        }
+
+        function createBackground() {
+            // Cyber Grid
+            const gridHelper = new THREE.GridHelper(30, 30, 0x00f0ff, 0x1e293b);
+            gridHelper.position.y = -2.6;
+            scene.add(gridHelper);
+
+            // Floating Halo Rings
+            const ringGeo = new THREE.TorusGeometry(3.5, 0.02, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0;
+            scene.add(ring);
+        }
+
+        function drawSpeedLines(intensity) {
+            if (!speedCtx) return;
+            speedCtx.clearRect(0, 0, speedLinesCanvas.width, speedLinesCanvas.height);
+            if (intensity <= 0.01) return;
+
+            const cx = speedLinesCanvas.width / 2;
+            const cy = speedLinesCanvas.height / 2;
+            const count = Math.floor(intensity * 120);
+
+            speedCtx.strokeStyle = `rgba(0, 240, 255, ${Math.min(intensity, 0.8)})`;
+            speedCtx.lineWidth = 2;
+
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const innerDist = 100 + Math.random() * 200;
+                const outerDist = innerDist + 150 + Math.random() * 300;
+
+                const x1 = cx + Math.cos(angle) * innerDist;
+                const y1 = cy + Math.sin(angle) * innerDist;
+                const x2 = cx + Math.cos(angle) * outerDist;
+                const y2 = cy + Math.sin(angle) * outerDist;
+
+                speedCtx.beginPath();
+                speedCtx.moveTo(x1, y1);
+                speedCtx.lineTo(x2, y2);
+                speedCtx.stroke();
+            }
+        }
+
+        function triggerCameraShake(amount) {
+            shakeIntensity = amount;
+        }
+
+        function setRadialBlur(val) {
+            shaderUniforms.radial_blur_strength.value = val;
+            drawSpeedLines(val * 10);
+            if (val > 0.01) {
+                speedLinesCanvas.style.opacity = '1';
+            } else {
+                speedLinesCanvas.style.opacity = '0';
+            }
+        }
+
+        function setChromaticAberration(val) {
+            shaderUniforms.chromatic_aberration.value = val;
+        }
+
+        function updateCameraStateLabel(text) {
+            const el = document.getElementById('cameraStateLabel');
+            if (el) el.textContent = `CAM: ${text}`;
+        }
+
+        function playRevealSequence() {
+            if (isAnimating) return;
+            isAnimating = true;
+            initAudio();
+
+            // Reset UI states
+            const bgText = document.getElementById('bgTypography');
+            const leftMeta = document.getElementById('leftMeta');
+            const card = document.getElementById('characterCard');
+            const vinyl = document.getElementById('vinylRecord');
+            const arrow = document.getElementById('transitionArrow');
+
+            bgText.style.opacity = '0';
+            bgText.style.transform = 'scale(1.3)';
+            leftMeta.style.opacity = '0';
+            leftMeta.style.transform = 'translateX(-32px)';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(48px)';
+            vinyl.style.opacity = '0';
+            vinyl.style.transform = 'translateY(64px)';
+            arrow.style.opacity = '0';
+
+            // Initial Camera State (Extreme Close-Up Offset)
+            camera.position.set(0, 3.2, 1.2);
+            camera.rotation.z = -0.05;
+
+            TWEEN.removeAll();
+
+            // -------------------------------------------------------------
+            // SHOT 1: Extreme Close-Up on Face (TRANS_EXPO ease out)
+            // -------------------------------------------------------------
+            updateCameraStateLabel('FACE_CLOSEUP (SHOT 1)');
+            playSound('whip');
+
+            new TWEEN.Tween(camera.position)
+                .to({ x: POS_FACE.x, y: POS_FACE.y, z: POS_FACE.z + 1.1 }, 350)
+                .easing(TWEEN.Easing.Exponential.Out)
+                .start();
+
+            new TWEEN.Tween(camera.rotation)
+                .to({ z: 0 }, 350)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .start();
+
+            // Shader blur sweep
+            new TWEEN.Tween({ blur: 0.08, ca: 0.02 })
+                .to({ blur: 0.0, ca: 0.001 }, 400)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .onUpdate((obj) => {
+                    setRadialBlur(obj.blur);
+                    setChromaticAberration(obj.ca);
+                })
+                .onComplete(() => {
+                    triggerCameraShake(6.0);
+                    playSound('impact');
+                })
+                .start();
+
+            // Hold brief moment then transition to Boots
+            setTimeout(() => {
+                
+                // -------------------------------------------------------------
+                // SHOT 2: Transition Arrow Overlay & Whip Pan to Boots
+                // -------------------------------------------------------------
+                updateCameraStateLabel('BOOTS_PAN (SHOT 2)');
+                playSound('whip');
+
+                // Transition Arrow Snap
+                arrow.style.opacity = '1';
+                arrow.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    arrow.style.opacity = '0';
+                    arrow.style.transform = 'scale(0.5)';
+                }, 200);
+
+                // Whip Pan Down
+                new TWEEN.Tween(camera.position)
+                    .to({ x: POS_BOOTS.x, y: POS_BOOTS.y, z: POS_BOOTS.z + 1.4 }, 300)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+
+                new TWEEN.Tween({ blur: 0.06 })
+                    .to({ blur: 0.0 }, 300)
+                    .onUpdate((obj) => setRadialBlur(obj.blur))
+                    .start();
+
+                // Hold brief moment then pull back
+                setTimeout(() => {
+                    
+                    // -------------------------------------------------------------
+                    // SHOT 3: Dynamic Pull-Back to Full Body (TRANS_BACK / EaseOutBack)
+                    // -------------------------------------------------------------
+                    updateCameraStateLabel('FULL_BODY (SHOT 3)');
+                    playSound('whip');
+
+                    new TWEEN.Tween(camera.position)
+                        .to({ x: POS_FULL.x, y: POS_FULL.y, z: POS_FULL.z + 5.5 }, 550)
+                        .easing(TWEEN.Easing.Back.Out)
+                        .onComplete(() => {
+                            triggerCameraShake(12.0);
+                            playSound('impact');
+                            
+                            // -------------------------------------------------------------
+                            // SHOT 4: UI Graphic Cards & Text Pop-in
+                            // -------------------------------------------------------------
+                            updateCameraStateLabel('UI_REVEAL_COMPLETE');
+                            animateUIElements();
+                        })
+                        .start();
+
+                    new TWEEN.Tween({ blur: 0.05 })
+                        .to({ blur: 0.0 }, 350)
+                        .onUpdate((obj) => setRadialBlur(obj.blur))
+                        .start();
+
+                }, 400);
+
+            }, 600);
+        }
+
+        function animateUIElements() {
+            playSound('card');
+
+            // 1. Background Typography
+            const bgText = document.getElementById('bgTypography');
+            bgText.style.opacity = '1';
+            bgText.style.transform = 'scale(1)';
+
+            // 2. Character Details Card & Meta
+            setTimeout(() => {
+                playSound('card');
+                const leftMeta = document.getElementById('leftMeta');
+                const card = document.getElementById('characterCard');
+                leftMeta.style.opacity = '1';
+                leftMeta.style.transform = 'translateX(0)';
+                card.style.opacity = '1';
+                card.style.transform = 'translateX(0)';
+            }, 150);
+
+            // 3. Vinyl Record
+            setTimeout(() => {
+                playSound('card');
+                const vinyl = document.getElementById('vinylRecord');
+                vinyl.style.opacity = '1';
+                vinyl.style.transform = 'translateY(0)';
+
+                // Sequence finished, begin idle floating
+                startIdleCameraFloat();
+            }, 300);
+        }
+
+        function startIdleCameraFloat() {
+            isAnimating = false;
+
+            // Idle breathing floating tween
+            new TWEEN.Tween(camera.position)
+                .to({ y: POS_FULL.y + 0.15 }, 2500)
+                .easing(TWEEN.Easing.Sinusoidal.InOut)
+                .yoyo(true)
+                .repeat(Infinity)
+                .start();
+        }
+
+        function setupInteractiveControls() {
+            document.getElementById('btnReplay').addEventListener('click', () => {
+                playRevealSequence();
+            });
+
+            document.getElementById('btnFocusFace').addEventListener('click', () => {
+                if (isAnimating) return;
+                TWEEN.removeAll();
+                updateCameraStateLabel('FACE_MANUAL');
+                playSound('whip');
+                new TWEEN.Tween(camera.position)
+                    .to({ x: POS_FACE.x, y: POS_FACE.y, z: POS_FACE.z + 1.1 }, 400)
+                    .easing(TWEEN.Easing.Cubic.Out)
+                    .start();
+            });
+
+            document.getElementById('btnFocusBoots').addEventListener('click', () => {
+                if (isAnimating) return;
+                TWEEN.removeAll();
+                updateCameraStateLabel('BOOTS_MANUAL');
+                playSound('whip');
+                new TWEEN.Tween(camera.position)
+                    .to({ x: POS_BOOTS.x, y: POS_BOOTS.y, z: POS_BOOTS.z + 1.4 }, 400)
+                    .easing(TWEEN.Easing.Cubic.Out)
+                    .start();
+            });
+
+            document.getElementById('btnFocusFull').addEventListener('click', () => {
+                if (isAnimating) return;
+                TWEEN.removeAll();
+                updateCameraStateLabel('FULL_MANUAL');
+                playSound('whip');
+                new TWEEN.Tween(camera.position)
+                    .to({ x: POS_FULL.x, y: POS_FULL.y, z: POS_FULL.z + 5.5 }, 500)
+                    .easing(TWEEN.Easing.Cubic.Out)
+                    .start();
+            });
+
+            // Theme Toggle
+            let themeIdx = 0;
+            const themes = [
+                { cyan: 0x00f0ff, magenta: 0xff0055 },
+                { cyan: 0xffea00, magenta: 0x00ff66 },
+                { cyan: 0xa855f7, magenta: 0x3b82f6 }
+            ];
+
+            document.getElementById('btnThemeToggle').addEventListener('click', () => {
+                themeIdx = (themeIdx + 1) % themes.length;
+                const theme = themes[themeIdx];
+                if (weaponMesh) weaponMesh.material.color.setHex(theme.cyan);
+                playSound('card');
+            });
+
+            // Audio Toggle
+            document.getElementById('btnAudioToggle').addEventListener('click', () => {
+                audioEnabled = !audioEnabled;
+                const icon = document.getElementById('audioIcon');
+                if (audioEnabled) {
+                    icon.className = 'fa-solid fa-volume-high';
+                } else {
+                    icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                }
+            });
+        }
+
+        function onWindowResize() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(width, height);
+            renderTarget.setSize(width, height);
+
+            if (speedLinesCanvas) {
+                speedLinesCanvas.width = width;
+                speedLinesCanvas.height = height;
+            }
+        }
+
+        function render(time) {
+            requestAnimationFrame(render);
+            TWEEN.update();
+
+            // Process Camera Shake Physics (Godot _process_camera_shake)
+            if (shakeIntensity > 0) {
+                camera.position.x += (Math.random() - 0.5) * shakeIntensity * 0.02;
+                camera.position.y += (Math.random() - 0.5) * shakeIntensity * 0.02;
+                shakeIntensity = Math.max(0, shakeIntensity - shakeDecay * 0.016 * 10);
+            }
+
+            // Idle character subtle rotation
+            if (characterGroup && !isAnimating) {
+                characterGroup.rotation.y = Math.sin(time * 0.001) * 0.15;
+            }
+
+            // 1. Render main scene to offscreen texture
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
+
+            // 2. Render post-processing quad with Godot shader effect
+            renderer.setRenderTarget(null);
+            shaderUniforms.tDiffuse.value = renderTarget.texture;
+            renderer.render(postScene, postCamera);
+        }
+
+        // Initialize on Load
+        window.addEventListener('load', () => {
+            initScene();
+            setupInteractiveControls();
+            window.addEventListener('resize', onWindowResize);
+
+            // Auto play sequence after brief delay
+            setTimeout(() => {
+                playRevealSequence();
+            }, 500);
+
+            render(0);
+        });
+    </script>
+</body>
+</html>
