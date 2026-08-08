@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專有名詞智慧提示工具 (TermTooltip)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        }
+
+        /* Tooltip Underline Styles */
+        .term-hover {
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        /* Underline Style Variations */
+        .style-dashed {
+            border-bottom: 2px dashed #3b82f6;
+            color: #1d4ed8;
+        }
+        .style-wavy {
+            text-decoration: underline dotted #8b5cf6 2px;
+            text-underline-offset: 3px;
+            color: #6d28d9;
+        }
+        .style-pill {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            padding: 1px 6px;
+            border-radius: 6px;
+            border: 1px solid #bfdbfe;
+        }
+        .style-highlight {
+            background: linear-gradient(120deg, #fef08a 0%, #fef08a 100%) no-repeat 0 88%/100% 40%;
+            color: #854d0e;
+        }
+
+        .term-hover:hover {
+            opacity: 0.85;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Tooltip animation */
+        @keyframes tooltipFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .tooltip-card {
+            animation: tooltipFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-blue-600 text-white rounded-xl shadow-md">
+                    <i data-lucide="book-open-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                        TermTooltip 專有名詞智慧提示工具
+                    </h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">滑鼠懸停或點擊詞彙，立即展開標準定義、解釋與實際案例</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button id="exportCodeBtn" class="flex items-center space-x-2 px-3.5 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-sm font-medium transition">
+                    <i data-lucide="code" class="w-4 h-4"></i>
+                    <span>匯出嵌入代碼</span>
+                </button>
+                <button id="addTermBtn" class="flex items-center space-x-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-sm transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>新增詞彙</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Panel: Reader / Tester (8 cols) -->
+        <section class="lg:col-span-7 flex flex-col space-y-6">
+            
+            <!-- Tab Controls -->
+            <div class="bg-white p-1.5 rounded-xl border border-slate-200 flex space-x-1 shadow-sm">
+                <button id="tabDemo" class="tab-btn active flex-1 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 bg-blue-50 text-blue-700">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    <span>範例文章閱讀</span>
+                </button>
+                <button id="tabCustom" class="tab-btn flex-1 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span>自訂文字掃描</span>
+                </button>
+            </div>
+
+            <!-- Demo View -->
+            <div id="demoView" class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm flex-1 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">文章實測預覽</span>
+                            <span class="text-xs text-slate-400">💡 試試將滑鼠移到有底線的專有名詞上</span>
+                        </div>
+                        <span class="text-xs text-slate-400">2026 科技與經濟趨勢導讀</span>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4 leading-tight">
+                        未來科技與金融秩序：從 AI 自動化到新一代計算範式
+                    </h2>
+
+                    <div id="articleBody" class="prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-4">
+                        <!-- Content rendered dynamically via JS -->
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <span>詞庫比對狀態：<strong class="text-blue-600" id="matchedCount">0</strong> 個詞彙已成功連結</span>
+                    <button id="resetDemoBtn" class="text-slate-500 hover:text-slate-800 underline">重置範例文章</button>
+                </div>
+            </div>
+
+            <!-- Custom Input View (Hidden by default) -->
+            <div id="customView" class="hidden bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex-1 flex flex-col space-y-4">
+                <div class="flex justify-between items-center">
+                    <label for="customInputText" class="text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                        <i data-lucide="edit-3" class="w-4 h-4 text-blue-600"></i>
+                        <span>貼上您的文章或段落：</span>
+                    </label>
+                    <button id="scanTextBtn" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition flex items-center space-x-1.5 shadow-sm">
+                        <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                        <span>自動掃描高亮專有名詞</span>
+                    </button>
+                </div>
+
+                <textarea id="customInputText" rows="6" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition resize-none" placeholder="在此處貼上任意文章段落，例如：我們可以使用大語言模型來自動產生代碼，並透過 API 與後端伺服器進行資料傳輸..."></textarea>
+
+                <div class="flex-1 border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
+                    <div class="text-xs font-semibold text-slate-500 mb-2 flex items-center space-x-1">
+                        <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                        <span>即時高亮渲染結果：</span>
+                    </div>
+                    <div id="customRenderOutput" class="flex-1 overflow-y-auto text-sm text-slate-700 leading-relaxed bg-white p-4 rounded-lg border border-slate-100">
+                        <span class="text-slate-400 italic">點擊上方「自動掃描高亮專有名詞」按鈕查看結果...</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Panel: Dictionary Manager & Config (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col space-y-6">
+            
+            <!-- Term Dictionary Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col h-[520px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="book-marked" class="w-5 h-5 text-blue-600"></i>
+                        <h3 class="font-bold text-slate-800">專有名詞庫</h3>
+                        <span id="dictCountBadge" class="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-full">0 筆</span>
+                    </div>
+                    <!-- Search input -->
+                    <div class="relative w-36 sm:w-44">
+                        <input type="text" id="searchTermInput" placeholder="搜尋專有名詞..." class="w-full pl-7 pr-2 py-1 text-xs bg-slate-100 border border-transparent rounded-lg focus:bg-white focus:border-blue-500 focus:outline-none transition">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2"></i>
+                    </div>
+                </div>
+
+                <!-- Dictionary List -->
+                <div id="termList" class="flex-1 overflow-y-auto py-3 space-y-2.5 pr-1">
+                    <!-- Term items populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Style Customization Panel -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2 pb-2 border-b border-slate-100">
+                    <i data-lucide="sliders" class="w-4 h-4 text-blue-600"></i>
+                    <span>提示樣式與互動設定</span>
+                </h3>
+
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <!-- Underline style -->
+                    <div>
+                        <label class="block text-slate-600 mb-1.5 font-medium">高亮底線樣式</label>
+                        <select id="styleSelect" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                            <option value="style-dashed">虛線底線 (Dashed)</option>
+                            <option value="style-wavy">點狀下劃線 (Dotted)</option>
+                            <option value="style-pill">膠囊標籤 (Pill Tag)</option>
+                            <option value="style-highlight">螢光筆底色 (Highlight)</option>
+                        </select>
+                    </div>
+
+                    <!-- Trigger Mode -->
+                    <div>
+                        <label class="block text-slate-600 mb-1.5 font-medium">觸發呈現方式</label>
+                        <select id="triggerSelect" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                            <option value="hover">滑鼠滑過 (Hover)</option>
+                            <option value="click">點擊觸發 (Click)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Floating Tooltip Card Container (Appears on Hover/Click) -->
+    <div id="floatingTooltip" class="fixed hidden z-50 w-80 sm:w-96 bg-white rounded-2xl border border-slate-200/80 tooltip-card pointer-events-auto">
+        <div class="p-4 sm:p-5">
+            <!-- Header: Term Name & Category -->
+            <div class="flex items-start justify-between pb-3 mb-3 border-b border-slate-100">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h4 id="tooltipTermName" class="text-lg font-bold text-slate-900">--</h4>
+                        <button id="ttsAudioBtn" title="語音朗讀" class="text-slate-400 hover:text-blue-600 transition p-1 rounded-md hover:bg-slate-100">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <span id="tooltipCategory" class="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-semibold rounded-md border border-blue-100">
+                        --
+                    </span>
+                </div>
+                <button id="closeTooltipBtn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Tabbed/Sectional Content -->
+            <div class="space-y-3.5 text-xs">
+                <!-- Definition Section -->
+                <div>
+                    <div class="font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 text-blue-600"></i>
+                        <span>標準定義 (Definition)</span>
+                    </div>
+                    <p id="tooltipDefinition" class="text-slate-800 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                        --
+                    </p>
+                </div>
+
+                <!-- Explanation Section -->
+                <div>
+                    <div class="font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                        <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-amber-500"></i>
+                        <span>詳細解釋 (Explanation)</span>
+                    </div>
+                    <p id="tooltipExplanation" class="text-slate-600 leading-relaxed">
+                        --
+                    </p>
+                </div>
+
+                <!-- Example Section -->
+                <div>
+                    <div class="font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center space-x-1">
+                        <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>實際例子 (Example)</span>
+                    </div>
+                    <div id="tooltipExample" class="text-slate-700 bg-emerald-50/60 p-2.5 rounded-lg border border-emerald-100/60 leading-relaxed font-mono text-[11px]">
+                        --
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Term -->
+    <div id="termModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-xl relative animate-in fade-in zoom-in duration-150">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800">新增專有名詞</h3>
+                <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="termForm" class="space-y-4 text-xs">
+                <input type="hidden" id="editTermId">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">專有名詞名稱 <span class="text-red-500">*</span></label>
+                    <input type="text" id="inputTermName" required placeholder="例如: 大語言模型" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition text-xs">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">領域/分類</label>
+                    <input type="text" id="inputCategory" placeholder="例如: 人工智慧 / 金融 / 生醫" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition text-xs">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">一句話定義 <span class="text-red-500">*</span></label>
+                    <textarea id="inputDefinition" required rows="2" placeholder="簡短精確的標準定義..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition text-xs resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">詳細解釋 / 白話說明</label>
+                    <textarea id="inputExplanation" rows="3" placeholder="用白話文說明其運作原理或脈絡..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition text-xs resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">生活或實務例子</label>
+                    <textarea id="inputExample" rows="2" placeholder="例如：就像餐廳的服務生，協助顧客與廚房傳達點餐..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition text-xs resize-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" id="cancelModalBtn" class="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 font-medium">取消</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm">儲存名詞</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Export Snippet -->
+    <div id="exportModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 max-w-2xl w-full p-6 shadow-xl relative">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="code-2" class="w-5 h-5 text-indigo-600"></i>
+                    <h3 class="text-lg font-bold text-slate-800">一鍵嵌入獨立 JavaScript 代碼</h3>
+                </div>
+                <button id="closeExportModalBtn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-3">複製下方腳本至您網站的 <code class="bg-slate-100 text-slate-700 px-1 py-0.5 rounded">&lt;body&gt;</code> 底部，即可自動高亮並為專有名詞加入懸停提示：</p>
+
+            <div class="relative">
+                <pre id="codeExportBox" class="bg-slate-900 text-slate-100 p-4 rounded-xl text-xs overflow-x-auto h-64 font-mono leading-relaxed select-all">
+                </pre>
+                <button id="copyCodeBtn" class="absolute top-3 right-3 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-xs font-medium backdrop-blur-sm transition flex items-center space-x-1">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span>複製代碼</span>
+                </button>
+            </div>
+
+            <div class="mt-4 flex justify-between items-center text-xs text-slate-400">
+                <span>包含當前已建立的 <strong class="text-slate-700" id="exportTermCount">0</strong> 個詞彙資料庫</span>
+                <button id="closeExportModalBtn2" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Terms Database
+        let terms = [
+            {
+                id: '1',
+                name: '大語言模型',
+                category: '人工智慧',
+                definition: '基於深度學習技術，透過海量文字資料訓練出來能夠理解與生成人類語言的人工智慧模型。',
+                explanation: '採用 Transformer 神經網絡架構，藉由計算詞彙間的機率關係與上下文語意，預測並產生合理的下一段文字。',
+                example: '例如 ChatGPT、Claude、Gemini 以及 Meta 的 Llama 語言模型。'
+            },
+            {
+                id: '2',
+                name: 'API',
+                category: '軟體工程',
+                definition: '應用程式介面 (Application Programming Interface)，系統之間進行資料傳輸與溝通的規範與管道。',
+                explanation: '就像餐廳的「服務生」，顧客（前端）向服務生點餐，服務生將需求傳達給廚房（後端伺服器），再將做好的餐點帶回給顧客。',
+                example: '網站調用 Google Maps API 顯示地圖、金流刷卡 SDK 串接。'
+            },
+            {
+                id: '3',
+                name: '量子計算',
+                category: '前沿物理/計算',
+                definition: '利用量子力學原理（如疊加態與量子糾纏）進行資訊處理的全新計算技術。',
+                explanation: '傳統電腦用「0 或 1」的雙位元處理資訊；量子電腦使用「量子位元 (Qubit)」，可同時處於 0 與 1 的疊加狀態，對特定複雜問題進行平行計算。',
+                example: '複雜新藥分子結構模擬、高階密碼學破解、國際金融風險最佳化模型。'
+            },
+            {
+                id: '4',
+                name: '通膨',
+                category: '總體經濟學',
+                definition: '通貨膨脹，指一段時間內整體物價持續上漲，導致相同貨幣額度的購買力下降的經濟現象。',
+                explanation: '當市場上的貨幣發行過量，或是商品生產成本大幅上升（如石油、原材料缺貨）導致供給不足時，等額的錢能買到的產品變少。',
+                example: '十年前阿嬤家牛肉麵一碗 80 元，現在品質相同的一碗要 160 元。'
+            },
+            {
+                id: '5',
+                name: '邊緣計算',
+                category: '雲端架構',
+                definition: '將資料處理與運算能力從遠端集中式雲端，轉移到靠近數據源頭的近端設備上進行。',
+                explanation: '不再把所有感測器數據都傳送回數千公里外的中央雲端伺服器，而是在在地端裝置上立即處理，達到超低延遲與節省頻寬的效果。',
+                example: '自動駕駛車輛的毫秒級煞車辨識、智慧攝影機現場即時人臉分析。'
+            }
+        ];
+
+        // Sample article text containing the terms
+        const defaultArticle = `
+            在 2026 年的現代科技浪潮中，<span class="term-target" data-term="大語言模型">大語言模型</span> 的發展已從單純的聊天對話演進為自動化企業工作流的核心。為了讓各個軟體服務能順暢整合，工程師廣泛調用各類 <span class="term-target" data-term="API">API</span> 來交換數據。
+            
+            與此同時，硬體層面也有突破性發展。科學家正在研發新世代的 <span class="term-target" data-term="量子計算">量子計算</span> 系統，期許能解決傳統超級電腦耗時數百年也無法解出的複合材料難題。在實時響應需求極高的場景（如自駕車），則高度依賴 <span class="term-target" data-term="邊緣計算">邊緣計算</span> 技術進行在地化毫秒級推論。
+            
+            在總體經濟層面，各國央行密切關注各項數據以預防全球性的 <span class="term-target" data-term="通膨">通膨</span> 危機，確保新經濟轉型期貨幣購買力的穩定。
+        `;
+
+        // App Configurations
+        let currentStyle = 'style-dashed';
+        let currentTrigger = 'hover';
+        let activeTooltipTerm = null;
+
+        // DOM Elements
+        const articleBody = document.getElementById('articleBody');
+        const termList = document.getElementById('termList');
+        const floatingTooltip = document.getElementById('floatingTooltip');
+        const styleSelect = document.getElementById('styleSelect');
+        const triggerSelect = document.getElementById('triggerSelect');
+        const dictCountBadge = document.getElementById('dictCountBadge');
+        const matchedCount = document.getElementById('matchedCount');
+        const searchTermInput = document.getElementById('searchTermInput');
+
+        // Modals & Tabs
+        const termModal = document.getElementById('termModal');
+        const exportModal = document.getElementById('exportModal');
+        const tabDemo = document.getElementById('tabDemo');
+        const tabCustom = document.getElementById('tabCustom');
+        const demoView = document.getElementById('demoView');
+        const customView = document.getElementById('customView');
+        const customInputText = document.getElementById('customInputText');
+        const customRenderOutput = document.getElementById('customRenderOutput');
+        const scanTextBtn = document.getElementById('scanTextBtn');
+
+        // Tooltip Elements
+        const tooltipTermName = document.getElementById('tooltipTermName');
+        const tooltipCategory = document.getElementById('tooltipCategory');
+        const tooltipDefinition = document.getElementById('tooltipDefinition');
+        const tooltipExplanation = document.getElementById('tooltipExplanation');
+        const tooltipExample = document.getElementById('tooltipExample');
+        const ttsAudioBtn = document.getElementById('ttsAudioBtn');
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            renderDemoArticle();
+            renderTermList();
+            setupEventListeners();
+            lucide.createIcons();
+        });
+
+        // Render Demo Article
+        function renderDemoArticle() {
+            articleBody.innerHTML = defaultArticle;
+            attachHighlightingToArticle(articleBody);
+        }
+
+        // Scan DOM or Container and attach interactive term spans
+        function attachHighlightingToArticle(container) {
+            let count = 0;
+            const targets = container.querySelectorAll('.term-target, .term-hover');
+            
+            targets.forEach(el => {
+                const termName = el.getAttribute('data-term') || el.innerText.trim();
+                const termData = terms.find(t => t.name.toLowerCase() === termName.toLowerCase());
+
+                if (termData) {
+                    count++;
+                    el.className = `term-hover ${currentStyle}`;
+                    el.setAttribute('data-term-id', termData.id);
+
+                    // Re-bind hover or click events
+                    bindEventsToTermElement(el, termData);
+                }
+            });
+
+            if (matchedCount) matchedCount.innerText = count;
+        }
+
+        // Bind Tooltip Triggers
+        function bindEventsToTermElement(element, termData) {
+            // Remove existing listeners by cloning
+            const newEl = element.cloneNode(true);
+            element.parentNode.replaceChild(newEl, element);
+
+            if (currentTrigger === 'hover') {
+                newEl.addEventListener('mouseenter', (e) => showTooltip(e.currentTarget, termData));
+                newEl.addEventListener('mouseleave', (e) => scheduleHideTooltip(e));
+            } else {
+                newEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showTooltip(e.currentTarget, termData);
+                });
+            }
+        }
+
+        // Show Floating Tooltip Card
+        function showTooltip(targetEl, termData) {
+            activeTooltipTerm = termData;
+            
+            // Fill details
+            tooltipTermName.innerText = termData.name;
+            tooltipCategory.innerText = termData.category || '專有名詞';
+            tooltipDefinition.innerText = termData.definition;
+            tooltipExplanation.innerText = termData.explanation || '暫無詳細解釋';
+            tooltipExample.innerText = termData.example || '暫無實例說明';
+
+            // Show card
+            floatingTooltip.classList.remove('hidden');
+
+            // Calculate Position
+            const rect = targetEl.getBoundingClientRect();
+            const tooltipWidth = floatingTooltip.offsetWidth || 340;
+            const tooltipHeight = floatingTooltip.offsetHeight || 260;
+
+            let top = rect.bottom + window.scrollY + 8;
+            let left = rect.left + window.scrollX + (rect.width / 2) - (tooltipWidth / 2);
+
+            // Boundary checks
+            if (left + tooltipWidth > window.innerWidth - 16) {
+                left = window.innerWidth - tooltipWidth - 16;
+            }
+            if (left < 16) left = 16;
+
+            // If card goes off bottom of screen, show above term
+            if (rect.bottom + tooltipHeight > window.innerHeight && rect.top > tooltipHeight) {
+                top = rect.top + window.scrollY - tooltipHeight - 8;
+            }
+
+            floatingTooltip.style.top = `${top}px`;
+            floatingTooltip.style.left = `${left}px`;
+        }
+
+        let hideTimeout;
+        function scheduleHideTooltip(e) {
+            hideTimeout = setTimeout(() => {
+                if (!floatingTooltip.matches(':hover')) {
+                    hideTooltip();
+                }
+            }, 200);
+        }
+
+        floatingTooltip.addEventListener('mouseleave', () => {
+            hideTooltip();
+        });
+
+        function hideTooltip() {
+            floatingTooltip.classList.add('hidden');
+        }
+
+        // Close tooltip on global click
+        document.addEventListener('click', (e) => {
+            if (!floatingTooltip.contains(e.target) && !e.target.classList.contains('term-hover')) {
+                hideTooltip();
+            }
+        });
+
+        // Render Dictionary Sidebar List
+        function renderTermList(filter = '') {
+            termList.innerHTML = '';
+            
+            const filtered = terms.filter(t => 
+                t.name.toLowerCase().includes(filter.toLowerCase()) || 
+                t.category.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            dictCountBadge.innerText = `${filtered.length} 筆`;
+
+            if (filtered.length === 0) {
+                termList.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                        <span>未找到符合的名詞</span>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(term => {
+                const item = document.createElement('div');
+                item.className = 'p-3 rounded-xl border border-slate-100 hover:border-blue-200 bg-slate-50/50 hover:bg-blue-50/30 transition group flex items-start justify-between space-x-2';
+                item.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-xs text-slate-800 truncate">${escapeHtml(term.name)}</span>
+                            <span class="px-1.5 py-0.5 text-[10px] bg-slate-200/60 text-slate-600 rounded font-medium">${escapeHtml(term.category || '通用')}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 truncate mt-1">${escapeHtml(term.definition)}</p>
+                    </div>
+                    <div class="flex items-center space-x-1 opacity-80 group-hover:opacity-100 transition">
+                        <button onclick="editTerm('${term.id}')" title="編輯" class="p-1 text-slate-400 hover:text-blue-600 hover:bg-white rounded">
+                            <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="deleteTerm('${term.id}')" title="刪除" class="p-1 text-slate-400 hover:text-red-600 hover:bg-white rounded">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                termList.appendChild(item);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Auto Highlight Custom Text Function
+        function scanAndHighlightCustomText() {
+            let text = customInputText.value;
+            if (!text.trim()) {
+                customRenderOutput.innerHTML = '<span class="text-slate-400 italic">請先在上方輸入文章文字...</span>';
+                return;
+            }
+
+            // Sort terms by length descending to match longer multi-word phrases first
+            const sortedTerms = [...terms].sort((a, b) => b.name.length - a.name.length);
+
+            let html = escapeHtml(text);
+
+            sortedTerms.forEach(term => {
+                const regex = new RegExp(escapeRegExp(term.name), 'gi');
+                html = html.replace(regex, (match) => {
+                    return `<span class="term-hover ${currentStyle}" data-term="${escapeHtml(term.name)}">${match}</span>`;
+                });
+            });
+
+            // Replace newlines with breaks
+            customRenderOutput.innerHTML = html.replace(/\n/g, '<br>');
+            attachHighlightingToArticle(customRenderOutput);
+        }
+
+        // Generate Embeddable Standalone JS Snippet
+        function generateExportCode() {
+            const jsonTerms = JSON.stringify(terms, null, 2);
+            const scriptCode = `<!-- TermTooltip Standalone Script -->
+<script>
+(function() {
+  const termsDatabase = ${jsonTerms};
+  const styleClass = "${currentStyle}";
+  const triggerMode = "${currentTrigger}";
+
+  // Inject CSS Styles
+  const style = document.createElement('style');
+  style.innerHTML = \`
+    .term-hover { cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .style-dashed { border-bottom: 2px dashed #3b82f6; color: #1d4ed8; }
+    .style-wavy { text-decoration: underline dotted #8b5cf6 2px; color: #6d28d9; }
+    .style-pill { background: #eff6ff; color: #1d4ed8; padding: 1px 6px; border-radius: 6px; border: 1px solid #bfdbfe; }
+    .style-highlight { background: linear-gradient(120deg, #fef08a 0%, #fef08a 100%) no-repeat 0 88%/100% 40%; color: #854d0e; }
+    .term-tooltip-card { position: absolute; z-index: 9999; width: 320px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); font-family: sans-serif; font-size: 13px; color: #334155; }
+  \`;
+  document.head.appendChild(style);
+
+  // Auto-scan document text on load
+  window.addEventListener('DOMContentLoaded', () => {
+    // Scan paragraph tags
+    const paragraphs = document.querySelectorAll('p, article');
+    termsDatabase.sort((a,b) => b.name.length - a.name.length).forEach(term => {
+      const regex = new RegExp(\`(\${term.name})\`, 'gi');
+      paragraphs.forEach(p => {
+        if (!p.classList.contains('no-tooltip')) {
+          p.innerHTML = p.innerHTML.replace(regex, \`<span class="term-hover \${styleClass}" data-term-id="\${term.id}">$1</span>\`);
+        }
+      });
+    });
+  });
+})();
+<\/script>`;
+
+            document.getElementById('codeExportBox').innerText = scriptCode;
+            document.getElementById('exportTermCount').innerText = terms.length;
+        }
+
+        // Helper event listeners
+        function setupEventListeners() {
+            // Tab Toggle
+            tabDemo.addEventListener('click', () => {
+                tabDemo.className = 'tab-btn active flex-1 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 bg-blue-50 text-blue-700';
+                tabCustom.className = 'tab-btn flex-1 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 text-slate-600 hover:bg-slate-100';
+                demoView.classList.remove('hidden');
+                customView.classList.add('hidden');
+            });
+
+            tabCustom.addEventListener('click', () => {
+                tabCustom.className = 'tab-btn active flex-1 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 bg-blue-50 text-blue-700';
+                tabDemo.className = 'tab-btn flex-1 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 text-slate-600 hover:bg-slate-100';
+                customView.classList.remove('hidden');
+                demoView.classList.add('hidden');
+            });
+
+            // Style and Trigger selectors
+            styleSelect.addEventListener('change', (e) => {
+                currentStyle = e.target.value;
+                attachHighlightingToArticle(articleBody);
+                if (!customView.classList.contains('hidden')) scanAndHighlightCustomText();
+            });
+
+            triggerSelect.addEventListener('change', (e) => {
+                currentTrigger = e.target.value;
+                attachHighlightingToArticle(articleBody);
+                if (!customView.classList.contains('hidden')) scanAndHighlightCustomText();
+            });
+
+            // Text scan trigger
+            scanTextBtn.addEventListener('click', scanAndHighlightCustomText);
+
+            // Search Filter
+            searchTermInput.addEventListener('input', (e) => {
+                renderTermList(e.target.value);
+            });
+
+            // Modal Controls
+            document.getElementById('addTermBtn').addEventListener('click', () => {
+                document.getElementById('modalTitle').innerText = '新增專有名詞';
+                document.getElementById('termForm').reset();
+                document.getElementById('editTermId').value = '';
+                termModal.classList.remove('hidden');
+            });
+
+            document.getElementById('closeModalBtn').addEventListener('click', () => termModal.classList.add('hidden'));
+            document.getElementById('cancelModalBtn').addEventListener('click', () => termModal.classList.add('hidden'));
+
+            document.getElementById('exportCodeBtn').addEventListener('click', () => {
+                generateExportCode();
+                exportModal.classList.remove('hidden');
+            });
+
+            document.getElementById('closeExportModalBtn').addEventListener('click', () => exportModal.classList.add('hidden'));
+            document.getElementById('closeExportModalBtn2').addEventListener('click', () => exportModal.classList.add('hidden'));
+
+            document.getElementById('closeTooltipBtn').addEventListener('click', hideTooltip);
+
+            // Speech Synthesis TTS
+            ttsAudioBtn.addEventListener('click', () => {
+                if (activeTooltipTerm && 'speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(activeTooltipTerm.name);
+                    utterance.lang = 'zh-TW';
+                    window.speechSynthesis.speak(utterance);
+                }
+            });
+
+            // Term Form Submit
+            document.getElementById('termForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const editId = document.getElementById('editTermId').value;
+                const name = document.getElementById('inputTermName').value.trim();
+                const category = document.getElementById('inputCategory').value.trim();
+                const definition = document.getElementById('inputDefinition').value.trim();
+                const explanation = document.getElementById('inputExplanation').value.trim();
+                const example = document.getElementById('inputExample').value.trim();
+
+                if (editId) {
+                    // Update
+                    const termIndex = terms.findIndex(t => t.id === editId);
+                    if (termIndex !== -1) {
+                        terms[termIndex] = { id: editId, name, category, definition, explanation, example };
+                    }
+                } else {
+                    // Create
+                    const newTerm = {
+                        id: Date.now().toString(),
+                        name,
+                        category,
+                        definition,
+                        explanation,
+                        example
+                    };
+                    terms.unshift(newTerm);
+                }
+
+                renderTermList();
+                attachHighlightingToArticle(articleBody);
+                if (!customView.classList.contains('hidden')) scanAndHighlightCustomText();
+
+                termModal.classList.add('hidden');
+            });
+
+            // Copy exported JS snippet
+            document.getElementById('copyCodeBtn').addEventListener('click', () => {
+                const code = document.getElementById('codeExportBox').innerText;
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                const btn = document.getElementById('copyCodeBtn');
+                btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i><span>已複製代碼！</span>`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = `<i data-lucide="copy" class="w-3.5 h-3.5"></i><span>複製代碼</span>`;
+                    lucide.createIcons();
+                }, 2000);
+            });
+
+            // Reset demo
+            document.getElementById('resetDemoBtn').addEventListener('click', () => {
+                renderDemoArticle();
+            });
+        }
+
+        // Global functions for inline handlers
+        window.editTerm = function(id) {
+            const term = terms.find(t => t.id === id);
+            if (!term) return;
+
+            document.getElementById('modalTitle').innerText = '編輯專有名詞';
+            document.getElementById('editTermId').value = term.id;
+            document.getElementById('inputTermName').value = term.name;
+            document.getElementById('inputCategory').value = term.category || '';
+            document.getElementById('inputDefinition').value = term.definition;
+            document.getElementById('inputExplanation').value = term.explanation || '';
+            document.getElementById('inputExample').value = term.example || '';
+
+            termModal.classList.remove('hidden');
+        };
+
+        window.deleteTerm = function(id) {
+            if (confirm('確定要刪除此專有名詞嗎？')) {
+                terms = terms.filter(t => t.id !== id);
+                renderTermList();
+                attachHighlightingToArticle(articleBody);
+                if (!customView.classList.contains('hidden')) scanAndHighlightCustomText();
+            }
+        };
+
+        // Utility functions
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+    </script>
+</body>
+</html>
