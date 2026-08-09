@@ -1,4 +1,146 @@
-## **c\#**
+
+
+C\#知识点  
+[https://ithelp.ithome.com.tw/m/articles/10213172](https://ithelp.ithome.com.tw/m/articles/10213172) 
+
+\#\# \*\*階段 1：基礎語法與環境搭建（第 1-3 週）\*\*  
+\#\#\# \*\*目標\*\*：  
+\- 熟悉 C\# 基本語法、資料型別、流程控制。  
+\- 學會使用 Visual Studio / VS Code 開發環境。
+
+\#\#\# \*\*學習資源\*\*：  
+1\. \*\*免費互動教程\*\*：  
+   \- \[\*\*Codecademy C\# 課程\*\*\](https://www.codecademy.com/learn/learn-c-sharp)（英文，適合零基礎）    
+   \- \[\*\*Microsoft Learn C\# 基礎\*\*\](https://learn.microsoft.com/zh-tw/dotnet/csharp/)（官方教程，含中文翻譯）  
+2\. \*\*書籍推薦\*\*：  
+   \- 《C\# 入門經典》（第 10 版）：系統化學習語法，範例豐富。  
+3\. \*\*影片教學\*\*：  
+   \- \[\*\*FreeCodeCamp C\# 初學者教學\*\*\](https://youtu.be/GhQdlIFylQ8)（4 小時，英文）    
+   \- \[\*\*The C\# Player's Guide\*\* 作者教學\](https://youtube.com/playlist?list=PLhPyEFL5u-i0Y1i5AifW44Y5R6lRPRk3d)（英文，生動易懂）
+
+\#\#\# \*\*每日任務\*\*：  
+\- 學習 1-2 小時，手寫程式碼（勿複製貼上）。    
+\- 完成練習題：如計算 BMI、簡易計算機、猜數字遊戲等控制台應用。
+
+\---
+
+\#\# \*\*階段 2：物件導向與進階特性（第 4-6 週）\*\*  
+\#\#\# \*\*目標\*\*：  
+\- 掌握類別（Class）、繼承、多型、介面（Interface）。  
+\- 學習集合（List、Dictionary）、異常處理（try-catch）。
+
+\#\#\# \*\*學習資源\*\*：  
+1\. \*\*進階課程\*\*：  
+   \- \[\*\*Udemy: C\# Intermediate 課程\*\*\](https://www.udemy.com/)（常打折至 $15 以下，選擇評分 4.5+ 的課程）    
+   \- \[\*\*C\# Station Tutorial\*\*\](https://csharp-station.com/)（免費，逐步深入 OOP）  
+2\. \*\*實戰練習\*\*：  
+   \- 建立「學生管理系統」（操作資料增刪改查）。    
+   \- 實現「撲克牌遊戲」（練習類別設計與邏輯）。
+
+\#\#\# \*\*關鍵練習\*\*：  
+\- 理解 \`public/private/protected\` 存取修飾符。    
+\- 用 \`List\<T\>\` 儲存多個物件，並實作排序功能。    
+\- 使用 \`try-catch\` 處理檔案讀寫錯誤。
+
+\---
+
+\#\# \*\*階段 3：實戰專案與 Unity 入門（第 7-10 週）\*\*  
+\#\#\# \*\*目標\*\*：  
+\- 結合 Unity 引擎開發簡單 2D/3D 遊戲。  
+\- 完成 1-2 個完整專案並部署到平台。
+
+\#\#\# \*\*學習資源\*\*：  
+1\. \*\*Unity 官方教學\*\*：  
+   \- \[\*\*Unity Learn 免費課程\*\*\](https://learn.unity.com/)（選擇 C\# 相關路徑）    
+   \- \[\*\*Brackeys 頻道\*\*\](https://www.youtube.com/c/Brackeys)（經典遊戲開發教學，英文）  
+2\. \*\*實戰專案\*\*：  
+   \- \*\*2D 遊戲\*\*：打磚塊、平台跳躍遊戲（參考 \[\*\*Create with Code\*\*\](https://learn.unity.com/course/create-with-code)）。    
+   \- \*\*3D 小遊戲\*\*：迷宮逃脫、簡易賽車（學習物理引擎與碰撞檢測）。
+
+\#\#\# \*\*工具與部署\*\*：  
+\- 使用 \*\*Unity Hub\*\* 管理專案版本。    
+\- 將遊戲發布到 \[\*\*itch.io\*\*\](https://itch.io/)（免費上架，適合初學者展示作品）。
+
+\---
+
+\#\# \*\*階段 4：整合複習與求職準備（第 11-12 週）\*\*  
+\#\#\# \*\*目標\*\*：  
+\- 複習核心概念，整理作品集。    
+\- 學習版本控制（Git）與協作工具。
+
+\#\#\# \*\*關鍵任務\*\*：  
+1\. \*\*整理 GitHub 作品集\*\*：  
+   \- 上傳所有練習程式碼與遊戲專案。    
+   \- 撰寫 README 說明功能與技術亮點。  
+2\. \*\*學習 Git\*\*：  
+   \- \[\*\*GitHub Skills Lab\*\*\](https://skills.github.com/)（互動式學習 Git 操作）。    
+   \- 使用 VS Code 內建 Git 工具管理程式碼。  
+3\. \*\*求職準備\*\*：  
+   \- 修改 LinkedIn 與履歷，強調 C\# 與 Unity 技能。    
+   \- 參與 \[\*\*Unity 官方論壇\*\*\](https://forum.unity.com/) 或 Reddit 的 r/csharp 社群交流。
+
+\---
+
+\#\# \*\*每日學習計畫範例\*\*（每週 5-6 天，每日 2-3 小時）：  
+| 時間         | 內容                           |  
+|--------------|--------------------------------|  
+| \*\*0-30 分鐘\*\* | 複習昨日內容，Debug 未解問題   |  
+| \*\*30-90 分鐘\*\*| 學習新章節，手寫程式碼         |  
+| \*\*90-120 分鐘\*\*| 實作小專題或練習題            |  
+| \*\*週末\*\*      | 整合本週知識，開發小型專案     |
+
+\---
+
+\#\# \*\*進階資源推薦\*\*（學有餘力時使用）：  
+\- \*\*演算法與面試\*\*：    
+  \- \[\*\*LeetCode C\# 題庫\*\*\](https://leetcode.com/)（從 Easy 題開始練習）    
+\- \*\*.NET 框架\*\*：    
+  \- \[\*\*ASP.NET Core 教學\*\*\](https://docs.microsoft.com/zh-tw/aspnet/core/)（開發 Web API）    
+\- \*\*遊戲優化\*\*：    
+  \- \[\*\*Unity 性能優化指南\*\*\](https://learn.unity.com/tutorial/performance-optimization)
+
+\---
+
+\#\# \*\*關鍵心法\*\*：  
+1\. \*\*寫 code \> 看教學\*\*：動手做才能發現問題。    
+2\. \*\*善用 Debug 工具\*\*：學會在 VS 中設置中斷點、觀察變數。    
+3\. \*\*加入社群\*\*：遇到問題時，Stack Overflow 和 Discord 頻道能快速解決疑惑。    
+4\. \*\*保持迭代\*\*：先做出「可運行的爛程式」，再逐步優化。
+
+三個月足夠讓你從零基礎到能開發簡單遊戲或應用，關鍵在堅持寫 Code 與解決問題的能力！ 🚀
+
+*以下是 Unity 中 C\# 腳本的 20 行有用程式碼：*  
+1 `transform.position`.——這行程式碼允許您存取和修改場景中游戲物件的位置。  
+2 `Instantiate(gameObject)`.——這行程式碼允許您在執行時間實例化（創建）遊戲物件的新實例。  
+3.——`Destroy(gameObject)`這行程式碼可讓您從場景中銷毀遊戲物件。  
+4 `GetComponent<T>()`.——這行程式碼可讓您存取附加到遊戲物件的特定類型（T）的元件。  
+5 `Input.GetKeyDown(KeyCode.Key)`.——這行程式碼可讓您檢查特定的鍵盤鍵（Key）是否已被按下。  
+6 `Random.Range(min, max)`.——這行程式碼在指定的最小值（min）和最大值（max）之間產生一個隨機數。  
+7.——`Time.deltaTime`這行程式碼傳回自上一幀渲染以來的時間（以秒為單位）。  
+8\. `Mathf.Clamp(value, min, max)`— 這行程式碼將值 (value) 限制在指定的最小值 (min) 和最大值 (max) 之間。  
+9 `Vector3.Lerp(a, b, t)`.——這行程式碼透過因子（t）在兩個 3D 向量（a 和 b）之間執行線性內插法（lerp）。  
+10 `Quaternion.Euler(x, y, z)`.——這行程式碼創造了一個新的四元數，表示繞 x、y 和 z 軸的旋轉。  
+11 `rigidbody.velocity`.——這行程式碼允許您存取和修改附加到遊戲物件上的剛體的速度。  
+12 `collider.isTrigger`.——這行程式碼允許您啟用或停用附加到遊戲物件上的碰撞器的觸發行為。  
+13 `AudioSource.PlayOneShot(clip)`.——這行程式碼使用附加到遊戲物件的 AudioSource 播放一次性音訊片段（clip）。  
+14 `Application.LoadLevel(name)`.——這行程式碼允許您從建置設定中載入新的層級（名稱）。  
+15\.`Screen.width`和`Screen.height`－這些程式碼行允許您存取遊戲螢幕的當前寬度和高度。  
+16 `GUILayout.Label(text)`.——這行程式碼使用 GUILayout 系統顯示文字標籤（文字）。  
+17\. `PlayerPrefs.SetInt(key, value)`— 這行程式碼可讓您使用 PlayerPrefs 儲存中的鍵 (key) 來儲存整數值 (value)。  
+18 `Physics.Raycast(origin, direction)`.——這行程式碼從原點（origin）向指定的方向（direction）進行射線投射，並返回第一個命中。  
+19 `Debug.Log(message)`.——這行程式碼向控制台輸出一則訊息（message）以用於偵錯目的。  
+20 `coroutine = StartCoroutine(method)`.——這行程式碼啟動一個新的協程（方法），並將引用儲存在變數（協程）中以供日後使用。
+### **學習工具與資源**
+
+* **Unity**：遊戲開發引擎（下載地址：[Unity Hub](https://unity.com/)）。  
+* **Visual Studio**：程式設計工具，與 Unity 整合良好（可從 Unity Hub 安裝）。  
+* **學習網站**：  
+  * Unity 官方教程：[Unity Learn](https://learn.unity.com/)  
+  * YouTube 頻道：Brackeys（適合初學者）、Code Monkey。  
+* **免費資源**：  
+  * Unity Asset Store（下載免費資源，如角色模型、音效等）。  
+* **GitHub**：用於版本控制和存儲你的遊戲專案。
+* ## **c\#**
 
 [概述 \- A tour of C\# | Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/csharp/tour-of-csharp/overview) 
 
