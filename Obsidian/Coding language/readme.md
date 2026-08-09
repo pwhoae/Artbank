@@ -1,4 +1,21 @@
-## [**【程式學習之路：Day11】C\#程式設計：基礎語法、控制結構**](https://medium.com/sally-thinking/%E7%A8%8B%E5%BC%8F%E5%AD%B8%E7%BF%92%E4%B9%8B%E8%B7%AF-day11-c-%E7%A8%8B%E5%BC%8F%E8%A8%AD%E8%A8%88-%E5%9F%BA%E7%A4%8E%E8%AA%9E%E6%B3%95-fcda097fe363) **學習資源**
+## **c\#**
+
+[概述 \- A tour of C\# | Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/csharp/tour-of-csharp/overview) 
+
+**5\. 提供 Online 教材**
+
+**C++ 教材：**
+
+* [C++ 官方資源](https://isocpp.org/)  
+* [Learn C++](https://www.learncpp.com/)（適合初學者）  
+* YouTube 上有大量免費的 C++ 教程（如 The Cherno 的教學系列）。
+
+**C\# 教材：**
+
+* [C\# 官方文件](https://learn.microsoft.com/en-us/dotnet/csharp/)  
+* [Unity Learn](https://learn.unity.com/)（Unity \+ C\# 的官方教學資源）  
+* YouTube 上也有很多免費的 C\# 和 Unity 教學（如 Brackeys）。
+* ## [**【程式學習之路：Day11】C\#程式設計：基礎語法、控制結構**](https://medium.com/sally-thinking/%E7%A8%8B%E5%BC%8F%E5%AD%B8%E7%BF%92%E4%B9%8B%E8%B7%AF-day11-c-%E7%A8%8B%E5%BC%8F%E8%A8%AD%E8%A8%88-%E5%9F%BA%E7%A4%8E%E8%AA%9E%E6%B3%95-fcda097fe363) **學習資源**
 
 ### **1\. C\# 學習資源**
 
