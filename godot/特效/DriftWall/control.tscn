@@ -1,0 +1,241 @@
+[gd_scene format=3 uid="uid://w1rcnojknkh5"]
+
+[sub_resource type="GDScript" id="GDScript_1jl2d"]
+script/source = "extends Control
+@onready var drift_wall: DriftWall = $DriftWall
+
+
+func _ready() -> void:
+	var demo_items: Array[Dictionary] = [
+		{\"image\": preload(\"res://icon.png\"), \"title\": \"Peaks\"},
+		{\"image\": preload(\"res://3d學習/近景.png\"), \"title\": \"Pup\"},
+	]
+
+	drift_wall.items = demo_items
+	drift_wall.columns = 5
+	drift_wall.tile_size = Vector2(200, 132)
+	drift_wall.gap = Vector2(18, 18)
+	drift_wall.speed = 42.0
+	drift_wall.tilt = 16.0
+	drift_wall.turn = -14.0
+	drift_wall.parallax = 0.6
+"
+
+[sub_resource type="GDScript" id="GDScript_ip6uy"]
+script/source = "#@tool
+class_name DriftWall
+extends Control
+
+## Properties mirroring the React DriftWall component
+
+@export_category(\"Layout\")
+@export var items: Array[Dictionary] = [] ## Array of Dicts: {\"image\": Texture2D, \"title\": String, \"url\": String}
+@export var columns: int = 5
+@export var tile_size: Vector2 = Vector2(200, 132)
+@export var gap: Vector2 = Vector2(18, 18)
+@export var corner_radius: float = 14.0
+
+@export_category(\"Perspective & Motion\")
+@export var tilt: float = 16.0 ## Rotation X (degrees)
+@export var turn: float = -14.0 ## Rotation Y (degrees)
+@export var speed: float = 42.0 ## Base speed in pixels/sec
+@export var direction_up: bool = true
+@export var variance: float = 0.45
+@export var parallax: float = 0.6
+@export var pause_on_hover: bool = false
+
+@export_category(\"Hover & Style\")
+@export var lift: float = 30.0 ## Pixel lift effect on hover
+@export var dim: float = 0.55
+@export var grayscale: bool = false
+@export var overlay_color: Color = Color(\"#060010\")
+
+# Internal references
+var _plane: Node2D
+var _column_nodes: Array[Node2D] = []
+var _column_offsets: Array[float] = []
+var _column_velocities: Array[float] = []
+var _column_heights: Array[float] = []
+
+var _hovered_column: int = -1
+var _active_tile: Control = null
+var _mouse_target: Vector2 = Vector2.ZERO
+var _mouse_damped: Vector2 = Vector2.ZERO
+
+func _ready() -> void:
+	clip_contents = true
+	_setup_wall()
+
+func _setup_wall() -> void:
+	# Clear old children
+	for child in get_children():
+		child.queue_free()
+
+	_column_nodes.clear()
+	_column_offsets.clear()
+	_column_velocities.clear()
+	_column_heights.clear()
+
+	_plane = Node2D.new()
+	_plane.name = \"Plane\"
+	_plane.position = size / 2.0
+	add_child(_plane)
+
+	if items.is_empty():
+		return
+
+	# Divide items into columns
+	var col_items: Array[Array] = []
+	for c in range(columns):
+		col_items.append([])
+	for i in range(items.size()):
+		col_items[i % columns].append(items[i])
+
+	var dir_sign = 1.0 if direction_up else -1.0
+
+	for c in range(columns):
+		var col_node = Node2D.new()
+		col_node.name = \"Column_%d\" % c
+		_plane.add_child(col_node)
+		_column_nodes.append(col_node)
+
+		# Position column X relative to center
+		var x_pos = (c - (columns - 1) / 2.0) * (tile_size.x + gap.x)
+		col_node.position.x = x_pos
+
+		var tiles_in_col = col_items[c]
+		if tiles_in_col.is_empty():
+			tiles_in_col = [items[0]]
+
+		var copy_height = maxf(tile_size.y + gap.y, tiles_in_col.size() * (tile_size.y + gap.y))
+		_column_heights.append(copy_height)
+
+		# Duplicate tiles vertically to allow seamless looping
+		var copies = max(2, int(ceil((size.y * 1.6) / copy_height)) + 1)
+		for copy_idx in range(copies):
+			for item_idx in range(tiles_in_col.size()):
+				var item_data = tiles_in_col[item_idx]
+				var tile = _create_tile_node(item_data, c)
+				var y_pos = (copy_idx * tiles_in_col.size() + item_idx) * (tile_size.y + gap.y)
+				tile.position = Vector2(-tile_size.x / 2.0, y_pos)
+				col_node.add_child(tile)
+
+		# Calculate initial offset and column velocity
+		_column_offsets.append(fmod(copy_height * (c * 0.37), copy_height))
+		var alt_sign = 1.0 if (c % 2 == 0) else -1.0
+		var pseudo_rand = fmod(c * 0.6180339887 + 0.35, 1.0) * 2.0 - 1.0
+		var factor = 1.0 + variance * pseudo_rand
+		_column_velocities.append(speed * factor * dir_sign * alt_sign)
+
+func _create_tile_node(data: Dictionary, col_index: int) -> Control:
+	var tile = Control.new()
+	tile.custom_minimum_size = tile_size
+	tile.size = tile_size
+	tile.set_meta(\"column\", col_index)
+	tile.set_meta(\"data\", data)
+
+	# Container panel/texture
+	var rect = TextureRect.new()
+	rect.name = \"Image\"
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	rect.size = tile_size
+	if data.has(\"image\") and data[\"image\"] is Texture2D:
+		rect.texture = data[\"image\"]
+
+	# Dark overlay
+	var overlay = ColorRect.new()
+	overlay.name = \"Overlay\"
+	overlay.size = tile_size
+	overlay.color = overlay_color
+	overlay.color.a = 0.42
+
+	tile.add_child(rect)
+	tile.add_child(overlay)
+
+	tile.modulate.a = dim
+	tile.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	tile.mouse_entered.connect(_on_tile_mouse_entered.bind(tile, col_index))
+	tile.mouse_exited.connect(_on_tile_mouse_exited.bind(tile))
+	
+	return tile
+
+func _process(delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+
+	# Handle mouse parallax rotation & skew simulation
+	var center = global_position + size / 2.0
+	var mouse_pos = get_global_mouse_position() - center
+	if get_global_rect().has_point(get_global_mouse_position()):
+		_mouse_target = Vector2(
+			(mouse_pos.x / size.x) * parallax * 0.15,
+			(mouse_pos.y / size.y) * parallax * 0.15
+		)
+	else:
+		_mouse_target = Vector2.ZERO
+
+	_mouse_damped = _mouse_damped.lerp(_mouse_target, 1.0 - exp(-delta / 0.12))
+
+	# Apply 2D perspective simulation to central plane
+	var current_tilt = deg_to_rad(tilt) + _mouse_damped.y
+	var current_turn = deg_to_rad(turn) + _mouse_damped.x
+	_plane.scale = Vector2(cos(current_turn), cos(current_tilt)) * 1.18
+	_plane.skew = _mouse_damped.x * 0.5
+
+	# Update continuous scrolling columns
+	for c in range(_column_nodes.size()):
+		var is_col_hovered = (_hovered_column == c)
+		var is_paused = (pause_on_hover and _hovered_column != -1) or is_col_hovered
+		var target_vel = 0.0 if is_paused else _column_velocities[c]
+
+		var copy_h = _column_heights[c]
+		_column_offsets[c] = fmod(_column_offsets[c] + target_vel * delta, copy_h)
+		if _column_offsets[c] < 0:
+			_column_offsets[c] += copy_h
+
+		_column_nodes[c].position.y = -_column_offsets[c]
+
+func _on_tile_mouse_entered(tile: Control, col_index: int) -> void:
+	_hovered_column = col_index
+	_active_tile = tile
+
+	# Lift effect
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(tile, \"scale\", Vector2(1.1, 1.1), 0.3)
+	tween.tween_property(tile, \"modulate:a\", 1.0, 0.3)
+	tile.z_index = 10
+
+	var overlay = tile.get_node_or_null(\"Overlay\")
+	if overlay:
+		tween.tween_property(overlay, \"color:a\", 0.0, 0.3)
+
+func _on_tile_mouse_exited(tile: Control) -> void:
+	_hovered_column = -1
+	_active_tile = null
+
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(tile, \"scale\", Vector2.ONE, 0.3)
+	tween.tween_property(tile, \"modulate:a\", dim, 0.3)
+	tile.z_index = 0
+
+	var overlay = tile.get_node_or_null(\"Overlay\")
+	if overlay:
+		tween.tween_property(overlay, \"color:a\", 0.42, 0.3)
+"
+
+[node name="Control" type="Control" unique_id=190840169]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_1jl2d")
+
+[node name="DriftWall" type="Control" parent="." unique_id=1236768341]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = SubResource("GDScript_ip6uy")

@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://tb7j3ld73hm6"]
+
+[ext_resource type="Script" uid="uid://crt4k0g13v8gh" path="res://TestArea/DriftWall/DriftWall.gd" id="1_vb33w"]
+
+[node name="DriftWall" type="Control" unique_id=679308453]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vb33w")
+tile_width = 100.0
+tile_height = 100.0
+radius = 10.0
+tilt_angle = -0.7853981633974483
