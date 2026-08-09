@@ -1,5 +1,26 @@
 
 
+
+\#\#\# 資源總結  
+\#\#\#\# Godot 學習資源  
+\- \[Godot 官方文檔\](https://docs.godotengine.org/)  
+\- \[HeartBeast \- Godot 教程\](https://www.youtube.com/@HeartBeast)  
+\- \[KidsCanCode 的 Godot 教程\](https://www.youtube.com/@KidsCanCode)
+
+\#\#\#\# 遊戲設計與數學  
+\- 書籍：《Game Programming Patterns》  
+\- 書籍：《3D Math Primer for Graphics and Game Development》  
+\- 免費課程：\[Khan Academy \- Linear Algebra\](https://www.khanacademy.org/math/linear-algebra)
+
+\#\#\#\# 實踐平台  
+\- \[Itch.io\](https://itch.io/) \- 發布遊戲。  
+\- \[GitHub\](https://github.com/) \- 學習版本控制並托管代碼。
+
+\#\#\# 總結與建議  
+1\. 持續學習與實踐： 每個階段結束後，務必完成一個小遊戲。透過實踐，你會學到更多細節。  
+2\. 記錄學習過程： 建立博客或記錄學習筆記，便於復盤與分享。  
+3\. 參與社群： 加入 Godot 開發者社群，參與討論，獲取靈感。  
+只要按照這個計劃系統學習，堅持 12 個月，你將有能力成為一名合格的遊戲開發者，並掌握 Godot！
 C\#知识点  
 [https://ithelp.ithome.com.tw/m/articles/10213172](https://ithelp.ithome.com.tw/m/articles/10213172) 
 
