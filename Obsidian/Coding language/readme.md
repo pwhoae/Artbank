@@ -1,3 +1,80 @@
+## [**【程式學習之路：Day11】C\#程式設計：基礎語法、控制結構**](https://medium.com/sally-thinking/%E7%A8%8B%E5%BC%8F%E5%AD%B8%E7%BF%92%E4%B9%8B%E8%B7%AF-day11-c-%E7%A8%8B%E5%BC%8F%E8%A8%AD%E8%A8%88-%E5%9F%BA%E7%A4%8E%E8%AA%9E%E6%B3%95-fcda097fe363) **學習資源**
+
+### **1\. C\# 學習資源**
+
+* **官方文檔**：[Microsoft C\# 官方文檔](https://learn.microsoft.com/zh-tw/dotnet/csharp/)  
+* **線上課程**：Coursera: [C\# Programming for Unity Game Development](https://www.coursera.org/specializations/programming-unity-game-development)  
+* **免費資源**：[W3Schools C\# Tutorial](https://www.w3schools.com/cs/)
+
+### **2\. Unity 學習資源**
+
+* **官方資源**：  
+  * [Unity Learn](https://learn.unity.com/)（免費課程與專案）  
+  * [Unity Manual](https://docs.unity3d.com/Manual/index.html)（官方文檔）  
+* **線上課程**：Coursera: [Game Design and Development with Unity 2020](https://www.coursera.org/specializations/game-development)  
+* **免費資源**：  
+  * YouTube: [Brackeys](https://www.youtube.com/c/Brackeys)（高品質 Unity 教學）  
+  * YouTube: [Code Monkey](https://www.youtube.com/c/CodeMonkeyUnity)（實用技巧與專案教學）
+
+**學習路線**
+
+### **第 1-4 週：C\# 基礎**
+
+* **目標**：掌握 C\# 基礎語法與程式設計概念。  
+* **學習內容**：  
+  * 變數、資料型別、運算子  
+  * 條件語句（if/else、switch）  
+  * 迴圈（for、while）  
+  * 函數與參數  
+  * 類別與物件導向基礎  
+* **練習**：  
+  * 完成 Console 應用程式（如計算器、猜數字遊戲）。
+
+### **第 5-8 週：Unity 基礎**
+
+* **目標**：熟悉 Unity 介面與基本功能。  
+* **學習內容**：  
+  * Unity 介面與場景管理  
+  * 物體控制（Transform、Rigidbody）  
+  * 物理引擎與碰撞檢測  
+  * 簡單動畫與粒子效果  
+* **練習**：  
+  * 完成一個簡單的 2D 遊戲（如平台跳躍遊戲或射擊遊戲）。
+
+### **第 9-12 週：進階 Unity 功能**
+
+* **目標**：掌握 Unity 的進階功能與跨平台開發。  
+* **學習內容**：  
+  * UI 設計（Canvas、按鈕、文字）  
+  * 音效與音樂整合  
+  * 動畫系統（Animator、Animation）  
+  * 跨平台發佈（PC、手機）  
+* **練習**：  
+  * 完成一個小型專案（如 2D 橫向卷軸遊戲或 3D 迷宮遊戲）。
+
+### **第 13 週起：專案與求職準備**
+
+* **目標**：完成作品集並準備求職。  
+* **學習內容**：  
+  * 遊戲性能優化與除錯  
+  * 版本控制（Git/GitHub）  
+  * 遊戲設計與平衡調整  
+* **練習**：  
+  * 製作一個完整的遊戲作品，作為作品集。  
+  * 投遞遊戲開發相關職位（如 Unity 開發工程師、遊戲程式設計師）。
+
+---
+
+## **學習資源與路線對應表**
+
+| 階段 | 學習內容 | 學習資源 |
+| ----- | ----- | ----- |
+| **第 1-4 週** | C\# 基礎 | [Microsoft C\# 官方文檔](https://learn.microsoft.com/zh-tw/dotnet/csharp/) |
+| **第 5-8 週** | Unity 基礎 | [Unity Learn](https://learn.unity.com/) |
+| **第 9-12 週** | 進階 Unity 功能 | [Brackeys YouTube](https://www.youtube.com/c/Brackeys) |
+| **第 13 週起** | 專案與求職準備 | [Unity Manual](https://docs.unity3d.com/Manual/index.html) |
+
+---
 最好的C++学习教程(上篇)——The Cherno CppSeries: https://zhuanlan.zhihu.com/p/553387258 <br>
 ###
 18. Class（類別）
