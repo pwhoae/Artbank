@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple UI Motion Lab - 經典動效與物理過渡實驗室</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Apple-style icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #000000;
+            color: #f5f5f7;
+            overflow-x: hidden;
+        }
+
+        /* Custom Blur Glassmorphism */
+        .apple-glass {
+            background: rgba(30, 30, 32, 0.7);
+            backdrop-filter: blur(25px) saturate(190%);
+            -webkit-backdrop-filter: blur(25px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .apple-glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Apple Cubic Bezier Easing */
+        .ease-apple-spring {
+            transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Jiggle Keyframe Animation */
+        @keyframes jiggleLeft {
+            0%, 100% { transform: rotate(-2.2deg) scale(0.98); }
+            50% { transform: rotate(1.8deg) scale(1.01); }
+        }
+        @keyframes jiggleRight {
+            0%, 100% { transform: rotate(2deg) scale(1.01); }
+            50% { transform: rotate(-1.9deg) scale(0.98); }
+        }
+
+        .animate-jiggle-1 { animation: jiggleLeft 0.28s ease-in-out infinite alternate; }
+        .animate-jiggle-2 { animation: jiggleRight 0.26s ease-in-out infinite alternate; }
+
+        /* Siri Glow Shader Effect Simulation */
+        @keyframes siriGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .siri-border-glow {
+            background: linear-gradient(90deg, #ff2d55, #a033ff, #007aff, #34c759, #ff9500, #ff2d55);
+            background-size: 300% 300%;
+            animation: siriGlow 4s ease infinite;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 apple-glass px-6 py-3.5 flex items-center justify-between border-b border-white/10">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="fa-brands fa-apple text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-semibold text-base tracking-tight text-white flex items-center gap-2">
+                    Apple UI Motion Lab
+                    <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">iOS 17+ / visionOS</span>
+                </h1>
+                <p class="text-xs text-zinc-400">經典動效、物理彈簧與微互動可視化調校工具</p>
+            </div>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="flex items-center gap-3">
+            <button id="reset-params-btn" class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 transition-all border border-white/10 flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left text-zinc-400"></i> 重設參數
+            </button>
+            <button id="copy-code-btn" class="px-4 py-1.5 rounded-full text-xs font-medium bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-code"></i> 複製 CSS 彈簧參數
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Navigation (Effect Selector) -->
+        <aside class="w-80 border-r border-white/10 apple-glass flex flex-col h-full shrink-0">
+            <!-- Search & Filter -->
+            <div class="p-4 border-b border-white/10 space-y-3">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-zinc-400 text-xs"></i>
+                    <input type="text" id="effect-search" placeholder="搜尋動效名稱 (如: 動態島, 抖動)..." 
+                        class="w-full bg-zinc-900/80 text-xs text-white pl-9 pr-3 py-2 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500 transition-all">
+                </div>
+                <!-- Category Filter Pills -->
+                <div class="flex gap-1 overflow-x-auto pb-1 text-[11px]" id="category-filters">
+                    <button data-cat="all" class="cat-pill px-2.5 py-1 rounded-full bg-blue-600 text-white whitespace-nowrap font-medium">全部</button>
+                    <button data-cat="system" class="cat-pill px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 whitespace-nowrap">系統轉場</button>
+                    <button data-cat="spatial" class="cat-pill px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 whitespace-nowrap">空間與感官</button>
+                    <button data-cat="micro" class="cat-pill px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 whitespace-nowrap">微互動</button>
+                </div>
+            </div>
+
+            <!-- Effect List -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-1.5" id="effect-list">
+                <!-- Dynamically Rendered via JS -->
+            </div>
+        </aside>
+
+        <!-- Center Interactive Showcase Stage -->
+        <main class="flex-1 bg-black/90 flex flex-col overflow-y-auto p-6 relative">
+            
+            <!-- Dynamic Toast Notification -->
+            <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-10 opacity-0 pointer-events-none transition-all duration-300 apple-glass px-4 py-2.5 rounded-2xl flex items-center gap-2 shadow-2xl border border-blue-500/30">
+                <i class="fa-solid fa-circle-check text-green-400 text-sm"></i>
+                <span id="toast-msg" class="text-xs font-medium text-white">代碼已複製到剪貼簿！</span>
+            </div>
+
+            <!-- Effect Header Info -->
+            <div class="flex items-start justify-between mb-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="current-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">系統層級與過渡</span>
+                        <span id="current-id" class="text-xs text-zinc-500 font-mono">ID: dynamic-island</span>
+                    </div>
+                    <h2 id="current-title" class="text-2xl font-bold text-white tracking-tight">動態島流體形變 (Dynamic Island Morphing)</h2>
+                    <p id="current-desc" class="text-xs text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                        極具彈性與黏滯感的幾何平滑變形，包含合併、拉伸與狀態過渡。iOS 經典高剛性彈簧物理體驗。
+                    </p>
+                </div>
+
+                <!-- View Mode Switcher -->
+                <div class="bg-zinc-900/90 p-1 rounded-xl border border-white/10 flex gap-1">
+                    <button id="view-single-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white shadow">單一聚焦展示</button>
+                    <button id="view-grid-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white transition">矩陣多重總覽</button>
+                </div>
+            </div>
+
+            <!-- Single Showcase Stage Area -->
+            <div id="single-view-container" class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-[500px]">
+                
+                <!-- Left 8 Columns: Live Interactive Canvas -->
+                <div class="lg:col-span-8 apple-glass rounded-3xl p-8 flex flex-col items-center justify-center relative min-h-[420px] overflow-hidden border border-white/10 shadow-2xl group">
+                    <!-- Subtle Mesh Background Gradient -->
+                    <div class="absolute inset-0 bg-radial from-blue-900/20 via-transparent to-transparent pointer-events-none"></div>
+                    <div class="absolute top-4 left-4 text-[11px] text-zinc-500 font-mono flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        即時物理互動畫布 (點擊/滑動/懸停)
+                    </div>
+
+                    <!-- Dynamic Render Container for Selected Demo -->
+                    <div id="interactive-demo-stage" class="w-full flex items-center justify-center py-10 z-10">
+                        <!-- Demo injected dynamically -->
+                    </div>
+
+                    <!-- Control Instruction Badge -->
+                    <div class="absolute bottom-4 text-center">
+                        <span id="demo-instruction" class="text-[11px] px-3 py-1 rounded-full bg-zinc-800/80 text-zinc-400 border border-white/5 shadow-sm">
+                            💡 點擊上方的動態島元件切換不同狀態
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Right 4 Columns: Physics Slider Tweaker & Code View -->
+                <div class="lg:col-span-4 flex flex-col gap-6">
+                    
+                    <!-- Physics Parameter Controls -->
+                    <div class="apple-glass rounded-3xl p-5 border border-white/10 space-y-4">
+                        <h3 class="text-xs font-semibold text-white tracking-wide uppercase flex items-center justify-between">
+                            <span>物理與時間參數 (Physics Controls)</span>
+                            <i class="fa-solid fa-sliders text-blue-400"></i>
+                        </h3>
+
+                        <!-- Preset Dropdown -->
+                        <div>
+                            <label class="text-[11px] text-zinc-400 mb-1.5 block">Apple 彈簧預設值 (Spring Presets)</label>
+                            <select id="preset-select" class="w-full bg-zinc-900 text-xs text-white px-3 py-2 rounded-xl border border-white/10 focus:outline-none focus:border-blue-500">
+                                <option value="apple-default">Apple Standard (高剛性低阻尼)</option>
+                                <option value="bouncy">Bouncy Expressive (強彈性)</option>
+                                <option value="gentle">Gentle Dynamic (柔和流體)</option>
+                                <option value="snappy">Snappy Response (快速響應)</option>
+                            </select>
+                        </div>
+
+                        <!-- Duration / Response Slider -->
+                        <div>
+                            <div class="flex justify-between text-[11px] text-zinc-400 mb-1">
+                                <span>動效持續時間 (Duration)</span>
+                                <span id="val-duration" class="font-mono text-blue-400">0.45s</span>
+                            </div>
+                            <input type="range" id="slider-duration" min="0.1" max="1.5" step="0.05" value="0.45" class="w-full accent-blue-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- Curve Stiffness / Elasticity -->
+                        <div>
+                            <div class="flex justify-between text-[11px] text-zinc-400 mb-1">
+                                <span>剛性 / 阻尼比 (Stiffness / Damping)</span>
+                                <span id="val-damping" class="font-mono text-blue-400">0.82</span>
+                            </div>
+                            <input type="range" id="slider-damping" min="0.2" max="1.5" step="0.02" value="0.82" class="w-full accent-blue-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+
+                        <!-- Blur Intensity Slider -->
+                        <div>
+                            <div class="flex justify-between text-[11px] text-zinc-400 mb-1">
+                                <span>背景高斯模糊強度 (Gaussian Blur)</span>
+                                <span id="val-blur" class="font-mono text-blue-400">20px</span>
+                            </div>
+                            <input type="range" id="slider-blur" min="0" max="40" step="1" value="20" class="w-full accent-blue-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Generated Code Preview Box -->
+                    <div class="apple-glass rounded-3xl p-5 border border-white/10 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xs font-semibold text-white tracking-wide uppercase">實現導向代碼 (CSS / Web Animation)</h3>
+                                <div class="flex gap-2">
+                                    <button class="code-tab font-mono text-[10px] text-blue-400 border-b border-blue-400 pb-0.5" data-type="css">CSS</button>
+                                    <button class="code-tab font-mono text-[10px] text-zinc-500 hover:text-white" data-type="framer">Framer Motion</button>
+                                </div>
+                            </div>
+                            <pre class="bg-zinc-950 p-3.5 rounded-2xl border border-white/5 font-mono text-[11px] text-blue-300/90 overflow-x-auto leading-relaxed select-all" id="code-snippet-box">
+transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+            backdrop-filter 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+            </pre>
+                        </div>
+                        <p class="text-[10px] text-zinc-500 mt-3 italic">
+                            * 提示：複製此彈簧貝茲曲線即可完美還原 iOS 原生觸感。
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Multi Grid View Container (Hidden by default) -->
+            <div id="grid-view-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 flex-1">
+                <!-- Dynamically Injected Grid Cards -->
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Core Motion Catalog Dataset
+        const MOTION_EFFECTS = [
+            {
+                id: 'dynamic-island',
+                title: '動態島流體形變 (Dynamic Island Morphing)',
+                category: 'system',
+                categoryLabel: '系統層級與過渡',
+                desc: '黑色的幾何圖案以極高黏滯感與彈性進行形變（包含分化、合併、拉伸）。背景與邊緣保持極高質感的流體拉伸。',
+                instruction: '點擊動態島可在「極簡模式」、「音樂播控」、「電話通話」、「語音辨識」間流體切換',
+                badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+            },
+            {
+                id: 'context-menu',
+                title: '長按選單焦點放大與高斯模糊 (Context Menu Blur)',
+                category: 'system',
+                categoryLabel: '系統層級與過渡',
+                desc: '長按目標元件時，元件突出放大並伴隨震動，背景瞬間套用強烈的動態高斯模糊，並彈出快捷選單。',
+                instruction: '長按（或點擊並保持）卡片以觸發 3D 浮起高斯模糊與選單過渡',
+                badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+            },
+            {
+                id: 'vision-hover',
+                title: 'VisionOS 空間懸停光暈與視差 (Spatial Hover Light)',
+                category: 'spatial',
+                categoryLabel: '空間與視覺質感',
+                desc: '當視線或光標懸停在半透明玻璃卡片上時，卡片表面有跟隨指針的動態反射光暈，卡片向使用者微幅抬升。',
+                instruction: '在下方玻璃卡片上移動滑鼠/手指，觀察光束跟隨與 3D 空間傾斜',
+                badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+            },
+            {
+                id: 'siri-glow',
+                title: 'Siri 全螢幕邊框流體光束 (Siri Glow Border Wave)',
+                category: 'spatial',
+                categoryLabel: '空間與視覺質感',
+                desc: '喚醒 Siri 時，整個螢幕四周邊框湧現出多色融合的動態流體光束，光束隨聲音音量波形實時產生頻率與亮度的起伏。',
+                instruction: '點擊語音按鈕觸發 Siri 邊框炫光流體頻譜動效',
+                badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+            },
+            {
+                id: 'control-slider',
+                title: '控制中心滑塊與拉伸變形 (Control Center Slider)',
+                category: 'micro',
+                categoryLabel: '微互動與組件變形',
+                desc: '拖動亮度或音量條時，滑塊隨拉伸產生微微的流體變形；達到頂部或底部時會產生「撞擊擠壓感」。',
+                instruction: '上下拖動亮度膠囊滑塊，體驗極限邊界的橡皮筋擠壓與圖示過渡',
+                badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            },
+            {
+                id: 'action-hud',
+                title: 'Action Button 動作按鈕頂部狀態 HUD',
+                category: 'micro',
+                categoryLabel: '微互動與組件變形',
+                desc: '長按動作按鈕時，螢幕頂部 HUD 隨按壓時間逐漸充填色彩，達到臨界點時產生強烈物理震動並展開。',
+                instruction: '長按右側「動作按鈕」，體驗非線性壓力進度條與頂部 HUD 的彈性擴充',
+                badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            },
+            {
+                id: 'jiggle-mode',
+                title: '主畫面編輯 Mode「抖動」效果 (Jiggle Mode)',
+                category: 'micro',
+                categoryLabel: '微互動與組件變形',
+                desc: '長按進入編輯主畫面時，所有 App 圖示以微小角度變化與相位偏差進行隨機抖動，營造鬆散可編輯感。',
+                instruction: '點擊開關切換 iOS 主畫面 Shake/Jiggle 編輯模式',
+                badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            },
+            {
+                id: 'typography-morph',
+                title: '數字/文字滾動流體變形 (Morphing Typography)',
+                category: 'micro',
+                categoryLabel: '微互動與組件變形',
+                desc: '當時間或數值改變時，數字以垂直滾動與文字筆劃流暢過渡至新數字，展現可變字型（Variable Font）彈性。',
+                instruction: '點擊 +/- 按鈕調整數值，觀察數字平滑滾動與權重動畫',
+                badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            }
+        ];
+
+        // State variables
+        let currentEffectIndex = 0;
+        let activeCategory = 'all';
+        let currentDuration = 0.45;
+        let currentDamping = 0.82;
+        let currentBlur = 20;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSidebarList();
+            loadEffectDemo(0);
+            setupEventListeners();
+        });
+
+        // Render Sidebar List Items
+        function renderSidebarList() {
+            const listEl = document.getElementById('effect-list');
+            listEl.innerHTML = '';
+
+            MOTION_EFFECTS.forEach((item, index) => {
+                if (activeCategory !== 'all' && item.category !== activeCategory) return;
+
+                const isSelected = index === currentEffectIndex;
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-2xl cursor-pointer transition-all border ${
+                    isSelected 
+                        ? 'bg-blue-600/20 border-blue-500/50 text-white shadow-lg shadow-blue-500/10' 
+                        : 'bg-white/5 hover:bg-white/10 border-white/5 text-zinc-300'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${item.badgeColor}">${item.categoryLabel}</span>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-zinc-500"></i>
+                    </div>
+                    <h4 class="text-xs font-medium text-white line-clamp-1">${item.title}</h4>
+                `;
+
+                card.addEventListener('click', () => {
+                    currentEffectIndex = index;
+                    renderSidebarList();
+                    loadEffectDemo(index);
+                });
+
+                listEl.appendChild(card);
+            });
+        }
+
+        // Load specific Effect Showcase into Main Stage
+        function loadEffectDemo(index) {
+            const effect = MOTION_EFFECTS[index];
+            if (!effect) return;
+
+            document.getElementById('current-title').textContent = effect.title;
+            document.getElementById('current-desc').textContent = effect.desc;
+            document.getElementById('current-badge').textContent = effect.categoryLabel;
+            document.getElementById('current-id').textContent = `ID: ${effect.id}`;
+            document.getElementById('demo-instruction').textContent = `💡 ${effect.instruction}`;
+
+            const stage = document.getElementById('interactive-demo-stage');
+            stage.innerHTML = '';
+
+            // Render corresponding dynamic HTML structure
+            switch (effect.id) {
+                case 'dynamic-island':
+                    stage.innerHTML = buildDynamicIslandHTML();
+                    initDynamicIslandLogic();
+                    break;
+                case 'context-menu':
+                    stage.innerHTML = buildContextMenuHTML();
+                    initContextMenuLogic();
+                    break;
+                case 'vision-hover':
+                    stage.innerHTML = buildVisionHoverHTML();
+                    initVisionHoverLogic();
+                    break;
+                case 'siri-glow':
+                    stage.innerHTML = buildSiriGlowHTML();
+                    initSiriGlowLogic();
+                    break;
+                case 'control-slider':
+                    stage.innerHTML = buildControlSliderHTML();
+                    initControlSliderLogic();
+                    break;
+                case 'action-hud':
+                    stage.innerHTML = buildActionHudHTML();
+                    initActionHudLogic();
+                    break;
+                case 'jiggle-mode':
+                    stage.innerHTML = buildJiggleModeHTML();
+                    initJiggleModeLogic();
+                    break;
+                case 'typography-morph':
+                    stage.innerHTML = buildTypographyMorphHTML();
+                    initTypographyMorphLogic();
+                    break;
+                default:
+                    stage.innerHTML = `<p class="text-zinc-500 text-xs">展示模組加載中...</p>`;
+            }
+
+            updateCodeSnippet();
+        }
+
+        // 1. Dynamic Island HTML
+        function buildDynamicIslandHTML() {
+            return `
+                <div class="flex flex-col items-center gap-8">
+                    <!-- Dynamic Island Capsule -->
+                    <div id="island-pill" class="bg-black border border-white/20 text-white rounded-[32px] px-4 py-2.5 flex items-center justify-between cursor-pointer transition-all shadow-2xl overflow-hidden"
+                         style="width: 200px; height: 38px; transition: all ${currentDuration}s cubic-bezier(0.25, 1, 0.5, 1);">
+                        
+                        <!-- Compact State Content -->
+                        <div id="island-compact" class="flex items-center justify-between w-full text-xs">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
+                                <span class="text-[11px] font-medium text-zinc-300">通話中</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-blue-400">
+                                <span class="text-[10px] font-mono">02:45</span>
+                                <i class="fa-solid fa-waveform text-[10px]"></i>
+                            </div>
+                        </div>
+
+                        <!-- Expanded State Content (Hidden by default) -->
+                        <div id="island-expanded" class="hidden flex-col w-full gap-3 p-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center">
+                                        <i class="fa-solid fa-music text-white text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="text-xs font-semibold text-white">Apple Music</h5>
+                                        <p class="text-[10px] text-zinc-400">Starboy - The Weeknd</p>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-heart text-pink-500 text-xs"></i>
+                            </div>
+                            <!-- Progress Bar -->
+                            <div class="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+                                <div class="bg-white h-full w-2/3 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- State Control Buttons -->
+                    <div class="flex items-center gap-2 bg-zinc-900/80 p-1.5 rounded-2xl border border-white/10">
+                        <button class="island-state-btn px-3 py-1 rounded-xl text-xs font-medium bg-blue-600 text-white" data-state="compact">極簡膠囊</button>
+                        <button class="island-state-btn px-3 py-1 rounded-xl text-xs font-medium text-zinc-400 hover:text-white" data-state="expanded">展開音樂</button>
+                        <button class="island-state-btn px-3 py-1 rounded-xl text-xs font-medium text-zinc-400 hover:text-white" data-state="call">長條通話</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initDynamicIslandLogic() {
+            const pill = document.getElementById('island-pill');
+            const compact = document.getElementById('island-compact');
+            const expanded = document.getElementById('island-expanded');
+            const btns = document.querySelectorAll('.island-state-btn');
+
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => {
+                        b.classList.remove('bg-blue-600', 'text-white');
+                        b.classList.add('text-zinc-400');
+                    });
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('text-zinc-400');
+
+                    const state = btn.dataset.state;
+                    if (state === 'compact') {
+                        pill.style.width = '200px';
+                        pill.style.height = '38px';
+                        pill.style.borderRadius = '32px';
+                        compact.classList.remove('hidden');
+                        expanded.classList.add('hidden');
+                        expanded.classList.remove('flex');
+                    } else if (state === 'expanded') {
+                        pill.style.width = '320px';
+                        pill.style.height = '110px';
+                        pill.style.borderRadius = '38px';
+                        compact.classList.add('hidden');
+                        expanded.classList.remove('hidden');
+                        expanded.classList.add('flex');
+                    } else if (state === 'call') {
+                        pill.style.width = '260px';
+                        pill.style.height = '42px';
+                        pill.style.borderRadius = '32px';
+                        compact.classList.remove('hidden');
+                        expanded.classList.add('hidden');
+                        expanded.classList.remove('flex');
+                    }
+                });
+            });
+        }
+
+        // 2. VisionOS Spatial Hover
+        function buildVisionHoverHTML() {
+            return `
+                <div id="spatial-card-container" class="perspective-1000">
+                    <div id="spatial-card" class="w-80 h-52 apple-glass-card rounded-3xl p-6 flex flex-col justify-between shadow-2xl relative overflow-hidden cursor-pointer transition-transform duration-200 ease-out">
+                        <!-- Dynamic Following Refraction Light Overlay -->
+                        <div id="spatial-light" class="absolute inset-0 bg-radial from-white/25 via-transparent to-transparent opacity-0 pointer-events-none transition-opacity duration-300"></div>
+                        
+                        <div class="flex items-center justify-between z-10">
+                            <i class="fa-brands fa-apple text-2xl text-white"></i>
+                            <span class="text-[10px] font-mono tracking-wider px-2.5 py-1 rounded-full bg-white/10 text-zinc-300 border border-white/10">visionOS UI</span>
+                        </div>
+
+                        <div class="z-10">
+                            <h4 class="text-base font-semibold text-white tracking-tight">空間計算懸停光暈</h4>
+                            <p class="text-xs text-zinc-400 mt-1">三維空間傾斜與動態即時光源跟蹤</p>
+                        </div>
+
+                        <div class="flex items-center justify-between z-10 pt-2 border-t border-white/10">
+                            <span class="text-[11px] text-blue-400 font-medium">視野焦平面：Z-Axis 24pt</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs text-zinc-500"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initVisionHoverLogic() {
+            const card = document.getElementById('spatial-card');
+            const light = document.getElementById('spatial-light');
+
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -12;
+                const rotateY = ((x - centerX) / centerX) * 12;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(15px) scale(1.03)`;
+                
+                light.style.opacity = '1';
+                light.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.25) 0%, transparent 60%)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)`;
+                light.style.opacity = '0';
+            });
+        }
+
+        // 3. Context Menu HTML
+        function buildContextMenuHTML() {
+            return `
+                <div class="relative flex items-center justify-center w-full min-h-[300px]">
+                    <!-- Backdrop Blur Overlay -->
+                    <div id="ctx-backdrop" class="absolute inset-0 bg-black/60 opacity-0 pointer-events-none transition-all duration-300 rounded-2xl" style="backdrop-filter: blur(${currentBlur}px);"></div>
+
+                    <!-- Target Card -->
+                    <div id="ctx-target-card" class="w-64 bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl cursor-pointer relative z-20 transition-all" style="transition: transform ${currentDuration}s cubic-bezier(0.25,1,0.5,1);">
+                        <div class="w-full h-32 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 mb-3 flex items-center justify-center">
+                            <i class="fa-solid fa-image text-3xl text-white/80"></i>
+                        </div>
+                        <h5 class="text-xs font-semibold text-white">Apple Park 照片卡片</h5>
+                        <p class="text-[10px] text-zinc-400 mt-0.5">按住以展開 Haptic 焦點選單</p>
+                    </div>
+
+                    <!-- Popover Context Menu -->
+                    <div id="ctx-menu" class="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-12 w-56 apple-glass rounded-2xl p-1.5 shadow-2xl z-30 opacity-0 pointer-events-none scale-90 transition-all" style="transition: all ${currentDuration}s cubic-bezier(0.25,1,0.5,1);">
+                        <button class="w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10 rounded-xl flex items-center justify-between">
+                            <span>分享照片</span>
+                            <i class="fa-solid fa-share text-zinc-400"></i>
+                        </button>
+                        <button class="w-full px-3 py-2 text-left text-xs text-white hover:bg-white/10 rounded-xl flex items-center justify-between">
+                            <span>加入最愛</span>
+                            <i class="fa-solid fa-heart text-zinc-400"></i>
+                        </button>
+                        <div class="h-px bg-white/10 my-1"></div>
+                        <button class="w-full px-3 py-2 text-left text-xs text-red-400 hover:bg-red-500/20 rounded-xl flex items-center justify-between">
+                            <span>刪除項目</span>
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initContextMenuLogic() {
+            const card = document.getElementById('ctx-target-card');
+            const backdrop = document.getElementById('ctx-backdrop');
+            const menu = document.getElementById('ctx-menu');
+            let isOpen = false;
+
+            function toggleMenu() {
+                isOpen = !isOpen;
+                if (isOpen) {
+                    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+                    backdrop.classList.add('opacity-100');
+                    card.style.transform = 'scale(1.06) translateY(-10px)';
+                    menu.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+                    menu.classList.add('opacity-100', 'scale-100');
+                } else {
+                    backdrop.classList.add('opacity-0', 'pointer-events-none');
+                    backdrop.classList.remove('opacity-100');
+                    card.style.transform = 'scale(1) translateY(0px)';
+                    menu.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
+                    menu.classList.remove('opacity-100', 'scale-100');
+                }
+            }
+
+            card.addEventListener('click', toggleMenu);
+            backdrop.addEventListener('click', toggleMenu);
+        }
+
+        // 4. Siri Glow HTML
+        function buildSiriGlowHTML() {
+            return `
+                <div class="relative w-full max-w-md h-72 rounded-3xl bg-zinc-950 p-1 flex flex-col items-center justify-center overflow-hidden border border-white/10 shadow-2xl">
+                    <!-- Siri Glow Edge Frame -->
+                    <div id="siri-frame" class="absolute inset-0 p-[3px] rounded-3xl siri-border-glow opacity-20 transition-opacity duration-500">
+                        <div class="w-full h-full bg-zinc-950 rounded-[22px]"></div>
+                    </div>
+
+                    <!-- Inner Trigger Button -->
+                    <div class="z-10 flex flex-col items-center gap-4">
+                        <button id="siri-trigger-btn" class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-xl shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                        <p id="siri-status" class="text-xs text-zinc-400 font-medium">點擊喚醒 Siri 流體光束</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initSiriGlowLogic() {
+            const btn = document.getElementById('siri-trigger-btn');
+            const frame = document.getElementById('siri-frame');
+            const status = document.getElementById('siri-status');
+            let active = false;
+
+            btn.addEventListener('click', () => {
+                active = !active;
+                if (active) {
+                    frame.classList.remove('opacity-20');
+                    frame.classList.add('opacity-100');
+                    status.textContent = "Siri 聆聽中... (請說話)";
+                    status.classList.add('text-purple-400');
+                } else {
+                    frame.classList.add('opacity-20');
+                    frame.classList.remove('opacity-100');
+                    status.textContent = "點擊喚醒 Siri 流體光束";
+                    status.classList.remove('text-purple-400');
+                }
+            });
+        }
+
+        // 5. Control Center Slider HTML
+        function buildControlSliderHTML() {
+            return `
+                <div class="flex flex-col items-center gap-4">
+                    <!-- Vertical Capsule Slider -->
+                    <div class="w-20 h-64 bg-zinc-900 rounded-[32px] p-1.5 relative border border-white/10 flex flex-col justify-end overflow-hidden shadow-2xl">
+                        <div id="slider-fill" class="w-full bg-white rounded-[26px] transition-all relative flex items-center justify-center" style="height: 60%;">
+                            <i class="fa-solid fa-sun text-zinc-900 text-lg absolute bottom-4"></i>
+                        </div>
+                    </div>
+
+                    <!-- Value Percent -->
+                    <span id="slider-percent" class="text-xs font-mono text-zinc-400">60% 亮度</span>
+                </div>
+            `;
+        }
+
+        function initControlSliderLogic() {
+            const fill = document.getElementById('slider-fill');
+            const percentText = document.getElementById('slider-percent');
+            let isDragging = false;
+
+            const updateHeight = (e) => {
+                const container = fill.parentElement;
+                const rect = container.getBoundingClientRect();
+                let clickY = e.clientY - rect.top;
+                let val = 100 - (clickY / rect.height) * 100;
+                val = Math.max(5, Math.min(100, val)); // Clamp with elastic limits
+
+                fill.style.height = `${val}%`;
+                percentText.textContent = `${Math.round(val)}% 亮度`;
+            };
+
+            const container = fill.parentElement;
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                updateHeight(e);
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) updateHeight(e);
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        // 6. Action Button HUD HTML
+        function buildActionHudHTML() {
+            return `
+                <div class="flex flex-col items-center gap-8 w-full max-w-sm">
+                    <!-- Top Dynamic HUD Header -->
+                    <div id="action-hud-pill" class="bg-black text-white px-4 py-2 rounded-full border border-white/10 flex items-center gap-2.5 transition-all duration-300 shadow-2xl scale-95 opacity-50">
+                        <i id="action-icon" class="fa-solid fa-bell-slash text-yellow-500 text-xs"></i>
+                        <span id="action-text" class="text-xs font-medium">靜音模式：開啟</span>
+                    </div>
+
+                    <!-- Simulated iPhone Side Action Button -->
+                    <div class="flex items-center gap-4 bg-zinc-900 p-6 rounded-3xl border border-white/10 w-full justify-between">
+                        <div>
+                            <h5 class="text-xs font-semibold text-white">iPhone 動作按鈕</h5>
+                            <p class="text-[10px] text-zinc-400">長按以觸發反饋與 HUD</p>
+                        </div>
+
+                        <!-- Physical Action Button Trigger -->
+                        <button id="physical-btn" class="w-12 h-16 rounded-2xl bg-zinc-800 border border-white/20 flex flex-col items-center justify-between p-2 active:scale-95 transition-all select-none">
+                            <span class="w-3 h-1 bg-yellow-500 rounded-full"></span>
+                            <div id="btn-progress" class="w-full bg-yellow-500/30 rounded-lg transition-all" style="height: 0%;"></div>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initActionHudLogic() {
+            const btn = document.getElementById('physical-btn');
+            const progress = document.getElementById('btn-progress');
+            const hud = document.getElementById('action-hud-pill');
+            const icon = document.getElementById('action-icon');
+            const text = document.getElementById('action-text');
+
+            let timer = null;
+            let currentProg = 0;
+            let isMuted = true;
+
+            btn.addEventListener('mousedown', () => {
+                currentProg = 0;
+                timer = setInterval(() => {
+                    currentProg += 10;
+                    progress.style.height = `${currentProg}%`;
+                    if (currentProg >= 100) {
+                        clearInterval(timer);
+                        isMuted = !isMuted;
+                        // Trigger HUD Expansion
+                        hud.classList.remove('scale-95', 'opacity-50');
+                        hud.classList.add('scale-105', 'opacity-100', 'border-yellow-500/50');
+                        
+                        if (isMuted) {
+                            icon.className = "fa-solid fa-bell-slash text-yellow-500 text-xs";
+                            text.textContent = "靜音模式：開啟";
+                        } else {
+                            icon.className = "fa-solid fa-bell text-blue-400 text-xs";
+                            text.textContent = "靜音模式：關閉";
+                        }
+
+                        setTimeout(() => {
+                            hud.classList.remove('scale-105', 'border-yellow-500/50');
+                            hud.classList.add('scale-95', 'opacity-50');
+                        }, 1200);
+                    }
+                }, 40);
+            });
+
+            const cancel = () => {
+                if (timer) clearInterval(timer);
+                progress.style.height = '0%';
+            };
+
+            btn.addEventListener('mouseup', cancel);
+            btn.addEventListener('mouseleave', cancel);
+        }
+
+        // 7. Jiggle Mode HTML
+        function buildJiggleModeHTML() {
+            return `
+                <div class="flex flex-col items-center gap-6">
+                    <!-- Apps Grid -->
+                    <div class="grid grid-cols-3 gap-5" id="app-grid">
+                        <div class="app-icon w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg relative">
+                            <i class="fa-solid fa-compass"></i>
+                            <span class="remove-badge hidden absolute -top-1.5 -left-1.5 w-5 h-5 bg-zinc-700 text-white text-[10px] rounded-full flex items-center justify-center font-bold">−</span>
+                        </div>
+                        <div class="app-icon w-16 h-16 rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-600 flex items-center justify-center text-white text-2xl shadow-lg relative">
+                            <i class="fa-solid fa-message"></i>
+                            <span class="remove-badge hidden absolute -top-1.5 -left-1.5 w-5 h-5 bg-zinc-700 text-white text-[10px] rounded-full flex items-center justify-center font-bold">−</span>
+                        </div>
+                        <div class="app-icon w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-500 to-red-600 flex items-center justify-center text-white text-2xl shadow-lg relative">
+                            <i class="fa-solid fa-camera"></i>
+                            <span class="remove-badge hidden absolute -top-1.5 -left-1.5 w-5 h-5 bg-zinc-700 text-white text-[10px] rounded-full flex items-center justify-center font-bold">−</span>
+                        </div>
+                    </div>
+
+                    <!-- Toggle Button -->
+                    <button id="jiggle-toggle" class="px-4 py-2 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 border border-white/10 text-white transition">
+                        切換主畫面 Jiggle 抖動 Mode
+                    </button>
+                </div>
+            `;
+        }
+
+        function initJiggleModeLogic() {
+            const btn = document.getElementById('jiggle-toggle');
+            const icons = document.querySelectorAll('.app-icon');
+            const badges = document.querySelectorAll('.remove-badge');
+            let isJiggling = false;
+
+            btn.addEventListener('click', () => {
+                isJiggling = !isJiggling;
+                icons.forEach((icon, idx) => {
+                    if (isJiggling) {
+                        icon.classList.add(idx % 2 === 0 ? 'animate-jiggle-1' : 'animate-jiggle-2');
+                        badges[idx].classList.remove('hidden');
+                    } else {
+                        icon.classList.remove('animate-jiggle-1', 'animate-jiggle-2');
+                        badges[idx].classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        // 8. Typography Morph HTML
+        function buildTypographyMorphHTML() {
+            return `
+                <div class="flex flex-col items-center gap-6">
+                    <!-- Rolling Counter Number Display -->
+                    <div class="apple-glass px-8 py-6 rounded-3xl border border-white/10 flex items-center justify-center shadow-2xl">
+                        <span id="counter-num" class="font-mono text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 transition-all duration-300">
+                            042
+                        </span>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="flex items-center gap-3">
+                        <button id="count-dec" class="w-10 h-10 rounded-full bg-zinc-800 border border-white/10 text-white text-lg font-bold hover:bg-zinc-700 active:scale-90 transition">-</button>
+                        <button id="count-inc" class="w-10 h-10 rounded-full bg-blue-600 text-white text-lg font-bold hover:bg-blue-500 active:scale-90 shadow-lg shadow-blue-600/30 transition">+</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initTypographyMorphLogic() {
+            const numEl = document.getElementById('counter-num');
+            const inc = document.getElementById('count-inc');
+            const dec = document.getElementById('count-dec');
+            let val = 42;
+
+            const updateVal = (newVal) => {
+                val = newVal;
+                numEl.style.transform = 'translateY(-8px) scale(0.95)';
+                numEl.style.opacity = '0.4';
+                
+                setTimeout(() => {
+                    numEl.textContent = String(val).padStart(3, '0');
+                    numEl.style.transform = 'translateY(0px) scale(1)';
+                    numEl.style.opacity = '1';
+                }, 150);
+            };
+
+            inc.addEventListener('click', () => updateVal(val + 1));
+            dec.addEventListener('click', () => updateVal(Math.max(0, val - 1)));
+        }
+
+        function updateCodeSnippet() {
+            const codeBox = document.getElementById('code-snippet-box');
+            codeBox.textContent = `/* iOS Apple Style Spring Transition */
+transition: all ${currentDuration}s cubic-bezier(0.25, 1, 0.5, 1);
+backdrop-filter: blur(${currentBlur}px);
+-webkit-backdrop-filter: blur(${currentBlur}px);`;
+        }
+
+        // Global Event Listeners Setup
+        function setupEventListeners() {
+            // Category Pill Filter
+            document.querySelectorAll('.cat-pill').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.cat-pill').forEach(b => {
+                        b.classList.remove('bg-blue-600', 'text-white');
+                        b.classList.add('bg-white/5', 'text-zinc-400');
+                    });
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('bg-white/5', 'text-zinc-400');
+
+                    activeCategory = btn.dataset.cat;
+                    renderSidebarList();
+                });
+            });
+
+            // Physics Parameter Sliders
+            const durationSlider = document.getElementById('slider-duration');
+            const dampingSlider = document.getElementById('slider-damping');
+            const blurSlider = document.getElementById('slider-blur');
+
+            durationSlider.addEventListener('input', (e) => {
+                currentDuration = e.target.value;
+                document.getElementById('val-duration').textContent = `${currentDuration}s`;
+                updateCodeSnippet();
+            });
+
+            dampingSlider.addEventListener('input', (e) => {
+                currentDamping = e.target.value;
+                document.getElementById('val-damping').textContent = currentDamping;
+                updateCodeSnippet();
+            });
+
+            blurSlider.addEventListener('input', (e) => {
+                currentBlur = e.target.value;
+                document.getElementById('val-blur').textContent = `${currentBlur}px`;
+                updateCodeSnippet();
+            });
+
+            // Presets Selector
+            document.getElementById('preset-select').addEventListener('change', (e) => {
+                const val = e.target.value;
+                if (val === 'apple-default') {
+                    durationSlider.value = 0.45;
+                    dampingSlider.value = 0.82;
+                } else if (val === 'bouncy') {
+                    durationSlider.value = 0.6;
+                    dampingSlider.value = 0.45;
+                } else if (val === 'gentle') {
+                    durationSlider.value = 0.75;
+                    dampingSlider.value = 0.95;
+                } else if (val === 'snappy') {
+                    durationSlider.value = 0.25;
+                    dampingSlider.value = 0.7;
+                }
+                durationSlider.dispatchEvent(new Event('input'));
+                dampingSlider.dispatchEvent(new Event('input'));
+            });
+
+            // Copy Code Button
+            document.getElementById('copy-code-btn').addEventListener('click', () => {
+                const codeText = document.getElementById('code-snippet-box').textContent;
+                
+                // Clipboard fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = codeText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                showToast("CSS 彈簧與模糊代碼已複製到剪貼簿！");
+            });
+
+            // Reset Button
+            document.getElementById('reset-params-btn').addEventListener('click', () => {
+                document.getElementById('preset-select').value = 'apple-default';
+                document.getElementById('preset-select').dispatchEvent(new Event('change'));
+                showToast("已重設物理參數為預設值");
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

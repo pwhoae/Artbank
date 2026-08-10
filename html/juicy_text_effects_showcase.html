@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15 種 Juicy 文字特效展示館 (Juicy Text Effects Showcase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Press+Start+2P&family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0d0f17;
+            color: #f3f4f6;
+            font-family: 'Noto Sans TC', system-ui, sans-serif;
+        }
+
+        .juicy-font-bold {
+            font-family: 'Fredoka One', 'Noto Sans TC', cursive;
+        }
+
+        .juicy-font-pixel {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* 1. Squash & Stretch Pop */
+        @keyframes squashStretch {
+            0% { transform: scale(0.2, 1.8) translateY(-50px); opacity: 0; }
+            40% { transform: scale(1.5, 0.6) translateY(10px); opacity: 1; }
+            65% { transform: scale(0.85, 1.15) translateY(-5px); }
+            85% { transform: scale(1.08, 0.95) translateY(0); }
+            100% { transform: scale(1, 1) translateY(0); }
+        }
+        .anim-squash-pop {
+            animation: squashStretch 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 3. Screen Shake & Critical Pulse */
+        @keyframes critShake {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            15% { transform: translate(-6px, 4px) scale(1.4) rotate(-4deg); }
+            30% { transform: translate(6px, -4px) scale(1.35) rotate(4deg); }
+            45% { transform: translate(-4px, -3px) scale(1.3) rotate(-2deg); }
+            60% { transform: translate(4px, 2px) scale(1.2) rotate(2deg); }
+            75% { transform: translate(-2px, 1px) scale(1.1) rotate(-1deg); }
+            100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+        }
+        .anim-crit-shake {
+            animation: critShake 0.45s ease-out forwards;
+        }
+
+        /* 7. Rainbow Stream Gradient */
+        .anim-rainbow-text {
+            background: linear-gradient(90deg, #ff0055, #ff9900, #33cc33, #00ffff, #9933ff, #ff0055);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbowFlow 2s linear infinite;
+        }
+        @keyframes rainbowFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+
+        /* 8. Glitch & RGB Split */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+        }
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            clip: rect(0, 0, 0, 0);
+        }
+        .glitch-active::before {
+            left: -3px;
+            text-shadow: 2px 0 #ff0055;
+            animation: glitch-anim-1 0.3s ease infinite alternate-reverse;
+        }
+        .glitch-active::after {
+            left: 3px;
+            text-shadow: -2px 0 #00ffff;
+            animation: glitch-anim-2 0.25s ease infinite alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(10px, 9999px, 30px, 0); transform: skew(0.3deg); }
+            50% { clip: rect(40px, 9999px, 60px, 0); transform: skew(-1deg); }
+            100% { clip: rect(20px, 9999px, 80px, 0); transform: skew(0.5deg); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(25px, 9999px, 55px, 0); transform: skew(-0.5deg); }
+            50% { clip: rect(5px, 9999px, 35px, 0); transform: skew(1.2deg); }
+            100% { clip: rect(50px, 9999px, 75px, 0); transform: skew(-0.2deg); }
+        }
+
+        /* 9. Combo Slam */
+        @keyframes comboSlam {
+            0% { transform: scale(3.5) rotate(-10deg); opacity: 0; filter: blur(10px); }
+            50% { transform: scale(0.9) rotate(2deg); opacity: 1; filter: blur(0); }
+            75% { transform: scale(1.15) rotate(-1deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .anim-combo-slam {
+            animation: comboSlam 0.35s cubic-bezier(0.12, 0, 0.39, 0) forwards;
+        }
+
+        /* 15. Arcade Stamp & Speedlines */
+        @keyframes arcadeStamp {
+            0% { transform: scale(6) translateY(-100px); opacity: 0; }
+            60% { transform: scale(0.8); opacity: 1; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .anim-arcade-stamp {
+            animation: arcadeStamp 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+        }
+
+        /* Card Hover Effects */
+        .effect-card {
+            background: #161b26;
+            border: 1px solid #2d3748;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .effect-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto mb-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 tracking-wider mb-3 juicy-font-bold">
+            JUICY TEXT EFFECTS SHOWCASE
+        </h1>
+        <p class="text-gray-400 text-sm md:text-base max-w-2xl mx-auto">
+            15 種讓遊戲 UI、打擊傷害、系統廣播與動態回饋極具打擊感與生命力的「Juicy 文字」特效總覽與現場實作演示。
+        </p>
+    </header>
+
+    <!-- Controls Bar -->
+    <div class="max-w-7xl mx-auto mb-8 flex flex-wrap gap-4 items-center justify-between bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+        <div class="flex items-center space-x-3">
+            <button id="trigger-all-btn" class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-lg shadow-lg hover:shadow-indigo-500/25 transition-all flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                全部觸發展示
+            </button>
+            <span class="text-xs text-gray-400 hidden sm:inline">點擊各單卡「觸發效果」按鈕可單獨測試</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <input type="checkbox" id="sound-toggle" class="w-4 h-4 text-purple-600 bg-gray-800 border-gray-700 rounded focus:ring-purple-500">
+            <label for="sound-toggle" class="text-sm font-medium text-gray-300 cursor-pointer select-none">啟用音效回饋 (Web Audio Synthesizer)</label>
+        </div>
+    </div>
+
+    <!-- Grid Container -->
+    <div id="effects-grid" class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- 1. Squash & Stretch Pop -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-amber-400">01. 彈性形變 (Squash & Stretch)</h3>
+                    <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-mono">Combat/Pickup</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">文字生成時先快速拉長、壓扁，最後回彈定格。模擬膠體或彈簧物理。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <span id="demo-1" class="text-4xl font-extrabold text-amber-400 juicy-font-bold">+999 CRIT</span>
+            </div>
+            <button onclick="playEffect1()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">觸發效果</button>
+        </div>
+
+        <!-- 2. Exponential Size Growth -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-red-400">02. 指數級巨化 (Exponential Growth)</h3>
+                    <span class="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded font-mono">Charge Up</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">字體大小按指數曲線 $S(t) = S_0 \cdot e^{kt}$ 急速膨脹，帶來蓄力滿載爆發感。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <span id="demo-2" class="font-extrabold text-red-500 juicy-font-bold text-xl">ULTIMATE</span>
+            </div>
+            <button onclick="playEffect2()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">觸發蓄力</button>
+        </div>
+
+        <!-- 3. Critical Hit Shake & Flash -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-rose-400">03. 暴擊震屏與閃光 (Crit Shake & Flash)</h3>
+                    <span class="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono">Crit Damage</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">高對比度螢光色切換 + 劇烈高頻 X/Y 軸震動，並追加感嘆號 "!!"。</p>
+            </div>
+            <div id="box-3" class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800 transition-colors duration-100">
+                <span id="demo-3" class="text-3xl font-black text-yellow-300 juicy-font-bold">9,999!!</span>
+            </div>
+            <button onclick="playEffect3()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">觸發暴擊</button>
+        </div>
+
+        <!-- 4. Floating XP / Damage Drift -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-emerald-400">04. 飄浮拋物線 (Floating Drift)</h3>
+                    <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono">XP / Healing</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">數字向上拋出後受重力/加速度影響放緩，並向一側飄移漸隱羽化。</p>
+            </div>
+            <div id="container-4" class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <span id="demo-4" class="text-2xl font-bold text-emerald-400 juicy-font-bold">+550 XP</span>
+            </div>
+            <button onclick="playEffect4()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">獲得經驗</button>
+        </div>
+
+        <!-- 5. Typewriter with Recoil -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-cyan-400">05. 帶後座力打字機 (Recoil Typing)</h3>
+                    <span class="text-xs bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded font-mono">Dialogue/UI</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">每印出一個字符，整個文字框產生微微抖動反衝，附帶脈衝光標。</p>
+            </div>
+            <div id="box-5" class="bg-slate-950 rounded-xl h-36 p-4 flex items-center justify-start relative overflow-hidden mb-4 border border-slate-800 font-mono text-cyan-300 text-sm">
+                <span id="demo-5">System initialization...</span><span class="animate-pulse bg-cyan-400 w-2 h-4 inline-block ml-1"></span>
+            </div>
+            <button onclick="playEffect5()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">打字測試</button>
+        </div>
+
+        <!-- 6. Sinusoidal Wave Bounce -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-pink-400">06. 正弦逐字波浪 (Sin Wave Bounce)</h3>
+                    <span class="text-xs bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded font-mono">Joyful Title</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">每個字符偏移 $y = A \cdot \sin(\omega t + i \cdot \delta)$，帶來如同海洋波浪的律動感。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <div id="demo-6" class="text-3xl font-extrabold text-pink-400 juicy-font-bold flex">
+                    <span>V</span><span>I</span><span>C</span><span>T</span><span>O</span><span>R</span><span>Y</span><span>!</span>
+                </div>
+            </div>
+            <button onclick="playEffect6()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">重設波浪</button>
+        </div>
+
+        <!-- 7. Rainbow Chromatic Shift -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-purple-400">07. 霓虹彩虹流光 (Rainbow Shift)</h3>
+                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded font-mono">Legendary Item</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">動態色彩波浪漸變加上背景發光 glow，用來標示史詩/傳說級物品。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <span class="anim-rainbow-text text-3xl font-extrabold juicy-font-bold drop-shadow-[0_0_12px_rgba(255,0,128,0.6)]">
+                    ★ LEGENDARY ★
+                </span>
+            </div>
+            <button onclick="playEffect7()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">高亮脈衝</button>
+        </div>
+
+        <!-- 8. Cyberpunk Glitch & Rip -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-cyan-300">08. 賽博朋克故障撕裂 (Cyber Glitch)</h3>
+                    <span class="text-xs bg-cyan-500/20 text-cyan-200 px-2 py-0.5 rounded font-mono">Sci-Fi/Error</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">文字水平切割撕裂、紅藍色偏 (RGB Split) 與亂碼閃爍轉換。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <span id="demo-8" data-text="SYSTEM OVERRIDE" class="glitch-text text-2xl font-black text-red-500 juicy-font-pixel tracking-tighter">
+                    SYSTEM OVERRIDE
+                </span>
+            </div>
+            <button onclick="playEffect8()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">觸發 Glitch</button>
+        </div>
+
+        <!-- 9. Combo Slam & Flame Heat -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-orange-400">09. 連擊數砸屏升溫 (Combo Heat Slam)</h3>
+                    <span class="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded font-mono">Combo UI</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">連擊數越大，砸屏縮放力道越重，色彩由白升溫至火紅並發光。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <div id="demo-9-box" class="text-center">
+                    <span id="demo-9-num" class="text-5xl font-black text-amber-400 juicy-font-bold inline-block">12</span>
+                    <span class="text-xs font-bold text-orange-500 block tracking-widest uppercase">HITS COMBO!</span>
+                </div>
+            </div>
+            <button onclick="playEffect9()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">增加 Combo</button>
+        </div>
+
+        <!-- 10. Gravity Physics Drop -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-yellow-400">10. 物理掉落彈跳 (Gravity Bounce)</h3>
+                    <span class="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded font-mono">Coins / Score</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">文字/數字逐字受重力落至地面並微幅彈跳，如同金幣砸在地板上。</p>
+            </div>
+            <div id="container-10" class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <!-- Physics elements injected via JS -->
+            </div>
+            <button onclick="playEffect10()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">掉落金幣分數</button>
+        </div>
+
+        <!-- 11. Shatter & Particle Explode -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-stone-300">11. 文字粉碎炸裂 (Particle Shatter)</h3>
+                    <span class="text-xs bg-stone-500/20 text-stone-300 px-2 py-0.5 rounded font-mono">Kill / Break</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">受擊或被銷毀時，文字分解為微小粒子向外散射並重力墜落消逝。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <canvas id="canvas-11" width="280" height="130"></canvas>
+            </div>
+            <button onclick="playEffect11()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">粉碎文字</button>
+        </div>
+
+        <!-- 12. Energy Implosion & Flash -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-blue-400">12. 能量凝聚爆發 (Implosion Flash)</h3>
+                    <span class="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-mono">Spell Cast</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">四周光斑向內坍縮凝聚，隨後瞬間白閃定格並呈現高亮文字。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <canvas id="canvas-12" width="280" height="130"></canvas>
+            </div>
+            <button onclick="playEffect12()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">能量凝聚</button>
+        </div>
+
+        <!-- 13. Hit-Stop Flash Frame -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-teal-300">13. 停格頓幀白閃 (Hit-Stop Frame)</h3>
+                    <span class="text-xs bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded font-mono">Impact Noise</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">擊中瞬間畫面凍結 2-3 幀並全白 (Flash Frame)，再以強烈震波展現文字。</p>
+            </div>
+            <div id="box-13" class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800 transition-all">
+                <span id="demo-13" class="text-3xl font-black text-teal-300 juicy-font-bold">K.O.</span>
+            </div>
+            <button onclick="playEffect13()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">觸發打擊頓幀</button>
+        </div>
+
+        <!-- 14. Jelly Slime Wobble -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-lime-400">14. 果凍流體蠕動 (Slime Jelly Wobble)</h3>
+                    <span class="text-xs bg-lime-500/20 text-lime-300 px-2 py-0.5 rounded font-mono">Fun/Casual</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">如同有機史萊姆或果凍般的持續扭曲與彈性柔和蠕動。</p>
+            </div>
+            <div class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <span id="demo-14" class="text-3xl font-bold text-lime-400 juicy-font-bold inline-block">SLIME!</span>
+            </div>
+            <button onclick="playEffect14()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">擠壓果凍</button>
+        </div>
+
+        <!-- 15. Arcade Speedlines Stamp -->
+        <div class="effect-card rounded-2xl p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-bold text-fuchsia-400">15. 街機速度線印章 (Arcade Speed Stamp)</h3>
+                    <span class="text-xs bg-fuchsia-500/20 text-fuchsia-300 px-2 py-0.5 rounded font-mono">Arcade / Stage</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">文字由超大尺寸高速俯衝，搭配放射狀速度線背景砸入畫面。</p>
+            </div>
+            <div id="box-15" class="bg-slate-950 rounded-xl h-36 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800">
+                <div id="speedlines" class="absolute inset-0 opacity-0 transition-opacity duration-150 pointer-events-none" style="background: radial-gradient(circle, transparent 20%, #f0abfc 150%);"></div>
+                <span id="demo-15" class="text-4xl font-black text-fuchsia-400 juicy-font-bold tracking-widest">STAGE 1</span>
+            </div>
+            <button onclick="playEffect15()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-semibold transition">印章砸屏</button>
+        </div>
+
+    </div>
+
+    <!-- Web Audio Synthesizer Logic -->
+    <script>
+        // Simple Synthesized Sound Generator for Juicy Feedback
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (!document.getElementById('sound-toggle').checked) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'pop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'crit') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'type') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600 + Math.random() * 200, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.03);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            } else if (type === 'coin') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'slam') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        }
+
+        // Effect 1: Squash & Stretch
+        function playEffect1() {
+            const el = document.getElementById('demo-1');
+            el.classList.remove('anim-squash-pop');
+            void el.offsetWidth;
+            el.classList.add('anim-squash-pop');
+            playSound('pop');
+        }
+
+        // Effect 2: Exponential Growth
+        function playEffect2() {
+            const el = document.getElementById('demo-2');
+            let scale = 1;
+            let start = null;
+            playSound('pop');
+
+            function step(timestamp) {
+                if (!start) start = timestamp;
+                let progress = (timestamp - start) / 400; // 400ms duration
+                if (progress > 1) progress = 1;
+                
+                // Exponential growth formula: scale = 1 * e^(1.8 * t)
+                let currentScale = Math.exp(1.8 * progress);
+                el.style.transform = `scale(${currentScale})`;
+                el.style.fontSize = `${1.2 + progress * 0.8}rem`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    setTimeout(() => {
+                        el.style.transform = 'scale(1)';
+                        el.style.fontSize = '1.25rem';
+                    }, 300);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        // Effect 3: Crit Shake
+        function playEffect3() {
+            const el = document.getElementById('demo-3');
+            const box = document.getElementById('box-3');
+            el.classList.remove('anim-crit-shake');
+            void el.offsetWidth;
+            el.classList.add('anim-crit-shake');
+            
+            box.style.backgroundColor = '#3f1d24';
+            setTimeout(() => { box.style.backgroundColor = '#020617'; }, 150);
+            playSound('crit');
+        }
+
+        // Effect 4: Floating XP Drift
+        function playEffect4() {
+            const container = document.getElementById('container-4');
+            container.innerHTML = '';
+            
+            const el = document.createElement('div');
+            el.className = 'text-2xl font-bold text-emerald-400 juicy-font-bold absolute';
+            el.innerText = '+550 XP';
+            container.appendChild(el);
+
+            let posY = 0;
+            let posX = 0;
+            let opacity = 1;
+            let vx = (Math.random() - 0.5) * 1.5;
+            let vy = -4;
+
+            function animate() {
+                posY += vy;
+                posX += vx;
+                vy += 0.15; // gravity ease
+                opacity -= 0.02;
+
+                el.style.transform = `translate(${posX}px, ${posY}px) scale(${1 + (1 - opacity) * 0.3})`;
+                el.style.opacity = opacity;
+
+                if (opacity > 0) {
+                    requestAnimationFrame(animate);
+                } else {
+                    el.remove();
+                }
+            }
+            playSound('pop');
+            animate();
+        }
+
+        // Effect 5: Typewriter with Recoil
+        function playEffect5() {
+            const box = document.getElementById('box-5');
+            const targetText = "CRITICAL OVERDRIVE ACTIVATED!";
+            let index = 0;
+            
+            function typeNext() {
+                if (index <= targetText.length) {
+                    box.querySelector('#demo-5').innerText = targetText.slice(0, index);
+                    index++;
+                    // Recoil effect
+                    box.style.transform = `translate(${(Math.random()-0.5)*4}px, ${(Math.random()-0.5)*4}px)`;
+                    setTimeout(() => { box.style.transform = 'translate(0,0)'; }, 30);
+                    playSound('type');
+                    setTimeout(typeNext, 40 + Math.random() * 30);
+                }
+            }
+            typeNext();
+        }
+
+        // Effect 6: Sinusoidal Wave Bounce
+        let waveFrame = 0;
+        function animateWave() {
+            waveFrame += 0.08;
+            const spans = document.querySelectorAll('#demo-6 span');
+            spans.forEach((span, i) => {
+                const y = Math.sin(waveFrame + i * 0.5) * 10;
+                span.style.transform = `translateY(${y}px)`;
+            });
+            requestAnimationFrame(animateWave);
+        }
+        animateWave();
+        function playEffect6() {
+            playSound('pop');
+        }
+
+        // Effect 7: Rainbow
+        function playEffect7() {
+            playSound('pop');
+        }
+
+        // Effect 8: Cyber Glitch
+        function playEffect8() {
+            const el = document.getElementById('demo-8');
+            el.classList.add('glitch-active');
+            playSound('crit');
+            
+            // Random character scrambling
+            const original = "SYSTEM OVERRIDE";
+            const chars = "!@#$%^&*()_+-=[]{}|;:,.<>?/0123456789";
+            let count = 0;
+            const interval = setInterval(() => {
+                el.innerText = original.split('').map((char) => {
+                    if (char === ' ') return ' ';
+                    return Math.random() > 0.4 ? chars[Math.floor(Math.random() * chars.length)] : char;
+                }).join('');
+                count++;
+                if (count > 6) {
+                    clearInterval(interval);
+                    el.innerText = original;
+                    el.classList.remove('glitch-active');
+                }
+            }, 50);
+        }
+
+        // Effect 9: Combo Slam
+        let comboCount = 12;
+        function playEffect9() {
+            comboCount++;
+            const numEl = document.getElementById('demo-9-num');
+            const boxEl = document.getElementById('demo-9-box');
+            numEl.innerText = comboCount;
+
+            boxEl.classList.remove('anim-combo-slam');
+            void boxEl.offsetWidth;
+            boxEl.classList.add('anim-combo-slam');
+
+            // Heat color shift logic
+            let heatHue = Math.max(0, 45 - (comboCount - 12) * 3);
+            numEl.style.color = `hsl(${heatHue}, 100%, 50%)`;
+            numEl.style.textShadow = `0 0 ${Math.min(30, comboCount)}px hsl(${heatHue}, 100%, 50%)`;
+
+            playSound('slam');
+        }
+
+        // Effect 10: Gravity Drop Coins
+        function playEffect10() {
+            const container = document.getElementById('container-10');
+            container.innerHTML = '';
+            const text = "+1,000";
+            
+            text.split('').forEach((char, index) => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.className = 'text-3xl font-black text-yellow-400 juicy-font-bold inline-block relative';
+                span.style.top = '-60px';
+                container.appendChild(span);
+
+                let posY = -60;
+                let vy = 0;
+                let gravity = 0.6;
+                let bounce = -0.5;
+
+                setTimeout(() => {
+                    function drop() {
+                        vy += gravity;
+                        posY += vy;
+
+                        if (posY >= 0) {
+                            posY = 0;
+                            vy *= bounce;
+                        }
+
+                        span.style.transform = `translateY(${posY}px)`;
+
+                        if (Math.abs(vy) > 0.2 || posY < 0) {
+                            requestAnimationFrame(drop);
+                        }
+                    }
+                    drop();
+                    playSound('coin');
+                }, index * 40);
+            });
+        }
+
+        // Effect 11: Canvas Shatter
+        function initShatterCanvas() {
+            const canvas = document.getElementById('canvas-11');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function createParticles() {
+                particles = [];
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '900 28px "Fredoka One", sans-serif';
+                ctx.fillStyle = '#f3f4f6';
+                ctx.textAlign = 'center';
+                ctx.fillText('DESTROYED', canvas.width / 2, 70);
+
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let y = 0; y < canvas.height; y += 4) {
+                    for (let x = 0; x < canvas.width; x += 4) {
+                        const i = (y * canvas.width + x) * 4;
+                        if (imgData.data[i + 3] > 128) {
+                            particles.push({
+                                x: x,
+                                y: y,
+                                vx: (Math.random() - 0.5) * 8,
+                                vy: (Math.random() - 0.8) * 8,
+                                color: `rgb(${imgData.data[i]}, ${imgData.data[i+1]}, ${imgData.data[i+2]})`,
+                                alpha: 1
+                            });
+                        }
+                    }
+                }
+            }
+
+            window.playEffect11 = function() {
+                createParticles();
+                playSound('crit');
+                
+                function explode() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    let alive = false;
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.3; // gravity
+                        p.alpha -= 0.02;
+
+                        if (p.alpha > 0) {
+                            alive = true;
+                            ctx.globalAlpha = Math.max(0, p.alpha);
+                            ctx.fillStyle = p.color;
+                            ctx.fillRect(p.x, p.y, 3, 3);
+                        }
+                    });
+                    if (alive) requestAnimationFrame(explode);
+                    else {
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = '#f3f4f6';
+                        ctx.fillText('DESTROYED', canvas.width / 2, 70);
+                    }
+                }
+                explode();
+            };
+
+            // Draw initial static
+            ctx.font = '900 28px "Fredoka One", sans-serif';
+            ctx.fillStyle = '#f3f4f6';
+            ctx.textAlign = 'center';
+            ctx.fillText('DESTROYED', canvas.width / 2, 70);
+        }
+
+        // Effect 12: Energy Implosion
+        function initImplosionCanvas() {
+            const canvas = document.getElementById('canvas-12');
+            const ctx = canvas.getContext('2d');
+
+            function drawDefault() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '900 26px "Fredoka One", sans-serif';
+                ctx.fillStyle = '#60a5fa';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#3b82f6';
+                ctx.shadowBlur = 10;
+                ctx.fillText('MAGIC SPELL', canvas.width / 2, 70);
+                ctx.shadowBlur = 0;
+            }
+
+            window.playEffect12 = function() {
+                let frame = 0;
+                const particles = [];
+                for(let i=0; i<40; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 80 + Math.random() * 40;
+                    particles.push({
+                        x: canvas.width/2 + Math.cos(angle) * dist,
+                        y: 70 + Math.sin(angle) * dist,
+                        targetX: canvas.width/2,
+                        targetY: 70,
+                        speed: 0.08 + Math.random() * 0.05
+                    });
+                }
+
+                playSound('pop');
+
+                function animateImplode() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    frame++;
+
+                    if (frame < 20) {
+                        // Gather particles
+                        particles.forEach(p => {
+                            p.x += (p.targetX - p.x) * p.speed;
+                            p.y += (p.targetY - p.y) * p.speed;
+                            ctx.fillStyle = '#93c5fd';
+                            ctx.fillRect(p.x, p.y, 3, 3);
+                        });
+                        requestAnimationFrame(animateImplode);
+                    } else if (frame === 20) {
+                        // Flash frame
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        playSound('crit');
+                        requestAnimationFrame(animateImplode);
+                    } else {
+                        drawDefault();
+                    }
+                }
+                animateImplode();
+            };
+
+            drawDefault();
+        }
+
+        // Effect 13: Hit-Stop Flash Frame
+        function playEffect13() {
+            const box = document.getElementById('box-13');
+            const demo = document.getElementById('demo-13');
+            
+            // Hit Stop freeze: Turn whole background flash white
+            box.style.backgroundColor = '#ffffff';
+            demo.style.opacity = '0';
+            playSound('slam');
+
+            setTimeout(() => {
+                box.style.backgroundColor = '#020617';
+                demo.style.opacity = '1';
+                demo.classList.remove('anim-squash-pop');
+                void demo.offsetWidth;
+                demo.classList.add('anim-squash-pop');
+            }, 80);
+        }
+
+        // Effect 14: Slime Jelly Wobble
+        function playEffect14() {
+            const el = document.getElementById('demo-14');
+            let start = null;
+            playSound('pop');
+
+            function wobble(timestamp) {
+                if (!start) start = timestamp;
+                let progress = (timestamp - start) / 600;
+                
+                if (progress < 1) {
+                    // Damped sin wave wobble for squishy feel
+                    let scaleX = 1 + Math.sin(progress * Math.PI * 6) * 0.4 * (1 - progress);
+                    let scaleY = 1 - Math.sin(progress * Math.PI * 6) * 0.4 * (1 - progress);
+                    el.style.transform = `scale(${scaleX}, ${scaleY})`;
+                    requestAnimationFrame(wobble);
+                } else {
+                    el.style.transform = 'scale(1, 1)';
+                }
+            }
+            requestAnimationFrame(wobble);
+        }
+
+        // Effect 15: Arcade Speedlines Stamp
+        function playEffect15() {
+            const el = document.getElementById('demo-15');
+            const lines = document.getElementById('speedlines');
+
+            lines.style.opacity = '1';
+            el.classList.remove('anim-arcade-stamp');
+            void el.offsetWidth;
+            el.classList.add('anim-arcade-stamp');
+            playSound('slam');
+
+            setTimeout(() => {
+                lines.style.opacity = '0';
+            }, 250);
+        }
+
+        // Global Trigger All
+        document.getElementById('trigger-all-btn').addEventListener('click', () => {
+            playEffect1();
+            setTimeout(playEffect2, 100);
+            setTimeout(playEffect3, 200);
+            setTimeout(playEffect4, 300);
+            setTimeout(playEffect5, 400);
+            setTimeout(playEffect8, 500);
+            setTimeout(playEffect9, 600);
+            setTimeout(playEffect10, 700);
+            setTimeout(playEffect11, 800);
+            setTimeout(playEffect12, 900);
+            setTimeout(playEffect13, 1000);
+            setTimeout(playEffect14, 1100);
+            setTimeout(playEffect15, 1200);
+        });
+
+        // Init Canvases after DOM loaded
+        window.addEventListener('load', () => {
+            initShatterCanvas();
+            initImplosionCanvas();
+        });
+    </script>
+</body>
+</html>
