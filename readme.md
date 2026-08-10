@@ -1,5 +1,9 @@
 [回到底部](#readme)<a id="readme_begin"></a><br>
 update:Dribbble,ArtStation,Pinterest,UI中国,站酷
+tripoai 2.5 https://studio.tripo3d.ai?invite_code=O0E0Z6 
+blende mcp
+unity mcp
+
 * 📄 [GPT 生成 README 歷史版本](https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md)  
 * 🔒 [Artbank Private Repo](https://github.com/pwhoae/artbank_private)
 * https://github.com/pwhoae/artbank_private/tree/main/_%E9%9D%88%E6%84%9F
