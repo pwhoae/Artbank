@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://ckfq7rtexxuic"]
+
+[ext_resource type="Script" path="res://TestArea/Card/偽_3d_懸停.gd" id="1_3tq1q"]
+[ext_resource type="Shader" uid="uid://tf0s0thshcud" path="res://TestArea/Card/偽_3d_懸停.gdshader" id="1_d1upq"]
+[ext_resource type="Texture2D" uid="uid://doy4o7q133e2t" path="res://_new Game/cg.PNG" id="2_3kujg"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_3kujg"]
+shader = ExtResource("1_d1upq")
+shader_parameter/x_rot = 0.0
+shader_parameter/y_rot = 0.0
+shader_parameter/fov = 90.0
+shader_parameter/inset = 0.0
+
+[node name="偽 3D 懸停" type="TextureRect" unique_id=635031691]
+material = SubResource("ShaderMaterial_3kujg")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_3kujg")
+script = ExtResource("1_3tq1q")

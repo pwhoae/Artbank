@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://cjxrhnwim867s"]
+
+[ext_resource type="Script" uid="uid://ci6a463bth2s3" path="res://TestArea/Card/卡牌動態與陰影.gd" id="1_sgmxt"]
+[ext_resource type="Texture2D" uid="uid://ck31ani0olf57" path="res://3d學習/近景.png" id="2_aaeef"]
+[ext_resource type="Texture2D" uid="uid://dvwhgg3amax6c" path="res://3d學習/mesh/沙灘平面貼圖.jpeg" id="3_um7mr"]
+[ext_resource type="Script" uid="uid://ct5a1gt215x41" path="res://TestArea/Card/溶解.gd" id="4_um7mr"]
+
+[node name="卡牌動態與陰影" type="Control" unique_id=1991932339]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sgmxt")
+
+[node name="Shadow" type="TextureRect" parent="." unique_id=1396779584]
+layout_mode = 0
+offset_right = 589.0
+offset_bottom = 1114.0
+texture = ExtResource("2_aaeef")
+
+[node name="CardTexture" type="TextureRect" parent="." unique_id=1023015011]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("3_um7mr")
+
+[node name="溶解" type="Button" parent="." unique_id=1008769731]
+layout_mode = 0
+offset_left = 721.0
+offset_top = 377.0
+offset_right = 1052.0
+offset_bottom = 487.0
+script = ExtResource("4_um7mr")
