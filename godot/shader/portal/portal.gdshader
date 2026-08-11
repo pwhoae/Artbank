@@ -1,5 +1,7 @@
 shader_type spatial;
 // 關閉 3D 默認光照（使用自定義發光），雙面渲染，混合模式為半透明
+//https://share.gemini.google/6XAHo2oei6ev
+
 render_mode unshaded, cull_disabled, blend_mix;
 
 // 顏色控制
