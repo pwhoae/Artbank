@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 2D/3D 复古Shader方案全集</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        retro: {
+                            bg: '#12131C',
+                            card: '#1A1C29',
+                            border: '#2A2D40',
+                            accent: '#6366F1',
+                            green: '#10B981',
+                            amber: '#F59E0B',
+                            pink: '#EC4899',
+                            cyan: '#06B6D4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /*https://share.gemini.google/DpzcWsDuaSM2 */
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #12131C; }
+        ::-webkit-scrollbar-thumb { background: #2A2D40; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366F1; }
+        .code-block { font-family: 'Fira Code', Monaco, Consolas, 'Courier New', monospace; }
+    </style>
+</head>
+<body class="bg-retro-bg text-slate-200 min-h-screen flex flex-col font-sans antialiased overflow-x-hidden">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-retro-border bg-retro-card/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-between p-2 shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-gamepad text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white leading-none">Godot 4 复古 Shader 方案</h1>
+                    <p class="text-xs text-slate-400 mt-0.5">2D / 3D Retro Visual Effects Suite</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-1 text-xs rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">Godot 4.x 兼容</span>
+                <button id="copy-all-btn" class="text-xs bg-retro-accent hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition">
+                    <i class="fa-regular fa-copy"></i> 复制当前 Shader
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Sidebar: Shader Selectors -->
+        <aside class="lg:col-span-3 space-y-4">
+            <div class="bg-retro-card border border-retro-border rounded-xl p-4">
+                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-retro-accent"></i> 选择 Shader 预设
+                </h2>
+                <div class="space-y-1.5" id="shader-menu">
+                    <!-- Dynamic buttons injected by JS -->
+                </div>
+            </div>
+
+            <!-- Godot Integration Hints -->
+            <div class="bg-retro-card border border-retro-border rounded-xl p-4">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-retro-cyan"></i> 使用方法说明
+                </h3>
+                <ul class="text-xs text-slate-300 space-y-2 leading-relaxed">
+                    <li class="flex items-start gap-2">
+                        <span class="text-retro-accent font-bold">2D:</span>
+                        在 CanvasLayer 下新建 <code class="bg-slate-800 px-1 rounded text-indigo-300">ColorRect</code> 覆盖全屏，赋予 Shader Material。
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-retro-pink font-bold">3D:</span>
+                        使用 <code class="bg-slate-800 px-1 rounded text-pink-300">SubViewportContainer</code> 或 Godot 4.x <code class="bg-slate-800 px-1 rounded text-pink-300">CompositorEffect</code> 全屏后处理。
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Center: Interactive Preview & Control Sliders -->
+        <section class="lg:col-span-5 space-y-4 flex flex-col">
+            <!-- Canvas Preview Card -->
+            <div class="bg-retro-card border border-retro-border rounded-xl overflow-hidden shadow-2xl flex flex-col flex-1">
+                <div class="px-4 py-3 bg-slate-900/50 border-b border-retro-border flex items-center justify-between">
+                    <span class="text-xs font-mono text-slate-400 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        实时 WebGL 渲染预览
+                    </span>
+                    <button id="toggle-scene-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700 transition">
+                        切换场景 (3D / 2D)
+                    </button>
+                </div>
+                
+                <div class="relative flex-1 bg-black min-h-[300px] flex items-center justify-center overflow-hidden" id="canvas-container">
+                    <canvas id="webgl-canvas" class="w-full h-full object-contain cursor-grab active:cursor-grabbing"></canvas>
+                    <div id="loading-overlay" class="absolute inset-0 bg-retro-bg/80 backdrop-blur flex items-center justify-center text-xs text-slate-400 hidden">
+                        <i class="fa-solid fa-spinner fa-spin text-lg mr-2 text-retro-accent"></i> 渲染引擎初始化...
+                    </div>
+                </div>
+
+                <!-- Live Parameter Controls -->
+                <div class="p-4 border-t border-retro-border bg-retro-card/50 space-y-3" id="controls-panel">
+                    <div class="text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-retro-amber"></i> 参数实时调节 (Uniforms)
+                    </div>
+                    <div id="dynamic-controls" class="space-y-2.5 text-xs">
+                        <!-- Sliders generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Code Viewer & Documentation -->
+        <section class="lg:col-span-4 space-y-4 flex flex-col">
+            <div class="bg-retro-card border border-retro-border rounded-xl flex flex-col flex-1 overflow-hidden">
+                <!-- Code Header Tabs -->
+                <div class="border-b border-retro-border bg-slate-900/50 flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-2">
+                        <button id="tab-shader" class="text-xs font-mono font-medium px-3 py-1.5 rounded-lg bg-retro-accent text-white transition">
+                            .gdshader
+                        </button>
+                        <button id="tab-gdscript" class="text-xs font-mono font-medium px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition">
+                            GDScript 挂载
+                        </button>
+                    </div>
+                    <button id="copy-code-btn" class="text-slate-400 hover:text-white text-xs transition p-1" title="复制代">
+                        <i class="fa-regular fa-copy text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Code Container -->
+                <div class="p-4 flex-1 overflow-y-auto max-h-[520px] bg-slate-950 font-mono text-xs text-emerald-400 leading-relaxed">
+                    <pre><code id="code-display" class="whitespace-pre-wrap">-- 正在加载 Shader 代码... --</code></pre>
+                </div>
+
+                <!-- Feature Highlights Footer -->
+                <div class="p-3 border-t border-retro-border bg-slate-900/30 text-[11px] text-slate-400">
+                    <div class="font-semibold text-slate-300 mb-1" id="shader-title">--</div>
+                    <div id="shader-desc" class="leading-normal">--</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Shader Definitions Data Store
+        const SHADER_PRESETS = [
+            {
+                id: 'dither_palette',
+                name: '抖动调色板 (Dithering & Palette)',
+                type: '2D/3D 通用屏幕后处理',
+                desc: '包含 Bayer 4x4 网点抖动与调色板量化（支持 GameBoy, PS1, CGA, PICO-8 等经典复古配色）。',
+                controls: [
+                    { id: 'pixelSize', label: '像素大小 (Pixelate)', min: 1, max: 16, step: 1, val: 3 },
+                    { id: 'paletteSelect', label: '配色方案', type: 'select', options: ['GameBoy 绿调', 'PICO-8 16色', 'CGA 经典4色', 'Cyberpunk 赛博朋克', 'Monochrome 黑白'], val: 0 },
+                    { id: 'ditherStrength', label: '抖动强度 (Dither)', min: 0.0, max: 1.0, step: 0.05, val: 0.6 }
+                ],
+                gdshader: `shader_type canvas_item;
+// Godot 4.x 复古抖动调色板 Shader (Color Quantization & Bayer Dithering)
+uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_nearest;
+
+uniform float pixel_size : hint_range(1.0, 16.0, 1.0) = 3.0;
+uniform float dither_strength : hint_range(0.0, 1.0) = 0.5;
+uniform int palette_mode : hint_range(0, 4) = 0; // 0:GameBoy, 1:PICO8, 2:CGA, 3:Cyberpunk, 4:Monochrome
+
+// 4x4 Bayer Dithering Matrix
+const mat4 BAYER_MATRIX = mat4(
+    vec4( 0.0/16.0,  8.0/16.0,  2.0/16.0, 10.0/16.0),
+    vec4(12.0/16.0,  4.0/16.0, 14.0/16.0,  6.0/16.0),
+    vec4( 3.0/16.0, 11.0/16.0,  1.0/16.0,  9.0/16.0),
+    vec4(15.0/16.0,  7.0/16.0, 13.0/16.0,  5.0/16.0)
+);
+
+// 获取 Bayer 矩阵值
+float get_bayer_value(vec2 pixel_coord) {
+    int x = int(mod(pixel_coord.x, 4.0));
+    int y = int(mod(pixel_coord.y, 4.0));
+    return BAYER_MATRIX[x][y];
+}
+
+// 获取配色方案中最接近的颜色
+vec3 find_nearest_palette_color(vec3 col, int mode) {
+    if (mode == 0) { // Game Boy
+        vec3 p[4] = vec3[](
+            vec3(0.06, 0.22, 0.06),
+            vec3(0.19, 0.38, 0.19),
+            vec3(0.54, 0.67, 0.06),
+            vec3(0.61, 0.73, 0.06)
+        );
+        float min_dist = 999.0; vec3 best = p[0];
+        for(int i=0; i<4; i++) {
+            float d = distance(col, p[i]);
+            if(d < min_dist) { min_dist = d; best = p[i]; }
+        }
+        return best;
+    } else if (mode == 1) { // PICO-8 (部分代表色)
+        vec3 p[8] = vec3[](
+            vec3(0.0, 0.0, 0.0),      vec3(0.11, 0.17, 0.33),
+            vec3(0.49, 0.15, 0.28),   vec3(0.0, 0.53, 0.32),
+            vec3(0.67, 0.32, 0.21),   vec3(0.37, 0.34, 0.31),
+            vec3(1.0, 0.94, 0.91),    vec3(1.0, 0.0, 0.3)
+        );
+        float min_dist = 999.0; vec3 best = p[0];
+        for(int i=0; i<8; i++) {
+            float d = distance(col, p[i]);
+            if(d < min_dist) { min_dist = d; best = p[i]; }
+        }
+        return best;
+    } else if (mode == 2) { // CGA Palette 1
+        vec3 p[4] = vec3[](
+            vec3(0.0, 0.0, 0.0), vec3(0.33, 1.0, 1.0),
+            vec3(1.0, 0.33, 1.0), vec3(1.0, 1.0, 1.0)
+        );
+        float min_dist = 999.0; vec3 best = p[0];
+        for(int i=0; i<4; i++) {
+            float d = distance(col, p[i]);
+            if(d < min_dist) { min_dist = d; best = p[i]; }
+        }
+        return best;
+    } else if (mode == 3) { // Cyberpunk Neon
+        vec3 p[4] = vec3[](
+            vec3(0.05, 0.02, 0.15), vec3(0.98, 0.0, 0.52),
+            vec3(0.0, 0.95, 0.98),  vec3(0.98, 0.9, 0.2)
+        );
+        float min_dist = 999.0; vec3 best = p[0];
+        for(int i=0; i<4; i++) {
+            float d = distance(col, p[i]);
+            if(d < min_dist) { min_dist = d; best = p[i]; }
+        }
+        return best;
+    } else { // Monochrome 4 levels
+        float lum = dot(col, vec3(0.299, 0.587, 0.114));
+        float q = floor(lum * 4.0) / 3.0;
+        return vec3(q);
+    }
+}
+
+void fragment() {
+    vec2 screen_size = 1.0 / SCREEN_PIXEL_SIZE;
+    vec2 uv = floor(FRAGCOORD.xy / pixel_size) * pixel_size / screen_size;
+    
+    vec3 orig_color = texture(SCREEN_TEXTURE, uv).rgb;
+    
+    // 抖动偏移量
+    float bayer = get_bayer_value(FRAGCOORD.xy / pixel_size) - 0.5;
+    vec3 dithered_color = clamp(orig_color + vec3(bayer * dither_strength * 0.25), 0.0, 1.0);
+    
+    // 映射至调色板
+    vec3 final_color = find_nearest_palette_color(dithered_color, palette_mode);
+    
+    COLOR = vec4(final_color, 1.0);
+}`,
+                gdscript: `# GDScript: 将后处理应用至 Godot 4.x 全屏 ColorRect
+extends ColorRect
+
+func _ready():
+	# 确保 ColorRect 覆盖全屏
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+	
+	# 设置 Shader 材质参数
+	var mat = material as ShaderMaterial
+	if mat:
+		mat.set_shader_parameter("pixel_size", 3.0)
+		mat.set_shader_parameter("dither_strength", 0.6)
+		mat.set_shader_parameter("palette_mode", 0)`
+            },
+            {
+                id: 'crt_tv',
+                name: 'CRT 大头电视 (Scanlines & FishEye)',
+                type: '全屏复古屏幕后处理',
+                desc: '模拟 80/90 年代 CRT 大头显像管：扫描线 (Scanlines)、RGB 偏色 (Chromatic Aberration)、凸起曲面与边缘晕影 (Vignette)。',
+                controls: [
+                    { id: 'warp', label: '屏幕弯曲 (Curvature)', min: 0.0, max: 0.2, step: 0.01, val: 0.06 },
+                    { id: 'scanlines', label: '扫描线强度', min: 0.0, max: 1.0, step: 0.05, val: 0.4 },
+                    { id: 'aberration', label: 'RGB 色差偏移', min: 0.0, max: 0.02, step: 0.001, val: 0.005 },
+                    { id: 'vignette', label: '边缘暗角 (Vignette)', min: 0.0, max: 1.0, step: 0.05, val: 0.5 }
+                ],
+                gdshader: `shader_type canvas_item;
+// Godot 4 CRT 显示器模拟 Shader
+uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, repeat_disable, filter_linear;
+
+uniform float warp : hint_range(0.0, 0.2) = 0.06;
+uniform float scanline_strength : hint_range(0.0, 1.0) = 0.4;
+uniform float rgb_aberration : hint_range(0.0, 0.02) = 0.005;
+uniform float vignette_intensity : hint_range(0.0, 1.0) = 0.5;
+
+// UV 凸起扭曲计算
+vec2 distort_uv(vec2 uv) {
+    vec2 dc = uv - vec2(0.5);
+    float d = dot(dc, dc);
+    return uv + dc * d * warp * 10.0;
+}
+
+void fragment() {
+    vec2 uv = distort_uv(SCREEN_UV);
+    
+    // 裁剪超出屏幕的黑边
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        COLOR = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+    
+    // RGB 色基分离
+    float r = texture(SCREEN_TEXTURE, uv + vec2(rgb_aberration, 0.0)).r;
+    float g = texture(SCREEN_TEXTURE, uv).g;
+    float b = texture(SCREEN_TEXTURE, uv - vec2(rgb_aberration, 0.0)).b;
+    vec3 col = vec3(r, g, b);
+    
+    // 扫描线效果
+    float scanline = sin(uv.y * 800.0) * 0.5 + 0.5;
+    col -= scanline * scanline_strength * 0.3;
+    
+    // 边缘暗角 Vignette
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    vig = clamp(pow(16.0 * vig, vignette_intensity), 0.0, 1.0);
+    col *= vig;
+    
+    COLOR = vec4(col, 1.0);
+}`,
+                gdscript: `# GDScript: 动态控制 CRT 扫描线
+extends ColorRect
+
+func _process(delta):
+	var mat = material as ShaderMaterial
+	if mat:
+		# 可加入微弱画面呼吸感
+		var flicker = sin(Time.get_ticks_msec() * 0.01) * 0.02
+		mat.set_shader_parameter("scanline_strength", 0.4 + flicker)`
+            },
+            {
+                id: 'ps1_vertex',
+                name: 'PS1 / PSX 3D 抖动与仿射 (Vertex Jitter)',
+                type: '3D Spatial Shader (材质级别)',
+                desc: '初代 PlayStation 风格 3D 渲染：网格顶点屏幕空间网格化吸附 (Vertex Snapping) 与低精度感。',
+                controls: [
+                    { id: 'jitterAmount', label: '顶点抖动幅度 (Jitter)', min: 0.0, max: 1.0, step: 0.05, val: 0.5 },
+                    { id: 'gridResolution', label: '网格对齐分辨率', min: 64, max: 640, step: 32, val: 240 }
+                ],
+                gdshader: `shader_type spatial;
+// Godot 4.x PS1 风格 3D 空间 Shader (Spatial Shader)
+render_mode unshaded, cull_disabled;
+
+uniform sampler2D albedo_texture : source_color, filter_nearest;
+uniform float jitter_strength : hint_range(0.0, 1.0) = 0.5;
+uniform float snap_res : hint_range(64.0, 640.0, 1.0) = 240.0;
+
+void vertex() {
+    // 变换到裁剪空间
+    vec4 clip_pos = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
+    
+    // 顶点抖动/对齐效果
+    if (clip_pos.w != 0.0) {
+        vec2 screen_pos = clip_pos.xy / clip_pos.w;
+        // 网格化吸附
+        vec2 grid = vec2(snap_res, snap_res * (VIEWPORT_SIZE.y / VIEWPORT_SIZE.x));
+        screen_pos = floor(screen_pos * grid) / grid;
+        
+        // 混合抖动
+        clip_pos.xy = mix(clip_pos.xy / clip_pos.w, screen_pos, jitter_strength) * clip_pos.w;
+    }
+    
+    POSITION = clip_pos;
+}
+
+void fragment() {
+    vec4 tex_color = texture(albedo_texture, UV);
+    ALBEDO = tex_color.rgb;
+}`,
+                gdscript: `# GDScript: 批量赋予 3D 模型 PS1 复古材质
+extends Node3D
+
+@export var ps1_material: ShaderMaterial
+
+func _ready():
+	for child in get_children():
+		if child is MeshInstance3D:
+			child.material_override = ps1_material`
+            },
+            {
+                id: 'posterize_pixel',
+                name: '色调分离与像素化 (Posterize & Pixelate)',
+                type: '2D/3D 高性能简易复古',
+                desc: '限制画面色彩数量 (Color Posterization) 并降低分辨率，营造 Arcade 街机 Arcade 复古画风。',
+                controls: [
+                    { id: 'pixelScale', label: '像素马赛克缩放', min: 1, max: 12, step: 1, val: 4 },
+                    { id: 'colorLevels', label: '色彩阶数 (Color Levels)', min: 2, max: 16, step: 1, val: 5 }
+                ],
+                gdshader: `shader_type canvas_item;
+// Godot 4 高性能像素化与色调分离 Shader
+uniform sampler2D SCREEN_TEXTURE : hint_screen_texture, filter_nearest;
+
+uniform float pixel_scale : hint_range(1.0, 16.0, 1.0) = 4.0;
+uniform float color_levels : hint_range(2.0, 16.0, 1.0) = 5.0;
+
+void fragment() {
+    // 像素化计算
+    vec2 grid_size = SCREEN_PIXEL_SIZE * pixel_scale;
+    vec2 uv = floor(SCREEN_UV / grid_size) * grid_size;
+    
+    vec3 col = texture(SCREEN_TEXTURE, uv).rgb;
+    
+    // 色调分离 (Posterization)
+    col = floor(col * color_levels) / (color_levels - 1.0);
+    
+    COLOR = vec4(col, 1.0);
+}`,
+                gdscript: `# GDScript: 绑定参数到 GUI 拖动条
+extends ColorRect
+
+func _on_pixel_slider_value_changed(value):
+	(material as ShaderMaterial).set_shader_parameter("pixel_scale", value)`
+            }
+        ];
+
+        // Global State
+        let currentPresetIndex = 0;
+        let activeTab = 'shader';
+        let is3DScene = true;
+
+        // Three.js Preview Engine Instance
+        let scene, camera, renderer, renderTarget;
+        let quadScene, quadCamera, customMaterial;
+        let animatedMesh, bgGroup;
+
+        function initWebGL() {
+            const container = document.getElementById('canvas-container');
+            const canvas = document.getElementById('webgl-canvas');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // 1. Setup 3D Content Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x12131C);
+
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.set(0, 1.5, 4);
+            camera.lookAt(0, 0, 0);
+
+            // Add Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0x6366F1, 1.5);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+            const pointLight = new THREE.PointLight(0xEC4899, 2, 10);
+            pointLight.position.set(-2, 1, 2);
+            scene.add(pointLight);
+
+            // Add Animated Retro 3D Meshes
+            const group = new THREE.Group();
+            
+            // Main Low-poly Knot
+            const knotGeo = new THREE.TorusKnotGeometry(0.7, 0.25, 64, 16);
+            const knotMat = new THREE.MeshStandardMaterial({ 
+                color: 0x3B82F6, 
+                roughness: 0.3, 
+                metalness: 0.2,
+                flatShading: true 
+            });
+            animatedMesh = new THREE.Mesh(knotGeo, knotMat);
+            group.add(animatedMesh);
+
+            // Surrounding Floating Objects
+            const cubeGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const cubeMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, flatShading: true });
+            for(let i = 0; i < 5; i++) {
+                const cube = new THREE.Mesh(cubeGeo, cubeMat);
+                const angle = (i / 5) * Math.PI * 2;
+                cube.position.set(Math.cos(angle) * 1.8, Math.sin(angle) * 0.8, Math.sin(angle) * 1.2);
+                group.add(cube);
+            }
+            scene.add(group);
+            bgGroup = group;
+
+            // 2. Setup Post-processing WebGL RenderTarget & Quad Screen
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            renderTarget = new THREE.WebGLRenderTarget(width, height, {
+                minFilter: THREE.NearestFilter,
+                magFilter: THREE.NearestFilter,
+                format: THREE.RGBAFormat
+            });
+
+            // Postprocessing Screen Quad
+            quadScene = new THREE.Scene();
+            quadCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            // WebGL Custom Retro Shader Simulation
+            customMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    tDiffuse: { value: renderTarget.texture },
+                    pixelSize: { value: 3.0 },
+                    ditherStrength: { value: 0.6 },
+                    paletteSelect: { value: 0 },
+                    warp: { value: 0.06 },
+                    scanlines: { value: 0.4 },
+                    aberration: { value: 0.005 },
+                    vignette: { value: 0.5 },
+                    pixelScale: { value: 4.0 },
+                    colorLevels: { value: 5.0 },
+                    shaderType: { value: 0 }, // 0: Dither, 1: CRT, 2: PS1, 3: Posterize
+                    resolution: { value: new THREE.Vector2(width, height) }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D tDiffuse;
+                    uniform vec2 resolution;
+                    uniform float pixelSize;
+                    uniform float ditherStrength;
+                    uniform int paletteSelect;
+                    uniform float warp;
+                    uniform float scanlines;
+                    uniform float aberration;
+                    uniform float vignette;
+                    uniform float pixelScale;
+                    uniform float colorLevels;
+                    uniform int shaderType;
+                    varying vec2 vUv;
+
+                    // Bayer 4x4
+                    float getBayer(vec2 coord) {
+                        int x = int(mod(coord.x, 4.0));
+                        int y = int(mod(coord.y, 4.0));
+                        if (x==0 && y==0) return 0.0/16.0; if (x==2 && y==0) return 8.0/16.0;
+                        if (x==0 && y==2) return 2.0/16.0; if (x==2 && y==2) return 10.0/16.0;
+                        if (x==1 && y==0) return 12.0/16.0; if (x==3 && y==0) return 4.0/16.0;
+                        if (x==1 && y==2) return 14.0/16.0; if (x==3 && y==2) return 6.0/16.0;
+                        return 8.0/16.0;
+                    }
+
+                    vec3 getPalette(vec3 col, int mode) {
+                        if (mode == 0) { // GB
+                            vec3 p0 = vec3(0.06, 0.22, 0.06); vec3 p1 = vec3(0.19, 0.38, 0.19);
+                            vec3 p2 = vec3(0.54, 0.67, 0.06); vec3 p3 = vec3(0.61, 0.73, 0.06);
+                            float d0 = distance(col, p0); float d1 = distance(col, p1);
+                            float d2 = distance(col, p2); float d3 = distance(col, p3);
+                            if (d0<d1 && d0<d2 && d0<d3) return p0;
+                            if (d1<d2 && d1<d3) return p1;
+                            if (d2<d3) return p2; return p3;
+                        } else if (mode == 2) { // CGA
+                            vec3 p0 = vec3(0.0); vec3 p1 = vec3(0.33,1.0,1.0);
+                            vec3 p2 = vec3(1.0,0.33,1.0); vec3 p3 = vec3(1.0);
+                            float d0 = distance(col, p0); float d1 = distance(col, p1);
+                            float d2 = distance(col, p2); float d3 = distance(col, p3);
+                            if (d0<d1 && d0<d2 && d0<d3) return p0;
+                            if (d1<d2 && d1<d3) return p1;
+                            if (d2<d3) return p2; return p3;
+                        } else if (mode == 3) { // Cyberpunk
+                            vec3 p0 = vec3(0.05,0.02,0.15); vec3 p1 = vec3(0.98,0.0,0.52);
+                            vec3 p2 = vec3(0.0,0.95,0.98); vec3 p3 = vec3(0.98,0.9,0.2);
+                            float d0 = distance(col, p0); float d1 = distance(col, p1);
+                            float d2 = distance(col, p2); float d3 = distance(col, p3);
+                            if (d0<d1 && d0<d2 && d0<d3) return p0;
+                            if (d1<d2 && d1<d3) return p1;
+                            if (d2<d3) return p2; return p3;
+                        }
+                        float lum = dot(col, vec3(0.299, 0.587, 0.114));
+                        return vec3(floor(lum * 4.0) / 3.0);
+                    }
+
+                    void main() {
+                        if (shaderType == 0) { // Dither
+                            vec2 pixelatedUV = floor(gl_FragCoord.xy / pixelSize) * pixelSize / resolution;
+                            vec3 c = texture2D(tDiffuse, pixelatedUV).rgb;
+                            float bayer = getBayer(gl_FragCoord.xy / pixelSize) - 0.5;
+                            c = clamp(c + vec3(bayer * ditherStrength * 0.3), 0.0, 1.0);
+                            gl_FragColor = vec4(getPalette(c, paletteSelect), 1.0);
+                        } else if (shaderType == 1) { // CRT
+                            vec2 dc = vUv - vec2(0.5);
+                            vec2 uv = vUv + dc * dot(dc, dc) * warp * 5.0;
+                            if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+                                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return;
+                            }
+                            float r = texture2D(tDiffuse, uv + vec2(aberration, 0.0)).r;
+                            float g = texture2D(tDiffuse, uv).g;
+                            float b = texture2D(tDiffuse, uv - vec2(aberration, 0.0)).b;
+                            vec3 col = vec3(r, g, b);
+                            col -= (sin(uv.y * resolution.y * 1.5) * 0.5 + 0.5) * scanlines * 0.3;
+                            float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+                            col *= clamp(pow(16.0 * vig, vignette), 0.0, 1.0);
+                            gl_FragColor = vec4(col, 1.0);
+                        } else if (shaderType == 3) { // Posterize
+                            vec2 grid = vec2(pixelScale) / resolution;
+                            vec2 uv = floor(vUv / grid) * grid;
+                            vec3 col = texture2D(tDiffuse, uv).rgb;
+                            col = floor(col * colorLevels) / (colorLevels - 1.0);
+                            gl_FragColor = vec4(col, 1.0);
+                        } else { // PS1 Direct
+                            gl_FragColor = texture2D(tDiffuse, vUv);
+                        }
+                    }
+                `
+            });
+
+            const quadMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), customMaterial);
+            quadScene.add(quadMesh);
+
+            // Handle Resize
+            window.addEventListener('resize', onWindowResize);
+
+            // Animation Loop
+            animate();
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if(!container) return;
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            renderTarget.setSize(w, h);
+            customMaterial.uniforms.resolution.value.set(w, h);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (animatedMesh) {
+                animatedMesh.rotation.x += 0.01;
+                animatedMesh.rotation.y += 0.015;
+            }
+            if (bgGroup) {
+                bgGroup.rotation.z += 0.002;
+            }
+
+            // Render 3D Scene into RenderTarget then apply Post Shader
+            renderer.setRenderTarget(renderTarget);
+            renderer.render(scene, camera);
+            renderer.setRenderTarget(null);
+            renderer.render(quadScene, quadCamera);
+        }
+
+        function buildMenu() {
+            const menuContainer = document.getElementById('shader-menu');
+            menuContainer.innerHTML = '';
+
+            SHADER_PRESETS.forEach((preset, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-3 py-2.5 rounded-lg border transition text-xs flex items-center justify-between ${
+                    idx === currentPresetIndex
+                        ? 'bg-retro-accent/20 border-retro-accent text-white font-medium'
+                        : 'bg-slate-900/40 border-retro-border text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                }`;
+                btn.innerHTML = `
+                    <div class="truncate">
+                        <div class="font-medium truncate">${preset.name}</div>
+                        <div class="text-[10px] text-slate-500 font-mono mt-0.5">${preset.type}</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] opacity-60 ml-2"></i>
+                `;
+                btn.onclick = () => selectPreset(idx);
+                menuContainer.appendChild(btn);
+            });
+        }
+
+        function selectPreset(index) {
+            currentPresetIndex = index;
+            buildMenu();
+            updateControls();
+            updateCodeView();
+            applyShaderToPreview();
+        }
+
+        function updateControls() {
+            const panel = document.getElementById('dynamic-controls');
+            panel.innerHTML = '';
+            const preset = SHADER_PRESETS[currentPresetIndex];
+
+            preset.controls.forEach(ctrl => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'space-y-1';
+
+                if (ctrl.type === 'select') {
+                    wrapper.innerHTML = `
+                        <div class="flex justify-between text-slate-400 text-[11px]">
+                            <label>${ctrl.label}</label>
+                        </div>
+                        <select id="ctrl-${ctrl.id}" class="w-full bg-slate-900 border border-retro-border rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-retro-accent">
+                            ${ctrl.options.map((opt, i) => `<option value="${i}" ${i === ctrl.val ? 'selected' : ''}>${opt}</option>`).join('')}
+                        </select>
+                    `;
+                } else {
+                    wrapper.innerHTML = `
+                        <div class="flex justify-between text-slate-400 text-[11px]">
+                            <label>${ctrl.label}</label>
+                            <span id="val-${ctrl.id}" class="font-mono text-indigo-400">${ctrl.val}</span>
+                        </div>
+                        <input id="ctrl-${ctrl.id}" type="range" min="${ctrl.min}" max="${ctrl.max}" step="${ctrl.step}" value="${ctrl.val}" 
+                            class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    `;
+                }
+                panel.appendChild(wrapper);
+
+                // Add Event Listener
+                setTimeout(() => {
+                    const input = document.getElementById(`ctrl-${ctrl.id}`);
+                    if (input) {
+                        input.oninput = (e) => {
+                            ctrl.val = ctrl.type === 'select' ? parseInt(e.target.value) : parseFloat(e.target.value);
+                            const valDisplay = document.getElementById(`val-${ctrl.id}`);
+                            if (valDisplay) valDisplay.innerText = ctrl.val;
+                            applyShaderToPreview();
+                        };
+                    }
+                }, 0);
+            });
+        }
+
+        function applyShaderToPreview() {
+            if (!customMaterial) return;
+            const preset = SHADER_PRESETS[currentPresetIndex];
+            
+            // Map shaderType id
+            let typeId = 0;
+            if (preset.id === 'dither_palette') typeId = 0;
+            else if (preset.id === 'crt_tv') typeId = 1;
+            else if (preset.id === 'ps1_vertex') typeId = 2;
+            else if (preset.id === 'posterize_pixel') typeId = 3;
+
+            customMaterial.uniforms.shaderType.value = typeId;
+
+            // Apply Uniform values
+            preset.controls.forEach(ctrl => {
+                if (customMaterial.uniforms[ctrl.id]) {
+                    customMaterial.uniforms[ctrl.id].value = ctrl.val;
+                }
+            });
+        }
+
+        function updateCodeView() {
+            const preset = SHADER_PRESETS[currentPresetIndex];
+            const codeElem = document.getElementById('code-display');
+            document.getElementById('shader-title').innerText = preset.name;
+            document.getElementById('shader-desc').innerText = preset.desc;
+
+            if (activeTab === 'shader') {
+                codeElem.innerText = preset.gdshader;
+            } else {
+                codeElem.innerText = preset.gdscript;
+            }
+        }
+
+        function setupEventListeners() {
+            // Tab switching
+            const tabShader = document.getElementById('tab-shader');
+            const tabGdscript = document.getElementById('tab-gdscript');
+
+            tabShader.onclick = () => {
+                activeTab = 'shader';
+                tabShader.className = 'text-xs font-mono font-medium px-3 py-1.5 rounded-lg bg-retro-accent text-white transition';
+                tabGdscript.className = 'text-xs font-mono font-medium px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+                updateCodeView();
+            };
+
+            tabGdscript.onclick = () => {
+                activeTab = 'gdscript';
+                tabGdscript.className = 'text-xs font-mono font-medium px-3 py-1.5 rounded-lg bg-retro-accent text-white transition';
+                tabShader.className = 'text-xs font-mono font-medium px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition';
+                updateCodeView();
+            };
+
+            // Copy button logic
+            const copyBtn = document.getElementById('copy-code-btn');
+            const copyAllBtn = document.getElementById('copy-all-btn');
+
+            const copyHandler = () => {
+                const preset = SHADER_PRESETS[currentPresetIndex];
+                const content = activeTab === 'shader' ? preset.gdshader : preset.gdscript;
+                navigator.clipboard.writeText(content).then(() => {
+                    const originalText = copyAllBtn.innerHTML;
+                    copyAllBtn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> 已复制到剪贴板`;
+                    setTimeout(() => copyAllBtn.innerHTML = originalText, 2000);
+                });
+            };
+
+            copyBtn.onclick = copyHandler;
+            copyAllBtn.onclick = copyHandler;
+
+            // Scene toggle (3D Mesh rotation toggle)
+            document.getElementById('toggle-scene-btn').onclick = () => {
+                is3DScene = !is3DScene;
+                if(animatedMesh) animatedMesh.visible = is3DScene;
+            };
+        }
+
+        // Initialize App on DOM Loaded
+        window.addEventListener('DOMContentLoaded', () => {
+            initWebGL();
+            buildMenu();
+            selectPreset(0);
+            setupEventListeners();
+        });
+    </script>
+</body>
+</html>

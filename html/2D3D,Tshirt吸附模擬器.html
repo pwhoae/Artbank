@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高度逼真 2D/3D 服裝圖片吸附模擬器</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; background: #121214; color: #f0f0f2; overflow: hidden; }
+    
+    /* Sidebar styling */
+    #sidebar { width: 360px; background: #1a1a1e; padding: 24px; display: flex; flex-direction: column; gap: 20px; border-right: 1px solid #2d2d35; overflow-y: auto; z-index: 10; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+    h2 { font-size: 20px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    h2 span { font-size: 12px; background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+    
+    .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; color: #8a8a9e; letter-spacing: 1px; margin-top: 8px; }
+    .group { display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 13px; color: #c4c4d4; display: flex; justify-content: space-between; align-items: center; }
+    label span.val { color: #3b82f6; font-family: monospace; font-weight: 600; }
+    
+    select, input[type="file"] { padding: 10px 12px; background: #25252b; border: 1px solid #3a3a45; color: #fff; border-radius: 6px; font-size: 14px; outline: none; transition: all 0.2s; }
+    select:focus, input[type="file"]:hover { border-color: #3b82f6; }
+    
+    /* Custom range sliders */
+    input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #2f2f38; border-radius: 3px; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; transition: transform 0.1s; }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    /* Buttons */
+    .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+    button { flex: 1; padding: 12px 16px; background: #25252b; border: 1px solid #3a3a45; color: #fff; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    button:hover { background: #32323a; border-color: #4a4a58; }
+    button.primary { background: #2563eb; border-color: #3b82f6; font-weight: 600; }
+    button.primary:hover { background: #1d4ed8; }
+    
+    /* Hint box */
+    .hint { font-size: 12px; color: #9090a0; line-height: 1.5; background: #222228; padding: 12px; border-radius: 6px; border-left: 3px solid #3b82f6; }
+
+    /* Main Viewport */
+    #viewport { flex: 1; position: relative; background: radial-gradient(circle at center, #1e1e24 0%, #0f0f12 100%); cursor: grab; }
+    #viewport:active { cursor: grabbing; }
+    canvas { width: 100%; height: 100%; display: block; }
+    
+    /* Loading overlay */
+    #loading { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18,18,20,0.8); display: flex; justify-content: center; align-items: center; color: #fff; font-size: 16px; font-weight: 500; backdrop-filter: blur(4px); transition: opacity 0.3s; pointer-events: none; opacity: 0; z-index: 20; }
+    #loading.active { opacity: 1; pointer-events: auto; }
+  </style>
+
+  <!-- Three.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="sidebar">
+    <h2>2D/3D 吸附模擬器 <span>PRO</span></h2>
+    
+    <div class="section-title">模型與材質</div>
+    <div class="group">
+      <label for="modelSelect">選擇載體 / 模擬對象</label>
+      <select id="modelSelect">
+        <option value="tshirt">3D 時尚 T-Shirt (服裝皺褶質感)</option>
+        <option value="canvas2d">2D 帆布布料 (真實織紋與深層折痕)</option>
+        <option value="cube">3D 質感立方體 (展示角落吸附)</option>
+        <option value="sphere">3D 圓形彈性球 (展示曲面拉伸)</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <label for="imageLoader">上傳吸附圖案 (Logo / 印花 / 設計)</label>
+      <input type="file" id="imageLoader" accept="image/*">
+    </div>
+
+    <div class="section-title">印花吸附調整</div>
+    <div class="group">
+      <label for="scale">印花尺寸 (Scale) <span class="val" id="val-scale">1.0</span></label>
+      <input type="range" id="scale" min="0.2" max="3.0" value="1.0" step="0.05">
+    </div>
+
+    <div class="group">
+      <label for="posX">水平位置 (Position X) <span class="val" id="val-posX">0.0</span></label>
+      <input type="range" id="posX" min="-1.5" max="1.5" value="0.0" step="0.02">
+    </div>
+
+    <div class="group">
+      <label for="posY">垂直位置 (Position Y) <span class="val" id="val-posY">0.0</span></label>
+      <input type="range" id="posY" min="-1.5" max="1.5" value="0.0" step="0.02">
+    </div>
+
+    <div class="group">
+      <label for="bumpScale">折痕/布料立體質感強度 <span class="val" id="val-bump">0.15</span></label>
+      <input type="range" id="bumpScale" min="0" max="0.5" value="0.15" step="0.01">
+    </div>
+
+    <div class="group">
+      <label for="roughness">布料粗糙度 (Roughness) <span class="val" id="val-rough">0.85</span></label>
+      <input type="range" id="roughness" min="0.1" max="1.0" value="0.85" step="0.05">
+    </div>
+
+    <div class="btn-group">
+      <button id="resetBtn">重置視角</button>
+      <button id="downloadBtn" class="primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        下載高清渲染圖
+      </button>
+    </div>
+
+    <div class="hint">
+      <strong>特色功能：</strong><br>
+      • 採用法線貼圖 (Normal Map) 模擬真實布料微觀纖維與自然皺褶。<br>
+      • 印花圖案會完全順應服裝的凸起與凹陷自然彎曲吸附。<br>
+      • 可即時導出高解析度 PNG 渲染畫面。
+    </div>
+  </div>
+
+  <div id="viewport">
+    <div id="loading">載入質感數據中...</div>
+  </div>
+
+  <script>
+    // --- 程序化生成布料質感與折痕法線貼圖 (Procedural Fabric & Wrinkle Normal Map) ---
+    function generateWrinkleNormalMap() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      // 基礎法線色 (Flat Normal: #8080FF)
+      ctx.fillStyle = 'rgb(128, 128, 255)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+
+      // 生成大型服裝折痕 (Waves) 與微觀布料織紋 (Micro-woven texture)
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const idx = (y * canvas.width + x) * 4;
+
+          // 1. 大型皺褶波浪 (Wrinkles)
+          const wrinkle1 = Math.sin(x * 0.008 + Math.cos(y * 0.005) * 3) * 35;
+          const wrinkle2 = Math.cos(y * 0.012 + Math.sin(x * 0.006) * 2) * 25;
+          const wrinkle3 = Math.sin((x + y) * 0.015) * 15;
+
+          // 2. 細微布料網格織紋 (Fabric Micro-texture)
+          const fabricPattern = (Math.sin(x * 0.8) * Math.cos(y * 0.8)) * 12;
+
+          // 計算 X 與 Y 方向的梯度法線偏移
+          let nx = wrinkle1 + wrinkle3 + fabricPattern;
+          let ny = wrinkle2 + wrinkle3 + fabricPattern;
+
+          // 寫入 RGB (R: X方向法線, G: Y方向法線, B: Z垂直高度)
+          data[idx]     = Math.min(255, Math.max(0, 128 + nx)); // Red
+          data[idx + 1] = Math.min(255, Math.max(0, 128 + ny)); // Green
+          data[idx + 2] = 255;                                 // Blue
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // --- 畫布貼圖混合器 (Canvas Texture Compositor for Graphic Decal) ---
+    class DecalTextureCompositor {
+      constructor(width = 2048, height = 2048) {
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.texture = new THREE.CanvasTexture(this.canvas);
+        this.texture.wrapS = THREE.ClampToEdgeWrapping;
+        this.texture.wrapT = THREE.ClampToEdgeWrapping;
+        
+        // 預設底色 (高級棉質休閒服灰白/冷灰)
+        this.bgColor = '#e5e5ea';
+        this.userImage = null;
+        
+        // 變換參數
+        this.scale = 1.0;
+        this.posX = 0.0;
+        this.posY = 0.0;
+        
+        this.update();
+      }
+
+      setBgColor(color) {
+        this.bgColor = color;
+        this.update();
+      }
+
+      setUserImage(img) {
+        this.userImage = img;
+        this.update();
+      }
+
+      setTransform(scale, posX, posY) {
+        this.scale = scale;
+        this.posX = posX;
+        this.posY = posY;
+        this.update();
+      }
+
+      update() {
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // 1. 繪製衣物底色
+        this.ctx.fillStyle = this.bgColor;
+        this.ctx.fillRect(0, 0, w, h);
+
+        // 2. 如果有上傳圖案，吸附並合成至底圖
+        if (this.userImage) {
+          this.ctx.save();
+          
+          // 計算中心點與位置偏移
+          const centerX = w / 2 + (this.posX * (w / 3));
+          const centerY = h / 2 - (this.posY * (h / 3));
+          
+          // 計算保持比例的縮放尺寸
+          const aspect = this.userImage.width / this.userImage.height;
+          let drawW = w * 0.4 * this.scale;
+          let drawH = drawW / aspect;
+
+          this.ctx.translate(centerX, centerY);
+          this.ctx.drawImage(this.userImage, -drawW / 2, -drawH / 2, drawW, drawH);
+          
+          this.ctx.restore();
+        }
+
+        this.texture.needsUpdate = true;
+      }
+    }
+
+    // --- Three.js 主場景初始化 ---
+    const container = document.getElementById('viewport');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x121214);
+
+    // 相機設置
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 4.5);
+
+    // 渲染器設置 (開啟 preserveDrawingBuffer 以支援截圖下載)
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: "high-performance" });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    // 高質感光源系統 (Studio Lighting)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xfff5ea, 1.2);
+    mainLight.position.set(3, 4, 5);
+    scene.add(mainLight);
+
+    const fillLight = new THREE.DirectionalLight(0xe8f0ff, 0.6);
+    fillLight.position.set(-4, -2, 3);
+    scene.add(fillLight);
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    backLight.position.set(0, 4, -4);
+    scene.add(backLight);
+
+    // 生成皺褶法線貼圖與合成器
+    const wrinkleNormalMap = generateWrinkleNormalMap();
+    wrinkleNormalMap.wrapS = THREE.RepeatWrapping;
+    wrinkleNormalMap.wrapT = THREE.RepeatWrapping;
+
+    const compositor = new DecalTextureCompositor();
+
+    // 建立通用 Standard 材質 (模擬真實服裝布料質感)
+    const fabricMaterial = new THREE.MeshStandardMaterial({
+      map: compositor.texture,
+      normalMap: wrinkleNormalMap,
+      normalScale: new THREE.Vector2(0.15, 0.15),
+      roughness: 0.85,
+      metalness: 0.05
+    });
+
+    let currentMesh = null;
+
+    // 建立 3D 服裝造型幾何體 (程序化 T-Shirt 網格)
+    function createTShirtGeometry() {
+      const geom = new THREE.PlaneGeometry(2.4, 2.8, 64, 64);
+      const pos = geom.attributes.position;
+      
+      // 給予平面微幅立體弧度，使其像穿在身上的衣服
+      for (let i = 0; i < pos.count; i++) {
+        let x = pos.getX(i);
+        let y = pos.getY(i);
+        
+        // 胸口微隆起、雙側微微後收
+        let z = Math.cos(x * 1.2) * 0.15 + Math.sin(y * 0.8) * 0.08;
+        pos.setZ(i, z);
+      }
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    // 更新當前顯示的模型
+    function switchModel(type) {
+      if (currentMesh) scene.remove(currentMesh);
+
+      let geometry;
+      if (type === 'tshirt') {
+        geometry = createTShirtGeometry();
+        wrinkleNormalMap.repeat.set(1, 1);
+      } else if (type === 'canvas2d') {
+        geometry = new THREE.PlaneGeometry(2.5, 2.5, 32, 32);
+        wrinkleNormalMap.repeat.set(2, 2);
+      } else if (type === 'cube') {
+        geometry = new THREE.BoxGeometry(1.8, 1.8, 1.8, 32, 32, 32);
+        wrinkleNormalMap.repeat.set(1, 1);
+      } else if (type === 'sphere') {
+        geometry = new THREE.SphereGeometry(1.3, 64, 64);
+        wrinkleNormalMap.repeat.set(2, 2);
+      }
+
+      currentMesh = new THREE.Mesh(geometry, fabricMaterial);
+      scene.add(currentMesh);
+    }
+
+    // 初次載入預設模型
+    switchModel('tshirt');
+
+    // --- UI 控制與事件監聽 ---
+    
+    // 下拉選單切換模型
+    document.getElementById('modelSelect').addEventListener('change', (e) => {
+      switchModel(e.target.value);
+    });
+
+    // 圖片上傳
+    document.getElementById('imageLoader').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            compositor.setUserImage(img);
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // 印花縮放與位置控制器
+    const scaleInput = document.getElementById('scale');
+    const posXInput = document.getElementById('posX');
+    const posYInput = document.getElementById('posY');
+
+    function updateTransform() {
+      const s = parseFloat(scaleInput.value);
+      const px = parseFloat(posXInput.value);
+      const py = parseFloat(posYInput.value);
+      
+      document.getElementById('val-scale').textContent = s.toFixed(2);
+      document.getElementById('val-posX').textContent = px.toFixed(2);
+      document.getElementById('val-posY').textContent = py.toFixed(2);
+
+      compositor.setTransform(s, px, py);
+    }
+
+    scaleInput.addEventListener('input', updateTransform);
+    posXInput.addEventListener('input', updateTransform);
+    posYInput.addEventListener('input', updateTransform);
+
+    // 折痕強度控制器
+    document.getElementById('bumpScale').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('val-bump').textContent = val.toFixed(2);
+      fabricMaterial.normalScale.set(val, val);
+    });
+
+    // 粗糙度控制器
+    document.getElementById('roughness').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      document.getElementById('val-rough').textContent = val.toFixed(2);
+      fabricMaterial.roughness = val;
+    });
+
+    // 互動旋轉與視角控制 (Smooth Orbit Controls)
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+
+    container.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    container.addEventListener('mousemove', (e) => {
+      if (!isDragging || !currentMesh) return;
+
+      const deltaX = e.clientX - previousMousePosition.x;
+      const deltaY = e.clientY - previousMousePosition.y;
+
+      currentMesh.rotation.y += deltaX * 0.008;
+      currentMesh.rotation.x += deltaY * 0.008;
+
+      previousMousePosition = { x: e.clientX, y: e.clientY };
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    // 滾輪縮放
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camera.position.z += e.deltaY * 0.003;
+      camera.position.z = Math.max(1.8, Math.min(8.0, camera.position.z));
+    }, { passive: false });
+
+    // 重置視角按鈕
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      camera.position.set(0, 0, 4.5);
+      if (currentMesh) {
+        currentMesh.rotation.set(0, 0, 0);
+      }
+    });
+
+    // 高解析度圖片下載功能 (Download Feature)
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      // 確保畫面渲染最新幀
+      renderer.render(scene, camera);
+      
+      // 擷取 Canvas 數據 URL
+      const dataURL = renderer.domElement.toDataURL('image/png');
+      
+      // 觸發瀏覽器自動下載
+      const link = document.createElement('a');
+      link.download = 'fabric-mockup-render.png';
+      link.href = dataURL;
+      link.click();
+    });
+
+    // 視窗大小自適應
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // 渲染循環
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

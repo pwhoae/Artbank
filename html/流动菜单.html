@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Godot 4 FlowingMenu Component Studio</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            godot: {
+              400: '#478cbf',
+              500: '#355570',
+              600: '#263b4d',
+              800: '#1e2d3b',
+              900: '#141d26',
+              accent: '#41b883'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            display: ['Syne', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <!-- GSAP Animation Library for Live Godot Simulation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Godot UI FlowingMenu Simulation CSS */
+    .godot-menu-wrap {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .godot-menu {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .godot-menu__item {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+      border-top: 1px solid;
+    }
+
+    .godot-menu__item:first-child {
+      border-top: none;
+    }
+
+    .godot-menu__item-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      position: relative;
+      cursor: pointer;
+      text-transform: uppercase;
+      text-decoration: none;
+      white-space: nowrap;
+      font-weight: 700;
+      font-size: clamp(1.8rem, 4.5vh, 3.8rem);
+      letter-spacing: -0.02em;
+      transition: opacity 0.2s ease;
+      user-select: none;
+    }
+
+    .godot-marquee {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transform: translate3d(0, 101%, 0);
+    }
+
+    .godot-marquee__inner-wrap {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .godot-marquee__inner {
+      display: flex;
+      align-items: center;
+      position: relative;
+      height: 100%;
+      width: fit-content;
+      will-change: transform;
+    }
+
+    .godot-marquee__part {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .godot-marquee span {
+      white-space: nowrap;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: clamp(1.8rem, 4.5vh, 3.8rem);
+      line-height: 1;
+      padding: 0 1.5vw;
+      letter-spacing: -0.02em;
+    }
+
+    .godot-marquee__img {
+      width: clamp(120px, 18vw, 220px);
+      height: clamp(45px, 7vh, 70px);
+      margin: 0 2vw;
+      border-radius: 9999px;
+      background-size: cover;
+      background-position: 50% 50%;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #141d26;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #355570;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #478cbf;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col">
+
+  <div id="root" class="h-full flex flex-col"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    const GODOT_PRESETS = [
+      {
+        id: 'cyberpunk',
+        name: 'Neo Cyberpunk',
+        speed: 12,
+        textColor: '#00F0FF',
+        bgColor: '#0A0A12',
+        marqueeBgColor: '#FF0055',
+        marqueeTextColor: '#FFFFFF',
+        borderColor: '#00F0FF44',
+        items: [
+          { text: 'START GAME', link: 'res://scenes/Main.tscn', image: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?q=80&w=800&h=500&fit=crop' },
+          { text: 'LEVEL SELECT', link: 'res://scenes/Levels.tscn', image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=800&h=500&fit=crop' },
+          { text: 'UPGRADES', link: 'res://scenes/Shop.tscn', image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=800&h=500&fit=crop' },
+          { text: 'SETTINGS', link: 'res://scenes/Settings.tscn', image: 'https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?q=80&w=800&h=500&fit=crop' }
+        ]
+      },
+      {
+        id: 'godot_blue',
+        name: 'Godot Engine Classic',
+        speed: 15,
+        textColor: '#ffffff',
+        bgColor: '#1e2d3b',
+        marqueeBgColor: '#478cbf',
+        marqueeTextColor: '#141d26',
+        borderColor: '#478cbf55',
+        items: [
+          { text: 'Mojave Desert', link: 'res://maps/mojave.tscn', image: 'https://images.unsplash.com/photo-1782977389500-dd7adad33ebe?q=80&w=800&h=500&fit=crop&sat=-100&auto=format' },
+          { text: 'Sonoma Valley', link: 'res://maps/sonoma.tscn', image: 'https://images.unsplash.com/photo-1781499455083-6ccc3beb20cd?q=80&w=800&h=500&fit=crop&sat=-100&auto=format' },
+          { text: 'Monterey Bay', link: 'res://maps/monterey.tscn', image: 'https://images.unsplash.com/photo-1776394254711-4a0d7345269a?q=80&w=800&h=500&fit=crop&sat=-100&auto=format' },
+          { text: 'Sequoia Park', link: 'res://maps/sequoia.tscn', image: 'https://images.unsplash.com/photo-1781242629922-6f39cc3671cd?q=80&w=800&h=500&fit=crop&sat=-100&auto=format' }
+        ]
+      },
+      {
+        id: 'gold_noir',
+        name: 'Luxury RPG UI',
+        speed: 18,
+        textColor: '#f59e0b',
+        bgColor: '#1c1917',
+        marqueeBgColor: '#f59e0b',
+        marqueeTextColor: '#1c1917',
+        borderColor: '#f59e0b33',
+        items: [
+          { text: 'CAMPAIGN', link: 'res://ui/Campaign.tscn', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=800&h=500&fit=crop' },
+          { text: 'INVENTORY', link: 'res://ui/Inventory.tscn', image: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?q=80&w=800&h=500&fit=crop' },
+          { text: 'SPELLBOOK', link: 'res://ui/Spells.tscn', image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?q=80&w=800&h=500&fit=crop' },
+          { text: 'CREDITS', link: 'res://ui/Credits.tscn', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=800&h=500&fit=crop' }
+        ]
+      }
+    ];
+
+    function MenuItemSim({ text, image, link, speed, textColor, marqueeBgColor, marqueeTextColor, borderColor, onItemClick }) {
+      const itemRef = useRef(null);
+      const marqueeRef = useRef(null);
+      const marqueeInnerRef = useRef(null);
+      const animationRef = useRef(null);
+      const [repetitions, setRepetitions] = useState(4);
+
+      const animationDefaults = { duration: 0.6, ease: 'expo' };
+
+      const findClosestEdge = (mouseX, mouseY, width, height) => {
+        const topEdgeDist = Math.pow(mouseX - width / 2, 2) + Math.pow(mouseY - 0, 2);
+        const bottomEdgeDist = Math.pow(mouseX - width / 2, 2) + Math.pow(mouseY - height, 2);
+        return topEdgeDist < bottomEdgeDist ? 'top' : 'bottom';
+      };
+
+      useEffect(() => {
+        const calculateRepetitions = () => {
+          if (!marqueeInnerRef.current) return;
+          const marqueeContent = marqueeInnerRef.current.querySelector('.godot-marquee__part');
+          if (!marqueeContent) return;
+
+          const contentWidth = marqueeContent.offsetWidth;
+          const viewportWidth = window.innerWidth;
+          const needed = Math.ceil(viewportWidth / contentWidth) + 2;
+          setRepetitions(Math.max(4, needed));
+        };
+
+        calculateRepetitions();
+        window.addEventListener('resize', calculateRepetitions);
+        return () => window.removeEventListener('resize', calculateRepetitions);
+      }, [text, image]);
+
+      useEffect(() => {
+        const setupMarquee = () => {
+          if (!marqueeInnerRef.current) return;
+          const marqueeContent = marqueeInnerRef.current.querySelector('.godot-marquee__part');
+          if (!marqueeContent) return;
+
+          const contentWidth = marqueeContent.offsetWidth;
+          if (contentWidth === 0) return;
+
+          if (animationRef.current) {
+            animationRef.current.kill();
+          }
+
+          animationRef.current = gsap.to(marqueeInnerRef.current, {
+            x: -contentWidth,
+            duration: speed,
+            ease: 'none',
+            repeat: -1
+          });
+        };
+
+        const timer = setTimeout(setupMarquee, 50);
+
+        return () => {
+          clearTimeout(timer);
+          if (animationRef.current) animationRef.current.kill();
+        };
+      }, [text, image, repetitions, speed]);
+
+      const handleMouseEnter = ev => {
+        if (!itemRef.current || !marqueeRef.current || !marqueeInnerRef.current) return;
+        const rect = itemRef.current.getBoundingClientRect();
+        const x = ev.clientX - rect.left;
+        const y = ev.clientY - rect.top;
+        const edge = findClosestEdge(x, y, rect.width, rect.height);
+
+        gsap
+          .timeline({ defaults: animationDefaults })
+          .set(marqueeRef.current, { y: edge === 'top' ? '-101%' : '101%' }, 0)
+          .set(marqueeInnerRef.current, { y: edge === 'top' ? '101%' : '-101%' }, 0)
+          .to([marqueeRef.current, marqueeInnerRef.current], { y: '0%' }, 0);
+      };
+
+      const handleMouseLeave = ev => {
+        if (!itemRef.current || !marqueeRef.current || !marqueeInnerRef.current) return;
+        const rect = itemRef.current.getBoundingClientRect();
+        const x = ev.clientX - rect.left;
+        const y = ev.clientY - rect.top;
+        const edge = findClosestEdge(x, y, rect.width, rect.height);
+
+        gsap
+          .timeline({ defaults: animationDefaults })
+          .to(marqueeRef.current, { y: edge === 'top' ? '-101%' : '101%' }, 0)
+          .to(marqueeInnerRef.current, { y: edge === 'top' ? '101%' : '-101%' }, 0);
+      };
+
+      return (
+        <div className="godot-menu__item" ref={itemRef} style={{ borderColor }}>
+          <div
+            className="godot-menu__item-link"
+            onClick={() => onItemClick && onItemClick({ text, link, image })}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{ color: textColor }}
+          >
+            {text}
+          </div>
+          <div className="godot-marquee" ref={marqueeRef} style={{ backgroundColor: marqueeBgColor }}>
+            <div className="godot-marquee__inner-wrap">
+              <div className="godot-marquee__inner" ref={marqueeInnerRef} aria-hidden="true">
+                {[...Array(repetitions)].map((_, idx) => (
+                  <div className="godot-marquee__part" key={idx} style={{ color: marqueeTextColor }}>
+                    <span>{text}</span>
+                    <div className="godot-marquee__img" style={{ backgroundImage: `url(${image})` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function FlowingMenuSim({ items, speed, textColor, bgColor, marqueeBgColor, marqueeTextColor, borderColor, onItemClick }) {
+      return (
+        <div className="godot-menu-wrap" style={{ backgroundColor: bgColor }}>
+          <div className="godot-menu">
+            {items.map((item, idx) => (
+              <MenuItemSim
+                key={idx}
+                {...item}
+                speed={speed}
+                textColor={textColor}
+                marqueeBgColor={marqueeBgColor}
+                marqueeTextColor={marqueeTextColor}
+                borderColor={borderColor}
+                onItemClick={onItemClick}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [preset, setPreset] = useState(GODOT_PRESETS[0]);
+      const [speed, setSpeed] = useState(GODOT_PRESETS[0].speed);
+      const [textColor, setTextColor] = useState(GODOT_PRESETS[0].textColor);
+      const [bgColor, setBgColor] = useState(GODOT_PRESETS[0].bgColor);
+      const [marqueeBgColor, setMarqueeBgColor] = useState(GODOT_PRESETS[0].marqueeBgColor);
+      const [marqueeTextColor, setMarqueeTextColor] = useState(GODOT_PRESETS[0].marqueeTextColor);
+      const [borderColor, setBorderColor] = useState(GODOT_PRESETS[0].borderColor);
+      const [items, setItems] = useState(GODOT_PRESETS[0].items);
+
+      const [activeTab, setActiveTab] = useState('simulation'); // 'simulation', 'menu_gd', 'item_gd', 'tscn_guide'
+      const [selectedItem, setSelectedItem] = useState(null);
+      const [toast, setToast] = useState(null);
+
+      useEffect(() => {
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      const showNotification = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 3000);
+      };
+
+      const copyToClipboard = (text, title) => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showNotification(`Copied ${title} to clipboard!`);
+        } catch (e) {
+          showNotification('Failed to copy text.');
+        }
+      };
+
+      const handlePreset = (p) => {
+        setPreset(p);
+        setSpeed(p.speed);
+        setTextColor(p.textColor);
+        setBgColor(p.bgColor);
+        setMarqueeBgColor(p.marqueeBgColor);
+        setMarqueeTextColor(p.marqueeTextColor);
+        setBorderColor(p.borderColor);
+        setItems(p.items);
+        showNotification(`Applied ${p.name} preset`);
+      };
+
+      const flowingMenuGDScript = useMemo(() => {
+        return `# ==========================================
+# FlowingMenu.gd (Godot 4.x - GDScript 2.0)
+# Attach this script to a Control node or CanvasLayer
+# ==========================================
+class_name FlowingMenu
+extends Control
+
+## Custom signal emitted when a menu item is clicked
+signal item_clicked(item_data: Dictionary)
+
+@export_category("Flowing Menu Options")
+@export var items: Array[Dictionary] = [
+${items.map(i => `\t{\n\t\t"text": "${i.text}",\n\t\t"link": "${i.link}",\n\t\t"image": "${i.image}"\n\t}`).join(',\n')}
+]
+
+@export var speed: float = ${speed}.0
+@export var text_color: Color = Color("${textColor}")
+@export var bg_color: Color = Color("${bgColor}")
+@export var marquee_bg_color: Color = Color("${marqueeBgColor}")
+@export var marquee_text_color: Color = Color("${marqueeTextColor}")
+@export var border_color: Color = Color("${borderColor}")
+
+@onready var menu_container: VBoxContainer = $MenuContainer
+
+func _ready() -> void:
+\tanchor_right = 1.0
+\tanchor_bottom = 1.0
+\t_build_menu()
+
+func _build_menu() -> void:
+\t# Clear existing children
+\tfor child in menu_container.get_children():
+\t\tchild.queue_free()
+
+\tfor idx in range(items.size()):
+\t\tvar item_data: Dictionary = items[idx]
+\t\tvar item_node: MenuItemNode = MenuItemNode.new()
+\t\t
+\t\t# Configure properties
+\t\titem_node.size_flags_vertical = Control.SIZE_EXPAND_FILL
+\t\titem_node.item_text = item_data.get("text", "MENU ITEM")
+\t\titem_node.item_link = item_data.get("link", "")
+\t\titem_node.item_image_path = item_data.get("image", "")
+\t\titem_node.speed = speed
+\t\titem_node.text_color = text_color
+\t\titem_node.marquee_bg_color = marquee_bg_color
+\t\titem_node.marquee_text_color = marquee_text_color
+\t\titem_node.border_color = border_color
+\t\titem_node.show_top_border = (idx > 0)
+\t\t
+\t\titem_node.item_selected.connect(_on_item_selected)
+\t\tmenu_container.add_child(item_node)
+
+func _on_item_selected(text: String, link: String) -> void:
+\tprint("[FlowingMenu] Item Clicked: ", text, " -> ", link)
+\temit_signal("item_clicked", {"text": text, "link": link})
+\tif link.begins_with("res://"):
+\t\tget_tree().change_scene_to_file(link)
+`;
+      }, [items, speed, textColor, bgColor, marqueeBgColor, marqueeTextColor, borderColor]);
+
+      const menuItemGDScript = useMemo(() => {
+        return `# ==========================================
+# MenuItemNode.gd (Godot 4.x - GDScript 2.0)
+# Edge-detection hover marquee item implementation
+# ==========================================
+class_name MenuItemNode
+extends Control
+
+signal item_selected(text: String, link: String)
+
+var item_text: String = ""
+var item_link: String = ""
+var item_image_path: String = ""
+var speed: float = 15.0
+var text_color: Color = Color.WHITE
+var marquee_bg_color: Color = Color.WHITE
+var marquee_text_color: Color = Color.BLACK
+var border_color: Color = Color.WHITE
+var show_top_border: bool = true
+
+var _label: Label
+var _marquee_overlay: PanelContainer
+var _marquee_inner: HBoxContainer
+var _tween: Tween
+var _scroll_tween: Tween
+
+func _ready() -> void:
+\tclip_contents = true
+\tmouse_entered.connect(_on_mouse_entered)
+\tmouse_exited.connect(_on_mouse_exited)
+\tgui_input.connect(_on_gui_input)
+\t_setup_nodes()
+
+func _setup_nodes() -> void:
+\t# 1. Base Static Label
+\t_label = Label.new()
+\t_label.text = item_text.to_upper()
+\t_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+\t_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+\t_label.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+\t_label.add_theme_color_override("font_color", text_color)
+\t_label.add_theme_font_size_override("font_size", 42)
+\tadd_child(_label)
+
+\t# 2. Marquee Hidden Overlay Container
+\t_marquee_overlay = PanelContainer.new()
+\t_marquee_overlay.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+\t_marquee_overlay.position.y = size.y * 1.05 # Hidden off-screen
+\t_marquee_overlay.clip_contents = true
+\t
+\tvar stylebox := StyleBoxFlat.new()
+\tstylebox.bg_color = marquee_bg_color
+\t_marquee_overlay.add_theme_stylebox_override("panel", stylebox)
+\tadd_child(_marquee_overlay)
+
+\t# 3. Endless Scroll HBox
+\t_marquee_inner = HBoxContainer.new()
+\t_marquee_overlay.add_child(_marquee_inner)
+\t_populate_marquee_parts()
+\t_start_infinite_scroll()
+
+func _populate_marquee_parts() -> void:
+\tfor i in range(6): # Repeat content for seamless infinite marquee loop
+\t\tvar part := HBoxContainer.new()
+\t\t
+\t\tvar lbl := Label.new()
+\t\tlbl.text = item_text.to_upper() + "   "
+\t\tlbl.add_theme_color_override("font_color", marquee_text_color)
+\t\tlbl.add_theme_font_size_override("font_size", 42)
+\t\tpart.add_child(lbl)
+\t\t
+\t\tvar img := TextureRect.new()
+\t\timg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+\t\timg.custom_minimum_size = Vector2(180, 50)
+\t\timg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+\t\t# Set image texture if valid
+\t\tif ResourceLoader.exists(item_image_path):
+\t\t\timg.texture = load(item_image_path)
+\t\tpart.add_child(img)
+\t\t
+\t\t_marquee_inner.add_child(part)
+
+func _start_infinite_scroll() -> void:
+\t_scroll_tween = create_tween().set_loops()
+\tvar target_x: float = -300.0 # Match width of one marquee part
+\t_scroll_tween.tween_property(_marquee_inner, "position:x", target_x, speed).from(0.0)
+
+# Edge Detection Mouse Entrance
+func _on_mouse_entered() -> void:
+\tvar local_pos := get_local_mouse_position()
+\tvar edge := _closest_edge(local_pos)
+\t
+\tif _tween and _tween.is_running():
+\t\t_tween.kill()
+\t\t
+\t_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+\t
+\tvar start_y: float = -size.y if edge == "top" else size.y
+\t_marquee_overlay.position.y = start_y
+\t_tween.tween_property(_marquee_overlay, "position:y", 0.0, 0.5)
+
+# Edge Detection Mouse Exit
+func _on_mouse_exited() -> void:
+\tvar local_pos := get_local_mouse_position()
+\tvar edge := _closest_edge(local_pos)
+\t
+\tif _tween and _tween.is_running():
+\t\t_tween.kill()
+\t\t
+\t_tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+\tvar target_y: float = -size.y if edge == "top" else size.y
+\t_tween.tween_property(_marquee_overlay, "position:y", target_y, 0.5)
+
+func _closest_edge(pos: Vector2) -> String:
+\tvar dist_top := pos.distance_squared_to(Vector2(size.x / 2.0, 0.0))
+\tvar dist_bottom := pos.distance_squared_to(Vector2(size.x / 2.0, size.y))
+\treturn "top" if dist_top < dist_bottom else "bottom"
+
+func _on_gui_input(event: InputEvent) -> void:
+\tif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+\t\temit_signal("item_selected", item_text, item_link)
+
+func _draw() -> void:
+\tif show_top_border:
+\t\tdraw_line(Vector2(0, 0), Vector2(size.x, 0), border_color, 2.0)
+`;
+      }, []);
+
+      const tscnStructureGuide = `[gd_scene load_steps=3 format=3 uid="uid://flowing_menu_demo"]
+
+[ext_resource type="Script" path="res://FlowingMenu.gd" id="1_flowing_menu"]
+
+[node name="FlowingMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_flowing_menu")
+speed = ${speed}.0
+text_color = Color(${textColor.replace('#', '')})
+bg_color = Color(${bgColor.replace('#', '')})
+marquee_bg_color = Color(${marqueeBgColor.replace('#', '')})
+marquee_text_color = Color(${marqueeTextColor.replace('#', '')})
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(${bgColor.replace('#', '')})
+
+[node name="MenuContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+`;
+
+      return (
+        <div className="min-h-screen flex flex-col bg-godot-900 text-slate-100">
+          
+          {/* Header */}
+          <header className="border-b border-godot-500/30 bg-godot-800/80 backdrop-blur-md sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-godot-400/20 border border-godot-400/40 flex items-center justify-center text-godot-400 font-extrabold shadow-lg shadow-godot-400/10">
+                  <i data-lucide="gamepad-2" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-lg tracking-tight text-white">
+                      Godot 4 FlowingMenu
+                    </span>
+                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-godot-400/20 text-godot-400 border border-godot-400/30 rounded-full">
+                      GDScript 2.0
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">Directional Hover Marquee Control Node for Godot 4.x</p>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex items-center space-x-2">
+                <div className="bg-godot-900 p-1 rounded-xl border border-godot-500/30 flex items-center text-xs">
+                  <button
+                    onClick={() => setActiveTab('simulation')}
+                    className={`px-3 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
+                      activeTab === 'simulation' ? 'bg-godot-400 text-godot-900 font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <i data-lucide="play" className="w-3.5 h-3.5"></i>
+                    <span>Live Simulator</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('menu_gd')}
+                    className={`px-3 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
+                      activeTab === 'menu_gd' ? 'bg-godot-400 text-godot-900 font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <i data-lucide="code" className="w-3.5 h-3.5"></i>
+                    <span>FlowingMenu.gd</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('item_gd')}
+                    className={`px-3 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
+                      activeTab === 'item_gd' ? 'bg-godot-400 text-godot-900 font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <i data-lucide="file-code" className="w-3.5 h-3.5"></i>
+                    <span>MenuItemNode.gd</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('tscn_guide')}
+                    className={`px-3 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
+                      activeTab === 'tscn_guide' ? 'bg-godot-400 text-godot-900 font-bold' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <i data-lucide="layers" className="w-3.5 h-3.5"></i>
+                    <span>Scene Setup (.tscn)</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </header>
+
+          {/* Toast Notification */}
+          {toast && (
+            <div className="fixed bottom-6 right-6 z-50 bg-godot-800 border border-godot-400/40 text-godot-400 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 animate-bounce">
+              <i data-lucide="check-circle" className="w-4 h-4 text-godot-accent"></i>
+              <span className="text-xs font-semibold">{toast}</span>
+            </div>
+          )}
+
+          {/* Main Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
+            
+            {activeTab === 'simulation' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
+                
+                {/* Left Side: Live Godot Simulation Frame */}
+                <div className="lg:col-span-8 space-y-4">
+                  
+                  <div className="bg-godot-800/80 border border-godot-500/30 rounded-2xl p-4 flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-godot-accent animate-ping"></span>
+                      <span className="font-semibold text-slate-200">Godot Control Node Interactive Viewport</span>
+                    </div>
+                    <span className="font-mono text-godot-400 bg-godot-900/80 px-2 py-1 rounded border border-godot-500/20">
+                      Viewport: 1024x600 (Control.SIZE_EXPAND_FILL)
+                    </span>
+                  </div>
+
+                  <div className="h-[550px] rounded-2xl overflow-hidden border-2 border-godot-500/40 shadow-2xl relative">
+                    <FlowingMenuSim
+                      items={items}
+                      speed={speed}
+                      textColor={textColor}
+                      bgColor={bgColor}
+                      marqueeBgColor={marqueeBgColor}
+                      marqueeTextColor={marqueeTextColor}
+                      borderColor={borderColor}
+                      onItemClick={(item) => setSelectedItem(item)}
+                    />
+                  </div>
+
+                  {/* Preset Selector */}
+                  <div className="bg-godot-800/50 border border-godot-500/30 rounded-2xl p-4 space-y-2">
+                    <span className="text-xs font-bold text-godot-400 uppercase tracking-wider block">Game UI Color Palettes</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {GODOT_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => handlePreset(p)}
+                          className={`p-3 rounded-xl border text-left transition ${
+                            preset.id === p.id 
+                              ? 'border-godot-400 bg-godot-400/10 text-white' 
+                              : 'border-godot-500/20 bg-godot-900/60 text-slate-400 hover:border-godot-500/40'
+                          }`}
+                        >
+                          <span className="text-xs font-bold block">{p.name}</span>
+                          <div className="flex space-x-1 mt-2">
+                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: p.bgColor }}></span>
+                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: p.textColor }}></span>
+                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: p.marqueeBgColor }}></span>
+                            <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: p.marqueeTextColor }}></span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Side: Godot Inspector Customizer */}
+                <div className="lg:col-span-4 space-y-4">
+                  
+                  <div className="bg-godot-800/80 border border-godot-500/30 rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-godot-500/20 pb-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-godot-400 flex items-center space-x-2">
+                        <i data-lucide="sliders" className="w-4 h-4"></i>
+                        <span>Godot Inspector Properties</span>
+                      </h3>
+                      <span className="text-[10px] font-mono text-slate-500">GDScript @export</span>
+                    </div>
+
+                    {/* Speed Property */}
+                    <div>
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <label className="text-slate-300 font-medium">Marquee Speed (Duration)</label>
+                        <span className="font-mono text-godot-400 font-bold">{speed}s</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="5"
+                        max="30"
+                        value={speed}
+                        onChange={(e) => setSpeed(Number(e.target.value))}
+                        className="w-full accent-godot-400 h-1.5 bg-godot-900 rounded-lg cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Color Exports */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="block text-[11px] text-slate-400 font-medium mb-1">Static Text Color</label>
+                        <div className="flex items-center space-x-2 bg-godot-900 p-1.5 rounded-xl border border-godot-500/30">
+                          <input
+                            type="color"
+                            value={textColor.startsWith('#') && textColor.length === 7 ? textColor : '#ffffff'}
+                            onChange={(e) => setTextColor(e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={textColor}
+                            onChange={(e) => setTextColor(e.target.value)}
+                            className="w-full bg-transparent text-xs font-mono text-slate-200 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 font-medium mb-1">Menu Background</label>
+                        <div className="flex items-center space-x-2 bg-godot-900 p-1.5 rounded-xl border border-godot-500/30">
+                          <input
+                            type="color"
+                            value={bgColor.startsWith('#') && bgColor.length === 7 ? bgColor : '#120F17'}
+                            onChange={(e) => setBgColor(e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={bgColor}
+                            onChange={(e) => setBgColor(e.target.value)}
+                            className="w-full bg-transparent text-xs font-mono text-slate-200 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 font-medium mb-1">Marquee BG</label>
+                        <div className="flex items-center space-x-2 bg-godot-900 p-1.5 rounded-xl border border-godot-500/30">
+                          <input
+                            type="color"
+                            value={marqueeBgColor.startsWith('#') && marqueeBgColor.length === 7 ? marqueeBgColor : '#ffffff'}
+                            onChange={(e) => setMarqueeBgColor(e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={marqueeBgColor}
+                            onChange={(e) => setMarqueeBgColor(e.target.value)}
+                            className="w-full bg-transparent text-xs font-mono text-slate-200 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] text-slate-400 font-medium mb-1">Marquee Text</label>
+                        <div className="flex items-center space-x-2 bg-godot-900 p-1.5 rounded-xl border border-godot-500/30">
+                          <input
+                            type="color"
+                            value={marqueeTextColor.startsWith('#') && marqueeTextColor.length === 7 ? marqueeTextColor : '#120F17'}
+                            onChange={(e) => setMarqueeTextColor(e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={marqueeTextColor}
+                            onChange={(e) => setMarqueeTextColor(e.target.value)}
+                            className="w-full bg-transparent text-xs font-mono text-slate-200 outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Menu Items Array */}
+                    <div className="border-t border-godot-500/20 pt-3 space-y-2">
+                      <label className="block text-xs font-bold text-slate-300">Menu Items Dictionary Array</label>
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                        {items.map((item, idx) => (
+                          <div key={idx} className="bg-godot-900/80 p-2.5 rounded-xl border border-godot-500/30 text-xs space-y-1.5">
+                            <input
+                              type="text"
+                              value={item.text}
+                              onChange={(e) => {
+                                const newItems = [...items];
+                                newItems[idx].text = e.target.value;
+                                setItems(newItems);
+                              }}
+                              placeholder="Display Text"
+                              className="w-full bg-godot-800 border border-godot-500/30 rounded px-2 py-1 text-white font-bold"
+                            />
+                            <input
+                              type="text"
+                              value={item.link}
+                              onChange={(e) => {
+                                const newItems = [...items];
+                                newItems[idx].link = e.target.value;
+                                setItems(newItems);
+                              }}
+                              placeholder="Scene Path (e.g. res://scenes/Level.tscn)"
+                              className="w-full bg-godot-800 border border-godot-500/30 rounded px-2 py-1 text-godot-400 font-mono text-[11px]"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* Code Export Tabs */}
+            {activeTab === 'menu_gd' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between bg-godot-800 p-4 rounded-2xl border border-godot-500/30">
+                  <div>
+                    <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                      <i data-lucide="file-code" className="w-5 h-5 text-godot-400"></i>
+                      <span>FlowingMenu.gd (Main Controller Node Script)</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">Attach this GDScript to a Control node in Godot 4.3+</p>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(flowingMenuGDScript, 'FlowingMenu.gd')}
+                    className="px-4 py-2 bg-godot-400 hover:bg-godot-400/80 text-godot-900 font-bold rounded-xl transition text-xs flex items-center space-x-2 shadow-lg"
+                  >
+                    <i data-lucide="copy" className="w-4 h-4"></i>
+                    <span>Copy FlowingMenu.gd</span>
+                  </button>
+                </div>
+
+                <pre className="bg-godot-900/90 p-5 rounded-2xl text-xs font-mono text-emerald-300 border border-godot-500/30 overflow-x-auto leading-relaxed">
+                  {flowingMenuGDScript}
+                </pre>
+              </div>
+            )}
+
+            {activeTab === 'item_gd' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between bg-godot-800 p-4 rounded-2xl border border-godot-500/30">
+                  <div>
+                    <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                      <i data-lucide="file-code" className="w-5 h-5 text-godot-400"></i>
+                      <span>MenuItemNode.gd (Edge Hover Animation Script)</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">Implements Godot 4 `create_tween()` and `TRANS_EXPO` edge detection</p>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(menuItemGDScript, 'MenuItemNode.gd')}
+                    className="px-4 py-2 bg-godot-400 hover:bg-godot-400/80 text-godot-900 font-bold rounded-xl transition text-xs flex items-center space-x-2 shadow-lg"
+                  >
+                    <i data-lucide="copy" className="w-4 h-4"></i>
+                    <span>Copy MenuItemNode.gd</span>
+                  </button>
+                </div>
+
+                <pre className="bg-godot-900/90 p-5 rounded-2xl text-xs font-mono text-sky-300 border border-godot-500/30 overflow-x-auto leading-relaxed max-h-[600px] overflow-y-auto">
+                  {menuItemGDScript}
+                </pre>
+              </div>
+            )}
+
+            {activeTab === 'tscn_guide' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between bg-godot-800 p-4 rounded-2xl border border-godot-500/30">
+                  <div>
+                    <h2 className="text-base font-bold text-white flex items-center space-x-2">
+                      <i data-lucide="layers" className="w-5 h-5 text-godot-400"></i>
+                      <span>Godot Scene File (.tscn Structure)</span>
+                    </h2>
+                    <p className="text-xs text-slate-400">You can paste this directly into a new `.tscn` scene file in your Godot project.</p>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(tscnStructureGuide, 'Scene File (.tscn)')}
+                    className="px-4 py-2 bg-godot-400 hover:bg-godot-400/80 text-godot-900 font-bold rounded-xl transition text-xs flex items-center space-x-2 shadow-lg"
+                  >
+                    <i data-lucide="copy" className="w-4 h-4"></i>
+                    <span>Copy FlowingMenu.tscn</span>
+                  </button>
+                </div>
+
+                <pre className="bg-godot-900/90 p-5 rounded-2xl text-xs font-mono text-amber-200 border border-godot-500/30 overflow-x-auto leading-relaxed">
+                  {tscnStructureGuide}
+                </pre>
+              </div>
+            )}
+
+          </main>
+
+          {/* Interactive Modal when clicking item in sim */}
+          {selectedItem && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-godot-900/80 backdrop-blur-md">
+              <div className="bg-godot-800 border-2 border-godot-400/40 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="absolute top-4 right-4 w-8 h-8 bg-godot-900 rounded-full flex items-center justify-center text-slate-400 hover:text-white"
+                >
+                  <i data-lucide="x" className="w-4 h-4"></i>
+                </button>
+
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-godot-accent/20 border border-godot-accent/40 flex items-center justify-center text-godot-accent">
+                    <i data-lucide="check" className="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-white uppercase">{selectedItem.text}</h3>
+                    <p className="text-xs font-mono text-godot-400">get_tree().change_scene_to_file()</p>
+                  </div>
+                </div>
+
+                <div className="bg-godot-900 p-3 rounded-xl font-mono text-xs text-slate-300 space-y-1">
+                  <div><span className="text-slate-500">Target Scene:</span> {selectedItem.link}</div>
+                  <div><span className="text-slate-500">Signal:</span> item_clicked.emit()</div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="w-full py-2.5 bg-godot-400 hover:bg-godot-400/80 text-godot-900 font-bold text-xs rounded-xl transition"
+                >
+                  Resume Godot Simulation
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
