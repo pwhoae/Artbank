@@ -4,6 +4,9 @@
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 ">glb</a><br> 
 地編:2d原圖>轉3d 刨解
+https://reactbits.dev/backgrounds/lightfall 
+https://reactbits.dev/backgrounds/orb 
+
 ### 整活>過程要好玩快樂
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
