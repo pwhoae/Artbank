@@ -5,6 +5,7 @@
 ">glb</a><br> 
 地編:2d原圖>轉3d 刨解
 垃圾桶的咪
+【【迷失 Stray】一只猫，带你重新认识赛博朋克丨灯光&地编参考】 https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 
 https://reactbits.dev/backgrounds/lightfall 
 https://reactbits.dev/backgrounds/orb 
