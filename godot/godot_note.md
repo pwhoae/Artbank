@@ -4,8 +4,35 @@
 ```
 1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
 2. 視差省MB,使用低多邊形（Low poly）模型與低解析度貼圖;減法,別做镜子(魔术)
-3. tscn | gdscript | assets 
+3. tscn | gdscript | assets (audio,png,glb,)
+4. godot lod （Level of Detail，細節級別）怎麼設定
+輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)
+貼圖:https://ambientcg.com/<br>
+地编參考:https://www.artstation.com/artwork/dyk3nQ
+解刨示意圖:tripoai
 
+tripoai 2.5
+https://studio.tripo3d.ai?invite_code=O0E0Z6
+```
+把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
+
+```
+### 思考方向
+csg:operation,union,subtraction
+marker2d/3d
+收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
+>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
+1.場景光照+環境光
+2.Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
+3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
+4.move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime) 3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
+5.death zone>worldboundary
+
+gripmap 場地
+X0.UI>CanvasLayer>Label
+X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
+X2.gpuparticle(process material)>cpuparticle
+XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
 ```
 
 
@@ -189,19 +216,7 @@ light.shadow_max_distance = 50  # 减少阴影距离
 light.shadow_orthogonal_size = 20  # 正交大小
 light.shadow_bias = 0.01  # 阴影偏移
 ```
-</details>
-------------------------------------------------
-<details><summary>func記</summary>
-	
-### 無盡scroll
-```
-只動背景>背景返回
-var scroll;const SCROLL_SPEED:int =4;@onready var background=$Background
-func _scroll():
-	scroll+=SCROLL_SPEED;if scroll>=1000:scroll=0;background.position.x=-scroll	
-```
-
-### 5.3 输入灵敏度
+### 输入灵敏度
 ```gdscript
 class_name InputSensitivity
 func _ready():
@@ -233,7 +248,6 @@ func apply_to_axis_value(value: float) -> float:
     if abs(value) < axis_deadzone:return 0.0;
 	var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone);adjusted = clamp(adjusted, 0.0, 1.0);return sign(value) * adjusted * gamepad_sensitivity;# 应用灵敏度 
 ```
-
 # 工厂模式
 ```
 class_name FactoryPattern
@@ -251,70 +265,62 @@ interface ItemFactory:
     func create_weapon() -> Object
     func create_armor() -> Object
 ```
-
 </details>
-<a id="美術"></a>
-生成概念圖:**通过不同颜色定义不同的场景逻辑与规则**
-
-- **白色：可通行区域，角色可在该空间内自由移动。** 
-- **黑/藍色：物理阻挡区，定义角色无法进入的碰撞边界。** 
-- **绿色：前景遮挡层，营造镂空与前后空间层次感。 **
-- **红色：定义场景的出入口。**
-
-<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
-思考遊戲什麼需要camera展示/什麼用AE
-### 美術
+------------------------------------------------
+<details><summary>func記</summary>
+	
+### 無盡scroll
 ```
-roughness=0,toon,抖动輪廓
-卡通着色（Toon shading）,菲涅尔效应（Fresnel）
+只動背景>背景返回
+var scroll;const SCROLL_SPEED:int =4;@onready var background=$Background
+func _scroll():
+	scroll+=SCROLL_SPEED;if scroll>=1000:scroll=0;background.position.x=-scroll	
+```
+</details>
 
-godot lod （Level of Detail，細節級別）怎麼設定
+<a id="美術"></a>
+### 美術
+**美術=為什麼喜歡這種東西>有梗**
+
+## 2d/3d 視覺與渲染設定
+```
+卡通着色（Toon shading）,菲涅尔效应（Fresnel）,roughness=0,toon,抖动輪廓
+像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
+
+```
+## 2d/3d 地圖
+```
+通过不同颜色定义不同的场景逻辑与规则 (白,黑,绿,红)
+**白色：可通行区域，角色可在该空间内自由移动。 ;黑/藍色：物理阻挡区，定义角色无法进入的碰撞边界。;绿色：前景遮挡层，营造镂空与前后空间层次感。;红色：定义场景的出入口。
+**
 “影视地编”与“游戏地编”
 影视地编：只服务于固定摄像机镜头，只需保证单镜头内不穿帮，几乎不用考虑性能、灯光数量或模型精度限制。 
 游戏地编：服务于玩家全方位自由探索与交互。必须具备全局思维，且需要为玩法和性能让步（使用高低模、模块化、Trim Sheet、Tiling 贴图等管线工具来优化性能与包体）。 
 用原画思维替代 3D 视角思维
 常见错误：过分拘泥于“一张静态画面的美观”，忽略了三维空间的整体连贯性与空间感。 
-正确做法：将原画思维转变为 3D 关卡美术视角，哪怕只是制作一个很小的场景 Demo，也要保证空间结构的合理性和全角度的美观与连贯。 
+正确做法：将原画思维转变为 3D 关卡美术视角，哪怕只是制作一个很小的场景 Demo，也要保证空间结构的合理性和全角度的美观与连贯。
 
+場景互動小道具/地圖互動/看到門持key 配套
 ```
-美術=為什麼喜歡這種東西>有梗/場景互動小道具/地圖互動/看到門持key 配套
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
 
-<hr>
+思考遊戲什麼需要camera展示/什麼用AE
+### UI
+UI 与 3D 元素的结合<br>
 UI:Ipad/iphone show setting/音效/粒子/字體<br>
-tween/shader>好麻煩 不考慮手寫 用ai寫<br>
-像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 
-### 3D Notes
-tools:
-輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)<br>
-貼圖:https://ambientcg.com/<br>
-地编參考:https://www.artstation.com/artwork/dyk3nQ
-解刨示意圖:tripoai
+### Tween/Shader
+用ai寫
+```
+#ShaderMaterial
+var material = ShaderMaterial.new()
+material.shader = load("res://shaders/custom.gdshader")
+material.set_shader_parameter("albedo", Color.RED)
+material.set_shader_parameter("roughness", 0.5)
+```
+<hr>
 
-tripoai 2.5
-https://studio.tripo3d.ai?invite_code=O0E0Z6
-```
-把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
-```
-```
-### 思考方向
-marker2d/3d
-UI 与 3D 元素的结合
-csg:operation,union,subtraction
-收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
->核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
-1.場景光照+環境光
-2.Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
-3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
-4.move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime) 3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
-5.death zone>worldboundary
 
-gripmap 場地
-X0.UI>CanvasLayer>Label
-X1.material>DiffuseMode和Specular Mode都改成Toon+roughness要拉到1>toon 3渲2
-X2.gpuparticle(process material)>cpuparticle
-XL:gui>playerdata>autoload>🔹 GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
-```
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="100" height="100"></img>
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/editable.jpeg" width="100" height="100"></img>
@@ -359,11 +365,7 @@ assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#pu
 # 连接到组中所有节点 [get_tree().connect("node_added", self, "_on_node_added")]
 var direction_to_player=position.direction_to(player.position) lerp(current_speed, target_speed, lerp_weight * delta)
 
-#ShaderMaterial
-var material = ShaderMaterial.new()
-material.shader = load("res://shaders/custom.gdshader")
-material.set_shader_parameter("albedo", Color.RED)
-material.set_shader_parameter("roughness", 0.5)
+
 ```
 
 
