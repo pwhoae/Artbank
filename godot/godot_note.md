@@ -308,7 +308,10 @@ interface ItemFactory:
 - **白色：可通行区域，角色可在该空间内自由移动。** 
 - **黑/藍色：物理阻挡区，定义角色无法进入的碰撞边界。** 
 - **绿色：前景遮挡层，营造镂空与前后空间层次感。 **
-- **红色：定义场景的出入口。** 
+- **红色：定义场景的出入口。**
+
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
+
 ### 美術
 ```
 roughness=0,toon,抖动輪廓
