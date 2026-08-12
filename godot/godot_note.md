@@ -3,26 +3,25 @@
 開發技巧
 ```
 1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
-2. 視差省MB,使用低多邊形（Low poly）模型與低解析度貼圖;減法,別做镜子(魔术)
-3. tscn | gdscript | assets (audio,png,glb,)
-4. godot lod （Level of Detail，細節級別）怎麼設定
+2. 視差省MB,使用低多邊形（Low poly）模型與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
 輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)
 貼圖:https://ambientcg.com/<br>
 地编參考:https://www.artstation.com/artwork/dyk3nQ
-解刨示意圖:tripoai
+解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
+csg:operation,union,subtraction
 
-tripoai 2.5
-https://studio.tripo3d.ai?invite_code=O0E0Z6
-```
 把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
 
+3. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
+4. godot lod （Level of Detail，細節級別）怎麼設定
+5. 收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
+AtlasTexture 拼圖
+filedialog:玩家upload file
 ```
+
 ### 思考方向
-csg:operation,union,subtraction
+```
 marker2d/3d
-收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
->核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）？
-1.場景光照+環境光
 2.Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
 3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
 4.move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime) 3D 美术资产 (gltf,glb)* Godot 也支持直接将 Blender 的 `.blend` 文件保存在项目目录中（其后台会自动调用 Blender 导出为 GLTF）。
@@ -286,7 +285,6 @@ func _scroll():
 ```
 卡通着色（Toon shading）,菲涅尔效应（Fresnel）,roughness=0,toon,抖动輪廓
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
-
 ```
 ## 2d/3d 地圖
 ```
@@ -304,7 +302,7 @@ func _scroll():
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
 
-思考遊戲什麼需要camera展示/什麼用AE
+**思考遊戲什麼需要camera展示/什麼用AE**
 ### UI
 UI 与 3D 元素的结合<br>
 UI:Ipad/iphone show setting/音效/粒子/字體<br>
@@ -314,58 +312,5 @@ UI:Ipad/iphone show setting/音效/粒子/字體<br>
 ```
 #ShaderMaterial
 var material = ShaderMaterial.new()
-material.shader = load("res://shaders/custom.gdshader")
-material.set_shader_parameter("albedo", Color.RED)
-material.set_shader_parameter("roughness", 0.5)
 ```
 <hr>
-
-
-
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/godot3d_1.PNG" width="100" height="100"></img>
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/editable.jpeg" width="100" height="100"></img>
-
-AtlasTexture 拼圖
-filedialog:玩家upload file
-tilemap》collision layer
-
-### 2D Notes
-
-```
-#帕斯卡 class_name [ClassName]  /signal [HitPlayer]
-#蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
-# enum [enum Phase { Fighting, Win, Resetting }]
-await get_tree().create_timer(2).timeout # 等待時間 
-# 显示系统对话框 OS.alert("message")
-clamp
-lerp
-tween
-RayCast2D
-
-### 時間
-var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間
-var split_date=date.split('T')	#split 分開
-text=str(", ".join(split_date))	#join 組合
-
-### 打印调试
-print_rich("[color=red]Error[/color]")
-assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
-# 键盘输入 [if Input.is_key_pressed(KEY_SPACE)]
-# 鼠标输入 [if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)]
-# 游戏手柄 [if Input.is_joy_button_pressed(0, JOY_BUTTON_A)]/# 触摸输入[if Input.is_action_pressed]("touch"):
-
-# 方式 1：通过路径UID [get_tree().change_scene_to_file("res://levels/level_2.tscn")]
-[var enemy = scene.instantiate()][add_child(enemy)]
-[get_tree().reload_current_scene()][get_tree().quit()]
-# 添加节点到组 [add_to_group("enemies")]
-# 从组移除 [remove_from_group("enemies")]
-# 检查是否在组中 [if is_in_group("enemies"):]
-# 获取组中所有节点 [var enemies = get_tree().get_nodes_in_group("enemies")]
-# 调用组中所有节点的方法 [get_tree().call_group("enemies", "take_damage", 10)]
-# 连接到组中所有节点 [get_tree().connect("node_added", self, "_on_node_added")]
-var direction_to_player=position.direction_to(player.position) lerp(current_speed, target_speed, lerp_weight * delta)
-
-
-```
-
-
