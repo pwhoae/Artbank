@@ -277,9 +277,12 @@ func _scroll():
 ```
 </details>
 
+<hr>
+
 <a id="美術"></a>
 ### 美術
 **美術=為什麼喜歡這種東西>有梗**
+**思考遊戲什麼需要camera展示/什麼時候用AE**
 
 ## 2d/3d 視覺與渲染設定
 ```
@@ -302,7 +305,6 @@ func _scroll():
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
 
-**思考遊戲什麼需要camera展示/什麼用AE**
 ### UI
 UI 与 3D 元素的结合<br>
 UI:Ipad/iphone show setting/音效/粒子/字體<br>
