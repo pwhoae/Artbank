@@ -311,7 +311,7 @@ interface ItemFactory:
 - **红色：定义场景的出入口。**
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
-
+思考遊戲什麼需要camera展示/什麼用AE
 ### 美術
 ```
 roughness=0,toon,抖动輪廓
