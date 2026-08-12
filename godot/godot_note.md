@@ -1,23 +1,17 @@
 ### godot note (pck)
-視差省MB
-勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門 
 
-### 遊戲經驗
+開發技巧
 ```
-沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
+1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
+2. 視差省MB,使用低多邊形（Low poly）模型與低解析度貼圖;減法,別做镜子(魔术)
+3. tscn | gdscript | assets 
+
 ```
+
 
 先建[玩法](#玩法) 再填[美術](#美術)<br><a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
-```
-_工具箱
-    - _[0 場景 (tscn)]
-    - _[1 玩法 GDScript (gd)]
-    - _[2 美術 (png)]
-    - _[3 音頻 (mp3)]
-    - _[4 影片 ]
-    - _[5 資源 (tres)]
-    - _[9 成品]
-```
+
+
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 	
@@ -36,6 +30,8 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 </details>
 
 <a id="玩法"></a>先建玩法
+勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門 
+
 ### 線性公式
 ```
 1.属性系统 
@@ -52,17 +48,17 @@ Buff 系统：管理单位身上的持续效果，包含叠层、Buff 等级、�
 
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%8F%90%E7%A4%BA%E6%89%8B%E6%B3%95%E7%8D%8E%E5%8B%B5.jpeg" width="300" height="300"></img>
-## Tsun gd用蛇形
-### GD順序
+<hr>
+
+### GDScript ->避免硬編碼->用var export
 ```
 #帕斯卡 class_name [ClassName]  /signal [HitPlayer]
 #蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
 ```
 ### 0.0 基本
 ```
-### 避免硬編碼
 # export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
-# ctrl:@onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
+# ctrl: @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
 # enum [enum Phase { Fighting, Win, Resetting }]
 # 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
 # 显示系统对话框 OS.alert("message")
@@ -76,30 +72,20 @@ position.direction_to(player.position)
 match type
 
 ### 時間
-var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間
-var split_date=date.split('T')	#split 分開
-text=str(", ".join(split_date))	#join 組合
+var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間;var split_date=date.split('T')	#split 分開;text=str(", ".join(split_date))	#join 組合
 
 ### 打印调试
-print_rich("[color=red]Error[/color]")
-assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
+print_rich("[color=red]Error[/color]");assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
 ```
 
 ### 0. signal
 ```
 |player.gd|another.gd|
 |1 signal start <br> 2 start.emit() #发射信号|@export player <br> 3 player.start.connect(func) #only start.emit()>turn on the func |
-```
-```
 # 信号定义 [signal player_died]
 # 发射信号 [health_changed.emit(50)]
 # 连接信号 [$HealthComponent.health_changed.connect(_on_health_changed{here is func})]
 # 断开连接 [$HealthComponent.health_changed.disconnect(_on_health_changed)]
-------------------------
-# 普通连接 [signal.connect(handler)]
-# 一次性连接/下一帧执行（触发后自动断开）[signal.connect(handler, CONNECT_ONE_SHOT)]/[signal.connect(handler, CONNECT_DEFERRED)]
-??? # 弱引用（不阻止对象释放）]signal.connect(handler, CONNECT_REFERENCE_COUNTED)]
-??? disconnet
 ```
 ### 0. Input 53 input system
 inputeventmouse/mouse click gui
@@ -108,7 +94,6 @@ inputeventmouse/mouse click gui
 # 鼠标输入 [if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)]
 # 游戏手柄 [if Input.is_joy_button_pressed(0, JOY_BUTTON_A)]/# 触摸输入[if Input.is_action_pressed]("touch"):
 ```
-
 ### 0. scene
 ```
 # 方式 1：通过路径 [get_tree().change_scene_to_file("res://levels/level_2.tscn")]
@@ -124,7 +109,6 @@ inputeventmouse/mouse click gui
 # 获取父节点 [var parent = get_parent()] [var children = get_children()]
 # 获取子节点数量 [var count = get_child_count()] [var child = get_child(0)]
 # 有func [if node.has_method("shoot"):]/# 获取方法列表 [var methods = node.get_method_list()]/# 获取属性列表 [var props = node.get_property_list()]
-
 ```
 ### 0. Group
 ```
@@ -146,31 +130,23 @@ file.close()
 var file = FileAccess.open("user://save.dat", FileAccess.WRITE)
 file.store_string("save data")
 file.close()
-
 # 检查文件是否存在 [if FileAccess.file_exists("res://data.txt")]
 ```
 ### 0. AudioStreamPlayer2D 音频
 ```
-# 加载音频流 [if stream_path != "": var stream = load(stream_path)]
-# 播放/停止/暂停音频 [play()/stop()/pause()]
-# 检查是否正在播放/获取播放位置 [is_playing()/get_playback_position()]
+# 加载音频流 [if stream_path != "": var stream = load(stream_path)];# 播放/停止/暂停音频 [play()/stop()/pause()];# 检查是否正在播放/获取播放位置 [is_playing()/get_playback_position()]
 ```
-<details><summary>次要</summary>
-
-### tilemap>terrain:https://wareya.github.io/webtyler/
+<details><summary>次要</summary> 
+	
+### tilemap>terrain: https://wareya.github.io/webtyler/
 
 ### 0. OS
 ```
-# "Windows" [OS.get_name()]
-# 可执行文件路径 print(OS.get_executable_path())  
-# 用户数据目录 print(OS.get_user_data_dir())  
-??? # 复制到剪贴板 OS.set_clipboard("copy text")  
-# 请求权限（移动） OS.request_permission("camera")  
+# "Windows" [OS.get_name()];# 可执行文件路径 print(OS.get_executable_path());# 用户数据目录 print(OS.get_user_data_dir());# 请求权限（移动） OS.request_permission("camera")  
 ```
 ### 0. ResourceLoader
 ```
-# 手动卸载 [ResourceLoader.unload("res://large_texture.png") ]
-# 卸载所有未使用的资源 [ResourceQueue.unload_unused_resources()]
+# 手动卸载 [ResourceLoader.unload("res://large_texture.png") ];# 卸载所有未使用的资源 [ResourceQueue.unload_unused_resources()]
 ```
 ### 0. Json
 ```
@@ -201,36 +177,18 @@ if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
 ```
 ### 0. 渲染 RenderingServer
 ```
-# 光源属性 3D
-var light = DirectionalLight3D.new()
+var light = DirectionalLight3D.new() # 光源属性 3D
 light.light_color = Color(1, 0.9, 0.8)  # 暖色阳光
 light.light_energy = 1.5  # 光照强度
 light.shadow_enabled = true  # 启用阴影
 light.shadow_max_distance = 100  # 阴影最大距离
 
-# 阴影设置 3D
-var light = DirectionalLight3D.new()
+var light = DirectionalLight3D.new() # 阴影设置 3D
 light.shadow_enabled = true
 light.shadow_max_distance = 50  # 减少阴影距离
 light.shadow_orthogonal_size = 20  # 正交大小
 light.shadow_bias = 0.01  # 阴影偏移
-
-#ShaderMaterial
-var material = ShaderMaterial.new()
-material.shader = load("res://shaders/custom.gdshader")
-material.set_shader_parameter("albedo", Color.RED)
-material.set_shader_parameter("roughness", 0.5)
 ```
-```
-2. 解決方案：串流技術（Streaming）與世界重塑
-串流技術的運作：技術負責人 Adam Fowler 提出了解決方案。遊戲將地圖拆分為數千個小區域（Sectors），並在玩家周圍設定一個隱形的方形區域。只有該區域內所需的模型與貼圖才會被載入記憶體。當玩家移動時，前方新區域的資產會被讀取，後方離開的資產則會被默默刪除，像一個隨玩家移動的「視窗」。
-層次細節（LOD）解決破圖問題：如果只載入身邊的物件，遠處世界會顯得憑空出現（Pop-in）。因此，遊戲在遠處只會載入大型結構（如高樓、橋樑、吊車），且使用的是低多邊形（Low poly）模型與低解析度貼圖。當玩家靠近時，高畫質模型才會無縫淡入替換，藉此省下大量記憶體。
-```
-```
-镜子魔术
-经典的“双子房间”：由于镜子在实时渲染中极其消耗资源，游戏采用了一个古老但有效的技巧（类似于《超级马里奥64》）：所谓的镜子其实是一扇透明的窗户，窗户后面是一间一模一样的镜像房间。镜子里玩家看到的是 V 的克隆体和另一个杰克，而当杰克把手搭在 V 肩上时，杰克实际上在瞬间从“镜像房间”传送回了“现实房间”。
-```
-
 </details>
 ------------------------------------------------
 <details><summary>func記</summary>
@@ -408,7 +366,11 @@ assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#pu
 # 连接到组中所有节点 [get_tree().connect("node_added", self, "_on_node_added")]
 var direction_to_player=position.direction_to(player.position) lerp(current_speed, target_speed, lerp_weight * delta)
 
-
+#ShaderMaterial
+var material = ShaderMaterial.new()
+material.shader = load("res://shaders/custom.gdshader")
+material.set_shader_parameter("albedo", Color.RED)
+material.set_shader_parameter("roughness", 0.5)
 ```
 
 
