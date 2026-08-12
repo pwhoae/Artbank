@@ -195,19 +195,12 @@ light.shadow_bias = 0.01  # 阴影偏移
 	
 ### 無盡scroll
 ```
-var scroll
-const SCROLL_SPEED:int =4
-@onready var background=$Background
-
+只動背景>背景返回
+var scroll;const SCROLL_SPEED:int =4;@onready var background=$Background
 func _scroll():
-	scroll+=SCROLL_SPEED;if scroll>=1000:scroll=0;
-	background.position.x=-scroll	
+	scroll+=SCROLL_SPEED;if scroll>=1000:scroll=0;background.position.x=-scroll	
 ```
-### 移除动作
-```
-func remove_action(action_name: String):
-    if InputMap.has_action(action_name):InputMap.erase_action(action_name)
-```
+
 ### 5.3 输入灵敏度
 ```gdscript
 class_name InputSensitivity
