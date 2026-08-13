@@ -21,6 +21,7 @@ filedialog:玩家upload file
 
 ### 思考方向
 ```
+DisplayServer.clipboard_set("要複製的內容")
 marker2d/3d
 2.Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
 3.static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
