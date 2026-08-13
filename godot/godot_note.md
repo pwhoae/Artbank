@@ -57,7 +57,8 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 
 <a id="玩法"></a>先建玩法
 勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門 
-
+掛勾
+robot核心就是key
 ### 線性公式
 ```
 1.属性系统 
