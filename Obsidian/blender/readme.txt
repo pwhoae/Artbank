@@ -1,3 +1,25 @@
+系統化打底 (付費課程)： Coloso 平台的 JPK 老師講座，一氣呵成學完 Blender 基礎功能與基本動畫製作概念。 
+臨摹與單影格練習 (Copy & Posing)：
+基礎原創動態 (Original Basics)：
+進階動作與武打 (Action Focus)：
+實戰專案與資料檢索 (Independent Projects)：
+二、 推薦學習資源與資料 (Recommended Resources)
+1. 付費課程 (Coloso)
+JPK 講座：適合 Blender 動畫入門與軟體特性掌握。 
+MD
+Jung Jong-hyun (チョン・ジンヒョン) 講座：適合想深入學習打鬥、動作戲 (Action) 的創作者。 
+MD
+2. 免費教學頻道與資料 (Free Resources)
+モーション工房 (Animation Craft Tsumat)：
+特點：雖然影片使用 Maya，但解析非常細緻並附帶圖像說明。只要掌握軟體基礎，非常推薦用來學習走路 (Walking)、跑步 (Running) 與 Pose-to-Pose 流程。 
+MD+ 1
+若杉氏的文章 (Wakasugi's Articles)：
+特點：針對動畫師常見疑難雜症（例如：何時該用 IK、何時用 FK）提供詳細筆記與解法。 
+MD
+アニメーターの星 (Animator Hoshi)：
+特點：推薦觀看其作品修改批改影片 (Redraw/Correction) 與 Podcast 談話影片。 
+MD
+
 身體：立方體 圓球
 平滑
 手用 圖柱體
