@@ -3,6 +3,14 @@
 1-2天法則
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 ">glb</a><br> 
+靈感
+喜欢的动物：猫
+喜欢的动画：wat
+喜欢的游戏：絕
+喜欢的城市：上海
+喜欢的食物：香腸
+喜欢的季节：夏天
+喜欢的天气：下雪
 地編:2d原圖>轉3d 刨解
 貼紙指引
 房子四視圖
