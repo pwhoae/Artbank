@@ -3,6 +3,10 @@
 1-2天法則
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 ">glb</a><br> 
+組合
+render texture=subviewer
+2.5d
+場景要找：中世界/熱帶島/紐約/地鐵 
 靈感
 喜欢的动物：猫
 喜欢的动画：wat
