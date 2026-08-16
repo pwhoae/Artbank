@@ -169,7 +169,7 @@ A highly detailed, realistic first-person video game screenshot of a next-genera
 
 <a name="case-150"></a>
 
-### 例 150：品牌徽标设计图
+### 品牌徽标设计图
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case150.jpg" width="100" height="100"></img>
 
@@ -181,7 +181,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 <a name="case-161"></a>
 
-### 例 161：应用界面样机图
+### 应用界面样机图
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case161.jpg" width="100" height="100"></img>
 ```
@@ -190,7 +190,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 ***
 <a name="case-186"></a>
 
-### 例 186：品牌视觉识别图
+### 品牌视觉识别图
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case186.jpg" width="100" height="100"></img>
 ```text
@@ -199,7 +199,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 ```
 <a name="case-196"></a>
-### 例 196：试卷上的涂鸦巨龙
+### 试卷上的涂鸦巨龙
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case196.jpg" width="100" height="100"></img>
 ```text
@@ -208,23 +208,9 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 ```
 
 ***
-<a name="case-237"></a>
-
-### 例 237：夏日柑橘苏打高转化广告图
-
-<img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case237.jpg" width="100" height="100"></img>
-
-
-```text
-[中文]图像生成: 商品广告照片, 适合夏天的季节商品, 碳酸饮料, 名称="夏柑SODA", 形状=PET瓶500ml, 研究2025年作为饮料广告的高CTA设计后设计并生成图像规格, 宽高比3:4
-
-[English]Image generation: Product advertising photo, Seasonal product suitable for summer, Carbonated beverage, Name="Summer Citrus SODA", Shape=500ml PET bottle, Design and generate image specifications after researching high CTA design as a beverage advertisement in 2025, Aspect ratio 3:4
-```
-
-***
 <a name="case-299"></a>
 
-### 例 299：极简留白涂鸦手绘草图
+### 极简留白涂鸦手绘草图
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case299.jpg" width="100" height="100"></img>
 
@@ -236,7 +222,7 @@ A bright, summery commercial product photography shot featuring a refreshing bev
 
 <a name="case-361"></a>
 
-### 例 361：手机爆炸拆解图
+### 手机爆炸拆解图
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case361.jpg" width="100" height="100"></img>
 ```text
@@ -247,7 +233,7 @@ Create a 3D Insane detailed exploded assembly drawing of [subject or object]
 
 <a name="case-363"></a>
 
-### 例 363：磁场铁粉 Logo 物理成像
+### 磁场铁粉 Logo 物理成像
 
 <img src="https://raw.githubusercontent.com/freestylefly/awesome-gpt-image-2/main/data/images/case363.jpg" width="100" height="100"></img>
 
@@ -256,19 +242,17 @@ Transform the uploaded logo into a hyper-realistic scene where the logo silhouet
 ```
 ***
 
-
+### 平面設計
 ```
 { "meta": { "標題": "日系偶像風角色插畫", "版本": "editable_v1", "語言": "繁體中文", "畫面比例": "16:9", "尺寸": { "寬度": 1085, "高度": 612 }, "風格標籤": [ "日系動畫", "偶像風", "手機遊戲立繪", "高細節", "柔和光影", "乾淨線稿", "日文文字背景", "青春感", "輕小說封面感" ] }, "角色": { "性別": "女性", "年齡感": "少女", "體型": "纖細", "姿勢": { "描述": "雙手自然展開，像舞台演出中的輕柔舞蹈動作", "鏡頭角度": "正面偏側 3/4 視角", "構圖": "角色置中" }, "表情": { "情緒": "溫柔微笑", "氛圍": "安靜、優雅、帶點夢幻感" }, "臉部": { "眼睛": { "顏色": "紫色", "風格": "柔和動畫眼", "細節": [ "高光反射", "淡淡眼影", "溫柔視線" ] }, "膚色": "白皙柔滑" }, "頭髮": { "顏色": "深紫偏藍", "長度": "短髮鮑伯頭", "造型": [ "側邊小馬尾", "微層次髮尾", "飄逸髮絲" ], "髮飾": [ { "類型": "緞帶", "顏色": "藍色" } ], "耳飾": [ { "類型": "星星耳環", "材質": "銀色金屬" } ] } }, "服裝": { "主題": "日系偶像舞台服 × 英倫格紋", "上半身": { "主體": "藍黃色格紋短袖洋裝", "細節": [ "白色馬甲式束腰", "銀色皮帶扣", "布料皺摺", "拼接縫線" ] }, "袖套": { "類型": "分離式袖套", "顏色": "亮黃色", "材質": "柔軟布料", "細節": [ "自然皺摺", "不對稱配件" ] }, "裙子": { "類型": "多層偶像短裙", "主色": "白色", "細節": [ "金色滾邊", "荷葉裙擺", "飄逸層次" ] }, "配件": [ { "類型": "腰間珍珠鍊", "材質": "珍珠 + 銀色金屬" }, { "類型": "飄帶", "顏色": [ "藍色", "黃色", "白色" ] } ] }, "背景": { "類型": "日文文字拼貼背景", "主色": "白色", "輔助色": "淡藍色", "細節": [ "大量日文句子", "半透明文字層", "排版式設計", "乾淨留白", "輕小說封面感" ], "景深": "平面設計風背景" }, "光影": { "風格": "柔和動畫光", "方向": "正面柔光", "高光": [ "頭髮反光", "皮膚微光", "服裝金屬反射" ], "陰影": "淡 Cel Shade" }, "渲染": { "線稿": "乾淨細線條", "上色": "柔和動畫賽璐璐", "細節等級": "高", "材質表現": [ "布料紋理", "金屬配件", "柔和皮膚漸層" ] }, "色票": { "主色": [ "#3D4FA3", "#5E55C7", "#F0C94B" ], "輔助色": [ "#FFFFFF", "#D8E6FF", "#B9C2FF" ], "點綴色": [ "#FFD84D", "#AFCBFF" ] }, "負面提示詞": [ "低畫質", "模糊", "多手指", "崩壞人體", "裁切臉部", "文字錯亂", "手部崩壞", "過度飽和", "3D感", "寫實風" ], "可修改欄位": { "髮色": "深紫色", "眼睛顏色": "紫色", "服裝主題": "偶像格紋風", "背景風格": "日文拼貼", "光影風格": "柔和動畫光", "氛圍": "優雅夢幻青春感", "畫面比例": "16:9", "尺寸": "1085x612" }, "完整Prompt": "一名日系動畫風少女偶像，深紫偏藍短髮，側邊綁有藍色緞帶，紫色眼睛，溫柔微笑，雙手自然展開如舞台舞蹈動作。穿著藍黃格紋偶像服裝，搭配白色馬甲束腰、黃色分離式袖套、多層白色荷葉短裙與珍珠腰鍊。柔和動畫光影、乾淨線稿、高細節賽璐璐上色、手機遊戲角色立繪風格。背景為大量淡藍色日文拼貼文字，畫面乾淨夢幻，青春感強烈。", "Prompt模板": { "角色名稱": "{{角色名稱}}", "髮色": "{{髮色}}", "眼睛顏色": "{{眼睛顏色}}", "服裝風格": "{{服裝風格}}", "背景風格": "{{背景風格}}", "氛圍": "{{氛圍}}", "光影": "{{光影}}", "額外細節": "{{額外細節}}" } }
 ```
-
-
 
 ### 努努
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%8A%AA%E5%8A%AA_%E6%A9%98%E7%A6%8F%E7%A6%8FChatGPT%20Image%202026%E5%B9%B45%E6%9C%8824%E6%97%A5%20%E4%B8%8B%E5%8D%8810_10_43.png" width="100" height="100"></img>
 ```
 請根據提供的「參考圖」角色，製作成高品質「努努風格（Q版絨毛公仔 / Plush Doll）」玩偶設計。 【核心要求】 - 完全保留參考圖角色的髮型、配色、服裝元素、角色辨識特徵 - 整體轉化為可愛Q版公仔比例（大頭小身） - 材質改為柔軟布偶／絨毛娃娃質感 - 臉部使用簡化刺繡風五官（embroidered face） - 四肢短小圓潤，呈現收藏級玩偶感 - 保留角色代表性的配件與服裝細節，但做成布料拼接與玩偶化設計 - 玩偶表面具有柔軟絨毛、布料縫線、棉花填充感 - 可加入吊飾、坐姿、抱抱感設計 - 整體氛圍可愛、療癒、適合做成官方周邊 【風格方向】 - 日系Q版公仔 - 高品質 plush toy photography - 可愛收藏玩偶 - cotton plush texture - soft fabric shading - detailed stitching - fluffy material - toy product showcase 【畫面構圖】 - 玩偶置中 - 純色或簡潔背景 - 商品展示風格 - 柔和棚拍燈光 - 高細節、高質感 - 4K 【可選加強】 - 玩偶旁附迷你配件 - 加入透明包裝盒版本 - 坐在床上／沙發上的療癒感構圖 - 可做成吊飾娃娃比例
 ```
-### Q版:
+### Q版 2頭身:
 ```
 masterpiece, best quality, official anime game artwork, super deformed, chibi, SD character, 2 heads tall, oversized head, tiny body, cute proportions, round face, soft cheeks, large forehead, small pointed chin, huge anime eyes, small nose, tiny mouth, wide face, simple facial features, clean anime lineart, cute Japanese anime style, official game concept art, thin smooth lines, soft pencil feeling, (use on both characters),(use reference character clothing), (use reference character hairstyle), (use reference character colors)
 ```
