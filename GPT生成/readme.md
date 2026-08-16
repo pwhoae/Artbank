@@ -3,35 +3,17 @@
 1-2天法則
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 ">glb</a><br> 
-拼豆/像素畫表情包 猫和老鼠動畫
-瘋狂鴿子3d /滾動的天空/ 號角保齡球/ 閃避球/ 滑雪/ 美夢zzz/ TNT弹道轨迹
 
-組合
-render texture=subviewer
-2.5d
-場景要找：中世界/熱帶島/紐約/地鐵 
-靈感
-喜欢的动物：猫
-喜欢的动画：wat
-喜欢的游戏：絕
-喜欢的城市：上海
-喜欢的食物：香腸
-喜欢的季节：夏天
-喜欢的天气：下雪
-地編:2d原圖>轉3d 刨解
-貼紙指引
-房子四視圖
-垃圾桶的咪
-【【迷失 Stray】一只猫，带你重新认识赛博朋克丨灯光&地编参考】 https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-
-https://reactbits.dev/backgrounds/lightfall 
-https://reactbits.dev/backgrounds/orb 
+【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 
 ### 整活>過程要好玩快樂
 ```
 帮我策划一个{var} demo，同时需要你帮我把{var}所需的美术素材以AI Prompt形式输出来给我，最后输出markdown {default var=""}
 ```
-<hr>
+### 畫風
+```
+ "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
+```
 
 ### <a href="https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1">平面設計 prompt html</a>
 ```
@@ -44,10 +26,7 @@ https://reactbits.dev/backgrounds/orb
 | 能力 | idea |
 | ----- | :---- |
 | 設計(8) | 看、想、抄、問 <br>敘事性時尚海報<br>去像素+賽璐璐畫風+商業化插圖<br>粗(6)：密度+主导性+力量感+权威+冲击力 <br> 细(4)：细腻+精致+奢华<br>设计非追求物理平衡->追求适合项目需求的“张力”。 | 
-### 畫風
-```
- "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
-```
+
 ### 「生成一張動漫圖」Prompt Framework
 ```
 常見結構：Image Size ↓ Character ↓ Pose ↓ Composition ↓ Lighting ↓ Color ↓ Background ↓ Camera ↓ Style ↓ Quality ↓ Consistency
