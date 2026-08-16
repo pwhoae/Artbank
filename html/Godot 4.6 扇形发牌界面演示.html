@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Godot 4.6 扇形发牌效果演示与代码</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --godot-bg: #1d222a;
+      --godot-panel: #262c36;
+      --godot-accent: #478cbf;
+      --godot-border: #333b48;
+    }
+    body {
+      background-color: var(--godot-bg);
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .card-element {
+      width: 100px;
+      height: 160px;
+      position: absolute;
+      transform-origin: center bottom;
+      transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), left 0.25s cubic-bezier(0.25, 1, 0.5, 1), top 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+      user-select: none;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      background-color: #0d0e12;
+      border: 4px solid #4a5568;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px;
+      transition: transform 0.15s ease-out, border-color 0.2s ease;
+      cursor: pointer;
+    }
+    .card-inner:hover {
+      border-color: #63b3ed;
+    }
+    .card-element.ready .card-inner:hover {
+      transform: translateY(-25px);
+    }
+    /* Godot code syntax highlighting styling */
+    .code-keyword { color: #ff79c6; font-weight: bold; }
+    .code-func { color: #50fa7b; }
+    .code-var { color: #8be9fd; }
+    .code-type { color: #bd93f9; }
+    .code-comment { color: #6272a4; font-style: italic; }
+    .code-string { color: #f1fa8c; }
+    .code-num { color: #bd93f9; }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+  <header class="bg-[#14171d] border-b border-[#2d3542] px-6 py-3 flex justify-between items-center shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 bg-[#478cbf] rounded-md flex items-center justify-center font-bold text-white text-sm">G4</div>
+      <h1 class="text-lg font-semibold text-gray-100">Godot 4.6 扇形发牌界面演示 & 源码</h1>
+    </div>
+    <div class="flex gap-2">
+      <button id="tab-demo-btn" onclick="switchTab('demo')" class="px-4 py-1.5 rounded-md text-sm font-medium bg-[#478cbf] text-white transition">
+        <i class="fa-solid fa-play mr-1.5"></i> 实时效果演示
+      </button>
+      <button id="tab-code-btn" onclick="switchTab('code')" class="px-4 py-1.5 rounded-md text-sm font-medium bg-[#262c36] text-gray-300 hover:bg-[#333b48] transition">
+        <i class="fa-solid fa-code mr-1.5"></i> GDScript 完整源码
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 relative overflow-hidden flex">
+
+    <!-- View 1: Demo Sandbox -->
+    <div id="demo-view" class="w-full h-full flex flex-col md:flex-row">
+      <!-- Control Sidebar -->
+      <aside class="w-full md:w-80 bg-[#212630] border-r border-[#2d3542] p-5 flex flex-col gap-5 overflow-y-auto shrink-0">
+        <div>
+          <h2 class="text-sm uppercase tracking-wider text-gray-400 font-bold mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-[#478cbf]"></i> 算法调优参数
+          </h2>
+          <div class="space-y-4 text-sm">
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-1">
+                <span>每张角度差 (angle_step)</span>
+                <span id="angle-val" class="text-blue-400 font-mono">3.0°</span>
+              </div>
+              <input type="range" id="angle-slider" min="0" max="10" step="0.5" value="3.0" class="w-full accent-[#478cbf]">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-1">
+                <span>卡牌横向间距 (x_spacing)</span>
+                <span id="spacing-val" class="text-blue-400 font-mono">32px</span>
+              </div>
+              <input type="range" id="spacing-slider" min="10" max="60" step="1" value="32" class="w-full accent-[#478cbf]">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs text-gray-400 mb-1">
+                <span>扇形弧度下沉 (y_arc)</span>
+                <span id="arc-val" class="text-blue-400 font-mono">2.0</span>
+              </div>
+              <input type="range" id="arc-slider" min="0" max="8" step="0.5" value="2.0" class="w-full accent-[#478cbf]">
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-[#2d3542]">
+
+        <div class="flex flex-col gap-2.5">
+          <button onclick="addCard()" class="w-full py-2.5 bg-[#478cbf] hover:bg-[#3b77a4] text-white font-medium rounded-lg shadow flex items-center justify-center gap-2 transition active:scale-95">
+            <i class="fa-solid fa-plus"></i> 发一张牌 (ADD card)
+          </button>
+          <button onclick="addMultipleCards(5)" class="w-full py-2 bg-[#2d3542] hover:bg-[#384252] text-gray-200 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition">
+            连续发 5 张牌
+          </button>
+          <button onclick="clearCards()" class="w-full py-2 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-800/50 text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-trash-can"></i> 清空手牌
+          </button>
+        </div>
+
+        <div class="mt-auto bg-[#181b22] p-3 rounded-lg border border-[#2d3542] text-xs text-gray-400 space-y-1">
+          <div class="flex justify-between">
+            <span>当前手牌数量:</span>
+            <span id="card-count" class="font-bold text-white font-mono">0</span>
+          </div>
+          <div class="flex justify-between">
+            <span>中心卡牌参考:</span>
+            <span id="center-info" class="font-bold text-white font-mono">N/A</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Godot Scene Viewport Simulator -->
+      <div id="viewport" class="flex-1 bg-[#181b22] relative overflow-hidden flex items-center justify-center select-none">
+        <!-- Grid pattern background simulating Godot editor 2D workspace -->
+        <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+
+        <div id="hand-anchor" class="absolute w-2 h-2 bg-blue-500 rounded-full" style="left: 50%; top: calc(50% - 100px); transform: translate(-50%, -50%); opacity: 0.3;" title="Hand Center Position"></div>
+
+        <!-- Deal Button (Simulates Godot Button) -->
+        <button id="deal-btn" onclick="addCard()" class="absolute right-8 top-1/2 -translate-y-1/2 w-[100px] h-[160px] bg-[#212630] border-2 border-dashed border-[#478cbf] hover:border-solid hover:bg-[#262c36] rounded-lg text-[#478cbf] font-bold text-sm flex flex-col items-center justify-center gap-2 transition cursor-pointer shadow-lg z-20">
+          <i class="fa-solid fa-hand-pointer text-2xl"></i>
+          <span>发牌按钮</span>
+        </button>
+
+        <!-- Container for cards -->
+        <div id="cards-container" class="absolute inset-0 pointer-events-none"></div>
+      </div>
+    </div>
+
+    <!-- View 2: GDScript Code Showcase -->
+    <div id="code-view" class="w-full h-full hidden flex-col md:flex-row bg-[#181b22]">
+      <!-- Code File Selector Nav -->
+      <div class="w-full md:w-64 bg-[#212630] border-r border-[#2d3542] p-4 flex flex-col gap-2 shrink-0">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">项目文件 (GDScript)</h3>
+        <button onclick="showCodeFile('card_gd')" id="file-card-gd" class="w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 bg-[#478cbf] text-white">
+          <i class="fa-regular fa-file-code"></i> card.gd
+        </button>
+        <button onclick="showCodeFile('test_scene_gd')" id="file-test-gd" class="w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 text-gray-300 hover:bg-[#2c3340]">
+          <i class="fa-regular fa-file-code"></i> test_scene.gd
+        </button>
+        <button onclick="showCodeFile('tree_structure')" id="file-tree" class="w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 text-gray-300 hover:bg-[#2c3340]">
+          <i class="fa-solid fa-sitemap"></i> 节点结构说明
+        </button>
+      </div>
+
+      <!-- Code Content View -->
+      <div class="flex-1 flex flex-col overflow-hidden relative">
+        <div class="bg-[#1e232d] px-6 py-2.5 border-b border-[#2d3542] flex justify-between items-center">
+          <span id="code-filename" class="text-sm font-mono text-blue-400 font-semibold">card.gd</span>
+          <button onclick="copyCurrentCode()" class="text-xs bg-[#2b3240] hover:bg-[#384254] text-gray-200 px-3 py-1.5 rounded flex items-center gap-1.5 transition">
+            <i class="fa-regular fa-copy"></i> 复制代码
+          </button>
+        </div>
+        <pre class="flex-1 p-6 overflow-auto font-mono text-sm leading-relaxed text-gray-200" id="code-display"></pre>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // System state
+    let cards = [];
+    let angleStep = 3.0;
+    let xSpacing = 32;
+    let yArcFactor = 2.0;
+
+    // Code Snippets Storage
+    const codeFiles = {
+      card_gd: `<span class="code-comment"># card.gd (挂载于 Card 场景根节点 Control 上)</span>
+<span class="code-keyword">extends</span> <span class="code-type">Control</span>
+
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> panel: <span class="code-type">Panel</span> = $Panel
+<span class="code-keyword">var</span> is_ready: <span class="code-type">bool</span> = <span class="code-keyword">false</span>
+
+<span class="code-keyword">func</span> <span class="code-func">_ready</span>() -> <span class="code-type">void</span>:
+    <span class="code-comment"># 0.2秒后标记为已准备好，防止发牌补间动画未完成时触发鼠标悬停事件</span>
+    is_ready = <span class="code-keyword">false</span>
+    <span class="code-keyword">var</span> timer = <span class="code-func">get_tree</span>().<span class="code-func">create_timer</span>(<span class="code-num">0.2</span>)
+    <span class="code-keyword">await</span> timer.timeout
+    is_ready = <span class="code-keyword">true</span>
+
+<span class="code-comment"># Panel 的 mouse_entered 信号绑定</span>
+<span class="code-keyword">func</span> <span class="code-func">_on_panel_mouse_entered</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> is_ready:
+        <span class="code-keyword">return</span>
+    <span class="code-keyword">var</span> tween = <span class="code-func">create_tween</span>()
+    <span class="code-comment"># 鼠标悬停时，Panel 向上相对移动 25 像素</span>
+    tween.<span class="code-func">tween_property</span>(panel, <span class="code-string">"position:y"</span>, -<span class="code-num">25.0</span>, <span class="code-num">0.1</span>)
+
+<span class="code-comment"># Panel 的 mouse_exited 信号绑定</span>
+<span class="code-keyword">func</span> <span class="code-func">_on_panel_mouse_exited</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> is_ready:
+        <span class="code-keyword">return</span>
+    <span class="code-keyword">var</span> tween = <span class="code-func">create_tween</span>()
+    <span class="code-comment"># 鼠标离开时归位</span>
+    tween.<span class="code-func">tween_property</span>(panel, <span class="code-string">"position:y"</span>, <span class="code-num">0.0</span>, <span class="code-num">0.1</span>)`,
+
+      test_scene_gd: `<span class="code-comment"># test_scene.gd (挂载于 TestScene 主场景根节点上)</span>
+<span class="code-keyword">extends</span> <span class="code-type">Control</span>
+
+<span class="code-keyword">@export</span> <span class="code-keyword">var</span> card_scene: <span class="code-type">PackedScene</span> = <span class="code-func">preload</span>(<span class="code-string">"res://card.tscn"</span>)
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> cards_container: <span class="code-type">Control</span> = $CardsContainer
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> button: <span class="code-type">Button</span> = $Button
+
+<span class="code-keyword">func</span> <span class="code-func">_on_button_pressed</span>() -> <span class="code-type">void</span>:
+    <span class="code-func">add_card</span>()
+
+<span class="code-keyword">func</span> <span class="code-func">add_card</span>() -> <span class="code-type">void</span>:
+    <span class="code-comment"># 1. 实例化卡牌并添加到容器节点</span>
+    <span class="code-keyword">var</span> new_card = card_scene.<span class="code-func">instantiate</span>()
+    cards_container.<span class="code-func">add_child</span>(new_card)
+
+    <span class="code-comment"># 设置初始位置在发牌按钮处 (使用 global_position)</span>
+    new_card.global_position = button.global_position
+
+    <span class="code-comment"># 2. 重新计算并刷新所有手牌的扇形位置</span>
+    <span class="code-func">update_card_fan_positions</span>()
+
+<span class="code-keyword">func</span> <span class="code-func">update_card_fan_positions</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">var</span> card_nodes = cards_container.<span class="code-func">get_children</span>()
+    <span class="code-keyword">var</span> card_size = card_nodes.<span class="code-func">size</span>()
+    <span class="code-keyword">if</span> card_size == <span class="code-num">0</span>:
+        <span class="code-keyword">return</span>
+
+    <span class="code-comment"># 计算基准中心位置（屏幕中央偏上 200px）</span>
+    <span class="code-keyword">var</span> window_size = <span class="code-type">DisplayServer</span>.<span class="code-func">window_get_size</span>()
+    <span class="code-keyword">var</span> base_position = <span class="code-type">Vector2</span>(window_size.x / <span class="code-num">2.0</span>, window_size.y / <span class="code-num">2.0</span> - <span class="code-num">200.0</span>)
+
+    <span class="code-comment"># 计算卡牌中心参考索引 (区分奇数与偶数张)</span>
+    <span class="code-keyword">var</span> center_number: <span class="code-type">float</span>
+    <span class="code-keyword">if</span> card_size % <span class="code-num">2</span> != <span class="code-num">0</span>:
+        <span class="code-comment"># 奇数张卡牌：中心正好是正中间那张</span>
+        center_number = (card_size - <span class="code-num">1</span>) / <span class="code-num">2.0</span>
+    <span class="code-keyword">else</span>:
+        <span class="code-comment"># 偶数张卡牌：中心介于中间两张卡牌之间</span>
+        center_number = (card_size / <span class="code-num">2.0</span>) - <span class="code-num">0.5</span>
+
+    <span class="code-comment"># 遍历所有卡牌，计算扇形角度与弧度偏移</span>
+    <span class="code-keyword">for</span> i <span class="code-keyword">in</span> <span class="code-func">range</span>(card_size):
+        <span class="code-keyword">var</span> card = card_nodes[i]
+        <span class="code-keyword">var</span> diff = i - center_number
+
+        <span class="code-comment"># 每张卡牌相差 2.5 度 (角度)</span>
+        <span class="code-keyword">var</span> angle = diff * <span class="code-num">2.5</span>
+
+        <span class="code-comment"># 横向偏移 (结合卡牌半宽 50px 偏移)</span>
+        <span class="code-keyword">var</span> x_offset = diff * <span class="code-num">30.0</span> - <span class="code-num">50.0</span>
+
+        <span class="code-comment"># 纵向弧形下沉 (使用二次方或三角函数让两侧卡牌下沉)</span>
+        <span class="code-keyword">var</span> y_offset = <span class="code-func">abs</span>(diff) * <span class="code-func">abs</span>(diff) * <span class="code-num">2.0</span>
+
+        <span class="code-keyword">var</span> target_position = base_position + <span class="code-type">Vector2</span>(x_offset, y_offset)
+
+        <span class="code-comment"># 并行补间动画：同时旋转和移动到指定扇形位置</span>
+        <span class="code-keyword">var</span> tween = <span class="code-func">create_tween</span>().<span class="code-func">set_parallel</span>(<span class="code-keyword">true</span>)
+        tween.<span class="code-func">tween_property</span>(card, <span class="code-string">"global_position"</span>, target_position, <span class="code-num">0.15</span>)
+        tween.<span class="code-func">tween_property</span>(card, <span class="code-string">"rotation_degrees"</span>, angle, <span class="code-num">0.15</span>)`,
+
+      tree_structure: `<span class="code-comment"># Godot 场景树结构搭建指南</span>
+
+<span class="code-keyword">1. 卡牌场景 (card.tscn)</span>
+   └── <span class="code-type">Control</span> (卡牌根节点，修改 Size 为 100x160，绑定 card.gd)
+       └── <span class="code-type">Panel</span> (调整为 Full Rect 铺满)
+           <span class="code-comment"># 样式设置：Theme Overrides -> Styles -> StyleBoxFlat</span>
+           <span class="code-comment"># Background Color: 黑色</span>
+           <span class="code-comment"># Border Width: 4 (全边框)</span>
+           <span class="code-comment"># Corner Radius: 8 (四角圆角)</span>
+           <span class="code-comment"># 信号连接: mouse_entered() 和 mouse_exited() 连接至 card.gd</span>
+
+<span class="code-keyword">2. 主测试场景 (test_scene.tscn)</span>
+   └── <span class="code-type">Control</span> (主场景根节点，绑定 test_scene.gd)
+       ├── <span class="code-type">Button</span> (名称: Button，尺寸 100x160，文字"发牌"，右侧居中)
+       │   <span class="code-comment"># 信号连接: pressed() -> _on_button_pressed()</span>
+       └── <span class="code-type">Control</span> (名称: CardsContainer，铺满整个屏幕，Mouse Filter 设为 Ignore)`
+    };
+
+    let activeFile = 'card_gd';
+
+    // UI Event Listeners
+    document.getElementById('angle-slider').addEventListener('input', (e) => {
+      angleStep = parseFloat(e.target.value);
+      document.getElementById('angle-val').innerText = angleStep.toFixed(1) + '°';
+      updateFanLayout();
+    });
+
+    document.getElementById('spacing-slider').addEventListener('input', (e) => {
+      xSpacing = parseInt(e.target.value);
+      document.getElementById('spacing-val').innerText = xSpacing + 'px';
+      updateFanLayout();
+    });
+
+    document.getElementById('arc-slider').addEventListener('input', (e) => {
+      yArcFactor = parseFloat(e.target.value);
+      document.getElementById('arc-val').innerText = yArcFactor.toFixed(1);
+      updateFanLayout();
+    });
+
+    function addCard() {
+      const container = document.getElementById('cards-container');
+      const dealBtn = document.getElementById('deal-btn');
+      const btnRect = dealBtn.getBoundingClientRect();
+      const viewportRect = document.getElementById('viewport').getBoundingClientRect();
+
+      // Card initial position (at deal button)
+      const startX = btnRect.left - viewportRect.left;
+      const startY = btnRect.top - viewportRect.top;
+
+      // Create Card DOM Element
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card-element';
+      cardEl.style.left = startX + 'px';
+      cardEl.style.top = startY + 'px';
+
+      const cardInner = document.createElement('div');
+      cardInner.className = 'card-inner';
+      const cardNumber = cards.length + 1;
+      cardInner.innerHTML = `
+        <div class="text-xs font-bold text-blue-400 font-mono">#${cardNumber}</div>
+        <div class="text-center text-lg font-extrabold text-gray-200">🂡</div>
+        <div class="text-xs text-right font-mono text-gray-400">Card</div>
+      `;
+
+      cardEl.appendChild(cardInner);
+      container.appendChild(cardEl);
+
+      cards.push(cardEl);
+
+      // Simulate Godot 0.2s ready delay before enabling hover interactions
+      setTimeout(() => {
+        cardEl.classList.add('ready');
+      }, 200);
+
+      updateFanLayout();
+    }
+
+    function addMultipleCards(count) {
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= count) {
+          clearInterval(interval);
+          return;
+        }
+        addCard();
+        i++;
+      }, 80);
+    }
+
+    function clearCards() {
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
+      cards = [];
+      updateInfoDisplay(0, "N/A");
+    }
+
+    function updateFanLayout() {
+      const cardSize = cards.length;
+      if (cardSize === 0) {
+        updateInfoDisplay(0, "N/A");
+        return;
+      }
+
+      const viewport = document.getElementById('viewport');
+      const baseCenterX = viewport.clientWidth / 2;
+      const baseCenterY = viewport.clientHeight / 2 - 20;
+
+      // Calculate Center Index
+      let centerNumber;
+      if (cardSize % 2 !== 0) {
+        centerNumber = (cardSize - 1) / 2;
+      } else {
+        centerNumber = (cardSize / 2) - 0.5;
+      }
+
+      updateInfoDisplay(cardSize, centerNumber.toFixed(1));
+
+      // Position each card
+      cards.forEach((card, i) => {
+        const diff = i - centerNumber;
+
+        // Angle rotation (deg)
+        const angle = diff * angleStep;
+
+        // X and Y offset calculations
+        const xOffset = diff * xSpacing - 50; // 50px is half card width
+        const yOffset = Math.abs(diff) * Math.abs(diff) * yArcFactor;
+
+        const targetX = baseCenterX + xOffset;
+        const targetY = baseCenterY + yOffset;
+
+        // Apply Transform & Position
+        card.style.left = targetX + 'px';
+        card.style.top = targetY + 'px';
+        card.style.transform = `rotate(${angle}deg)`;
+        card.style.zIndex = i + 10;
+      });
+    }
+
+    function updateInfoDisplay(count, center) {
+      document.getElementById('card-count').innerText = count;
+      document.getElementById('center-info').innerText = center;
+    }
+
+    // Tab & File switching
+    function switchTab(tab) {
+      const demoBtn = document.getElementById('tab-demo-btn');
+      const codeBtn = document.getElementById('tab-code-btn');
+      const demoView = document.getElementById('demo-view');
+      const codeView = document.getElementById('code-view');
+
+      if (tab === 'demo') {
+        demoView.classList.remove('hidden');
+        demoView.classList.add('flex');
+        codeView.classList.add('hidden');
+        codeView.classList.remove('flex');
+
+        demoBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium bg-[#478cbf] text-white transition";
+        codeBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium bg-[#262c36] text-gray-300 hover:bg-[#333b48] transition";
+      } else {
+        demoView.classList.add('hidden');
+        demoView.classList.remove('flex');
+        codeView.classList.remove('hidden');
+        codeView.classList.add('flex');
+
+        codeBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium bg-[#478cbf] text-white transition";
+        demoBtn.className = "px-4 py-1.5 rounded-md text-sm font-medium bg-[#262c36] text-gray-300 hover:bg-[#333b48] transition";
+        
+        showCodeFile(activeFile);
+      }
+    }
+
+    function showCodeFile(fileKey) {
+      activeFile = fileKey;
+      const codeDisplay = document.getElementById('code-display');
+      const fileNameEl = document.getElementById('code-filename');
+
+      document.querySelectorAll('[id^="file-"]').forEach(btn => {
+        btn.className = "w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 text-gray-300 hover:bg-[#2c3340]";
+      });
+
+      if (fileKey === 'card_gd') {
+        document.getElementById('file-card-gd').className = "w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 bg-[#478cbf] text-white";
+        fileNameEl.innerText = 'card.gd';
+      } else if (fileKey === 'test_scene_gd') {
+        document.getElementById('file-test-gd').className = "w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 bg-[#478cbf] text-white";
+        fileNameEl.innerText = 'test_scene.gd';
+      } else {
+        document.getElementById('file-tree').className = "w-full text-left px-3 py-2 rounded-md text-sm font-mono flex items-center gap-2 bg-[#478cbf] text-white";
+        fileNameEl.innerText = 'Scene Hierarchy & Node Setup';
+      }
+
+      codeDisplay.innerHTML = codeFiles[fileKey];
+    }
+
+    function copyCurrentCode() {
+      const rawText = codeFiles[activeFile].replace(/<[^>]*>?/gm, '');
+      navigator.clipboard.writeText(rawText);
+      const btn = event.currentTarget;
+      btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> 已复制!`;
+      setTimeout(() => {
+        btn.innerHTML = `<i class="fa-regular fa-copy"></i> 复制代码`;
+      }, 1500);
+    }
+
+    // Auto-spawn initial hand on load
+    window.onload = () => {
+      addMultipleCards(5);
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Godot 4 环形道具选择面板 - 交互演示与完整代码</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            godot: {
+              dark: '#1e222b',
+              panel: '#262b36',
+              border: '#333b4d',
+              accent: '#478cbf',
+              hover: '#549ed8',
+              text: '#e0e0e0'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar for Godot Code Editor theme */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e222b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333b4d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #478cbf;
+    }
+    .code-keyword { color: #ff7085; font-weight: bold; }
+    .code-function { color: #66b2ff; }
+    .code-type { color: #42ecf5; }
+    .code-string { color: #ffeb99; }
+    .code-comment { color: #7f8c8d; font-style: italic; }
+    .code-var { color: #e6e6e6; }
+    .code-number { color: #ff9980; }
+  </style>
+</head>
+<body class="bg-godot-dark text-godot-text font-sans antialiased min-h-screen flex flex-col">
+
+  <header class="bg-godot-panel border-b border-godot-border px-6 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded bg-godot-accent flex items-center justify-center font-bold text-white shadow">
+        <i class="fa-solid fa-gear text-lg"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg text-white tracking-wide">Godot 4 环形道具选择器 (Radial Item Menu)</h1>
+        <p class="text-xs text-gray-400">适配 Godot 4.4.1 | Node2D + RayCast2D + Tween 动画机制</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="text-xs px-2.5 py-1 rounded bg-blue-900/50 text-blue-300 border border-blue-700">
+        <i class="fa-solid fa-code-branch mr-1"></i> Godot 4.4.1 GDScript
+      </span>
+      <a href="#code-section" class="text-xs bg-godot-accent hover:bg-godot-hover text-white font-medium px-3 py-1.5 rounded transition duration-150 shadow">
+        <i class="fa-solid fa-file-code mr-1"></i> 查看完整代码
+      </a>
+    </div>
+  </header>
+
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1800px] w-full mx-auto">
+    
+    <!-- LEFT PANEL: Interactive Canvas & Playground (5 cols) -->
+    <section class="lg:col-span-5 flex flex-col space-y-4">
+      
+      <!-- Interactive Simulator Card -->
+      <div class="bg-godot-panel border border-godot-border rounded-xl p-4 shadow-xl flex flex-col flex-1 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3 border-b border-godot-border pb-2">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-gamepad text-godot-accent"></i>
+            <h2 class="font-semibold text-white text-sm">Web 模拟器 (Interactive Simulation)</h2>
+          </div>
+          <div class="flex items-center space-x-2">
+            <label class="inline-flex items-center text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" id="toggle-debug" checked class="form-checkbox h-3.5 w-3.5 text-godot-accent rounded bg-godot-dark border-godot-border focus:ring-0">
+              <span class="ml-1.5">显示 Collision/RayCast 调试</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Selected Item HUD display -->
+        <div class="bg-godot-dark/80 border border-godot-border/60 rounded-lg p-3 mb-3 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div id="selected-icon-box" class="w-12 h-12 rounded-lg bg-godot-panel border border-godot-border flex items-center justify-center text-2xl text-godot-accent transition-all duration-200">
+              <i class="fa-solid fa-hand"></i>
+            </div>
+            <div>
+              <div class="text-[10px] text-gray-400 uppercase tracking-wider">当前选择道具 (Selected)</div>
+              <div id="selected-item-name" class="font-bold text-white text-base">无 (None)</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] text-gray-400">操作说明</div>
+            <div class="text-xs text-godot-accent font-medium">按住 <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-godot-border text-white rounded">Alt</kbd> 键并移动鼠标</div>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative flex-1 bg-godot-dark rounded-lg border border-godot-border overflow-hidden min-h-[360px] flex items-center justify-center select-none" id="canvas-wrapper">
+          <canvas id="godot-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+          
+          <!-- Touch / Mouse Hold Trigger Button (for mobile/mouse without keyboard) -->
+          <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center space-x-2">
+            <button id="btn-hold-alt" class="px-4 py-2 bg-godot-accent hover:bg-godot-hover active:scale-95 text-white font-medium text-xs rounded-full shadow-lg transition-all flex items-center space-x-2 border border-blue-400/30">
+              <i class="fa-solid fa-hand-pointer"></i>
+              <span>按住/悬停模拟唤出环形菜单 (Hold Alt)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Simulator Customizer Controls -->
+        <div class="mt-4 pt-3 border-t border-godot-border/60 grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block text-gray-400 mb-1">道具数量 (Items Count): <span id="val-item-count" class="text-godot-accent font-mono font-bold">6</span></label>
+            <input type="range" id="input-item-count" min="3" max="10" value="6" class="w-full accent-godot-accent bg-godot-dark h-1.5 rounded-lg cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">扩散半径 (Radius): <span id="val-radius" class="text-godot-accent font-mono font-bold">110px</span></label>
+            <input type="range" id="input-radius" min="70" max="160" value="110" class="w-full accent-godot-accent bg-godot-dark h-1.5 rounded-lg cursor-pointer">
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Node Tree Structure -->
+      <div class="bg-godot-panel border border-godot-border rounded-xl p-4 shadow-xl">
+        <h3 class="font-semibold text-white text-sm mb-2 flex items-center">
+          <i class="fa-solid fa-sitemap text-godot-accent mr-2"></i> Godot 节点层级架构 (Scene Hierarchy)
+        </h3>
+        <div class="bg-godot-dark p-3 rounded-lg border border-godot-border font-mono text-xs text-gray-300 space-y-1">
+          <div class="text-blue-400 font-bold"><i class="fa-solid fa-folder-open text-yellow-500 mr-1"></i> TestScene (Node2D)</div>
+          <div class="pl-4 text-purple-300"><i class="fa-solid fa-[#478cbf] fa-circle-dot mr-1"></i> Wheel (Node2D - wheel.gd)</div>
+          <div class="pl-8 text-red-300"><i class="fa-solid fa-arrow-trend-up mr-1"></i> RayCast2D (检测鼠标角度射线)</div>
+          <div class="pl-8 text-green-300"><i class="fa-solid fa-cubes mr-1"></i> Items (Node2D - 道具容器)</div>
+          <div class="pl-12 text-gray-400 border-l border-godot-border ml-2"><i class="fa-solid fa-circle text-orange-400 text-[10px] mr-1"></i> WheelItem 1 (Area2D - Layer 8)</div>
+          <div class="pl-12 text-gray-400 border-l border-godot-border ml-2"><i class="fa-solid fa-circle text-orange-400 text-[10px] mr-1"></i> WheelItem 2 ...</div>
+          <div class="pl-4 text-teal-300"><i class="fa-solid fa-tv mr-1"></i> UI (Control)</div>
+          <div class="pl-8 text-gray-300"><i class="fa-solid fa-image mr-1"></i> TextureRect (已选图示)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Full GDScript Source Code & Tutorials (7 cols) -->
+    <section id="code-section" class="lg:col-span-7 flex flex-col bg-godot-panel border border-godot-border rounded-xl shadow-xl overflow-hidden">
+      
+      <!-- Code Navigation Tabs -->
+      <div class="bg-godot-dark border-b border-godot-border px-3 pt-2 flex items-center justify-between overflow-x-auto">
+        <div class="flex space-x-1" id="script-tabs">
+          <button data-tab="tab-wheel" class="tab-btn px-3 py-2 text-xs font-mono rounded-t-lg bg-godot-panel text-godot-accent border-t-2 border-godot-accent font-semibold flex items-center space-x-1.5">
+            <i class="fa-solid fa-gear text-xs"></i>
+            <span>wheel.gd</span>
+          </button>
+          <button data-tab="tab-item" class="tab-btn px-3 py-2 text-xs font-mono rounded-t-lg text-gray-400 hover:text-white hover:bg-godot-panel/50 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-cube text-xs"></i>
+            <span>wheel_item.gd</span>
+          </button>
+          <button data-tab="tab-status" class="tab-btn px-3 py-2 text-xs font-mono rounded-t-lg text-gray-400 hover:text-white hover:bg-godot-panel/50 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-database text-xs"></i>
+            <span>item_status.gd</span>
+          </button>
+          <button data-tab="tab-test" class="tab-btn px-3 py-2 text-xs font-mono rounded-t-lg text-gray-400 hover:text-white hover:bg-godot-panel/50 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-play text-xs"></i>
+            <span>test_scene.gd</span>
+          </button>
+          <button data-tab="tab-global" class="tab-btn px-3 py-2 text-xs font-mono rounded-t-lg text-gray-400 hover:text-white hover:bg-godot-panel/50 transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-globe text-xs"></i>
+            <span>global.gd</span>
+          </button>
+        </div>
+
+        <button id="btn-copy-code" class="text-xs bg-godot-dark border border-godot-border hover:bg-godot-border text-gray-300 hover:text-white px-2.5 py-1 rounded transition flex items-center space-x-1 mb-1">
+          <i class="fa-solid fa-copy"></i>
+          <span>复制当前代码</span>
+        </button>
+      </div>
+
+      <!-- Code Content Viewports -->
+      <div class="flex-1 bg-[#181b20] p-4 overflow-y-auto font-mono text-xs leading-relaxed text-gray-200">
+        
+        <!-- 1. wheel.gd -->
+        <div id="tab-wheel" class="tab-content">
+          <div class="mb-2 text-gray-400 border-b border-godot-border pb-1 text-[11px]">
+            # 挂载节点: Wheel (Node2D) | 核心算法: RayCast2D 极坐标向量角度计算与 2π/N 环形自动布局
+          </div>
+          <pre><code><span class="code-keyword">extends</span> <span class="code-type">Node2D</span>
+
+<span class="code-comment"># 节点引用</span>
+<span class="code-keyword">@onready var</span> ray_cast_2d: <span class="code-type">RayCast2D</span> = <span class="code-var">$RayCast2D</span>
+<span class="code-keyword">@onready var</span> items_container: <span class="code-type">Node2D</span> = <span class="code-var">$Items</span>
+
+<span class="code-comment"># 配置参数</span>
+<span class="code-keyword">@export var</span> radius: <span class="code-type">float</span> = <span class="code-number">110.0</span>
+<span class="code-keyword">@export var</span> wheel_item_scene: <span class="code-type">PackedScene</span>
+
+<span class="code-keyword">var</span> selected_item: <span class="code-type">Area2D</span> = <span class="code-keyword">null</span>
+<span class="code-keyword">var</span> is_open: <span class="code-type">bool</span> = <span class="code-keyword">false</span>
+
+<span class="code-keyword">func</span> <span class="code-function">_ready</span>() -> <span class="code-type">void</span>:
+    items_container.visible = <span class="code-keyword">false</span>
+
+<span class="code-keyword">func</span> <span class="code-function">_process</span>(_delta: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">if not</span> is_open:
+        <span class="code-keyword">return</span>
+        
+    <span class="code-comment"># 1. 获取鼠标相对于 Wheel 节点的本地位置</span>
+    <span class="code-keyword">var</span> mouse_pos = get_local_mouse_position()
+    <span class="code-keyword">var</span> angle = mouse_pos.angle() <span class="code-comment"># 获取弧度 rad</span>
+    
+    <span class="code-comment"># 2. 动态改变 RayCast2D 的检测方向与距离 (500 像素)</span>
+    ray_cast_2d.target_position = <span class="code-type">Vector2</span>(<span class="code-function">cos</span>(angle), <span class="code-function">sin</span>(angle)) * <span class="code-number">500.0</span>
+    ray_cast_2d.force_raycast_update()
+    
+    <span class="code-comment"># 3. 碰撞检测判定选中的道具</span>
+    <span class="code-keyword">if</span> ray_cast_2d.is_colliding():
+        <span class="code-keyword">var</span> collider = ray_cast_2d.get_collider()
+        <span class="code-keyword">if</span> collider <span class="code-keyword">is</span> <span class="code-type">Area2D</span>:
+            selected_item = collider
+    <span class="code-keyword">else</span>:
+        selected_item = <span class="code-keyword">null</span>
+        
+    <span class="code-comment"># 4. 更新图标放大与焦点状态</span>
+    _update_selection_effect()
+
+<span class="code-keyword">func</span> <span class="code-function">_update_selection_effect</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">for</span> item <span class="code-keyword">in</span> items_container.get_children():
+        <span class="code-keyword">if</span> item == selected_item:
+            item.update_scale(<span class="code-number">1.4</span>) <span class="code-comment"># 聚焦放大 1.4 倍</span>
+        <span class="code-keyword">else</span>:
+            item.update_scale(<span class="code-number">1.0</span>) <span class="code-comment"># 保持原大小</span>
+
+<span class="code-comment"># 打开环形选择器</span>
+<span class="code-keyword">func</span> <span class="code-function">open</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> is_open: <span class="code-keyword">return</span>
+    is_open = <span class="code-keyword">true</span>
+    items_container.visible = <span class="code-keyword">true</span>
+    
+    <span class="code-keyword">var</span> count = items_container.get_child_count()
+    <span class="code-keyword">if</span> count == <span class="code-number">0</span>: <span class="code-keyword">return</span>
+    
+    <span class="code-comment"># 环形均匀分布计算: 弧度 dir = (2 * PI * i) / count</span>
+    <span class="code-keyword">for</span> i <span class="code-keyword">in</span> <span class="code-function">range</span>(count):
+        <span class="code-keyword">var</span> item = items_container.get_child(i)
+        <span class="code-keyword">var</span> dir = (<span class="code-number">2.0</span> * <span class="code-number">PI</span> * i) / count
+        <span class="code-keyword">var</span> target_pos = <span class="code-type">Vector2</span>(<span class="code-function">cos</span>(dir), <span class="code-function">sin</span>(dir)) * radius
+        
+        item.update_rotation(dir)
+        item.animate_position(target_pos, <span class="code-number">0.2</span>)
+
+<span class="code-comment"># 关闭环形选择器</span>
+<span class="code-keyword">func</span> <span class="code-function">close</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if not</span> is_open: <span class="code-keyword">return</span>
+    is_open = <span class="code-keyword">false</span>
+    selected_item = <span class="code-keyword">null</span>
+    
+    <span class="code-comment"># 收回至中心点</span>
+    <span class="code-keyword">var</span> count = items_container.get_child_count()
+    <span class="code-keyword">for</span> i <span class="code-keyword">in</span> <span class="code-function">range</span>(count):
+        <span class="code-keyword">var</span> item = items_container.get_child(i)
+        item.animate_position(<span class="code-type">Vector2</span>.ZERO, <span class="code-number">0.15</span>)
+    
+    <span class="code-comment"># 动画播放完毕后隐藏容器 (Callback 延迟)</span>
+    get_tree().create_timer(<span class="code-number">0.15</span>).timeout.connect(<span class="code-keyword">func</span>():
+        <span class="code-keyword">if not</span> is_open:
+            items_container.visible = <span class="code-keyword">false</span>
+    )
+
+<span class="code-comment"># 动态创建/加装道具</span>
+<span class="code-keyword">func</span> <span class="code-function">add_item</span>(status: <span class="code-type">ItemStatus</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">var</span> item_inst = wheel_item_scene.instantiate()
+    items_container.add_child(item_inst) <span class="code-comment"># 必须先 add_child 确保节点 ready</span>
+    item_inst.init_item(status)</code></pre>
+        </div>
+
+        <!-- 2. wheel_item.gd -->
+        <div id="tab-item" class="tab-content hidden">
+          <div class="mb-2 text-gray-400 border-b border-godot-border pb-1 text-[11px]">
+            # 挂载节点: WheelItem (Area2D - Collision Layer: 8, Mask: 0) | Tween 动画与旋转控制
+          </div>
+          <pre><code><span class="code-keyword">extends</span> <span class="code-type">Area2D</span>
+<span class="code-keyword">class_name</span> <span class="code-type">WheelItem</span>
+
+<span class="code-keyword">@onready var</span> sprite_2d: <span class="code-type">Sprite2D</span> = <span class="code-var">$Sprite2D</span>
+<span class="code-keyword">@onready var</span> panel: <span class="code-type">Control</span> = <span class="code-var">$Panel</span>
+
+<span class="code-keyword">var</span> status: <span class="code-type">ItemStatus</span>
+<span class="code-keyword">var</span> tween_scale: <span class="code-type">Tween</span>
+<span class="code-keyword">var</span> tween_pos: <span class="code-type">Tween</span>
+<span class="code-keyword">var</span> tween_rot: <span class="code-type">Tween</span>
+
+<span class="code-keyword">func</span> <span class="code-function">init_item</span>(new_status: <span class="code-type">ItemStatus</span>) -> <span class="code-type">void</span>:
+    status = new_status
+    <span class="code-keyword">if</span> is_node_ready():
+        _apply_status()
+
+<span class="code-keyword">func</span> <span class="code-function">_ready</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> status:
+        _apply_status()
+
+<span class="code-keyword">func</span> <span class="code-function">_apply_status</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> status <span class="code-keyword">and</span> status.item_icon:
+        sprite_2d.texture = status.item_icon
+
+<span class="code-comment"># 缓动平滑缩放</span>
+<span class="code-keyword">func</span> <span class="code-function">update_scale</span>(target_scale: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> tween_scale <span class="code-keyword">and</span> tween_scale.is_running():
+        tween_scale.kill()
+    tween_scale = create_tween()
+    tween_scale.tween_property(<span class="code-keyword">self</span>, <span class="code-string">"scale"</span>, <span class="code-type">Vector2</span>.ONE * target_scale, <span class="code-number">0.1</span>)
+
+<span class="code-comment"># 缓动调整 Panel 边框旋转角</span>
+<span class="code-keyword">func</span> <span class="code-function">update_rotation</span>(target_rot: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> tween_rot <span class="code-keyword">and</span> tween_rot.is_running():
+        tween_rot.kill()
+    tween_rot = create_tween()
+    tween_rot.tween_property(panel, <span class="code-string">"rotation"</span>, target_rot, <span class="code-number">0.2</span>)
+
+<span class="code-comment"># 缓动位移展开/收回</span>
+<span class="code-keyword">func</span> <span class="code-function">animate_position</span>(target_pos: <span class="code-type">Vector2</span>, duration: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> tween_pos <span class="code-keyword">and</span> tween_pos.is_running():
+        tween_pos.kill()
+    tween_pos = create_tween()
+    tween_pos.tween_property(<span class="code-keyword">self</span>, <span class="code-string">"position"</span>, target_pos, duration)\
+        .set_trans(<span class="code-type">Tween</span>.TRANS_QUAD)\
+        .set_ease(<span class="code-type">Tween</span>.EASE_OUT)</code></pre>
+        </div>
+
+        <!-- 3. item_status.gd -->
+        <div id="tab-status" class="tab-content hidden">
+          <div class="mb-2 text-gray-400 border-b border-godot-border pb-1 text-[11px]">
+            # 自定义 Resource 资源文件: 保存道具名称与图片纹理数据
+          </div>
+          <pre><code><span class="code-keyword">extends</span> <span class="code-type">Resource</span>
+<span class="code-keyword">class_name</span> <span class="code-type">ItemStatus</span>
+
+<span class="code-keyword">@export var</span> item_name: <span class="code-type">String</span> = <span class="code-string">""</span>
+<span class="code-keyword">@export var</span> item_icon: <span class="code-type">Texture2D</span></code></pre>
+        </div>
+
+        <!-- 4. test_scene.gd -->
+        <div id="tab-test" class="tab-content hidden">
+          <div class="mb-2 text-gray-400 border-b border-godot-border pb-1 text-[11px]">
+            # 主测试场景脚本: 监听 Alt 按键按下/释放逻辑与 UI 界面数据刷新
+          </div>
+          <pre><code><span class="code-keyword">extends</span> <span class="code-type">Node2D</span>
+
+<span class="code-keyword">@onready var</span> wheel: <span class="code-type">Node2D</span> = <span class="code-var">$Wheel</span>
+<span class="code-keyword">@onready var</span> texture_rect: <span class="code-type">TextureRect</span> = <span class="code-var">$UI/TextureRect</span>
+<span class="code-keyword">@onready var</span> label_name: <span class="code-type">Label</span> = <span class="code-var">$UI/LabelName</span>
+
+<span class="code-keyword">func</span> <span class="code-function">_ready</span>() -> <span class="code-type">void</span>:
+    <span class="code-comment"># 从全局配置动态初始化道具</span>
+    <span class="code-keyword">for</span> status <span class="code-keyword">in</span> Global.items:
+        wheel.add_item(status)
+
+<span class="code-keyword">func</span> <span class="code-function">_input</span>(event: <span class="code-type">InputEvent</span>) -> <span class="code-type">void</span>:
+    <span class="code-comment"># 判断 Alt 键操作 (可在项目设置中绑定 ui_alt)</span>
+    <span class="code-keyword">if</span> event.is_action_pressed(<span class="code-string">"ui_alt"</span>):
+        wheel.open()
+    <span class="code-keyword">elif</span> event.is_action_released(<span class="code-string">"ui_alt"</span>):
+        <span class="code-comment"># 松开 Alt 时更新选中的道具</span>
+        <span class="code-keyword">if</span> wheel.selected_item <span class="code-keyword">and</span> wheel.selected_item.status:
+            <span class="code-keyword">var</span> status = wheel.selected_item.status
+            texture_rect.texture = status.item_icon
+            label_name.text = status.item_name
+        
+        wheel.close()</code></pre>
+        </div>
+
+        <!-- 5. global.gd -->
+        <div id="tab-global" class="tab-content hidden">
+          <div class="mb-2 text-gray-400 border-b border-godot-border pb-1 text-[11px]">
+            # 全局自动加载脚本 (Autoload): Global.gd 保存游戏物品数组数据
+          </div>
+          <pre><code><span class="code-keyword">extends</span> <span class="code-type">Node</span>
+
+<span class="code-comment"># 在项目设置 -> 自动加载 (Autoload) 中添加此节点为 Global</span>
+<span class="code-keyword">@export var</span> items: <span class="code-type">Array</span>[<span class="code-type">ItemStatus</span>] = []</code></pre>
+        </div>
+
+      </div>
+
+      <!-- Footer Help bar -->
+      <div class="bg-godot-dark border-t border-godot-border px-4 py-2 text-[11px] text-gray-400 flex items-center justify-between">
+        <span><i class="fa-solid fa-circle-info text-godot-accent mr-1"></i> 碰撞层配置: WheelItem 设为 Layer 8，RayCast2D 设为 Mask 8。</span>
+        <span class="text-gray-500">提示: 检查 status 赋值确保在 add_child() 之后执行。</span>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Items database for simulation
+    const ITEMS_DATABASE = [
+      { id: 'sword', name: '铁剑 (Iron Sword)', icon: 'fa-shield-halved', color: '#ff5555' },
+      { id: 'potion', name: '生命药水 (Health Potion)', icon: 'fa-flask-vial', color: '#55ff55' },
+      { id: 'bow', name: '猎人长弓 (Hunter Bow)', icon: 'fa-crosshair', color: '#ffaa00' },
+      { id: 'wand', name: '奥术法杖 (Arcane Wand)', icon: 'fa-wand-magic-sparkles', color: '#aa55ff' },
+      { id: 'shield', name: '骑士重盾 (Heavy Shield)', icon: 'fa-shield', color: '#55ffff' },
+      { id: 'bomb', name: '炼金炸弹 (Alchemy Bomb)', icon: 'fa-bomb', color: '#ff55ff' },
+      { id: 'ring', name: '红宝石戒 (Ruby Ring)', icon: 'fa-ring', color: '#ffff55' },
+      { id: 'scroll', name: '回城卷轴 (Town Scroll)', icon: 'fa-scroll', color: '#ffffff' },
+      { id: 'boot', name: '疾风之靴 (Speed Boots)', icon: 'fa-shoe-prints', color: '#55aaff' },
+      { id: 'axe', name: '狂暴巨斧 (Berserker Axe)', icon: 'fa-skull', color: '#ffaaaa' }
+    ];
+
+    // Simulator State Variables
+    let activeItemCount = 6;
+    let wheelRadius = 110;
+    let isMenuOpen = false;
+    let selectedIndex = -1;
+    let showDebug = true;
+    let isAltPressed = false;
+
+    // Canvas & Context
+    const canvas = document.getElementById('godot-canvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+
+    // Item Animations Array [ { currentPos: {x,y}, scale: 1.0, angle: rad } ]
+    let itemAnimStates = [];
+
+    function resizeCanvas() {
+      const rect = canvasWrapper.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Initialize item animation objects
+    function initAnimStates() {
+      itemAnimStates = [];
+      for (let i = 0; i < activeItemCount; i++) {
+        itemAnimStates.push({
+          x: 0,
+          y: 0,
+          scale: 1.0,
+          angle: (Math.PI * 2 * i) / activeItemCount
+        });
+      }
+    }
+    initAnimStates();
+
+    // Mouse Tracking relative to wheel center
+    let mousePos = { x: 0, y: 0 };
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      mousePos.x = e.clientX - rect.left - centerX;
+      mousePos.y = e.clientY - rect.top - centerY;
+    });
+
+    // Keyboard Event Listeners for Alt Key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Alt' && !isAltPressed) {
+        e.preventDefault();
+        isAltPressed = true;
+        openWheel();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'Alt') {
+        e.preventDefault();
+        isAltPressed = false;
+        closeWheel();
+      }
+    });
+
+    // Mobile / Button Hold Interaction
+    const btnHold = document.getElementById('btn-hold-alt');
+    btnHold.addEventListener('mousedown', () => { openWheel(); });
+    window.addEventListener('mouseup', () => { if (!isAltPressed && isMenuOpen) closeWheel(); });
+    btnHold.addEventListener('touchstart', (e) => { e.preventDefault(); openWheel(); });
+    window.addEventListener('touchend', () => { if (!isAltPressed && isMenuOpen) closeWheel(); });
+
+    function openWheel() {
+      isMenuOpen = true;
+    }
+
+    function closeWheel() {
+      if (selectedIndex >= 0) {
+        const item = ITEMS_DATABASE[selectedIndex];
+        document.getElementById('selected-item-name').innerText = item.name;
+        const iconBox = document.getElementById('selected-icon-box');
+        iconBox.innerHTML = `<i class="fa-solid ${item.icon}"></i>`;
+        iconBox.style.color = item.color;
+      }
+      isMenuOpen = false;
+      selectedIndex = -1;
+    }
+
+    // Main Render Loop
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Draw Center Hub Anchor
+      ctx.save();
+      ctx.translate(centerX, centerY);
+
+      // RayCast2D Direction Vector Angle Math
+      const mouseAngle = Math.atan2(mousePos.y, mousePos.x); // Radian angle
+      const rayLength = 260;
+      const rayEndX = Math.cos(mouseAngle) * rayLength;
+      const rayEndY = Math.sin(mouseAngle) * rayLength;
+
+      // Check collision with items when menu is open
+      selectedIndex = -1;
+      if (isMenuOpen) {
+        let minAngleDiff = Infinity;
+        for (let i = 0; i < activeItemCount; i++) {
+          const itemAngle = (Math.PI * 2 * i) / activeItemCount;
+          // Normalize angle difference
+          let diff = Math.abs(mouseAngle - itemAngle);
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          diff = Math.abs(diff);
+
+          if (diff < (Math.PI / activeItemCount) && diff < minAngleDiff) {
+            minAngleDiff = diff;
+            selectedIndex = i;
+          }
+        }
+      }
+
+      // Update positions and scales using Lerp (Tweening emulation)
+      for (let i = 0; i < activeItemCount; i++) {
+        const targetAngle = (Math.PI * 2 * i) / activeItemCount;
+        const targetX = isMenuOpen ? Math.cos(targetAngle) * wheelRadius : 0;
+        const targetY = isMenuOpen ? Math.sin(targetAngle) * wheelRadius : 0;
+        const targetScale = (isMenuOpen && i === selectedIndex) ? 1.4 : 1.0;
+
+        itemAnimStates[i].x += (targetX - itemAnimStates[i].x) * 0.2;
+        itemAnimStates[i].y += (targetY - itemAnimStates[i].y) * 0.2;
+        itemAnimStates[i].scale += (targetScale - itemAnimStates[i].scale) * 0.25;
+        itemAnimStates[i].angle = targetAngle;
+      }
+
+      // Draw Godot RayCast2D Debug Line if enabled
+      if (isMenuOpen && showDebug) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(rayEndX, rayEndY);
+        ctx.strokeStyle = '#ff3366';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Ray tip target indicator
+        ctx.beginPath();
+        ctx.arc(rayEndX, rayEndY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff3366';
+        ctx.fill();
+      }
+
+      // Draw Radial Items
+      if (isMenuOpen || itemAnimStates[0].x > 0.5) {
+        for (let i = 0; i < activeItemCount; i++) {
+          const st = itemAnimStates[i];
+          const itemData = ITEMS_DATABASE[i];
+
+          ctx.save();
+          ctx.translate(st.x, st.y);
+          ctx.scale(st.scale, st.scale);
+
+          // Area2D Collision Circle Debug
+          if (showDebug) {
+            ctx.beginPath();
+            ctx.arc(0, 0, 24, 0, Math.PI * 2);
+            ctx.fillStyle = (i === selectedIndex) ? 'rgba(71, 140, 191, 0.35)' : 'rgba(255, 255, 255, 0.08)';
+            ctx.strokeStyle = (i === selectedIndex) ? '#478cbf' : '#333b4d';
+            ctx.lineWidth = 1.5;
+            ctx.fill();
+            ctx.stroke();
+          }
+
+          // Item Background Panel
+          ctx.beginPath();
+          ctx.arc(0, 0, 20, 0, Math.PI * 2);
+          ctx.fillStyle = '#262b36';
+          ctx.strokeStyle = (i === selectedIndex) ? itemData.color : '#333b4d';
+          ctx.lineWidth = (i === selectedIndex) ? 3 : 1;
+          ctx.fill();
+          ctx.stroke();
+
+          // Icon text representation
+          ctx.fillStyle = itemData.color;
+          ctx.font = '14px "Font Awesome 6 Free"';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(getFontAwesomeChar(itemData.icon), 0, 1);
+
+          ctx.restore();
+        }
+      }
+
+      // Center Node Point
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#478cbf';
+      ctx.fill();
+
+      ctx.restore();
+
+      requestAnimationFrame(render);
+    }
+
+    // FontAwesome character helper
+    function getFontAwesomeChar(iconClass) {
+      const iconMap = {
+        'fa-shield-halved': '\uf3ed',
+        'fa-flask-vial': '\uf0c3',
+        'fa-crosshair': '\uf05b',
+        'fa-wand-magic-sparkles': '\ue2ca',
+        'fa-shield': '\uf132',
+        'fa-bomb': '\uf1e2',
+        'fa-ring': '\uf70b',
+        'fa-scroll': '\uf70e',
+        'fa-shoe-prints': '\uf54b',
+        'fa-skull': '\uf54c'
+      };
+      return iconMap[iconClass] || '\uf128';
+    }
+
+    requestAnimationFrame(render);
+
+    // Slider Listeners
+    document.getElementById('input-item-count').addEventListener('input', (e) => {
+      activeItemCount = parseInt(e.target.value);
+      document.getElementById('val-item-count').innerText = activeItemCount;
+      initAnimStates();
+    });
+
+    document.getElementById('input-radius').addEventListener('input', (e) => {
+      wheelRadius = parseInt(e.target.value);
+      document.getElementById('val-radius').innerText = `${wheelRadius}px`;
+    });
+
+    document.getElementById('toggle-debug').addEventListener('change', (e) => {
+      showDebug = e.target.checked;
+    });
+
+    // Tab Switching Logic
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.getAttribute('data-tab');
+
+        tabButtons.forEach(b => {
+          b.classList.remove('bg-godot-panel', 'text-godot-accent', 'border-t-2', 'border-godot-accent', 'font-semibold');
+          b.classList.add('text-gray-400', 'hover:text-white');
+        });
+
+        btn.classList.add('bg-godot-panel', 'text-godot-accent', 'border-t-2', 'border-godot-accent', 'font-semibold');
+        btn.classList.remove('text-gray-400');
+
+        tabContents.forEach(content => {
+          if (content.id === targetTab) {
+            content.classList.remove('hidden');
+          } else {
+            content.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // Copy Code Button
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+      const activeContent = document.querySelector('.tab-content:not(.hidden) pre');
+      if (activeContent) {
+        navigator.clipboard.writeText(activeContent.innerText);
+        const copyBtn = document.getElementById('btn-copy-code');
+        copyBtn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> <span class="text-green-400">已复制!</span>`;
+        setTimeout(() => {
+          copyBtn.innerHTML = `<i class="fa-solid fa-copy"></i> <span>复制当前代码</span>`;
+        }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>
