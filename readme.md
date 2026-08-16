@@ -1,4 +1,5 @@
 # **🎨 Artbank & GameDev Resource Hub**
+https://www.poliigon.com/polydex
 
 > 整合 2D/3D 美術資源、UI 設計靈感、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
 
