@@ -2,6 +2,8 @@
 idea:偽3d效果,彩虹字,浮動,互動流體模擬,卡反絕區零火鍋,3D 掃雷
 瘋狂鴿子3d /滾動的天空/ 號角保齡球/ 閃避球/ 滑雪/ 美夢zzz/ TNT弹道轨迹
 render texture=subviewer
+場景要找：中世界/熱帶島/紐約/地鐵 
+
 
 ### godot note (pck)
 
