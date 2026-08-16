@@ -6,6 +6,8 @@
 1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
 2. 視差省MB,使用低多邊形（Low poly）模型與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
 輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)
+不要重复造轮子：合理利用引擎资源商
+
 貼圖:https://ambientcg.com/<br>
 地编參考:https://www.artstation.com/artwork/dyk3nQ
 解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
