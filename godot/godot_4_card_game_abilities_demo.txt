@@ -1,0 +1,614 @@
+godot_4_card_game_abilities_demo.html
+Godot 4 卡牌游戏教程 #1：卡牌拖拽
+关键节点与时间轴
+00:00 - 00:16 简介：介绍《杀戮尖塔》《小丑牌》等卡牌游戏的流行背景，以及本教程的目标（基础卡牌拖拽）。 
+
+00:16 - 00:30 安装 Godot：建议使用 Godot 4.3 稳定版以确保逻辑一致。 
+
+00:30 - 03:43 创建卡牌节点
+ 
+
+新建 2D 场景，主节点命名为 Main。 
+
+引入卡牌精灵图（Sprite2D，重命名为 card_image），取消勾选或确保选中 Centered 以方便后续拖拽居中，并将贴图中心与场景原点对齐。 
+
+创建 card 节点（Node2D），将精灵图作为其子节点。 
+
+为卡牌添加交互碰撞域：添加 Area2D 及子节点 CollisionShape2D（形状选择 RectangleShape2D 并调整大小覆盖卡牌）。 
+
+将 card 节点保存为独立场景 card.tscn，实现卡牌复用。 
+
+03:43 - 05:15 鼠标输入逻辑
+ 
+
+在 Main 场景下创建 CardManager (Node2D) 节点并挂载脚本，避免将拖拽逻辑直接写在卡牌本身上（防止多张卡牌逻辑冲突）。 
+
+使用 Godot 内置的 _input(event) 函数检测鼠标左键点击（区分按下 event.pressed 和松开）。 
+
+05:15 - 07:38 射线检测逻辑 (Raycast)
+ 
+
+使用物理射线检测鼠标下方是否存在卡牌对象（检测碰撞掩码为 Collision Mask = 1，开启 collide_with_areas）。 
+
+当检测到碰撞体 Area2D 时，通过 .get_parent() 获取其父节点 card 对象。 
+
+07:38 - 09:25 拖拽逻辑
+ 
+
+在 CardManager 中维护变量 card_being_dragged。 
+
+在 _process(delta) 逐帧更新函数中，若当前有卡牌被选中，则将其坐标直接更新为鼠标的全局位置 get_global_mouse_position()。 
+
+(注：若拖拽感卡顿/延迟，可在项目设置中关闭 vsync 垂直同步以提升跟随帧率)。 
+
+09:25 - 11:11 边缘限制 (Clamp)
+ 
+
+在 _ready() 中通过 get_viewport_rect().size 获取屏幕分辨率。 
+
+使用 Godot 的 clamp() 函数限制卡牌的 X 与 Y 坐标，确保卡牌不会被拖出屏幕外（范围限定在 0 到 screen_size 之间）。 
+
+将魔数 1（碰撞掩码）重构为常量 COLLISION_MASK_CARD 以提升代码可读性。 
+
+
+Godot 4 卡牌游戏教程 #2：卡牌悬停效果与层级修复
+关键节点与时间轴
+00:00 - 00:17 简介：概述本集目标（卡牌 Hover 效果、拖拽反馈）及解决前集留下的层级 Bug。 
+
+00:17 - 02:47 信号（Signals）的发射
+ 
+
+在 card.tscn 中给 card 根节点挂载 card.gd 脚本。 
+
+将 Area2D 的内置信号 mouse_entered 和 mouse_exited 连接到 card.gd。 
+
+在 card.gd 中定义自定义信号 signal hovered(card) 和 signal hovered_off(card)，并在触发鼠标进出时发射信号（将 self 作为参数传递）。 
+
+02:47 - 04:21 捕获信号与跨节点连接
+ 
+
+为了避免卡牌自管逻辑，在 card.gd 的 _ready() 中调用父节点（CardManager）的方法 connect_card_signals(self)。 
+
+在 CardManager 中通过 .connect() 动态监听每张卡牌发出的 hovered 与 hovered_off 信号。 
+
+04:21 - 05:25 实现卡牌悬停效果 (Card Hover Effect)
+ 
+
+编写 highlight_card(card, hovered) 函数。 
+
+悬停时（true）：缩放设为 Vector2(1.05, 1.05)，渲染层级 z_index 设为 2（使其显示在最上方）。 
+
+离开时（false）：恢复原状（Scale 还原为 1，z_index 还原为 0）。 
+
+05:25 - 07:14 修复悬停重叠冲突 (Bug Fixes)
+ 
+
+问题：卡牌互相遮挡时，悬停背后的卡牌也会触发高亮。 
+
+解决：在 CardManager 中增加 is_hovering_on_card 标志位。当离开一张卡牌时，立即通过射线检测 raycast_check_for_card() 确认指针是否直接移到了另一张卡牌上，若有则直接高亮新卡牌，避免状态错乱。 
++ 1
+07:14 - 09:36 修复堆叠抓卡 Bug（最高 Z-Index 判定）
+ 
+
+问题：多卡重叠点击时，raycast 默认返回数组中的第一项，导致抓取的卡牌随机（可能是底层的卡）。 
+
+解决：重构射线检测逻辑，新增 get_card_with_highest_z_index(cards) 函数。 
+
+遍历射线检测到的所有卡牌碰撞体，对比并返回 z_index 最大的那张卡牌，确保永远只抓取最上层的卡牌。 
+
+09:36 - 11:07 拖拽动画反馈与逻辑收尾
+ 
+
+抽象出 start_drag(card) 与 finish_drag() 函数。 
+
+拖拽开始时将卡牌缩放重置为 1（消除 Hover 缩放感，增强“抓起”反馈），松开时根据鼠标位置更新状态。 
+
+在 on_hovered_off_card 中加入 !card_being_dragged 条件判断，防止拖拽过程中意外取消卡牌的高亮状态。 
+Godot 4 卡牌游戏教程 #3：卡牌槽位 (Card Slots)
+关键节点与时间轴
+00:00 - 00:25 简介：概述本集目标（卡牌槽位与吸附放置机制）。 
+
+00:25 - 00:48 前集 Bug 修复
+ 
+
+问题：在屏幕空白处点击松开鼠标时，控制台会报错。 
+
+解决：在 CardManager 的 _input(event) 松开按键逻辑中，先判断 card_being_dragged != null，确认当前确实在拖拽卡牌后再调用 finish_drag()。 
+
+00:48 - 02:25 创建卡牌槽位节点
+ 
+
+在主场景中新建 card_slot (Node2D) 节点。 
+
+为其添加子节点 Sprite2D（命名为 card_slot_image）、Area2D 以及 CollisionShape2D（矩形碰撞体，调至覆盖贴图大小）。 
+
+将 card_slot 保存为独立场景 card_slot.tscn，实现槽位复用。 
+
+02:25 - 03:19 碰撞层与掩码 (Collision Mask & Layer)
+ 
+
+冲突问题：默认情况下卡牌与槽位的碰撞 Mask 都是 1，导致系统把槽位误判为卡牌。 
+
+配置独立层：在检查器中将 card_slot 的 Collision Layer 和 Collision Mask 均设为 2。 
+
+原理解析：Godot 在代码中通过二进制位掩码表示 Layer/Mask（例如 Layer 2 在代码中数值为 2；Layer 3 在代码中数值为 4；Layer 4 为 8）。 
+
+03:19 - 04:38 槽位射线检测 (Raycast for Slot)
+ 
+
+在 CardManager 头部定义常量 COLLISION_MASK_CARD_SLOT = 2。 
+
+编写 raycast_check_for_card_slot() 函数，专门检测碰撞 Mask 为 2 的区域（即槽位），返回鼠标下方的 card_slot 对象。 
+
+04:38 - 06:37 更新放置逻辑 (Finish Drag)
+ 
+
+在 card_slot.gd 中添加状态变量 var card_in_slot: bool = false。 
+
+在 CardManager 的 finish_drag() 中添加判定条件：当检测到鼠标下方存在槽位，且该槽位未被占用（!card_slot.card_in_slot）时： 
+
+吸附：将卡牌坐标设为槽位坐标 card.position = card_slot.position。 
+
+禁用交互：将该卡牌的碰撞体禁用 card.get_node("Area2D/CollisionShape2D").disabled = true（防止再次被拖拽或高亮）。 
+
+更新槽位状态：将槽位标记为已占用 card_slot.card_in_slot = true。 
+
+
+Godot 4 卡牌游戏教程 #4：玩家手牌机制 (Player Hand)
+ 关键节点与时间轴
+00:00 - 00:48 简介：概述本集目标（手牌数组管理、自动居中、动态动画弹回与空位重排）。 
+
+00:48 - 03:10 动态生成卡牌 (Instantiating Cards)
+ 
+
+删除场景中手动放置的卡牌，创建 PlayerHand (Node2D) 节点并挂载 player_hand.gd。 
+
+使用 preload 加载卡牌场景，在 _ready() 中通过 for 循环根据常量 HAND_COUNT 动态生成卡牌。 
+
+将生成的卡牌添加为 CardManager 的子节点，确保信号绑定不会失效。 
+
+03:10 - 03:43 添加卡牌至手牌数组 (Add Card to Hand)
+ 
+
+维护 player_hand 数组存储手牌引用。 
+
+编写 add_card_to_hand(card)：向数组插入卡牌后，调用 update_hand_positions() 更新所有手牌位置。 
+
+03:43 - 07:32 手牌自动居中算法 (Calculate Card Position)
+ 
+
+在 _ready() 中计算屏幕中心 X 轴坐标 center_screen_x = get_viewport().size.x / 2。 
+
+居中公式：
+计算总宽度 total_width = (hand_size - 1) * card_width。 
+
+计算每张卡牌的 X 轴目标位置：x_offset = center_screen_x + (index * card_width) - (total_width / 2)。 
+
+Y 轴固定为常量 HAND_Y_POSITION（如 890）。 
+
+07:32 - 09:10 补间动画实现 (Animate Card to Position)
+ 
+
+使用 Godot 4 的 Tween（create_tween()）实现平滑移动。 
+
+通过 tween_property(card, "position", new_position, 0.1) 让卡牌以 0.1 秒的平滑补间移动到目标位置。 
+
+(注：建议在项目设置中将屏幕分辨率设为 1920x1080 以防卡牌超出视野)。 
+
+09:10 - 11:36 未成功放置时自动弹回手牌 (Snap Cards to Hand)
+ 
+
+在 card.gd 中添加变量 hand_position（记录卡牌在手牌中的目标坐标）。 
+
+更新 CardManager 的 finish_drag()：若松开鼠标时未放置在合法槽位，则触发动画将卡牌平滑移动回其在手牌中的记录坐标（hand_position）。 
+
+11:36 - 12:17 移出手牌与自动补位 (Remove Card from Hand)
+ 
+
+编写 remove_card_from_hand(card)：当卡牌成功放入槽位时，将该卡牌从 player_hand 数组中移除。 
+
+移除后再次调用 update_hand_positions()，手牌会自动触发补间动画向中心靠拢，填补留下的空隙。 
+
+Godot 4 卡牌游戏教程 #5：抽牌堆与输入管理器 (Deck & Input Manager)
+关键节点与时间轴
+00:00 - 02:06 创建牌堆节点 (Create Deck)
+ 
+
+在主场景中添加 Deck (Node2D) 节点。 
+
+为其添加子节点 Sprite2D、Area2D 与 CollisionShape2D（调至覆盖贴图大小）。 
+
+设置坐标 (X: 150, Y: 890)，使其与手牌保持在同一水平高度（Y: 890）。 
+
+挂载 deck.gd 脚本，定义 player_deck 数组（如存有卡牌 ID/名称的列表）以及 draw_card() 函数。 
+
+02:06 - 08:26 统一输入管理器 (Input Manager 重构)
+ 
+
+设计初衷：避免 CardManager 和 Deck 各自建立 Raycast 导致的冲突与性能浪费。 
+
+新建 InputManager (Node2D) 节点及脚本，接管全局鼠标点击事件 _input(event)。 
+
+碰撞层级区分：
+将 Deck 节点的 Collision Layer/Mask 设为 3。（Godot 代码计算后掩码值为 4；卡牌为 1；槽位为 2）。 
++ 3
+射线判定逻辑：在 raycast_at_cursor() 中检测点击的碰撞掩码 Collision Mask： 
+
+点击卡牌 (Mask 1)：调用 CardManager.start_drag(card)。 
+
+点击牌堆 (Mask 4)：调用 Deck.draw_card()。 
+
+信号解耦：定义 left_mouse_button_released 信号，松开鼠标时由 CardManager 监听并执行 finish_drag()。 
++ 1
+08:26 - 10:18 抽牌逻辑与视图细节 (Instantiate Cards)
+ 
+
+将原本在 PlayerHand 中固定的生成逻辑移至 Deck.draw_card() 中。 
+
+每次点击牌堆：
+从 player_deck 数组弹出顶部卡牌。 
+
+生成卡牌实例，默认坐标设为牌堆位置 (150, 890)，渲染层级 Z Index 设为低于牌堆。 
+
+调用 PlayerHand.add_card_to_hand(card)，卡牌会以补间动画平滑飞入手牌中。 
+
+牌堆耗尽处理：当 player_deck 数组为空时，禁用 Area2D 碰撞并隐藏牌堆贴图（visible = false）。 
+
+10:18 - 12:08 牌堆卡牌计数器 (Deck Counter)
+ 
+
+为 Deck 添加子节点 RichTextLabel。 
+
+调整位置居中、缩放，调制颜色（Modulate）为黑色。 
+
+每次抽牌后更新 RichTextLabel.text = str(player_deck.size()) 实时显示剩余牌数。 
+
+12:08 - 14:09 动态控制抽牌速度 (Card Tween Speed)
+ 
+
+重构 Animate Card To Position 补间动画函数，支持传入自定义速度 speed 参数。 
+
+在 Deck 中定义 CARD_DRAW_SPEED = 0.2，可在抽牌时独立控制卡牌飞出牌堆的动画速率，使其与手牌内部重排的速度区分开来。 
+
+Godot 4 卡牌游戏教程 #6：独立卡牌数据库与翻牌动画 (Unique Cards & Card Flip Animation)
+关键节点与时间轴
+00:00 - 02:24 创建卡牌数据库 (Card Database)
+ 
+
+将 Deck 脚本中的纯字符串数组重构为引用外部数据。 
+
+新建 card_database.gd 脚本（无需继承 Node）。 
+
+定义静态字典 const CARDS = {"Knight": [attack, health], "Archer": [...], "Demon": [...]} 用于集中存储每张卡牌的数值。 
+
+在 deck.gd 中通过 preload("res://scripts/card_database.gd") 预加载数据库。 
+
+02:24 - 04:47 卡牌攻击力与生命值 UI 绑定 (Card Attack and Health)
+ 
+
+在 Card 场景根节点下添加两个 RichTextLabel 节点，分别命名为 Attack 和 Health。 
+
+调整坐标至卡牌底部左右两侧，设置文字颜色为黑色、缩放为 2。 
+
+数值动态注入：抽牌生成卡牌时，依据抽出的卡牌名称查找字典，将数值转为字符串写入 Attack.text 与 Health.text。 
+
+04:47 - 07:15 动态加载独立卡牌贴图 (Unique Images)
+ 
+
+加入 player_deck.shuffle() 随机打乱初始牌堆。 
+
+拼装资源路径："res://assets/" + card_drawn_name + "_card.png"。 
+
+使用 load(card_image_path) 动态替换卡牌根节点下 Sprite2D 贴图，实现骑士、弓箭手、恶魔等独特外观。 
+
+07:15 - 12:13 2D 翻牌动画实现 (Card Flip Animation)
+ 
+
+伪 3D 效果思路：利用 2D 节点的 X 轴缩放（Scale）收缩至 0，中途切换正面/背面显示并切换渲染层级（Z-Index），再复原 X 轴缩放。 
+
+节点构建：在 Card 场景下新增 AnimationPlayer，以及代表卡牌背面的 Sprite2D（card_image_back）。 
+
+动画帧属性调校 (card_flip)： 
+
+0.0s：正面数值 RichTextLabel 设为完全透明（Modulate Alpha = 0）；卡背在最上层。 
+
+0.1s：卡牌整体 Scale.x 缩放至 0.1（拉细）；卡背 Z-Index 调低，卡牌正面 Z-Index 调高。 
+
+0.2s：卡牌整体 Scale.x 复原至 1.0；数值 RichTextLabel 透明度恢复（Alpha = 1）。 
+
+代码触发：在 Deck.draw_card() 完成卡牌实例化与数据注入后，调用 card.get_node("AnimationPlayer").play("card_flip") 播放动画。 
+
+Godot 4 卡牌游戏教程 #7：对手战场布局与卡牌类型系统 (Opponent Field & Card Types)
+关键节点与时间轴
+00:00 - 04:55 战场重构与对齐 (Reorganizing The Field)
+ 
+
+视角压缩：为了容纳对手界面，将 Deck 缩放降至 0.8，卡牌槽位 CardSlot 缩放降至 0.6，卡牌自身缩放降至 0.8。 
++ 2
+全局缩放常量控制：在 CardManager 中定义 DEFAULT_CARD_SCALE = 0.8、CARD_BIGGER_SCALE = 0.85，避免悬停（Hover）效果将卡牌错误拉伸回 1.0。 
++ 2
+布局调整：
+玩家与对手各配置两排槽位（前排怪物槽，后排魔法槽）。 
+
+居中对齐公式：center_x = viewport_width / 2。 
+
+结束回合按钮：添加 Button 节点命名为 EndTurnButton。 
+
+对手牌堆 UI：复制牌堆场景并置于右上角，移除其 Area2D 碰撞体与脚本，使其不可交互。 
+
+04:55 - 07:28 修复悬停与渲染层级 Bug (Fixing Bugs)
+ 
+
+尺寸卡死 Bug：在 card.gd 中定义 card_slot_card_is_in 记录槽位状态。放置成功后将卡牌缩小至 CARD_SMALLER_SCALE = 0.6；并在 unhovered_off_card() 中加入校验：若卡牌已在槽位中，则不再触发出框放大。 
++ 2
+Z-Index 遮挡 Bug：将放置在槽位中的卡牌 Z Index 设为 -1，槽位背景设为 -3，防止被拖拽卡牌遮挡。 
++ 2
+07:28 - 08:48 抽牌限制与初始手牌 (Deck Changes)
+ 
+
+在 Deck 中引入布尔变量 drawn_card_this_turn。 
+
+游戏启动时（_ready()）：通过 for 循环与 STARTING_HAND_SIZE = 5 自动抽取 5 张初始手牌。 
+
+完成初始抽牌后，将 drawn_card_this_turn 锁死为 true，防止玩家在单回合内重复点击牌堆抽牌。 
+
+08:48 - 14:23 怪物卡/魔法卡与对手槽位隔绝 (Card & Card Slot Types)
+ 
+
+卡牌数据库扩展：在 card_database.gd 中为卡牌条目新增 card_type 字段（如 "monster" 或 "magic"）。 
+
+槽位类型分离：
+拆分脚本为 monster_card_slot.gd 和 magic_card_slot.gd，分别定义 card_slot_type = "monster" 和 "magic"。 
+
+匹配校验：在 CardManager.finish_drag() 中判断 card.card_type == card_slot.card_slot_type，不匹配则弹回手牌。 
++ 1
+对手槽位防护：创建独立场景 enemy_card_slot.tscn，彻底移除 Area2D，防止玩家将手牌误拖入对手槽位。 
++ 1
+回合出牌限制：在 CardManager 中定义 played_monster_card_this_turn，确保单回合内只能召唤一张怪物卡。 
+
+Godot 4 卡牌游戏教程 #8：对手 AI 与回合系统 (Opponent AI & Turn System)
+关键节点与时间轴
+00:00 - 02:12 战斗管理器与回合切换 (Creating BattleManager)
+ 
+
+设计初衷：新增 Node 节点命名为 BattleManager，负责挂载全局回合逻辑。 
+
+结束回合触发：绑定 EndTurnButton 的 pressed 信号至 BattleManager。 
+
+回合锁：玩家点击“结束回合”后，按钮设为隐藏且不可交互（disabled = true，visible = false）。 
+
+02:12 - 03:31 引入战斗定时器 (Wait Functionality)
+ 
+
+添加 Timer 节点（BattleTimer），设置 one_shot = true、wait_time = 1.0 秒。 
++ 1
+在 AI 决策步骤中使用 await battle_timer.timeout（或 await battle_timer.start() 流程），模拟 AI 思考延迟，提升对局真实感。 
+
+03:31 - 06:47 空槽位检索与回合结算 (More BattleManager Setup)
+ 
+
+空槽位数组：定义 empty_monster_card_slots 数组，在 _ready() 中存入对手的 5 个怪物槽位引用。 
++ 1
+无槽可下处理：若 empty_monster_card_slots 为空，说明场满，触发 end_opponent_turn() 跳过下牌阶段。 
+
+回合结算重置：end_opponent_turn() 会重新显示并激活 EndTurnButton，同时重置玩家的抽牌/出牌限制状态。 
++ 1
+06:47 - 14:13 对手手牌与牌堆构建 (Creating Enemy Hand and Deck)
+ 
+
+复制并重构玩家手牌/牌堆脚本，分别重命名为 opponent_hand.gd、opponent_deck.gd、opponent_card.gd。 
+
+安全与隐藏机制：
+彻底移除 opponent_card 的 Area2D，防止玩家拖拽对手手牌。 
+
+移除 draw_card() 中的 card_flip 动画播放，保持牌面朝下（暗牌）。 
+
+镜像排布：修正 calculate_card_position() 计算公式，使对手抽牌时向右侧（靠近对手牌堆方向）扩展手牌。 
+
+14:13 - 21:22 AI 决策：攻击力最高优先算法 (Play Card With Highest Attack)
+ 
+
+决策函数：try_play_card_with_highest_attack()。 
+
+随机目标槽位：通过 randi_range(0, empty_monster_card_slots.size() - 1) 随机抽取一个可用的空槽位，并将其从 empty_monster_card_slots 中剔除（erase）。 
+
+最高攻击力查找算法：
+假设对手手牌中的第一张卡牌为 card_with_highest_attack。 
+
+遍历 opponent_hand 数组，对比每张卡牌的 attack 属性，迭代更新攻击力最大值。 
+
+动画与装填：
+使用 Tween 补间将选中卡牌平滑移动至目标槽位，并缩小至 0.6。 
+
+播放 card_flip 翻牌动画（将暗牌翻开展示给玩家）。 
+
+将该卡牌从 opponent_hand 数组中移除。 
+
+状态恢复：对手回合结束后，调用 PlayerDeck.reset_draw() 与 CardManager.reset_played_monster()，解锁玩家在新回合的抽牌与出牌许可。 
+
+Godot 4 卡牌游戏教程 #9：卡牌对战、直接攻击与弃牌堆 (Attacking, Direct Attack & Discard Pile)
+关键节点与时间轴
+00:00 - 03:11 场上卡牌追踪与攻击流程控制 (Try Attack)
+ 
+
+场上卡牌数组：在 BattleManager 中引入 opponent_cards_on_battlefield 与 player_cards_on_battlefield 数组，分别记录双方场上的怪物卡。 
++ 2
+玩家出牌注册：在 CardManager.finish_drag() 成功落槽后，将卡牌追加至 player_cards_on_battlefield。 
+
+AI 攻击循环防死锁：使用 opponent_cards_on_battlefield.duplicate() 创建副本数组进行遍历，防止卡牌阵亡被移除时导致 for 循环索引紊乱。 
+
+分支判断：遍历对手卡牌，若 player_cards_on_battlefield.size() == 0 则触发直击（direct_attack），否则触发对决（attack）。 
++ 1
+03:11 - 07:33 直接攻击与动画平移 (Direct Attack)
+ 
+
+简易 Wait 封装：封装 await wait(time_in_sec) 统一替代原本繁琐的定时器启动与等待代码。 
+
+直击动画：
+临时抬升攻击卡牌的渲染层级（z_index = 5）。 
+
+使用 Tween 将卡牌平移至对方战场边界（对手攻击移动至 Y = 1080，玩家攻击移动至 Y = 0）。 
+
+停顿 0.15 秒后，再次使用 Tween 归位至原槽位 card_slot_card_is_in.position，并将 z_index 归零。 
+
+07:33 - 10:11 血量系统与 UI 同步 (Player & Opponent Health)
+ 
+
+基础血量：设置全局常量 STARTING_HEALTH = 10，初始化 player_health 与 opponent_health。 
++ 1
+界面更新：在场景中添加两个 RichTextLabel 节点，直击结算时实时扣除攻击卡牌的 attack 值，并通过 max(0, health) 限制血量下限不低于 0。 
+
+10:11 - 14:01 怪物对决与卡牌受损 (Attack Function)
+ 
+
+随机目标：使用 player_cards_on_battlefield.pick_random() 随机挑选玩家场上的卡牌作为防守方。 
+
+近战碰撞动画：使用 Tween 移动攻击卡至防守卡位置（加上 battle_pos_offset = 25 的偏移距离量）后归位。 
+
+相互伤害结算：双方同时扣除对方 attack 数值的生命值，更新各自卡牌 UI 节点（RichTextLabel）上的数字展示。 
+
+14:01 - 17:25 卡牌毁灭与弃牌堆系统 (Destroy Card Function)
+ 
+
+墓地节点：在主场景建立 player_discard 与 opponent_discard 节点。 
+
+毁灭判断：对决结算后检测双方卡牌 health <= 0。若生命值为 0，则调用 destroy_card()。 
++ 1
+离场处理：使用 Tween 将归零卡牌平移至对应的弃牌堆（墓地）位置，并清理其场上占位数据。 
+
+Godot 4 卡牌游戏教程 #10：玩家攻击系统与选牌机制 (Player Attacking & Card Selection)
+关键节点与时间轴
+00:00 - 00:56 弃牌堆逻辑修复与数据清理 (Destroy Card Function Updates)
+ 
+
+数组同步：卡牌被毁（destroy_card）时，若所有者为玩家，需同步从 player_cards_on_battlefield 数组中移除（erase）。 
+
+状态解绑：将离场卡牌的 card_slot_card_is_in 置为 null，并将原槽位的占位状态重置。 
++ 1
+00:56 - 03:57 选中与取消选中逻辑 (Select Player Monster)
+ 
+
+点击路由：修改 InputManager，点击场上卡牌时由原本的拖拽逻辑切换为调用 CardManager.card_clicked()。 
+
+选中 UI 提示：在 select_card_for_battle() 中，选中卡牌将向上偏移 position.y -= 20 凸显；重复点击该卡牌或选择其他卡牌时，取消原本选中并恢复原位（position.y += 20）。 
++ 1
+直击触发：若 opponent_cards_on_battlefield.size() == 0，点击场上卡牌直接触发 direct_attack。 
+
+03:57 - 09:12 每回合攻击限制与碰撞槽位修复 (Attacking Limits & Bug Fixes)
+ 
+
+攻击频次限制：建立 player_cards_that_attacked_this_turn 数组。卡牌完成直击或对决后加入该数组，单回合内禁止重复攻击；在回合结束（on_end_turn_button_pressed）时清空数组。 
++ 2
+物理碰撞层级修复：
+卡牌落槽后，将对应槽位的碰撞体（CollisionShape2D）禁用，防止槽位遮挡卡牌的点击判定。 
+
+卡牌被毁送入墓地后，重新启用槽位碰撞，并禁用已毁灭卡牌的碰撞（防止在弃牌堆中被意外点击拖拽）。 
++ 1
+回合与悬停保护：加入 is_opponent_turn 状态锁，在对手回合禁用玩家选牌；引入 defeated 标志位，防止卡牌在墓地时因悬停（Hover）错误放大。 
++ 1
+09:12 - 14:15 选定对手目标与对战结算 (Select Opponent Target)
+ 
+
+碰撞掩码（Collision Mask）：为 OpponentCard 场景添加 Area2D 与 CollisionShape2D，将其 Layer 和 Mask 设为第 4 层（对应数值 8）。 
++ 1
+射线检测（Raycast Hits）：在 InputManager 中侦测到点击对手卡牌（Mask = 8）时，调用 BattleManager.enemy_card_selected() 并传入目标卡牌。 
+
+对决发动：校验当前存在 selected_monster 且目标在对手战场数组中后，调用 attack() 触发攻击动画与伤害结算。 
+
+并发与 UI 锁：加入 player_is_attacking 布尔锁并在攻击过程中隐藏/禁用 EndTurnButton，防止玩家在攻击动画未播放完毕时重复发起攻击或强制结束回合。 
+
+Godot 4 卡牌游戏教程 #11：卡牌技能与魔法卡系统 (Card Abilities & Magic/Spell Cards)
+关键节点与时间轴
+00:00 - 03:33 魔法卡数据库与 UI 差异化渲染 (Magic Card Setup)
+ 
+
+数据库扩展：在 CardDatabase 中新增魔法卡数据（如龙卷风 tornado），攻击力与生命值设为 null，新增 ability_text 记录技能描述（"Deal 1 damage to all opponent cards"）。 
+
+节点显隐判定：在 PlayerDeck 实例化卡牌时校验 card_type： 
+
+怪兽卡（Monster）：隐藏技能描述节点 Ability（RichTextLabel）。 
+
+魔法卡（Magic）：隐藏攻击力（Attack）与生命值（Health）节点，并同步数据库的技能文本。 
+
+卡槽类型匹配：利用已设置的卡槽脚本类型控制，魔法卡仅允许放置于底部的魔法卡槽（Magic）中。 
+
+03:33 - 06:37 交互与落槽逻辑适配 (Bug Fixes & Finish_Drag Changes)
+ 
+
+选牌逻辑修正：在 CardManager.card_clicked() 中新增类型限制，过滤魔法卡，防止魔法卡被点击时误触发物理攻击流程。 
+
+战场数组解耦：在 CardManager.finish_drag() 中加入类型校验：仅有 Monster 卡牌落槽才会追加至 player_cards_on_battlefield 数组与标记 played_monster_this_turn，魔法卡不作为怪物入场，避免被 AI 选中为对战目标。 
++ 1
+06:37 - 09:05 技能脚本架构绑定 (Card Ability Script Setup)
+ 
+
+独立技能脚本：创建 scripts/abilities/tornado.gd 脚本，定义 trigger_ability() 核心方法。 
+
+路径动态加载：卡牌数据库增加 ability_script 字段存放脚本路径，卡牌初始化时通过 load(path).new() 动态实例化对应的技能对象。 
+
+落槽即触发：当魔法卡成功放置于卡槽时，通过 card_being_dragged.ability_script.trigger_ability(...) 启动技能效果。 
+
+09:05 - 13:12 龙卷风技能逻辑与结算 (Tornado Ability Execution)
+ 
+
+参数传入传递：由于技能脚本未挂载于场景树（Scene Tree），无法直接引用全局节点，需在调用 trigger_ability() 时显式传入 BattleManager、InputManager 以及卡牌自身引用。 
++ 1
+AOE 扣血结算：遍历 battle_manager.opponent_cards_on_battlefield 数组，给对手场上所有怪物卡扣除固定伤害（TORNADO_DAMAGE = 1）。 
+
+连锁毁灭与送墓：检测被魔法打至 health <= 0 的对手怪物卡，收集至 cards_to_destroy 数组并统一调用 destroy_card() 送入墓地；技能结算完毕后，魔法卡自身同样调用 destroy_card() 进入弃牌堆。 
++ 1
+13:12 - 14:51 动画等待与全局输入封锁 (Disable Inputs)
+ 
+
+时间间隔（Pause/Await）：利用 await battle_manager.wait(1.0) 在技能施放、怪物离场与卡牌送墓之间加入停顿，增强视觉打击感。 
+
+操作防护锁：在技能触发期间，将 InputManager.inputs_disabled 设为 true 阻断鼠标点击与射线检测，同步将 EndTurnButton 隐藏并禁用，防止玩家在技能动画播放时误操作。 
++ 1
+Godot 4 卡牌游戏教程 #12：怪兽卡特殊效果与事件触发架构 (Card Special Effects & Trigger Events)
+关键节点与时间轴
+00:00 - 02:00 全局输入与按键控制重构 (Improvement & Code Refactoring)
+ 
+
+旧防护锁重构：移除原本在 BattleManager 中冗余的 player_is_attacking 状态变量。 
+
+统一接口调用：统一通过 InputManager.inputs_disabled = true 结合 BattleManager.enable_end_turn_button(false) 来锁定全局点击判定与隐藏/禁用结束回合按钮，使攻击、魔法与怪兽技能使用同一套防护机制。 
++ 1
+02:00 - 07:18 双重攻击技能实现 (Attack Twice Ability)
+ 
+
+UI 布局调整：调整 Card.tscn 场景，将 Attack 与 Health 节点的渲染区域移至卡牌底部两角，腾出中央框体用于展示怪兽卡技能描述。 
++ 1
+实例化解绑：修改 PlayerDeck，使怪物卡同样可以从 CardDatabase 读取 ability_script 路径并挂载技能实例。 
+
+连击机制逻辑：创建 abilities/attack_twice.gd 脚本。怪兽完成首次攻击后，在 BattleManager 触发该技能，将该卡牌从 player_cards_that_attacked_this_turn 数组中移除（erase）并置位 already_activated = true，从而允许其发动第二次攻击。 
++ 3
+回合重置：实现 end_turn_reset() 函数，回合结束时将 already_activated 恢复为 false。 
+
+07:18 - 09:55 登场直伤技能实现 (Arrow Ability)
+ 
+
+直伤全局封装：在 BattleManager 中新增 direct_damage(damage) 函数，供技能脚本跨节点扣除对手血量与更新 UI。 
+
+弓箭手技能：创建 abilities/arrow.gd 脚本。当弓箭手卡牌落槽时，造成对手 1 点血量扣减（ARROW_DAMAGE = 1）。 
++ 1
+通用落槽触发：重构 CardManager.finish_drag()，移除了原先仅针对魔法卡的限制，使任何带有技能脚本的卡牌落槽时均能启动技能检查。 
++ 1
+09:55 - 11:33 基于事件类型的技能分发机制 (Trigger Events)
+ 
+
+事件常量定义：为每个技能脚本声明 ABILITY_TRIGGER_EVENT 常量： 
+
+龙卷风 / 弓箭手：设为 "card_placed"（卡牌入场时触发）。 
+
+恶魔：设为 "after_attack"（攻击完成后触发）。 
+
+参数与过滤：在 trigger_ability() 方法签名中引入 trigger_event 参数： 
+
+CardManager.finish_drag() 调用时传入 "card_placed"。 
+
+BattleManager.attack() / direct_attack() 调用时传入 "after_attack"。 
+
+校验拦截：技能脚本在顶部判断 if ABILITY_TRIGGER_EVENT != trigger_event: return，完美解决怪兽卡在攻击时误触发入场技能或入场时误触发攻击技能的 BUG。 
+
+
+
