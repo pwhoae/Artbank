@@ -73,6 +73,10 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 </details>
 
 <a id="玩法"></a>先建玩法
+
+```
+"The Weenie" 指的是一種視覺吸引物或地標（例如城堡），就像用香腸誘惑小狗一樣，用來吸引遊客不知不覺地朝那個方向走去。
+```
 勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門 
 掛勾
 robot核心就是key
