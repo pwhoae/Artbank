@@ -12,7 +12,7 @@ cardgame
 【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 排布插件 ：github.com/HungryProton/scatter
 地形插件 ：Terrain 3D
-材质下载插件：Ambient CG
+材质下载插件：Ambient CG/polyheven
 <hr>
 
 ### 整活>過程要好玩快樂
