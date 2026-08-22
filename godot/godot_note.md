@@ -1,5 +1,4 @@
 遊戲
-斬殺boss 擊破 動畫
 skilltree連線
 組合
 
@@ -33,6 +32,7 @@ csg:operation,union,subtraction
 5. 收藏 property (position,rotation,scale,shape) Collision3D常用>安全边距（Margin）至 0.3 米以防止穿墙。
 AtlasTexture 拼圖
 filedialog:玩家upload file
+斬殺boss 擊破 動畫
 ```
 
 ### 思考方向
