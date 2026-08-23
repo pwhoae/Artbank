@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21點 + QTE 拼點決鬥 Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes cardSlide {
+            from { transform: translateY(-50px) scale(0.8); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            20%, 60% { transform: translate(-10px, 5px); }
+            40%, 80% { transform: translate(10px, -5px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+        }
+        .card-anim { animation: cardSlide 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .shake-anim { animation: shake 0.4s ease-in-out; }
+        .qte-active { animation: pulseGlow 1s infinite; }
+        .card-shadow { box-shadow: 0 8px 16px rgba(0,0,0,0.6), inset 0 0 1px rgba(255,255,255,0.2); }
+        /* Custom scrollbar for Godot code modal */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between select-none overflow-x-hidden">
+
+    <!-- Navigation / Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <span class="bg-amber-500 text-slate-950 px-2.5 py-1 rounded-md font-black text-xs tracking-wider">GODOT 4 DEMO</span>
+            <h1 class="font-bold text-lg md:text-xl text-amber-400 tracking-wide flex items-center gap-2">
+                <i class="fa-solid font-black fa-spade"></i> 21點 ✕ QTE 拼點決鬥
+            </h1>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="toggleCodeBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow">
+                <i class="fa-solid fa-code"></i> 檢視 Godot 原始碼
+            </button>
+        </div>
+    </header>
+
+    <!-- Battle Arena -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 flex flex-col justify-between gap-6 relative">
+        
+        <!-- Enemy Area -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 relative overflow-hidden backdrop-blur">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-red-950 border-2 border-red-500 flex items-center justify-center text-red-400 font-bold text-xl">
+                        <i class="fa-solid fa-dragon"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200">暗黑角鬥士 (Enemy)</h2>
+                        <div class="text-xs text-slate-400">點數狀態: <span id="enemyScoreText" class="text-amber-400 font-bold text-sm">?</span></div>
+                    </div>
+                </div>
+                <!-- Enemy HP Bar -->
+                <div class="w-48 md:w-64">
+                    <div class="flex justify-between text-xs mb-1 font-mono">
+                        <span class="text-slate-400">HP</span>
+                        <span id="enemyHpText" class="text-red-400 font-bold">100 / 100</span>
+                    </div>
+                    <div class="w-full bg-slate-950 rounded-full h-3 border border-slate-700 overflow-hidden">
+                        <div id="enemyHpBar" class="bg-gradient-to-r from-red-600 to-amber-500 h-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enemy Hand Cards -->
+            <div id="enemyHand" class="flex gap-3 min-h-[110px] items-center p-2 bg-slate-950/50 rounded-xl border border-slate-800/60 overflow-x-auto">
+                <div class="text-slate-500 text-sm italic w-full text-center">等待發牌...</div>
+            </div>
+        </div>
+
+        <!-- Center Showdown & QTE Action Screen -->
+        <div class="relative flex flex-col items-center justify-center my-2">
+            
+            <!-- Floating Status Message -->
+            <div id="statusMsg" class="text-center font-extrabold text-xl md:text-2xl text-amber-400 mb-3 min-h-[36px] drop-shadow-md">
+                點擊「開始對局」展開戰鬥！
+            </div>
+
+            <!-- QTE Widget Area (Hidden when not in QTE phase) -->
+            <div id="qteBox" class="w-full max-w-xl bg-slate-900 border-2 border-amber-500/80 rounded-2xl p-4 shadow-2xl hidden flex-col items-center gap-3 qte-active">
+                <div class="flex justify-between w-full text-xs font-bold text-amber-400 tracking-wider">
+                    <span><i class="fa-solid fa-bolt"></i> 拼點數勝出！準備 QTE 連爆擊</span>
+                    <span id="qtePrompt">請在指標到達【綠色區域】時按下打擊！</span>
+                </div>
+                
+                <!-- QTE Gauge Bar -->
+                <div class="w-full h-8 bg-slate-950 rounded-lg relative overflow-hidden border border-slate-700">
+                    <!-- Great Zone (Yellow) -->
+                    <div id="qteGreatZone" class="absolute h-full bg-amber-500/40 border-x border-amber-400" style="left: 35%; width: 30%;"></div>
+                    <!-- Perfect Zone (Green) -->
+                    <div id="qtePerfectZone" class="absolute h-full bg-emerald-500/70 border-x border-emerald-300" style="left: 45%; width: 10%;"></div>
+                    <!-- Target Indicator Slider -->
+                    <div id="qtePointer" class="absolute top-0 bottom-0 w-2 bg-white shadow-[0_0_10px_#fff] rounded-full" style="left: 0%;"></div>
+                </div>
+
+                <!-- QTE Trigger Button -->
+                <button id="qteStrikeBtn" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-slate-950 font-black py-3 rounded-xl text-lg shadow-lg active:scale-95 transition tracking-widest flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-crosshairs"></i> 發動攻擊 (STRIKE / [SPACE])
+                </button>
+            </div>
+
+            <!-- Combat Output Log -->
+            <div id="combatLog" class="text-xs text-slate-400 mt-2 h-6 text-center italic">
+                準備發牌...
+            </div>
+        </div>
+
+        <!-- Player Area -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 relative overflow-hidden backdrop-blur">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-950 border-2 border-blue-500 flex items-center justify-center text-blue-400 font-bold text-xl">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-200">老千刺客 (Player)</h2>
+                        <div class="text-xs text-slate-400">當前點數: <span id="playerScoreText" class="text-blue-400 font-bold text-sm">0</span></div>
+                    </div>
+                </div>
+                <!-- Player HP Bar -->
+                <div class="w-48 md:w-64">
+                    <div class="flex justify-between text-xs mb-1 font-mono">
+                        <span class="text-slate-400">HP</span>
+                        <span id="playerHpText" class="text-emerald-400 font-bold">100 / 100</span>
+                    </div>
+                    <div class="w-full bg-slate-950 rounded-full h-3 border border-slate-700 overflow-hidden">
+                        <div id="playerHpBar" class="bg-gradient-to-r from-blue-600 to-emerald-400 h-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Cards -->
+            <div id="playerHand" class="flex gap-3 min-h-[110px] items-center p-2 bg-slate-950/50 rounded-xl border border-slate-800/60 overflow-x-auto mb-4">
+                <div class="text-slate-500 text-sm italic w-full text-center">按下方「開始對局」按鈕...</div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button id="startBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> 開始對局
+                </button>
+                <button id="hitBtn" disabled class="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> 抽牌 (Hit)
+                </button>
+                <button id="standBtn" disabled class="bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-hand"></i> 停牌 (Stand)
+                </button>
+                <button id="skillBtn" disabled class="bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-eye"></i> 透視暗牌 (Skill)
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Godot Code Preview Modal -->
+    <div id="codeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex-col justify-center items-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-slate-800 p-4 flex justify-between items-center border-b border-slate-700">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-code text-indigo-400"></i>
+                    <h3 class="font-bold text-slate-100">Godot 4 GDScript 核心架構碼範例</h3>
+                </div>
+                <button id="closeCodeBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <!-- Code Tabs -->
+            <div class="flex bg-slate-950 border-b border-slate-800 px-4 pt-2 gap-2 text-xs font-mono">
+                <button id="tabManagerBtn" class="px-4 py-2 bg-slate-900 text-amber-400 rounded-t-lg border-t border-x border-slate-700 font-bold">BattleManager.gd</button>
+                <button id="tabQteBtn" class="px-4 py-2 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-t-lg">QTEController.gd</button>
+            </div>
+            <!-- Code Area -->
+            <div class="p-4 flex-1 overflow-y-auto font-mono text-xs text-emerald-300 bg-slate-950">
+                <pre id="codeDisplay" class="whitespace-pre-wrap leading-relaxed"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Web Audio API Synth Effects ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            if (type === 'card') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'perfect') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'hit') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'bust') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // --- Game State Variables ---
+        const SUITS = ['♠', '♥', '♦', '♣'];
+        const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        let deck = [];
+        let playerHand = [];
+        let enemyHand = [];
+        let playerHp = 100;
+        let enemyHp = 100;
+        let gameState = 'IDLE'; // IDLE, PLAYER_TURN, ENEMY_TURN, QTE_PHASE, END
+        let isEnemyCardHidden = true;
+        let skillUsed = false;
+
+        // QTE Variables
+        let qtePos = 0;
+        let qteDirection = 1;
+        let qteSpeed = 1.8;
+        let qteAnimFrame = null;
+        let qteAttacker = 'PLAYER'; // 'PLAYER' or 'ENEMY'
+        let pointDiff = 0;
+
+        // UI Element References
+        const playerHandEl = document.getElementById('playerHand');
+        const enemyHandEl = document.getElementById('enemyHand');
+        const playerScoreText = document.getElementById('playerScoreText');
+        const enemyScoreText = document.getElementById('enemyScoreText');
+        const playerHpBar = document.getElementById('playerHpBar');
+        const enemyHpBar = document.getElementById('enemyHpBar');
+        const playerHpText = document.getElementById('playerHpText');
+        const enemyHpText = document.getElementById('enemyHpText');
+        const statusMsg = document.getElementById('statusMsg');
+        const combatLog = document.getElementById('combatLog');
+
+        const startBtn = document.getElementById('startBtn');
+        const hitBtn = document.getElementById('hitBtn');
+        const standBtn = document.getElementById('standBtn');
+        const skillBtn = document.getElementById('skillBtn');
+        
+        const qteBox = document.getElementById('qteBox');
+        const qtePointer = document.getElementById('qtePointer');
+        const qteStrikeBtn = document.getElementById('qteStrikeBtn');
+
+        // --- Card Deck Functions ---
+        function createDeck() {
+            deck = [];
+            for (let s of SUITS) {
+                for (let v of VALUES) {
+                    deck.push({ suit: s, value: v });
+                }
+            }
+            // Shuffle
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function getCardValue(card) {
+            if (['J', 'Q', 'K'].includes(card.value)) return 10;
+            if (card.value === 'A') return 11;
+            return parseInt(card.value);
+        }
+
+        function calculateScore(hand) {
+            let score = 0;
+            let aces = 0;
+            for (let card of hand) {
+                let val = getCardValue(card);
+                score += val;
+                if (card.value === 'A') aces++;
+            }
+            while (score > 21 && aces > 0) {
+                score -= 10;
+                aces--;
+            }
+            return score;
+        }
+
+        function renderCard(card, isHidden = false) {
+            if (isHidden) {
+                return `
+                    <div class="card-anim w-16 h-24 bg-gradient-to-br from-indigo-900 to-slate-900 border-2 border-indigo-500 rounded-lg flex items-center justify-center card-shadow flex-shrink-0">
+                        <i class="fa-solid fa-eye-slash text-indigo-400 text-xl"></i>
+                    </div>`;
+            }
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            const colorClass = isRed ? 'text-red-500' : 'text-slate-100';
+            return `
+                <div class="card-anim w-16 h-24 bg-slate-900 border border-slate-700 rounded-lg p-1.5 flex flex-col justify-between card-shadow flex-shrink-0">
+                    <div class="text-xs font-bold ${colorClass}">${card.value}${card.suit}</div>
+                    <div class="text-center text-xl font-black ${colorClass}">${card.suit}</div>
+                    <div class="text-xs font-bold ${colorClass} text-right">${card.value}</div>
+                </div>`;
+        }
+
+        function updateUI() {
+            // Render hands
+            playerHandEl.innerHTML = playerHand.map(c => renderCard(c)).join('');
+            
+            if (isEnemyCardHidden && enemyHand.length > 0) {
+                let html = renderCard(enemyHand[0]);
+                for (let i = 1; i < enemyHand.length; i++) {
+                    html += renderCard(enemyHand[i], true);
+                }
+                enemyHandEl.innerHTML = html;
+                enemyScoreText.innerText = getCardValue(enemyHand[0]) + " + ?";
+            } else {
+                enemyHandEl.innerHTML = enemyHand.map(c => renderCard(c)).join('');
+                enemyScoreText.innerText = calculateScore(enemyHand);
+            }
+
+            playerScoreText.innerText = calculateScore(playerHand);
+
+            // Update HP
+            playerHpBar.style.width = `${Math.max(0, playerHp)}%`;
+            enemyHpBar.style.width = `${Math.max(0, enemyHp)}%`;
+            playerHpText.innerText = `${Math.max(0, playerHp)} / 100`;
+            enemyHpText.innerText = `${Math.max(0, enemyHp)} / 100`;
+        }
+
+        // --- Game Flow Control ---
+        function startNewRound() {
+            initAudio();
+            if (playerHp <= 0 || enemyHp <= 0) {
+                playerHp = 100;
+                enemyHp = 100;
+            }
+            
+            createDeck();
+            playerHand = [deck.pop(), deck.pop()];
+            enemyHand = [deck.pop(), deck.pop()];
+            isEnemyCardHidden = true;
+            skillUsed = false;
+
+            gameState = 'PLAYER_TURN';
+            statusMsg.innerText = "玩家回合：請選擇【抽牌】或【停牌】";
+            statusMsg.className = "text-center font-extrabold text-xl md:text-2xl text-blue-400 mb-3 drop-shadow-md";
+            combatLog.innerText = "雙方已發完初始兩張手牌。";
+
+            startBtn.disabled = true;
+            hitBtn.disabled = false;
+            standBtn.disabled = false;
+            skillBtn.disabled = false;
+
+            playSound('card');
+            updateUI();
+
+            // Check Instant Blackjack
+            if (calculateScore(playerHand) === 21) {
+                combatLog.innerText = "21點 (Blackjack)！自動停牌準備拼點！";
+                setTimeout(startEnemyTurn, 1000);
+            }
+        }
+
+        function playerHit() {
+            if (gameState !== 'PLAYER_TURN') return;
+            playerHand.push(deck.pop());
+            playSound('card');
+            updateUI();
+
+            let score = calculateScore(playerHand);
+            if (score > 21) {
+                playSound('bust');
+                statusMsg.innerText = "💥 爆牌 (Bust)！超過21點！";
+                statusMsg.className = "text-center font-extrabold text-xl md:text-2xl text-red-500 mb-3 drop-shadow-md";
+                combatLog.innerText = "你爆牌了，本回合自動進入敵人優勢打擊！";
+                hitBtn.disabled = true;
+                standBtn.disabled = true;
+                skillBtn.disabled = true;
+                setTimeout(() => resolveClash(true), 1500);
+            } else if (score === 21) {
+                combatLog.innerText = "達到 21 點！自動停牌！";
+                playerStand();
+            }
+        }
+
+        function playerStand() {
+            if (gameState !== 'PLAYER_TURN') return;
+            gameState = 'ENEMY_TURN';
+            hitBtn.disabled = true;
+            standBtn.disabled = true;
+            skillBtn.disabled = true;
+            statusMsg.innerText = "敵人回合：AI思考中...";
+            statusMsg.className = "text-center font-extrabold text-xl md:text-2xl text-amber-400 mb-3 drop-shadow-md";
+            
+            setTimeout(startEnemyTurn, 1000);
+        }
+
+        function useSkill() {
+            if (gameState !== 'PLAYER_TURN' || skillUsed) return;
+            skillUsed = true;
+            skillBtn.disabled = true;
+            isEnemyCardHidden = false;
+            playSound('card');
+            updateUI();
+            combatLog.innerText = "【透視暗牌】已揭開敵方底牌！";
+        }
+
+        function startEnemyTurn() {
+            isEnemyCardHidden = false;
+            updateUI();
+
+            // Enemy AI Strategy: Hit if < 17
+            let interval = setInterval(() => {
+                let eScore = calculateScore(enemyHand);
+                let pScore = calculateScore(playerHand);
+
+                if (eScore < 17 && eScore < pScore) {
+                    enemyHand.push(deck.pop());
+                    playSound('card');
+                    updateUI();
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => resolveClash(false), 1000);
+                }
+            }, 800);
+        }
+
+        // --- Point Clash & QTE System ---
+        function resolveClash(playerBusted) {
+            let pScore = calculateScore(playerHand);
+            let eScore = calculateScore(enemyHand);
+
+            if (playerBusted) {
+                pointDiff = 5; // Default penalty point difference
+                qteAttacker = 'ENEMY';
+                statusMsg.innerText = "拼點失敗！敵方獲得反擊主導權！";
+                startQTEPhase();
+                return;
+            }
+
+            if (eScore > 21) {
+                pointDiff = 5;
+                qteAttacker = 'PLAYER';
+                statusMsg.innerText = "敵方爆牌！獲得絕佳攻擊機會！";
+                startQTEPhase();
+                return;
+            }
+
+            pointDiff = Math.abs(pScore - eScore);
+
+            if (pScore > eScore) {
+                qteAttacker = 'PLAYER';
+                statusMsg.innerText = `拼點勝利！點數差 [+${pointDiff}] -> 發動QTE攻擊！`;
+                statusMsg.className = "text-center font-extrabold text-xl md:text-2xl text-emerald-400 mb-3 drop-shadow-md";
+                startQTEPhase();
+            } else if (eScore > pScore) {
+                qteAttacker = 'ENEMY';
+                statusMsg.innerText = `拼點失敗！點數落後 [-${pointDiff}] -> 敵方發動攻擊！`;
+                statusMsg.className = "text-center font-extrabold text-xl md:text-2xl text-red-400 mb-3 drop-shadow-md";
+                startQTEPhase();
+            } else {
+                statusMsg.innerText = "平局 (Push)！雙方勢均力敵，無人受傷！";
+                statusMsg.className = "text-center font-extrabold text-xl md:text-2xl text-amber-300 mb-3 drop-shadow-md";
+                endRound();
+            }
+        }
+
+        function startQTEPhase() {
+            gameState = 'QTE_PHASE';
+            qteBox.classList.remove('hidden');
+            qtePos = 0;
+            qteDirection = 1;
+            
+            if (qteAttacker === 'PLAYER') {
+                qteStrikeBtn.classList.remove('opacity-50', 'pointer-events-none');
+                qteStrikeBtn.innerText = "發動連擊 (STRIKE / [SPACE])";
+            } else {
+                qteStrikeBtn.classList.remove('opacity-50', 'pointer-events-none');
+                qteStrikeBtn.innerText = "招架防禦 (PARRY / [SPACE])";
+            }
+
+            // Start animation frame for QTE needle
+            function animateQTE() {
+                qtePos += qteSpeed * qteDirection;
+                if (qtePos >= 100) {
+                    qtePos = 100;
+                    qteDirection = -1;
+                } else if (qtePos <= 0) {
+                    qtePos = 0;
+                    qteDirection = 1;
+                }
+                qtePointer.style.left = `${qtePos}%`;
+                qteAnimFrame = requestAnimationFrame(animateQTE);
+            }
+            animateQTE();
+        }
+
+        function triggerQTE() {
+            if (gameState !== 'QTE_PHASE') return;
+            cancelAnimationFrame(qteAnimFrame);
+            qteBox.classList.add('hidden');
+
+            let hitQuality = 'MISS';
+            // Perfect: 45% - 55%
+            // Great: 35% - 65%
+            if (qtePos >= 45 && qtePos <= 55) {
+                hitQuality = 'PERFECT';
+            } else if (qtePos >= 35 && qtePos <= 65) {
+                hitQuality = 'GREAT';
+            }
+
+            let baseDmg = (pointDiff + 1) * 8;
+            let finalDmg = baseDmg;
+
+            if (hitQuality === 'PERFECT') {
+                finalDmg = Math.round(baseDmg * 1.8);
+                playSound('perfect');
+            } else if (hitQuality === 'GREAT') {
+                finalDmg = Math.round(baseDmg * 1.2);
+                playSound('hit');
+            } else {
+                finalDmg = Math.round(baseDmg * 0.5);
+                playSound('hit');
+            }
+
+            document.body.classList.add('shake-anim');
+            setTimeout(() => document.body.classList.remove('shake-anim'), 400);
+
+            if (qteAttacker === 'PLAYER') {
+                enemyHp -= finalDmg;
+                combatLog.innerText = `💥 [${hitQuality}!] 你造成了 ${finalDmg} 點傷害！(點數差加成 x${hitQuality === 'PERFECT' ? '1.8' : hitQuality === 'GREAT' ? '1.2' : '0.5'})`;
+            } else {
+                // If player is defending
+                if (hitQuality === 'PERFECT') {
+                    finalDmg = Math.round(finalDmg * 0.2); // 80% damage reduction on Perfect Parry
+                    combatLog.innerText = `🛡️ [精準招架!] 減免了 80% 傷害，僅受到 ${finalDmg} 點傷害！`;
+                } else {
+                    playerHp -= finalDmg;
+                    combatLog.innerText = `💔 [${hitQuality}] 招架不及！受到了 ${finalDmg} 點傷害！`;
+                }
+            }
+
+            updateUI();
+            
+            if (playerHp <= 0 || enemyHp <= 0) {
+                handleGameOver();
+            } else {
+                endRound();
+            }
+        }
+
+        function endRound() {
+            gameState = 'IDLE';
+            startBtn.disabled = false;
+        }
+
+        function handleGameOver() {
+            gameState = 'END';
+            if (playerHp <= 0) {
+                statusMsg.innerText = "☠️ 戰敗！你被角鬥士擊倒了！";
+                statusMsg.className = "text-center font-extrabold text-2xl text-red-600 mb-3";
+            } else {
+                statusMsg.innerText = "🏆 勝利！你擊敗了暗黑角鬥士！";
+                statusMsg.className = "text-center font-extrabold text-2xl text-emerald-400 mb-3";
+            }
+            startBtn.innerText = "重新開始戰鬥";
+            startBtn.disabled = false;
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startNewRound);
+        hitBtn.addEventListener('click', playerHit);
+        standBtn.addEventListener('click', playerStand);
+        skillBtn.addEventListener('click', useSkill);
+        qteStrikeBtn.addEventListener('click', triggerQTE);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (gameState === 'QTE_PHASE') {
+                    triggerQTE();
+                }
+            }
+        });
+
+        // --- Godot GDScript Reference Code ---
+        const godotBattleManagerCode = `# BattleManager.gd (Godot 4)
+extends Node
+
+signal round_started
+signal clash_resolved(winner, point_diff)
+signal game_over(player_won)
+
+var player_hp: int = 100
+var enemy_hp: int = 100
+var deck: Array = []
+var player_hand: Array = []
+var enemy_hand: Array = []
+
+@onready var qte_controller = $QTEController
+
+func start_round():
+	deck = create_shuffled_deck()
+	player_hand = [deck.pop_back(), deck.pop_back()]
+	enemy_hand = [deck.pop_back(), deck.pop_back()]
+	emit_signal("round_started")
+
+func player_hit():
+	player_hand.append(deck.pop_back())
+	var score = calculate_score(player_hand)
+	if score > 21:
+		_on_player_bust()
+
+func player_stand():
+	_enemy_turn_ai()
+
+func _enemy_turn_ai():
+	while calculate_score(enemy_hand) < 17:
+		enemy_hand.append(deck.pop_back())
+	
+	_resolve_showdown()
+
+func _resolve_showdown():
+	var p_score = calculate_score(player_hand)
+	var e_score = calculate_score(enemy_hand)
+	
+	if p_score > 21:
+		qte_controller.start_qte("ENEMY", 5)
+	elif e_score > 21 or p_score > e_score:
+		var diff = abs(p_score - e_score) if e_score <= 21 else 5
+		qte_controller.start_qte("PLAYER", diff)
+	elif e_score > p_score:
+		qte_controller.start_qte("ENEMY", e_score - p_score)
+
+func calculate_score(hand: Array) -> int:
+	var total = 0
+	var aces = 0
+	for card in hand:
+		total += card.value
+		if card.is_ace: aces += 1
+	while total > 21 and aces > 0:
+		total -= 10
+		aces -= 1
+	return total`;
+
+        const godotQteControllerCode = `# QTEController.gd (Godot 4)
+extends Node2D
+
+signal qte_finished(quality, damage)
+
+@export var needle_speed: float = 200.0
+@onready var needle = $Needle
+@onready var perfect_zone = $PerfectZone
+
+var is_active: bool = false
+var direction: int = 1
+var current_attacker: String = ""
+var point_diff: int = 0
+
+func start_qte(attacker: String, diff: int):
+	current_attacker = attacker
+	point_diff = diff
+	needle.position.x = 0
+	is_active = true
+	show()
+
+func _process(delta):
+	if not is_active: return
+	
+	needle.position.x += needle_speed * direction * delta
+	if needle.position.x >= 300 or needle.position.x <= 0:
+		direction *= -1
+
+func _input(event):
+	if is_active and event.is_action_pressed("ui_accept"): # Space / Enter
+		_trigger_strike()
+
+func _trigger_strike():
+	is_active = false
+	var quality = "MISS"
+	var needle_x = needle.position.x
+	
+	# Check distance to perfect zone center (e.g. at 150px)
+	if abs(needle_x - 150) < 15:
+		quality = "PERFECT"
+	elif abs(needle_x - 150) < 45:
+		quality = "GREAT"
+		
+	var base_dmg = (point_diff + 1) * 8
+	var mult = 1.8 if quality == "PERFECT" else (1.2 if quality == "GREAT" else 0.5)
+	var final_dmg = int(base_dmg * mult)
+	
+	hide()
+	emit_signal("qte_finished", quality, final_dmg)`;
+
+        const codeDisplay = document.getElementById('codeDisplay');
+        const codeModal = document.getElementById('codeModal');
+        const toggleCodeBtn = document.getElementById('toggleCodeBtn');
+        const closeCodeBtn = document.getElementById('closeCodeBtn');
+        const tabManagerBtn = document.getElementById('tabManagerBtn');
+        const tabQteBtn = document.getElementById('tabQteBtn');
+
+        codeDisplay.textContent = godotBattleManagerCode;
+
+        toggleCodeBtn.addEventListener('click', () => codeModal.classList.remove('hidden'));
+        closeCodeBtn.addEventListener('click', () => codeModal.classList.add('hidden'));
+
+        tabManagerBtn.addEventListener('click', () => {
+            codeDisplay.textContent = godotBattleManagerCode;
+            tabManagerBtn.className = "px-4 py-2 bg-slate-900 text-amber-400 rounded-t-lg border-t border-x border-slate-700 font-bold";
+            tabQteBtn.className = "px-4 py-2 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-t-lg";
+        });
+
+        tabQteBtn.addEventListener('click', () => {
+            codeDisplay.textContent = godotQteControllerCode;
+            tabQteBtn.className = "px-4 py-2 bg-slate-900 text-amber-400 rounded-t-lg border-t border-x border-slate-700 font-bold";
+            tabManagerBtn.className = "px-4 py-2 bg-slate-950 text-slate-400 hover:text-slate-200 rounded-t-lg";
+        });
+    </script>
+</body>
+</html>

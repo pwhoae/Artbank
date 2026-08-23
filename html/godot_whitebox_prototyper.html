@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 3D 白盒原型设计器 (Godot 4 Whitebox Studio)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            bg: '#1d222a',
+                            panel: '#242933',
+                            sidebar: '#1a1d24',
+                            accent: '#478cbf',
+                            accentHover: '#579cd0',
+                            border: '#333b48',
+                            dark: '#12151a',
+                            active: '#2f3644'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            user-select: none;
+            overflow: hidden;
+            background-color: #1d222a;
+            color: #e0e6ed;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1d24;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333b48;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+        }
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        .crosshair::before {
+            top: 4px; left: 0; width: 10px; height: 2px;
+        }
+        .crosshair::after {
+            top: 0; left: 4px; width: 2px; height: 10px;
+        }
+        /* Grid background pattern */
+        .grid-pattern {
+            background-image: radial-gradient(#333b48 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col font-sans antialiased text-sm">
+
+    <!-- Top Header -->
+    <header class="h-12 bg-godot-sidebar border-b border-godot-border flex items-center justify-between px-4 z-20">
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 text-godot-accent font-bold text-lg">
+                <i class="fa-solid font-mono fa-cubes text-xl"></i>
+                <span>Godot 4 白盒生成器</span>
+            </div>
+            <span class="text-xs bg-godot-border px-2 py-0.5 rounded text-gray-400 font-mono">v1.2 CSG</span>
+        </div>
+
+        <!-- Mode Switches & Presets -->
+        <div class="flex items-center space-x-2">
+            <div class="bg-godot-panel p-1 rounded-lg border border-godot-border flex space-x-1">
+                <button id="modeEditBtn" class="px-3 py-1 rounded text-xs font-medium bg-godot-accent text-white flex items-center space-x-1 transition">
+                    <i class="fa-solid fa-cube"></i>
+                    <span>编辑模式</span>
+                </button>
+                <button id="modePlayBtn" class="px-3 py-1 rounded text-xs font-medium text-gray-300 hover:text-white flex items-center space-x-1 transition">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <span>试玩测试 (FPS)</span>
+                </button>
+            </div>
+
+            <div class="h-5 w-[1px] bg-godot-border mx-1"></div>
+
+            <!-- Preset Level Dropdown -->
+            <select id="presetSelect" class="bg-godot-panel border border-godot-border rounded px-2 py-1 text-xs text-gray-200 outline-none hover:border-godot-accent transition">
+                <option value="" disabled selected>加载预设原型场景...</option>
+                <option value="arena">FPS 战术竞技场 (Arena)</option>
+                <option value="parkour">跑酷与垂直跳跃 (Parkour)</option>
+                <option value="dungeon">地牢走廊与房间 (Dungeon)</option>
+                <option value="empty">空白网格 (Empty)</option>
+            </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2">
+            <button id="clearAllBtn" class="px-2.5 py-1 bg-red-900/30 hover:bg-red-800/50 text-red-300 rounded text-xs border border-red-700/40 flex items-center space-x-1 transition">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>清空</span>
+            </button>
+            <button id="exportTscnBtn" class="px-3 py-1 bg-godot-accent hover:bg-godot-accentHover text-white font-medium rounded text-xs flex items-center space-x-1.5 shadow-md transition">
+                <i class="fa-solid fa-file-export"></i>
+                <span>导出 Godot 4 .tscn</span>
+            </button>
+            <button id="exportGdscriptBtn" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded text-xs flex items-center space-x-1.5 shadow-md transition">
+                <i class="fa-solid fa-code"></i>
+                <span>GDScript代码</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Toolbar / Palette -->
+        <aside class="w-64 bg-godot-sidebar border-r border-godot-border flex flex-col z-10">
+            <!-- Tool Modes -->
+            <div class="p-3 border-b border-godot-border">
+                <label class="text-xs uppercase text-gray-400 font-bold tracking-wider mb-2 block">交互工具</label>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button id="toolAdd" class="tool-btn active p-2 rounded bg-godot-accent text-white flex items-center justify-center space-x-1.5 text-xs transition">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>放置块</span>
+                    </button>
+                    <button id="toolSelect" class="tool-btn p-2 rounded bg-godot-panel hover:bg-godot-active text-gray-300 flex items-center justify-center space-x-1.5 text-xs transition">
+                        <i class="fa-solid fa-arrow-pointer"></i>
+                        <span>选择/调整</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid & Snap Settings -->
+            <div class="p-3 border-b border-godot-border space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-semibold text-gray-300">网格吸附 (Snap)</label>
+                    <span id="snapValueText" class="text-xs font-mono text-godot-accent">1.0 m</span>
+                </div>
+                <div class="grid grid-cols-4 gap-1">
+                    <button data-snap="0.25" class="snap-btn py-1 rounded bg-godot-panel hover:bg-godot-active text-xs text-gray-300">0.25</button>
+                    <button data-snap="0.5" class="snap-btn py-1 rounded bg-godot-panel hover:bg-godot-active text-xs text-gray-300">0.5</button>
+                    <button data-snap="1.0" class="snap-btn active py-1 rounded bg-godot-accent text-xs text-white">1.0</button>
+                    <button data-snap="2.0" class="snap-btn py-1 rounded bg-godot-panel hover:bg-godot-active text-xs text-gray-300">2.0</button>
+                </div>
+            </div>
+
+            <!-- Whitebox Primitives Selector -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-3">
+                <label class="text-xs uppercase text-gray-400 font-bold tracking-wider block">白盒基础元件 (CSG Node)</label>
+
+                <div class="space-y-1.5">
+                    <div data-primitive="cube" class="primitive-card p-2.5 rounded bg-godot-panel hover:border-godot-accent border border-godot-border cursor-pointer flex items-center space-x-3 transition active-card">
+                        <div class="w-8 h-8 rounded bg-blue-900/40 border border-blue-500/50 flex items-center justify-center text-blue-400">
+                            <i class="fa-solid fa-cube"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-200">立方体 (CSGBox3D)</div>
+                            <div class="text-[10px] text-gray-400">掩体/平台/框架</div>
+                        </div>
+                    </div>
+
+                    <div data-primitive="ramp" class="primitive-card p-2.5 rounded bg-godot-panel hover:border-godot-accent border border-godot-border cursor-pointer flex items-center space-x-3 transition">
+                        <div class="w-8 h-8 rounded bg-amber-900/40 border border-amber-500/50 flex items-center justify-center text-amber-400">
+                            <i class="fa-solid fa-vector-square"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-200">斜坡 (Ramp / Polygon)</div>
+                            <div class="text-[10px] text-gray-400">高度过渡/滑行坡</div>
+                        </div>
+                    </div>
+
+                    <div data-primitive="stairs" class="primitive-card p-2.5 rounded bg-godot-panel hover:border-godot-accent border border-godot-border cursor-pointer flex items-center space-x-3 transition">
+                        <div class="w-8 h-8 rounded bg-emerald-900/40 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
+                            <i class="fa-solid fa-stairs"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-200">台阶/楼梯 (Stairs)</div>
+                            <div class="text-[10px] text-gray-400">步进连通通道</div>
+                        </div>
+                    </div>
+
+                    <div data-primitive="wall" class="primitive-card p-2.5 rounded bg-godot-panel hover:border-godot-accent border border-godot-border cursor-pointer flex items-center space-x-3 transition">
+                        <div class="w-8 h-8 rounded bg-purple-900/40 border border-purple-500/50 flex items-center justify-center text-purple-400">
+                            <i class="fa-solid fa-border-all"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-200">薄墙壁 (Wall Slab)</div>
+                            <div class="text-[10px] text-gray-400">阻挡与视野遮挡</div>
+                        </div>
+                    </div>
+
+                    <div data-primitive="cylinder" class="primitive-card p-2.5 rounded bg-godot-panel hover:border-godot-accent border border-godot-border cursor-pointer flex items-center space-x-3 transition">
+                        <div class="w-8 h-8 rounded bg-teal-900/40 border border-teal-500/50 flex items-center justify-center text-teal-400">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-200">圆柱/立柱 (CSGCylinder3D)</div>
+                            <div class="text-[10px] text-gray-400">柱子/支撑结构</div>
+                        </div>
+                    </div>
+
+                    <div data-primitive="spawn" class="primitive-card p-2.5 rounded bg-godot-panel hover:border-godot-accent border border-godot-border cursor-pointer flex items-center space-x-3 transition">
+                        <div class="w-8 h-8 rounded bg-rose-900/40 border border-rose-500/50 flex items-center justify-center text-rose-400">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-medium text-gray-200">玩家出生点 (SpawnPoint)</div>
+                            <div class="text-[10px] text-gray-400">Marker3D / 起始位置</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Palette Colors -->
+                <div class="pt-2 border-t border-godot-border">
+                    <label class="text-xs uppercase text-gray-400 font-bold tracking-wider mb-2 block">原型材质颜色</label>
+                    <div class="grid grid-cols-5 gap-1.5" id="colorPalette">
+                        <!-- Colors injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Viewport -->
+        <main class="flex-1 flex flex-col relative">
+            <div id="canvasContainer" class="canvas-container cursor-crosshair">
+                <!-- Three.js Canvas appended here -->
+
+                <!-- FPS Crosshair -->
+                <div id="crosshair" class="crosshair"></div>
+
+                <!-- Play Overlay Controls Prompt -->
+                <div id="playPrompt" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur border border-godot-border text-white px-4 py-2 rounded-full text-xs flex items-center space-x-3 shadow-xl z-20">
+                    <span class="flex items-center space-x-1"><kbd class="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">W</kbd><kbd class="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">A</kbd><kbd class="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">S</kbd><kbd class="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">D</kbd> 移动</span>
+                    <span><kbd class="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">Space</kbd> 跳跃</span>
+                    <span><kbd class="bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">Shift</kbd> 疾跑</span>
+                    <span class="text-godot-accent font-semibold border-l border-gray-600 pl-3"><kbd class="bg-godot-accent text-white px-1.5 py-0.5 rounded text-[10px]">Esc</kbd> 退出测试</span>
+                </div>
+
+                <!-- Viewport Controls Overlay -->
+                <div class="absolute bottom-4 left-4 bg-godot-panel/80 backdrop-blur border border-godot-border rounded p-2 text-[11px] text-gray-300 space-y-1 pointer-events-none">
+                    <div><span class="text-godot-accent font-semibold">左键点击:</span> 放置/选择元件</div>
+                    <div><span class="text-godot-accent font-semibold">右键拖拽:</span> 旋转视角</div>
+                    <div><span class="text-godot-accent font-semibold">中键拖拽/Shift+右键:</span> 平移视角</div>
+                    <div><span class="text-godot-accent font-semibold">滚轮:</span> 缩放视角</div>
+                </div>
+
+                <!-- Stats indicator -->
+                <div class="absolute top-4 right-4 bg-godot-panel/80 backdrop-blur border border-godot-border rounded px-3 py-1.5 text-[11px] text-gray-300 font-mono flex items-center space-x-3 pointer-events-none">
+                    <div>元件数: <span id="statNodeCount" class="text-white font-bold">0</span></div>
+                    <div>尺寸网格: <span id="statGridSize" class="text-godot-accent">20 x 20 m</span></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar (Inspector & Scene Outline) -->
+        <aside class="w-72 bg-godot-sidebar border-l border-godot-border flex flex-col z-10">
+            <!-- Header Tabs -->
+            <div class="flex border-b border-godot-border text-xs">
+                <button class="flex-1 py-2.5 font-medium border-b-2 border-godot-accent text-white bg-godot-panel">属性检查器 (Inspector)</button>
+            </div>
+
+            <!-- Inspector Panel -->
+            <div id="inspectorPanel" class="flex-1 overflow-y-auto p-3 space-y-4">
+                <div id="noSelectionMsg" class="text-center py-12 text-gray-500 text-xs">
+                    <i class="fa-solid fa-mouse-pointer text-2xl mb-2 block text-gray-600"></i>
+                    点击场景中的白盒元件以修改属性
+                </div>
+
+                <div id="selectionProps" class="hidden space-y-4">
+                    <!-- Object Info -->
+                    <div class="bg-godot-panel p-2.5 rounded border border-godot-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span id="inspectorNodeType" class="font-bold text-godot-accent text-xs">CSGBox3D</span>
+                            <span id="inspectorNodeId" class="text-[10px] font-mono text-gray-400">#id</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-xs text-gray-400">节点名称:</label>
+                            <input id="inspectorName" type="text" class="flex-1 bg-godot-dark border border-godot-border rounded px-2 py-0.5 text-xs text-white outline-none focus:border-godot-accent">
+                        </div>
+                    </div>
+
+                    <!-- Transform Settings -->
+                    <div class="bg-godot-panel p-2.5 rounded border border-godot-border space-y-3">
+                        <label class="text-xs uppercase text-gray-400 font-bold tracking-wider block">Transform (变换)</label>
+                        
+                        <!-- Position -->
+                        <div class="space-y-1">
+                            <span class="text-[11px] text-gray-400">位置 (Position)</span>
+                            <div class="grid grid-cols-3 gap-1 font-mono text-xs">
+                                <div class="flex items-center bg-godot-dark rounded px-1 border border-godot-border">
+                                    <span class="text-red-400 mr-1 text-[10px]">X:</span>
+                                    <input id="propPosX" type="number" step="0.5" class="w-full bg-transparent text-white border-none outline-none text-xs">
+                                </div>
+                                <div class="flex items-center bg-godot-dark rounded px-1 border border-godot-border">
+                                    <span class="text-green-400 mr-1 text-[10px]">Y:</span>
+                                    <input id="propPosY" type="number" step="0.5" class="w-full bg-transparent text-white border-none outline-none text-xs">
+                                </div>
+                                <div class="flex items-center bg-godot-dark rounded px-1 border border-godot-border">
+                                    <span class="text-blue-400 mr-1 text-[10px]">Z:</span>
+                                    <input id="propPosZ" type="number" step="0.5" class="w-full bg-transparent text-white border-none outline-none text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scale / Size -->
+                        <div class="space-y-1">
+                            <span class="text-[11px] text-gray-400">尺寸规格 (Size/Scale)</span>
+                            <div class="grid grid-cols-3 gap-1 font-mono text-xs">
+                                <div class="flex items-center bg-godot-dark rounded px-1 border border-godot-border">
+                                    <span class="text-red-400 mr-1 text-[10px]">W:</span>
+                                    <input id="propSizeX" type="number" min="0.1" step="0.5" class="w-full bg-transparent text-white border-none outline-none text-xs">
+                                </div>
+                                <div class="flex items-center bg-godot-dark rounded px-1 border border-godot-border">
+                                    <span class="text-green-400 mr-1 text-[10px]">H:</span>
+                                    <input id="propSizeY" type="number" min="0.1" step="0.5" class="w-full bg-transparent text-white border-none outline-none text-xs">
+                                </div>
+                                <div class="flex items-center bg-godot-dark rounded px-1 border border-godot-border">
+                                    <span class="text-blue-400 mr-1 text-[10px]">L:</span>
+                                    <input id="propSizeZ" type="number" min="0.1" step="0.5" class="w-full bg-transparent text-white border-none outline-none text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rotation -->
+                        <div class="space-y-1">
+                            <span class="text-[11px] text-gray-400">旋转 (Rotation Y°)</span>
+                            <input id="propRotY" type="range" min="0" max="360" step="15" class="w-full accent-godot-accent">
+                            <div class="text-right text-[10px] text-gray-400 font-mono"><span id="propRotYVal">0</span>°</div>
+                        </div>
+                    </div>
+
+                    <!-- CSG & Material Settings -->
+                    <div class="bg-godot-panel p-2.5 rounded border border-godot-border space-y-2.5">
+                        <label class="text-xs uppercase text-gray-400 font-bold tracking-wider block">CSG 极性与碰撞</label>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-300">开启碰撞 (Use Collision)</span>
+                            <input id="propCollision" type="checkbox" checked class="accent-godot-accent w-4 h-4 rounded cursor-pointer">
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-300">CSG 操作模式</span>
+                            <select id="propCsgOperation" class="bg-godot-dark border border-godot-border rounded px-2 py-0.5 text-xs text-white outline-none">
+                                <option value="0">Union (合并)</option>
+                                <option value="1">Intersection (相交)</option>
+                                <option value="2">Subtraction (挖空/减去)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons for Selected Node -->
+                    <div class="flex space-x-2 pt-2">
+                        <button id="duplicateNodeBtn" class="flex-1 py-1.5 bg-godot-panel hover:bg-godot-active border border-godot-border text-gray-200 rounded text-xs transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-clone"></i>
+                            <span>复制</span>
+                        </button>
+                        <button id="deleteNodeBtn" class="flex-1 py-1.5 bg-red-900/40 hover:bg-red-800/60 border border-red-700/50 text-red-300 rounded text-xs transition flex items-center justify-center space-x-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>删除</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-godot-sidebar border border-godot-border rounded-xl w-full max-w-3xl flex flex-col shadow-2xl max-h-[85vh]">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-godot-border flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i id="exportModalIcon" class="fa-solid fa-file-export text-godot-accent text-lg"></i>
+                    <h3 id="exportModalTitle" class="font-bold text-gray-100 text-base">导出 Godot 4 3D 场景 (.tscn)</h3>
+                </div>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-white p-1 rounded transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-4 flex-1 overflow-hidden flex flex-col space-y-3">
+                <p id="exportModalDesc" class="text-xs text-gray-300">
+                    此文本代码包含符合 Godot Engine 4.x 规范的纯文本场景结构。保存为 <code class="bg-godot-dark px-1.5 py-0.5 rounded text-godot-accent font-mono">whitebox_level.tscn</code> 格式并直接拖入 Godot 项目即可打开！
+                </p>
+                
+                <div class="flex-1 relative border border-godot-border rounded-lg overflow-hidden bg-godot-dark">
+                    <textarea id="exportTextarea" readonly class="w-full h-80 p-3 bg-transparent text-xs font-mono text-emerald-400 outline-none resize-none overflow-y-auto leading-relaxed"></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-godot-border flex items-center justify-between bg-godot-panel/50">
+                <span class="text-xs text-gray-400 font-mono">兼容版本: Godot Engine 4.0 - 4.3+</span>
+                <div class="flex space-x-2">
+                    <button id="copyExportBtn" class="px-4 py-1.5 bg-godot-panel hover:bg-godot-active border border-godot-border text-white rounded text-xs font-medium transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-copy"></i>
+                        <span>复制代码</span>
+                    </button>
+                    <button id="downloadExportBtn" class="px-4 py-1.5 bg-godot-accent hover:bg-godot-accentHover text-white rounded text-xs font-medium transition flex items-center space-x-1.5 shadow-md">
+                        <i class="fa-solid fa-download"></i>
+                        <span>下载文件</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Palette Definition
+        const PALETTE_COLORS = [
+            { name: '白盒灰 (Standard)', hex: '#8c96a0' },
+            { name: '地板暗灰 (Floor)', hex: '#485058' },
+            { name: '掩体橙 (Cover)', hex: '#e67e22' },
+            { name: '交互蓝 (Interactive)', hex: '#3498db' },
+            { name: '目标绿 (Target)', hex: '#2ecc71' },
+            { name: '危险红 (Hazard)', hex: '#e74c3c' },
+            { name: '垂直紫 (Vertical)', hex: '#9b59b6' },
+            { name: '特殊黄 (Special)', hex: '#f1c40f' },
+            { name: '暗黑系 (Dark)', hex: '#2c3e50' },
+            { name: '亮白 (Bright White)', hex: '#ecf0f1' }
+        ];
+
+        // State Machine Variables
+        const state = {
+            mode: 'edit', // 'edit' or 'play'
+            currentTool: 'add', // 'add' or 'select'
+            snapSize: 1.0,
+            selectedPrimitive: 'cube',
+            selectedColor: PALETTE_COLORS[0].hex,
+            nodes: [], // List of whitebox node data
+            selectedNodeId: null,
+            spawnPoint: { x: 0, y: 1, z: 0 }
+        };
+
+        // Three.js Core Variables
+        let scene, camera, renderer, controls;
+        let gridHelper, raycaster, mouse;
+        let placementPreviewMesh;
+        let selectedHighlightBox;
+        const nodeMeshesMap = new Map(); // id -> Three.js Mesh
+
+        // FPS Play Controller Variables
+        let isPointerLocked = false;
+        let playerPos = new THREE.Vector3(0, 1.6, 0);
+        let playerVelocity = new THREE.Vector3();
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isJumping = false, isSprinting = false;
+        let prevTime = performance.now();
+        let pitch = 0, yaw = 0;
+
+        function initThree() {
+            const container = document.getElementById('canvasContainer');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color('#1a1d24');
+            scene.fog = new THREE.FogExp2('#1a1d24', 0.015);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(12, 14, 16);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls for Edit Mode
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + 0.05; // slightly allow below horizon
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.85);
+            sunLight.position.set(20, 40, 15);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 100;
+            const d = 30;
+            sunLight.shadow.camera.left = -d;
+            sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d;
+            sunLight.shadow.camera.bottom = -d;
+            scene.add(sunLight);
+
+            // Grid Helper
+            gridHelper = new THREE.GridHelper(40, 40, 0x478cbf, 0x333b48);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            // Raycaster & Mouse
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Placement Preview Mesh
+            createPlacementPreview();
+
+            // Selection Outline Box
+            const bboxGeo = new THREE.BoxGeometry(1, 1, 1);
+            const bboxMat = new THREE.LineBasicMaterial({ color: 0x478cbf, linewidth: 2 });
+            selectedHighlightBox = new THREE.LineSegments(new THREE.EdgesGeometry(bboxGeo), bboxMat);
+            selectedHighlightBox.visible = false;
+            scene.add(selectedHighlightBox);
+
+            // Window Resize Listener
+            window.addEventListener('resize', onWindowResize);
+
+            // Event Listeners for Interaction
+            renderer.domElement.addEventListener('pointermove', onPointerMove);
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+            // Start Animation Loop
+            animate();
+        }
+
+        function createPlacementPreview() {
+            const previewMat = new THREE.MeshBasicMaterial({
+                color: 0x478cbf,
+                transparent: true,
+                opacity: 0.4,
+                wireframe: false
+            });
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            placementPreviewMesh = new THREE.Mesh(geo, previewMat);
+            placementPreviewMesh.visible = false;
+            scene.add(placementPreviewMesh);
+        }
+
+        function updatePreviewMeshGeometry() {
+            if (!placementPreviewMesh) return;
+            let geo;
+            switch(state.selectedPrimitive) {
+                case 'cube':
+                    geo = new THREE.BoxGeometry(1, 1, 1);
+                    break;
+                case 'ramp':
+                    geo = createRampGeometry(1, 1, 1);
+                    break;
+                case 'stairs':
+                    geo = createStairsGeometry(1, 1, 1);
+                    break;
+                case 'wall':
+                    geo = new THREE.BoxGeometry(0.2, 2, 2);
+                    break;
+                case 'cylinder':
+                    geo = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+                    break;
+                case 'spawn':
+                    geo = new THREE.CapsuleGeometry(0.4, 1.0, 4, 8);
+                    break;
+                default:
+                    geo = new THREE.BoxGeometry(1, 1, 1);
+            }
+            placementPreviewMesh.geometry.dispose();
+            placementPreviewMesh.geometry = geo;
+        }
+
+        // Helper Geometries for Ramp and Stairs
+        function createRampGeometry(w, h, d) {
+            const shape = new THREE.Shape();
+            shape.moveTo(-d/2, -h/2);
+            shape.lineTo(d/2, -h/2);
+            shape.lineTo(d/2, h/2);
+            shape.closePath();
+
+            const extrudeSettings = { depth: w, bevelEnabled: false };
+            const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geo.center();
+            geo.rotateY(Math.PI / 2);
+            return geo;
+        }
+
+        function createStairsGeometry(w, h, d) {
+            const steps = 5;
+            const groupGeo = new THREE.BufferGeometry();
+            const boxGeos = [];
+            
+            for (let i = 0; i < steps; i++) {
+                const stepH = h / steps;
+                const stepD = d / steps;
+                const curH = stepH * (i + 1);
+                const posZ = -d/2 + stepD * i + stepD/2;
+                const posY = -h/2 + curH/2;
+
+                const stepGeo = new THREE.BoxGeometry(w, curH, stepD);
+                stepGeo.translate(0, posY, posZ);
+                boxGeos.push(stepGeo);
+            }
+            // For simplicity, return standard box or simplified mesh for preview
+            return new THREE.BoxGeometry(w, h, d);
+        }
+
+        function addWhiteboxNode(type, pos, size = null, color = null, rotY = 0) {
+            const id = 'node_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            
+            // Default sizes based on primitive type
+            let defaultSize = { x: 2, y: 2, z: 2 };
+            if (type === 'wall') defaultSize = { x: 0.2, y: 3, z: 4 };
+            if (type === 'stairs') defaultSize = { x: 2, y: 2, z: 3 };
+            if (type === 'ramp') defaultSize = { x: 2, y: 2, z: 3 };
+            if (type === 'cylinder') defaultSize = { x: 1, y: 3, z: 1 };
+            if (type === 'spawn') defaultSize = { x: 0.8, y: 1.8, z: 0.8 };
+
+            const finalSize = size || defaultSize;
+            const finalColor = color || (type === 'spawn' ? '#e74c3c' : state.selectedColor);
+
+            const nodeData = {
+                id: id,
+                name: type.charAt(0).toUpperCase() + type.slice(1) + '_' + state.nodes.length,
+                type: type, // 'cube', 'ramp', 'stairs', 'wall', 'cylinder', 'spawn'
+                position: { x: pos.x, y: pos.y, z: pos.z },
+                size: { x: finalSize.x, y: finalSize.y, z: finalSize.z },
+                rotationY: rotY,
+                color: finalColor,
+                useCollision: true,
+                csgOperation: 0 // 0: Union, 1: Intersection, 2: Subtraction
+            };
+
+            state.nodes.push(nodeData);
+
+            // Create Three.js representation
+            const mesh = createMeshForNode(nodeData);
+            scene.add(mesh);
+            nodeMeshesMap.set(id, mesh);
+
+            updateNodeCountUI();
+            return nodeData;
+        }
+
+        function createMeshForNode(node) {
+            let geo;
+            const { x: w, y: h, z: d } = node.size;
+
+            switch(node.type) {
+                case 'cube':
+                case 'wall':
+                    geo = new THREE.BoxGeometry(w, h, d);
+                    break;
+                case 'ramp':
+                    geo = createRampGeometry(w, h, d);
+                    break;
+                case 'stairs':
+                    geo = new THREE.BoxGeometry(w, h, d); // Simplified preview mesh
+                    break;
+                case 'cylinder':
+                    geo = new THREE.CylinderGeometry(w/2, w/2, h, 16);
+                    break;
+                case 'spawn':
+                    geo = new THREE.CapsuleGeometry(w/2, h - w, 4, 8);
+                    break;
+                default:
+                    geo = new THREE.BoxGeometry(w, h, d);
+            }
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(node.color),
+                roughness: 0.4,
+                metalness: 0.1
+            });
+
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(node.position.x, node.position.y, node.position.z);
+            mesh.rotation.y = THREE.MathUtils.degToRad(node.rotationY);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData = { nodeId: node.id };
+
+            // Grid Wireframe overlay for whitebox prototype aesthetic
+            const wireGeo = new THREE.EdgesGeometry(geo);
+            const wireMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 });
+            const wireframe = new THREE.LineSegments(wireGeo, wireMat);
+            mesh.add(wireframe);
+
+            return mesh;
+        }
+
+        function snapToGrid(val, step) {
+            return Math.round(val / step) * step;
+        }
+
+        function onPointerMove(event) {
+            if (state.mode !== 'edit') return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            if (state.currentTool === 'add') {
+                const targetObjects = Array.from(nodeMeshesMap.values());
+                const intersects = raycaster.intersectObjects([...targetObjects, gridHelper]);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    placementPreviewMesh.visible = true;
+
+                    // Calculate grid snapped position based on hit normal
+                    const snap = state.snapSize;
+                    let targetPos = hit.point.clone();
+
+                    if (hit.object === gridHelper) {
+                        targetPos.x = snapToGrid(targetPos.x, snap);
+                        targetPos.z = snapToGrid(targetPos.z, snap);
+                        targetPos.y = 1; // Default height offset
+                    } else {
+                        // Snapping against existing node surface
+                        targetPos.add(hit.face.normal.clone().multiplyScalar(0.5));
+                        targetPos.x = snapToGrid(targetPos.x, snap);
+                        targetPos.y = snapToGrid(targetPos.y, snap);
+                        targetPos.z = snapToGrid(targetPos.z, snap);
+                    }
+
+                    placementPreviewMesh.position.copy(targetPos);
+                } else {
+                    placementPreviewMesh.visible = false;
+                }
+            } else {
+                placementPreviewMesh.visible = false;
+            }
+        }
+
+        function onPointerDown(event) {
+            if (state.mode !== 'edit' || event.button !== 0) return; // Only left click
+
+            raycaster.setFromCamera(mouse, camera);
+
+            if (state.currentTool === 'add' && placementPreviewMesh.visible) {
+                const pos = placementPreviewMesh.position;
+                const newNode = addWhiteboxNode(state.selectedPrimitive, pos);
+                selectNode(newNode.id);
+            } else if (state.currentTool === 'select') {
+                const targetObjects = Array.from(nodeMeshesMap.values());
+                const intersects = raycaster.intersectObjects(targetObjects, true);
+
+                if (intersects.length > 0) {
+                    // Find top parent with nodeId
+                    let obj = intersects[0].object;
+                    while (obj && !obj.userData.nodeId && obj.parent) {
+                        obj = obj.parent;
+                    }
+                    if (obj && obj.userData.nodeId) {
+                        selectNode(obj.userData.nodeId);
+                    }
+                } else {
+                    selectNode(null);
+                }
+            }
+        }
+
+        function selectNode(id) {
+            state.selectedNodeId = id;
+            const selectionProps = document.getElementById('selectionProps');
+            const noSelectionMsg = document.getElementById('noSelectionMsg');
+
+            if (!id) {
+                selectedHighlightBox.visible = false;
+                selectionProps.classList.add('hidden');
+                noSelectionMsg.classList.remove('hidden');
+                return;
+            }
+
+            const node = state.nodes.find(n => n.id === id);
+            const mesh = nodeMeshesMap.get(id);
+
+            if (!node || !mesh) return;
+
+            // Highlight Bounding Box
+            const box = new THREE.Box3().setFromObject(mesh);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            selectedHighlightBox.scale.copy(size);
+            selectedHighlightBox.position.copy(center);
+            selectedHighlightBox.visible = true;
+
+            // Update UI Inspector fields
+            selectionProps.classList.remove('hidden');
+            noSelectionMsg.classList.add('hidden');
+
+            document.getElementById('inspectorNodeType').textContent = node.type.toUpperCase() + ' (CSG)';
+            document.getElementById('inspectorNodeId').textContent = '#' + node.id.slice(-4);
+            document.getElementById('inspectorName').value = node.name;
+
+            document.getElementById('propPosX').value = node.position.x;
+            document.getElementById('propPosY').value = node.position.y;
+            document.getElementById('propPosZ').value = node.position.z;
+
+            document.getElementById('propSizeX').value = node.size.x;
+            document.getElementById('propSizeY').value = node.size.y;
+            document.getElementById('propSizeZ').value = node.size.z;
+
+            document.getElementById('propRotY').value = node.rotationY;
+            document.getElementById('propRotYVal').textContent = node.rotationY;
+
+            document.getElementById('propCollision').checked = node.useCollision;
+            document.getElementById('propCsgOperation').value = node.csgOperation;
+        }
+
+        function updateSelectedNodeFromUI() {
+            if (!state.selectedNodeId) return;
+            const node = state.nodes.find(n => n.id === state.selectedNodeId);
+            if (!node) return;
+
+            node.name = document.getElementById('inspectorName').value;
+
+            node.position.x = parseFloat(document.getElementById('propPosX').value) || 0;
+            node.position.y = parseFloat(document.getElementById('propPosY').value) || 0;
+            node.position.z = parseFloat(document.getElementById('propPosZ').value) || 0;
+
+            node.size.x = Math.max(0.1, parseFloat(document.getElementById('propSizeX').value) || 1);
+            node.size.y = Math.max(0.1, parseFloat(document.getElementById('propSizeY').value) || 1);
+            node.size.z = Math.max(0.1, parseFloat(document.getElementById('propSizeZ').value) || 1);
+
+            node.rotationY = parseInt(document.getElementById('propRotY').value) || 0;
+            document.getElementById('propRotYVal').textContent = node.rotationY;
+
+            node.useCollision = document.getElementById('propCollision').checked;
+            node.csgOperation = parseInt(document.getElementById('propCsgOperation').value);
+
+            // Re-render mesh in scene
+            const oldMesh = nodeMeshesMap.get(node.id);
+            if (oldMesh) {
+                scene.remove(oldMesh);
+                oldMesh.geometry.dispose();
+            }
+
+            const newMesh = createMeshForNode(node);
+            scene.add(newMesh);
+            nodeMeshesMap.set(node.id, newMesh);
+
+            selectNode(node.id);
+        }
+
+        function deleteSelectedNode() {
+            if (!state.selectedNodeId) return;
+            const id = state.selectedNodeId;
+
+            const mesh = nodeMeshesMap.get(id);
+            if (mesh) {
+                scene.remove(mesh);
+                mesh.geometry.dispose();
+                nodeMeshesMap.delete(id);
+            }
+
+            state.nodes = state.nodes.filter(n => n.id !== id);
+            selectNode(null);
+            updateNodeCountUI();
+        }
+
+        function duplicateSelectedNode() {
+            if (!state.selectedNodeId) return;
+            const node = state.nodes.find(n => n.id === state.selectedNodeId);
+            if (!node) return;
+
+            const offsetPos = {
+                x: node.position.x + state.snapSize,
+                y: node.position.y,
+                z: node.position.z + state.snapSize
+            };
+
+            const dup = addWhiteboxNode(node.type, offsetPos, node.size, node.color, node.rotationY);
+            selectNode(dup.id);
+        }
+
+        function clearAllNodes() {
+            nodeMeshesMap.forEach(mesh => {
+                scene.remove(mesh);
+                mesh.geometry.dispose();
+            });
+            nodeMeshesMap.clear();
+            state.nodes = [];
+            selectNode(null);
+            updateNodeCountUI();
+        }
+
+        function updateNodeCountUI() {
+            document.getElementById('statNodeCount').textContent = state.nodes.length;
+        }
+
+        function togglePlayMode(play) {
+            state.mode = play ? 'play' : 'edit';
+            const modeEditBtn = document.getElementById('modeEditBtn');
+            const modePlayBtn = document.getElementById('modePlayBtn');
+            const playPrompt = document.getElementById('playPrompt');
+            const crosshair = document.getElementById('crosshair');
+
+            if (play) {
+                modeEditBtn.className = "px-3 py-1 rounded text-xs font-medium text-gray-300 hover:text-white flex items-center space-x-1 transition";
+                modePlayBtn.className = "px-3 py-1 rounded text-xs font-medium bg-emerald-600 text-white flex items-center space-x-1 transition";
+                
+                controls.enabled = false;
+                placementPreviewMesh.visible = false;
+                selectedHighlightBox.visible = false;
+                playPrompt.classList.remove('hidden');
+                crosshair.style.display = 'block';
+
+                // Find spawn point or default to center
+                const spawnNode = state.nodes.find(n => n.type === 'spawn');
+                if (spawnNode) {
+                    playerPos.set(spawnNode.position.x, spawnNode.position.y + 1, spawnNode.position.z);
+                } else {
+                    playerPos.set(0, 2, 0);
+                }
+                camera.position.copy(playerPos);
+                pitch = 0; yaw = 0;
+
+                // Lock pointer
+                renderer.domElement.requestPointerLock();
+            } else {
+                modePlayBtn.className = "px-3 py-1 rounded text-xs font-medium text-gray-300 hover:text-white flex items-center space-x-1 transition";
+                modeEditBtn.className = "px-3 py-1 rounded text-xs font-medium bg-godot-accent text-white flex items-center space-x-1 transition";
+                
+                controls.enabled = true;
+                playPrompt.classList.add('hidden');
+                crosshair.style.display = 'none';
+
+                if (document.pointerLockElement === renderer.domElement) {
+                    document.exitPointerLock();
+                }
+
+                // Reset camera back to edit view
+                camera.position.set(12, 14, 16);
+                controls.target.set(0, 0, 0);
+            }
+        }
+
+        // Mouse look in FPS play mode
+        document.addEventListener('mousemove', (e) => {
+            if (state.mode !== 'play' || document.pointerLockElement !== renderer.domElement) return;
+
+            const movementX = e.movementX || 0;
+            const movementY = e.movementY || 0;
+
+            yaw -= movementX * 0.0022;
+            pitch -= movementY * 0.0022;
+            pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+
+            const euler = new THREE.Euler(pitch, yaw, 0, 'YXZ');
+            camera.quaternion.setFromEuler(euler);
+        });
+
+        // Key bindings for movement
+        document.addEventListener('keydown', (e) => {
+            if (state.mode !== 'play') return;
+            switch(e.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': if (!isJumping) { playerVelocity.y = 8; isJumping = true; } break;
+                case 'ShiftLeft': isSprinting = true; break;
+                case 'Escape': togglePlayMode(false); break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (state.mode !== 'play') return;
+            switch(e.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'ShiftLeft': isSprinting = false; break;
+            }
+        });
+
+        function updateFPSPhysics(delta) {
+            if (state.mode !== 'play') return;
+
+            const speed = isSprinting ? 12.0 : 6.5;
+            playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+            playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+            playerVelocity.y -= 22.0 * delta; // Gravity
+
+            const dir = new THREE.Vector3();
+            if (moveForward) dir.z -= 1;
+            if (moveBackward) dir.z += 1;
+            if (moveLeft) dir.x -= 1;
+            if (moveRight) dir.x += 1;
+            dir.normalize();
+
+            // Apply camera orientation to movement direction
+            if (moveForward || moveBackward || moveLeft || moveRight) {
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                forward.y = 0; forward.normalize();
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                right.y = 0; right.normalize();
+
+                const moveVec = new THREE.Vector3()
+                    .addScaledVector(forward, -dir.z)
+                    .addScaledVector(right, dir.x)
+                    .normalize();
+
+                playerVelocity.x = moveVec.x * speed;
+                playerVelocity.z = moveVec.z * speed;
+            }
+
+            // Apply movement
+            playerPos.x += playerVelocity.x * delta;
+            playerPos.z += playerVelocity.z * delta;
+            playerPos.y += playerVelocity.y * delta;
+
+            // Simple Floor Collision
+            if (playerPos.y < 1.6) {
+                playerVelocity.y = 0;
+                playerPos.y = 1.6;
+                isJumping = false;
+            }
+
+            camera.position.copy(playerPos);
+        }
+
+        function loadPreset(preset) {
+            clearAllNodes();
+
+            if (preset === 'arena') {
+                // Ground floor
+                addWhiteboxNode('cube', { x: 0, y: 0, z: 0 }, { x: 20, y: 0.5, z: 20 }, '#485058');
+                // Spawn
+                addWhiteboxNode('spawn', { x: 0, y: 1.2, z: 8 });
+                // Covers
+                addWhiteboxNode('cube', { x: -4, y: 1.25, z: 2 }, { x: 3, y: 2, z: 1 }, '#e67e22');
+                addWhiteboxNode('cube', { x: 4, y: 1.25, z: 2 }, { x: 3, y: 2, z: 1 }, '#e67e22');
+                addWhiteboxNode('cube', { x: 0, y: 1.25, z: -2 }, { x: 4, y: 2, z: 1 }, '#3498db');
+                // Ramp & Sniper Perch
+                addWhiteboxNode('ramp', { x: -7, y: 1.5, z: -5 }, { x: 2, y: 2.5, z: 4 }, '#9b59b6');
+                addWhiteboxNode('cube', { x: -7, y: 3.0, z: -8 }, { x: 4, y: 0.5, z: 4 }, '#9b59b6');
+                // Perimeter Walls
+                addWhiteboxNode('wall', { x: 0, y: 2.5, z: 10 }, { x: 20, y: 4, z: 0.5 }, '#8c96a0');
+                addWhiteboxNode('wall', { x: 0, y: 2.5, z: -10 }, { x: 20, y: 4, z: 0.5 }, '#8c96a0');
+            } 
+            else if (preset === 'parkour') {
+                addWhiteboxNode('spawn', { x: -8, y: 1.2, z: 0 });
+                addWhiteboxNode('cube', { x: -8, y: 0.5, z: 0 }, { x: 3, y: 1, z: 3 }, '#2ecc71');
+                
+                // Jump Platforms
+                addWhiteboxNode('cube', { x: -4, y: 1.5, z: 0 }, { x: 2, y: 1, z: 2 }, '#e67e22');
+                addWhiteboxNode('cube', { x: 0, y: 2.5, z: 1 }, { x: 2, y: 1, z: 2 }, '#3498db');
+                addWhiteboxNode('stairs', { x: 4, y: 3.5, z: -1 }, { x: 2, y: 3, z: 3 }, '#9b59b6');
+                addWhiteboxNode('cylinder', { x: 8, y: 5.0, z: 0 }, { x: 2, y: 6, z: 2 }, '#f1c40f');
+                addWhiteboxNode('cube', { x: 12, y: 7.0, z: 0 }, { x: 4, y: 1, z: 4 }, '#2ecc71');
+            }
+            else if (preset === 'dungeon') {
+                // Room 1
+                addWhiteboxNode('cube', { x: -6, y: 0, z: 0 }, { x: 8, y: 0.4, z: 8 }, '#485058');
+                addWhiteboxNode('spawn', { x: -6, y: 1.2, z: 0 });
+                // Corridor
+                addWhiteboxNode('cube', { x: 0, y: 0, z: 0 }, { x: 4, y: 0.4, z: 3 }, '#485058');
+                // Room 2
+                addWhiteboxNode('cube', { x: 6, y: 0, z: 0 }, { x: 8, y: 0.4, z: 8 }, '#485058');
+                addWhiteboxNode('cube', { x: 6, y: 1.5, z: 0 }, { x: 2, y: 2, z: 2 }, '#e74c3c'); // Treasure box
+            }
+        }
+
+        function generateGodot4TSCN() {
+            let tscn = `[gd_scene load_steps=3 format=3 uid="uid://${Math.random().toString(36).substring(2)}"]\n\n`;
+
+            tscn += `[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]\n`;
+            tscn += `sky_top_color = Color(0.385, 0.454, 0.55, 1)\n`;
+            tscn += `sky_horizon_color = Color(0.646, 0.656, 0.67, 1)\n\n`;
+
+            tscn += `[sub_resource type="Sky" id="Sky_1"]\n`;
+            tscn += `sky_material = SubResource("ProceduralSkyMaterial_1")\n\n`;
+
+            tscn += `[sub_resource type="Environment" id="Environment_1"]\n`;
+            tscn += `background_mode = 2\n`;
+            tscn += `sky = SubResource("Sky_1")\n`;
+            tscn += `tonemap_mode = 2\n`;
+            tscn += `ssao_enabled = true\n`;
+            tscn += `sdfgi_enabled = true\n\n`;
+
+            // Root Node
+            tscn += `[node name="WhiteboxLevel" type="Node3D"]\n\n`;
+
+            // World Environment & Directional Light
+            tscn += `[node name="WorldEnvironment" type="WorldEnvironment" parent="."]\n`;
+            tscn += `environment = SubResource("Environment_1")\n\n`;
+
+            tscn += `[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]\n`;
+            tscn += `transform = Transform3D(0.866, -0.353, 0.353, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 15, 0)\n`;
+            tscn += `shadow_enabled = true\n\n`;
+
+            // Generate CSG Nodes for each whitebox element
+            state.nodes.forEach((node, index) => {
+                const nodeName = node.name.replace(/\s+/g, '_');
+                const radY = THREE.MathUtils.degToRad(node.rotationY);
+                const cos = Math.cos(radY).toFixed(3);
+                const sin = Math.sin(radY).toFixed(3);
+
+                // Convert hex color to Godot Color(r,g,b,a)
+                const c = new THREE.Color(node.color);
+                const godotColor = `Color(${c.r.toFixed(3)}, ${c.g.toFixed(3)}, ${c.b.toFixed(3)}, 1)`;
+
+                if (node.type === 'cube' || node.type === 'wall' || node.type === 'stairs' || node.type === 'ramp') {
+                    tscn += `[node name="${nodeName}" type="CSGBox3D" parent="."]\n`;
+                    tscn += `transform = Transform3D(${cos}, 0, ${sin}, 0, 1, 0, -${sin}, 0, ${cos}, ${node.position.x}, ${node.position.y}, ${node.position.z})\n`;
+                    tscn += `size = Vector3(${node.size.x}, ${node.size.y}, ${node.size.z})\n`;
+                    tscn += `use_collision = ${node.useCollision}\n`;
+                    tscn += `operation = ${node.csgOperation}\n\n`;
+                } else if (node.type === 'cylinder') {
+                    tscn += `[node name="${nodeName}" type="CSGCylinder3D" parent="."]\n`;
+                    tscn += `transform = Transform3D(${cos}, 0, ${sin}, 0, 1, 0, -${sin}, 0, ${cos}, ${node.position.x}, ${node.position.y}, ${node.position.z})\n`;
+                    tscn += `radius = ${(node.size.x / 2).toFixed(2)}\n`;
+                    tscn += `height = ${node.size.y}\n`;
+                    tscn += `use_collision = ${node.useCollision}\n\n`;
+                } else if (node.type === 'spawn') {
+                    tscn += `[node name="${nodeName}" type="Marker3D" parent="."]\n`;
+                    tscn += `transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, ${node.position.x}, ${node.position.y}, ${node.position.z})\n\n`;
+                }
+            });
+
+            return tscn;
+        }
+
+        function generateGDScriptCode() {
+            let script = `# =========================================================\n`;
+            script += `# Godot 4 程序化白盒加载脚本 (GDScript 2.0)\n`;
+            script += `# 自动放置 CSG 几何体并开启碰撞结构\n`;
+            script += `# =========================================================\n`;
+            script += `@tool\n`;
+            script += `extends Node3D\n\n`;
+
+            script += `func _ready() -> void:\n`;
+            script += `\tbuild_whitebox_level()\n\n`;
+
+            script += `func build_whitebox_level() -> void:\n`;
+            script += `\t# 清空现有子节点\n`;
+            script += `\tfor child in get_children():\n`;
+            script += `\t\tchild.queue_free()\n\n`;
+
+            state.nodes.forEach((node, i) => {
+                const c = new THREE.Color(node.color);
+                script += `\t# Node: ${node.name}\n`;
+                if (node.type === 'cylinder') {
+                    script += `\tvar node_${i} = CSGCylinder3D.new()\n`;
+                    script += `\tnode_${i}.radius = ${(node.size.x / 2).toFixed(2)}\n`;
+                    script += `\tnode_${i}.height = ${node.size.y}\n`;
+                } else if (node.type === 'spawn') {
+                    script += `\tvar node_${i} = Marker3D.new()\n`;
+                } else {
+                    script += `\tvar node_${i} = CSGBox3D.new()\n`;
+                    script += `\tnode_${i}.size = Vector3(${node.size.x}, ${node.size.y}, ${node.size.z})\n`;
+                }
+
+                script += `\tnode_${i}.name = "${node.name}"\n`;
+                script += `\tnode_${i}.position = Vector3(${node.position.x}, ${node.position.y}, ${node.position.z})\n`;
+                script += `\tnode_${i}.rotation_degrees.y = ${node.rotationY}\n`;
+                if (node.type !== 'spawn') {
+                    script += `\tnode_${i}.use_collision = ${node.useCollision ? 'true' : 'false'}\n`;
+                }
+                script += `\tadd_child(node_${i})\n\n`;
+            });
+
+            return script;
+        }
+
+        function setupUIEventListeners() {
+            // Palette Rendering
+            const paletteContainer = document.getElementById('colorPalette');
+            PALETTE_COLORS.forEach((col, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-7 h-7 rounded-full border-2 ${idx === 0 ? 'border-white scale-110' : 'border-transparent'} transition hover:scale-105`;
+                btn.style.backgroundColor = col.hex;
+                btn.title = col.name;
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#colorPalette button').forEach(b => b.classList.replace('border-white', 'border-transparent'));
+                    btn.classList.replace('border-transparent', 'border-white');
+                    state.selectedColor = col.hex;
+                });
+                paletteContainer.appendChild(btn);
+            });
+
+            // Tool Switchers
+            document.getElementById('toolAdd').addEventListener('click', () => {
+                state.currentTool = 'add';
+                document.getElementById('toolAdd').className = "tool-btn active p-2 rounded bg-godot-accent text-white flex items-center justify-center space-x-1.5 text-xs transition";
+                document.getElementById('toolSelect').className = "tool-btn p-2 rounded bg-godot-panel hover:bg-godot-active text-gray-300 flex items-center justify-center space-x-1.5 text-xs transition";
+                selectNode(null);
+            });
+
+            document.getElementById('toolSelect').addEventListener('click', () => {
+                state.currentTool = 'select';
+                document.getElementById('toolSelect').className = "tool-btn active p-2 rounded bg-godot-accent text-white flex items-center justify-center space-x-1.5 text-xs transition";
+                document.getElementById('toolAdd').className = "tool-btn p-2 rounded bg-godot-panel hover:bg-godot-active text-gray-300 flex items-center justify-center space-x-1.5 text-xs transition";
+                placementPreviewMesh.visible = false;
+            });
+
+            // Snap Buttons
+            document.querySelectorAll('.snap-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.snap-btn').forEach(b => {
+                        b.classList.remove('active', 'bg-godot-accent', 'text-white');
+                        b.classList.add('bg-godot-panel', 'text-gray-300');
+                    });
+                    btn.classList.add('active', 'bg-godot-accent', 'text-white');
+                    btn.classList.remove('bg-godot-panel', 'text-gray-300');
+                    state.snapSize = parseFloat(btn.dataset.snap);
+                    document.getElementById('snapValueText').textContent = state.snapSize + ' m';
+                });
+            });
+
+            // Primitive Cards
+            document.querySelectorAll('.primitive-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.primitive-card').forEach(c => c.classList.remove('border-godot-accent', 'active-card'));
+                    card.classList.add('border-godot-accent', 'active-card');
+                    state.selectedPrimitive = card.dataset.primitive;
+                    updatePreviewMeshGeometry();
+                });
+            });
+
+            // Mode Toggle Buttons
+            document.getElementById('modeEditBtn').addEventListener('click', () => togglePlayMode(false));
+            document.getElementById('modePlayBtn').addEventListener('click', () => togglePlayMode(true));
+
+            // Inspector inputs change listeners
+            ['inspectorName', 'propPosX', 'propPosY', 'propPosZ', 'propSizeX', 'propSizeY', 'propSizeZ', 'propRotY', 'propCollision', 'propCsgOperation'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateSelectedNodeFromUI);
+            });
+
+            document.getElementById('deleteNodeBtn').addEventListener('click', deleteSelectedNode);
+            document.getElementById('duplicateNodeBtn').addEventListener('click', duplicateSelectedNode);
+            document.getElementById('clearAllBtn').addEventListener('click', clearAllNodes);
+
+            // Preset Dropdown
+            document.getElementById('presetSelect').addEventListener('change', (e) => {
+                loadPreset(e.target.value);
+                e.target.selectedIndex = 0;
+            });
+
+            // Export Modal Trigger
+            document.getElementById('exportTscnBtn').addEventListener('click', () => {
+                const code = generateGodot4TSCN();
+                document.getElementById('exportModalTitle').textContent = "导出 Godot 4 3D 场景 (.tscn)";
+                document.getElementById('exportTextarea').value = code;
+                document.getElementById('exportModal').classList.remove('hidden');
+            });
+
+            document.getElementById('exportGdscriptBtn').addEventListener('click', () => {
+                const code = generateGDScriptCode();
+                document.getElementById('exportModalTitle').textContent = "导出 GDScript 程序化构建脚本 (.gd)";
+                document.getElementById('exportTextarea').value = code;
+                document.getElementById('exportModal').classList.remove('hidden');
+            });
+
+            document.getElementById('closeModalBtn').addEventListener('click', () => {
+                document.getElementById('exportModal').classList.add('hidden');
+            });
+
+            document.getElementById('copyExportBtn').addEventListener('click', () => {
+                const textarea = document.getElementById('exportTextarea');
+                textarea.select();
+                navigator.clipboard.writeText(textarea.value);
+                const btn = document.getElementById('copyExportBtn');
+                btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i><span>已复制!</span>`;
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa-solid fa-copy"></i><span>复制代码</span>`;
+                }, 2000);
+            });
+
+            document.getElementById('downloadExportBtn').addEventListener('click', () => {
+                const code = document.getElementById('exportTextarea').value;
+                const isTscn = document.getElementById('exportModalTitle').textContent.includes('.tscn');
+                const filename = isTscn ? 'whitebox_level.tscn' : 'whitebox_builder.gd';
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvasContainer');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+            prevTime = time;
+
+            if (state.mode === 'play') {
+                updateFPSPhysics(delta);
+            } else {
+                controls.update();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize on DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            initThree();
+            setupUIEventListeners();
+            // Load default preset
+            loadPreset('arena');
+        });
+    </script>
+</body>
+</html>
