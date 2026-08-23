@@ -4,7 +4,7 @@ source: "https://www.youtube.com/watch?v=b9-xbjKvUXw"
 author:
   - "[[Letta Corporation]]"
 published: 2025-05-11
-created: 2026-07-12
+created: 2026-08-20
 description: "My Game Development Courses:Create a Complete 2D Endless Runner Game In Godot 4: https://www.udemy.com/course/how-to-create-games-with-godot-4-3-for-beginners/?couponCode=MAY-2025-12.99Learn to Crea"
 tags:
   - "clippings"
