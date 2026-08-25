@@ -1,3 +1,4 @@
+Addons #simple card/simple card pile ui
 # **🎮 Godot Resource Bank & Development Notes**
 
 歡迎來到 **Artbank \- Godot 專案資源庫**！本倉庫整理了各種 Godot 4 的遊戲機制原型、Shader 視覺效果、工具套件、音效 UI 範例以及個人開發筆記。
