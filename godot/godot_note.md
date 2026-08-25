@@ -325,7 +325,7 @@ func _scroll():
 卡通着色（Toon shading）,菲涅尔效应（Fresnel）,roughness=0,toon,抖动輪廓
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
-## 2d/3d 地圖
+## 2d/3d map 地圖
 ```
 通过不同颜色定义不同的场景逻辑与规则 (白,黑,绿,红)
 **白色：可通行区域，角色可在该空间内自由移动。 ;黑/藍色：物理阻挡区，定义角色无法进入的碰撞边界。;绿色：前景遮挡层，营造镂空与前后空间层次感。;红色：定义场景的出入口。
@@ -344,6 +344,12 @@ func _scroll():
 ```
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%BA%E6%99%AF%E9%80%BB%E8%BE%91%E9%A2%9C%E8%89%B2%E7%BC%96%E7%A0%81%E8%AE%BE%E8%AE%A1%E6%8C%87%E5%8D%97.png" width="300" height="300"></img>
 
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%B0%E5%9C%96%E8%A8%AD%E8%A8%88%E5%8F%83%E8%80%83%E5%9C%96%20(1).png
+
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E5%9C%B0%E5%9C%96%E8%A8%AD%E8%A8%88%E5%8F%83%E8%80%83%E5%9C%96%20(2).png
+"></img>
+
+"></img>
 ### UI
 UI 与 3D 元素的结合<br>
 UI:Ipad/iphone show setting/音效/粒子/字體<br>
