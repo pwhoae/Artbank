@@ -288,6 +288,7 @@ gpuparticle(process material)>cpuparticle
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
 ```
 ## 2d/3d map 地圖
+unity插件:Easy Build System
 1. 地編:2d原圖>轉3d 刨解+貼紙指引+房子四視圖
 2. 場景要找：中世界/熱帶島/紐約/地鐵
 3. csg:operation,union,subtraction
