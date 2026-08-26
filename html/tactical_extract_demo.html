@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>战术搜刮：逃离猎犬 (Tactical Extract: Hound Hunt)</title>
+    <style>
+        :root {
+            --bg-dark: #0f1318;
+            --bg-card: #18202a;
+            --bg-accent: #222d3b;
+            --primary-color: #3b82f6;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --success-color: #10b981;
+            --purple-color: #a855f7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 1000px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            background-color: var(--bg-accent);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .title-group h1 {
+            font-size: 20px;
+            color: #fff;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-group .badge {
+            font-size: 11px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+
+        /* Status Bar */
+        .status-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .stat-value.ap { color: #38bdf8; }
+        .stat-value.hp { color: #f87171; }
+        .stat-value.res { color: #fbbf24; }
+
+        .buff-tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Main Content Layout */
+        .main-content {
+            display: flex;
+            padding: 24px;
+            gap: 24px;
+        }
+
+        /* Board Styling */
+        .board-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .grid-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 8px;
+            width: 450px;
+            height: 450px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .cell {
+            background-color: var(--bg-accent);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cell:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .cell.player {
+            box-shadow: inset 0 0 0 2px var(--primary-color);
+            background-color: rgba(59, 130, 246, 0.15);
+        }
+
+        .cell.hound {
+            border-color: var(--danger-color);
+            background-color: rgba(239, 68, 68, 0.15);
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .cell.boss {
+            border-color: var(--purple-color);
+            background-color: rgba(168, 85, 247, 0.15);
+        }
+
+        .cell.extract {
+            border-color: var(--success-color);
+            background-color: rgba(16, 185, 129, 0.15);
+        }
+
+        .cell-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Controls Side Panel */
+        .side-panel {
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel-block {
+            background-color: var(--bg-accent);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Action Buttons Grid */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 180px;
+            margin: 0 auto 12px auto;
+        }
+
+        .btn-dir {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-dir:hover:not(:disabled) {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-dir:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-action:hover:not(:disabled) {
+            background-color: #2a374a;
+            border-color: var(--primary-color);
+        }
+
+        .btn-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-action.btn-danger {
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .btn-action.btn-danger:hover:not(:disabled) {
+            background-color: rgba(239, 68, 68, 0.2);
+            border-color: var(--danger-color);
+        }
+
+        .btn-action.btn-success {
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .btn-action.btn-success:hover:not(:disabled) {
+            background-color: rgba(16, 185, 129, 0.2);
+            border-color: var(--success-color);
+        }
+
+        /* Log Panel */
+        .log-container {
+            height: 140px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-family: monospace;
+        }
+
+        .log-entry {
+            line-height: 1.4;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .log-entry.warn { color: var(--warning-color); }
+        .log-entry.danger { color: var(--danger-color); }
+        .log-entry.success { color: var(--success-color); }
+        .log-entry.system { color: var(--primary-color); }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 400px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .modal-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .btn-restart {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-restart:hover {
+            opacity: 0.9;
+        }
+
+        /* Status Badge Indicators */
+        .status-badge {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .bg-red { background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid var(--danger-color); }
+        .bg-green { background-color: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid var(--success-color); }
+
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- Top Header -->
+    <div class="header-bar">
+        <div class="title-group">
+            <h1>战术搜刮：逃离猎犬 <span class="badge">Demo v1.0</span></h1>
+        </div>
+        <div class="status-container">
+            <div class="stat-box">
+                <span class="stat-label">剩余步数 (AP)</span>
+                <span class="stat-value ap" id="stat-ap">30</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">生命值 (HP)</span>
+                <span class="stat-value hp" id="stat-hp">100/100</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">核心资源</span>
+                <span class="stat-value res" id="stat-res">0/3</span>
+            </div>
+            <div class="buff-tag" id="buff-display">
+                <span>⚡</span> <span id="buff-name">加载中...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Area -->
+    <div class="main-content">
+        <!-- Grid Board -->
+        <div class="board-wrapper">
+            <div class="grid-board" id="grid-board"></div>
+        </div>
+
+        <!-- Controls Side Panel -->
+        <div class="side-panel">
+            <!-- Movement Controls -->
+            <div class="panel-block">
+                <div class="panel-title">移动控制 <span style="font-size: 10px; color: var(--text-muted);">(消耗 1 AP)</span></div>
+                <div class="controls-grid">
+                    <div></div>
+                    <button class="btn-dir" onclick="movePlayer(0, -1)">▲</button>
+                    <div></div>
+                    <button class="btn-dir" onclick="movePlayer(-1, 0)">◄</button>
+                    <button class="btn-dir" style="font-size:12px; color:var(--text-muted);" disabled>●</button>
+                    <button class="btn-dir" onclick="movePlayer(1, 0)">►</button>
+                    <div></div>
+                    <button class="btn-dir" onclick="movePlayer(0, 1)">▼</button>
+                    <div></div>
+                </div>
+            </div>
+
+            <!-- Context Actions -->
+            <div class="panel-block">
+                <div class="panel-title">当前格交互</div>
+                <button class="btn-action" id="btn-loot" onclick="lootChest()" disabled>
+                    <span>📦 搜刮宝箱</span>
+                    <span style="font-size:11px; opacity:0.8;">消耗 1 AP</span>
+                </button>
+                <button class="btn-action btn-danger" id="btn-hound" onclick="interactHound()" disabled>
+                    <span id="label-hound-action">🐕‍🦺 击退猎犬</span>
+                    <span id="badge-hound-count" class="status-badge bg-red">需击退 (0/3)</span>
+                </button>
+                <button class="btn-action btn-danger" id="btn-boss" onclick="killBoss()" disabled>
+                    <span>⚔️ 挑战常规 Boss</span>
+                    <span style="font-size:11px; opacity:0.8;">高风险</span>
+                </button>
+                <button class="btn-action btn-success" id="btn-extract" onclick="triggerExtract()" disabled>
+                    <span>🚁 申请撤离</span>
+                    <span style="font-size:11px; opacity:0.8;">通关</span>
+                </button>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="panel-block" style="flex: 1;">
+                <div class="panel-title">行动日志</div>
+                <div class="log-container" id="log-container"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Game Over / Victory Modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-title" id="modal-title">撤离成功！</div>
+        <div class="modal-desc" id="modal-desc">你成功带出了所有核心资源并安全撤离。</div>
+        <button class="btn-restart" onclick="initGame()">再次开局</button>
+    </div>
+</div>
+
+<script>
+    // Game State
+    const GRID_SIZE = 6;
+    let gameState = {
+        ap: 30,
+        hp: 100,
+        maxHp: 100,
+        resources: 0,
+        requiredResources: 3,
+        houndEncounters: 0,
+        houndSpawned: false,
+        houndKilled: false,
+        bossKilled: false,
+        buff: null,
+        playerPos: { x: 0, y: 0 },
+        houndPos: null,
+        bossPos: { x: 4, y: 4 },
+        randomExtractPos: null,
+        chests: [],
+        gameOver: false
+    };
+
+    const BUFFS = [
+        { name: "轻装上阵", desc: "初始 AP +10，但受击伤害提升", apply: () => { gameState.ap += 10; } },
+        { name: "战利品雷达", desc: "初始获取 1 个核心资源", apply: () => { gameState.resources += 1; } },
+        { name: "旧伤复发 (Debuff)", desc: "初始 HP -20", apply: () => { gameState.hp -= 20; } },
+        { name: "迷雾困扰 (Debuff)", desc: "初始 AP -5", apply: () => { gameState.ap -= 5; } }
+    ];
+
+    // Initialize Game
+    function initGame() {
+        gameState = {
+            ap: 30,
+            hp: 100,
+            maxHp: 100,
+            resources: 0,
+            requiredResources: 3,
+            houndEncounters: 0,
+            houndSpawned: false,
+            houndKilled: false,
+            bossKilled: false,
+            buff: BUFFS[Math.floor(Math.random() * BUFFS.length)],
+            playerPos: { x: 0, y: 0 },
+            houndPos: null,
+            bossPos: { x: 4, y: 4 },
+            randomExtractPos: { x: 5, y: 5 },
+            chests: [
+                { x: 1, y: 0, searched: false },
+                { x: 2, y: 3, searched: false },
+                { x: 0, y: 5, searched: false },
+                { x: 5, y: 1, searched: false },
+                { x: 3, y: 4, searched: false }
+            ],
+            gameOver: false
+        };
+
+        // Apply Buff
+        gameState.buff.apply();
+
+        // UI Reset
+        document.getElementById('modal-overlay').classList.remove('active');
+        document.getElementById('log-container').innerHTML = '';
+        
+        log(`游戏开始！获得效果【${gameState.buff.name}】: ${gameState.buff.desc}`, 'system');
+        log('目标: 搜刮3个核心资源触发猎犬，并寻找撤离路径。', 'system');
+
+        updateUI();
+        renderBoard();
+    }
+
+    // Render Grid
+    function renderBoard() {
+        const board = document.getElementById('grid-board');
+        board.innerHTML = '';
+
+        for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                let icon = '';
+                let label = '';
+
+                // Check Player
+                if (gameState.playerPos.x === x && gameState.playerPos.y === y) {
+                    cell.classList.add('player');
+                    icon = '🏃';
+                    label = '玩家';
+                } 
+                // Check Hound
+                else if (gameState.houndSpawned && !gameState.houndKilled && gameState.houndPos.x === x && gameState.houndPos.y === y) {
+                    cell.classList.add('hound');
+                    icon = '🐕‍🦺';
+                    label = '猎犬';
+                }
+                // Check Boss
+                else if (!gameState.bossKilled && gameState.bossPos.x === x && gameState.bossPos.y === y) {
+                    cell.classList.add('boss');
+                    icon = '🦹';
+                    label = '常规Boss';
+                }
+                // Check Random Extract Point
+                else if (gameState.randomExtractPos.x === x && gameState.randomExtractPos.y === y) {
+                    cell.classList.add('extract');
+                    icon = '🚁';
+                    label = '偶遇撤离';
+                }
+                // Check Chests
+                else {
+                    const chest = gameState.chests.find(c => c.x === x && c.y === y);
+                    if (chest) {
+                        icon = chest.searched ? '📦' : '🎁';
+                        label = chest.searched ? '已搜刮' : '物资箱';
+                    }
+                }
+
+                cell.innerHTML = `<span>${icon}</span><span class="cell-label">${label}</span>`;
+                cell.onclick = () => handleCellClick(x, y);
+                board.appendChild(cell);
+            }
+        }
+    }
+
+    // Handle Direct Cell Clicks (Move towards adjacent)
+    function handleCellClick(x, y) {
+        if (gameState.gameOver) return;
+        const dx = x - gameState.playerPos.x;
+        const dy = y - gameState.playerPos.y;
+
+        // Only allow moving 1 cardinally adjacent step
+        if ((Math.abs(dx) === 1 && dy === 0) || (Math.abs(dy) === 1 && dx === 0)) {
+            movePlayer(dx, dy);
+        }
+    }
+
+    // Move Player Logic
+    function movePlayer(dx, dy) {
+        if (gameState.gameOver) return;
+        if (gameState.ap <= 0) {
+            log('AP 步数已用尽！无法移动！', 'danger');
+            checkGameOver();
+            return;
+        }
+
+        const newX = gameState.playerPos.x + dx;
+        const newY = gameState.playerPos.y + dy;
+
+        if (newX >= 0 && newX < GRID_SIZE && newY >= 0 && newY < GRID_SIZE) {
+            gameState.playerPos.x = newX;
+            gameState.playerPos.y = newY;
+            gameState.ap--;
+
+            log(`移动至 (${newX}, ${newY})，消耗 1 AP`);
+
+            // Move Hound if spawned
+            updateHoundAI();
+
+            // Check Environmental Encounter
+            checkEncounter();
+
+            updateUI();
+            renderBoard();
+            checkGameOver();
+        }
+    }
+
+    // Hound AI logic
+    function updateHoundAI() {
+        if (!gameState.houndSpawned || gameState.houndKilled) return;
+
+        // Hound moves towards player
+        const hx = gameState.houndPos.x;
+        const hy = gameState.houndPos.y;
+        const px = gameState.playerPos.x;
+        const py = gameState.playerPos.y;
+
+        if (hx < px) gameState.houndPos.x++;
+        else if (hx > px) gameState.houndPos.x--;
+        else if (hy < py) gameState.houndPos.y++;
+        else if (hy > py) gameState.houndPos.y--;
+
+        log(`🐕‍🦺 猎犬向你逼近！当前位置 (${gameState.houndPos.x}, ${gameState.houndPos.y})`, 'warn');
+
+        // Check Hound Attack
+        if (gameState.houndPos.x === px && gameState.houndPos.y === py) {
+            const dmg = 20;
+            gameState.hp -= dmg;
+            log(`💥 遭遇猎犬突袭！受到 ${dmg} 点伤害！`, 'danger');
+        }
+    }
+
+    // Check Context Interaction Opportunities
+    function checkEncounter() {
+        const px = gameState.playerPos.x;
+        const py = gameState.playerPos.y;
+
+        // Boss tile check
+        if (!gameState.bossKilled && px === gameState.bossPos.x && py === gameState.bossPos.y) {
+            log('⚠️ 进入常规 Boss 警戒区！可选择进行挑战。', 'warn');
+        }
+    }
+
+    // Loot Chest
+    function lootChest() {
+        if (gameState.gameOver || gameState.ap <= 0) return;
+
+        const chest = gameState.chests.find(c => c.x === gameState.playerPos.x && c.y === gameState.playerPos.y);
+        if (chest) {
+            gameState.ap--;
+            
+            // Allow re-looting after searched with reduced chance or simple refresh logic
+            if (!chest.searched) {
+                chest.searched = true;
+                gameState.resources++;
+                log(`✨ 成功搜刮箱子！获得 1 个核心资源（当前: ${gameState.resources}/${gameState.requiredResources}）`, 'success');
+            } else {
+                // Non-one-time looting: 50% chance to get resource again
+                if (Math.random() > 0.5) {
+                    gameState.resources++;
+                    log(`✨ 折返重搜成功！额外获得 1 个核心资源（当前: ${gameState.resources}/${gameState.requiredResources}）`, 'success');
+                } else {
+                    log(`📦 箱子已被洗劫一空，仅找到些许补给 (+5 HP)`, 'warn');
+                    gameState.hp = Math.min(gameState.maxHp, gameState.hp + 5);
+                }
+            }
+
+            // Trigger Hound Event Threshold
+            if (gameState.resources >= gameState.requiredResources && !gameState.houndSpawned) {
+                spawnHound();
+            }
+
+            updateUI();
+            renderBoard();
+            checkGameOver();
+        }
+    }
+
+    // Spawn Hound Event
+    function spawnHound() {
+        gameState.houndSpawned = true;
+        // Spawn hound at opposite side
+        gameState.houndPos = { 
+            x: (gameState.playerPos.x + 3) % GRID_SIZE, 
+            y: (gameState.playerPos.y + 3) % GRID_SIZE 
+        };
+        log(`🚨 警告：搜刮高价值资源触发警报！【猎犬 Boss】已降临地图！`, 'danger');
+    }
+
+    // Interact with Hound (Repel / Kill)
+    function interactHound() {
+        if (gameState.gameOver) return;
+
+        gameState.ap--;
+        gameState.houndEncounters++;
+
+        if (gameState.houndEncounters < 4) {
+            // Repel Hound
+            log(`🛡️ 使用弹药强制击退猎犬！猎犬后退 2 格。(击退次数: ${gameState.houndEncounters}/3)`, 'warn');
+            // Knockback logic
+            gameState.houndPos.x = Math.min(GRID_SIZE - 1, Math.max(0, gameState.houndPos.x + 2));
+            gameState.houndPos.y = Math.min(GRID_SIZE - 1, Math.max(0, gameState.houndPos.y + 2));
+        } else {
+            // Kill Hound
+            gameState.houndKilled = true;
+            log(`⚔️ 成功击杀猎犬 Boss！解锁【猎犬 Boss 撤离通道】！`, 'success');
+        }
+
+        updateUI();
+        renderBoard();
+    }
+
+    // Battle Normal Boss
+    function killBoss() {
+        if (gameState.gameOver || gameState.ap <= 0) return;
+
+        gameState.ap -= 2;
+        const dmg = 35;
+        gameState.hp -= dmg;
+
+        if (gameState.hp > 0) {
+            gameState.bossKilled = true;
+            log(`⚔️ 经过惨烈战斗击杀常规 Boss！受创 ${dmg} HP。已解锁【常规 Boss 撤离通道】！`, 'success');
+        }
+
+        updateUI();
+        renderBoard();
+        checkGameOver();
+    }
+
+    // Trigger Extraction
+    function triggerExtract() {
+        if (gameState.gameOver) return;
+
+        const px = gameState.playerPos.x;
+        const py = gameState.playerPos.y;
+
+        let method = "";
+        if (gameState.houndKilled) {
+            method = "击杀猎犬 Boss 撤离";
+        } else if (gameState.bossKilled && px === gameState.bossPos.x && py === gameState.bossPos.y) {
+            method = "击杀常规 Boss 撤离";
+        } else if (px === gameState.randomExtractPos.x && py === gameState.randomExtractPos.y) {
+            method = "偶遇撤离点撤离";
+        }
+
+        if (method) {
+            endGame(true, `撤离成功！完成途径：【${method}】`);
+        }
+    }
+
+    // Check Fail / Game Over State
+    function checkGameOver() {
+        if (gameState.hp <= 0) {
+            endGame(false, '生命值归零，你在地牢中阵亡！');
+        } else if (gameState.ap <= 0) {
+            endGame(false, '步数耗尽，你未能及时撤离，被迷雾与敌群淹没！');
+        }
+    }
+
+    // End Game Modal Trigger
+    function endGame(isVictory, message) {
+        gameState.gameOver = true;
+        const modal = document.getElementById('modal-overlay');
+        const title = document.getElementById('modal-title');
+        const desc = document.getElementById('modal-desc');
+
+        if (isVictory) {
+            title.innerText = "🏆 成功撤离！";
+            title.style.color = "var(--success-color)";
+        } else {
+            title.innerText = "💀 任务失败";
+            title.style.color = "var(--danger-color)";
+        }
+
+        desc.innerText = message;
+        modal.classList.add('active');
+    }
+
+    // Update UI States
+    function updateUI() {
+        document.getElementById('stat-ap').innerText = gameState.ap;
+        document.getElementById('stat-hp').innerText = `${gameState.hp}/${gameState.maxHp}`;
+        document.getElementById('stat-res').innerText = `${gameState.resources}/${gameState.requiredResources}`;
+        document.getElementById('buff-name').innerText = gameState.buff ? gameState.buff.name : "无";
+
+        const px = gameState.playerPos.x;
+        const py = gameState.playerPos.y;
+
+        // Chest Interaction Button
+        const currentChest = gameState.chests.find(c => c.x === px && c.y === py);
+        document.getElementById('btn-loot').disabled = !currentChest;
+
+        // Hound Interaction Button
+        const onHound = gameState.houndSpawned && !gameState.houndKilled && (gameState.houndPos.x === px && gameState.houndPos.y === py);
+        const houndBtn = document.getElementById('btn-hound');
+        const houndLabel = document.getElementById('label-hound-action');
+        const houndBadge = document.getElementById('badge-hound-count');
+
+        houndBtn.disabled = !onHound;
+        if (gameState.houndEncounters >= 3) {
+            houndLabel.innerText = "⚔️ 击杀猎犬 Boss";
+            houndBadge.innerText = "解锁击杀";
+            houndBadge.className = "status-badge bg-green";
+        } else {
+            houndLabel.innerText = "🐕‍🦺 击退猎犬";
+            houndBadge.innerText = `需击退 (${gameState.houndEncounters}/3)`;
+            houndBadge.className = "status-badge bg-red";
+        }
+
+        // Boss Interaction Button
+        const onBoss = !gameState.bossKilled && (gameState.bossPos.x === px && gameState.bossPos.y === py);
+        document.getElementById('btn-boss').disabled = !onBoss;
+
+        // Extract Interaction Button
+        const canExtractHound = gameState.houndKilled;
+        const canExtractBoss = gameState.bossKilled && onBoss;
+        const canExtractRandom = px === gameState.randomExtractPos.x && py === gameState.randomExtractPos.y;
+
+        document.getElementById('btn-extract').disabled = !(canExtractHound || canExtractBoss || canExtractRandom);
+    }
+
+    // Logger
+    function log(msg, type = '') {
+        const container = document.getElementById('log-container');
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.innerText = `> ${msg}`;
+        container.appendChild(entry);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // Keyboard Arrow Controls
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp' || e.key === 'w') movePlayer(0, -1);
+        if (e.key === 'ArrowDown' || e.key === 's') movePlayer(0, 1);
+        if (e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1, 0);
+        if (e.key === 'ArrowRight' || e.key === 'd') movePlayer(1, 0);
+    });
+
+    // Start on load
+    window.onload = initGame;
+</script>
+</body>
+</html>

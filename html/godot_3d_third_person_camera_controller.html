@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 3D 第三人稱攝影機控制器 (SpringArm3D + Alt鍵游標控制)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D visual preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        
+        /* Custom scrollbar for code viewer */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e2e; }
+        ::-webkit-scrollbar-thumb { background: #3b4252; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4c566a; }
+        
+        .pointer-lock-badge {
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Navigation / Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+                <i data-lucide="video" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-white flex items-center gap-2">
+                    Godot 3D 第三人稱攝影機控制器
+                    <span class="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full font-normal">Godot 4.x / 3.x</span>
+                </h1>
+                <p class="text-xs text-slate-400">滑鼠軌道旋轉 + SpringArm 彈簧臂 + Alt 鍵解鎖滑鼠游標</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button id="tab-preview-btn" onclick="switchTab('preview')" class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2 transition">
+                <i data-lucide="play-circle" class="w-4 h-4"></i> 互動模擬測試
+            </button>
+            <button id="tab-code-btn" onclick="switchTab('code')" class="px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-2 transition">
+                <i data-lucide="code" class="w-4 h-4"></i> GDScript 原始碼
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- ================= PREVIEW TAB ================= -->
+        <div id="tab-preview" class="flex-1 flex flex-col lg:flex-row w-full h-full relative overflow-hidden">
+            
+            <!-- 3D Viewport -->
+            <div class="flex-1 relative bg-slate-900 min-h-[450px] flex flex-col">
+                <div id="canvas-container" class="w-full flex-1 relative cursor-grab active:cursor-grabbing">
+                    
+                    <!-- HUD Overlay on Viewport -->
+                    <div class="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
+                        <div id="status-badge" class="pointer-lock-badge bg-slate-950/80 backdrop-blur border border-red-500/40 text-red-400 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 shadow-lg">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span id="status-text">滑鼠未鎖定 (點擊畫面或放開 Alt 鎖定)</span>
+                        </div>
+                        <div class="bg-slate-950/80 backdrop-blur border border-slate-800 text-slate-300 px-3 py-2 rounded-lg text-xs flex flex-col gap-1 shadow-lg">
+                            <div><span class="text-slate-500">俯仰角 (Pitch):</span> <span id="hud-pitch" class="font-mono font-semibold text-blue-400">0.0°</span></div>
+                            <div><span class="text-slate-500">偏航角 (Yaw):</span> <span id="hud-yaw" class="font-mono font-semibold text-blue-400">0.0°</span></div>
+                            <div><span class="text-slate-500">視角距離 (Zoom):</span> <span id="hud-dist" class="font-mono font-semibold text-blue-400">5.0m</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Overlay -->
+                    <div class="absolute bottom-4 left-4 right-4 z-10 pointer-events-none flex justify-center">
+                        <div class="bg-slate-950/85 backdrop-blur border border-slate-800 text-slate-200 px-4 py-2.5 rounded-xl text-xs flex flex-wrap items-center justify-center gap-4 shadow-xl">
+                            <span class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">左鍵點擊</kbd> 鎖定滑鼠</span>
+                            <span class="text-slate-700">|</span>
+                            <span class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">移動滑鼠</kbd> 旋轉攝影機</span>
+                            <span class="text-slate-700">|</span>
+                            <span class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 bg-blue-900/60 border border-blue-500/40 text-blue-300 rounded text-[10px] font-mono font-bold">按住 ALT</kbd> 釋放滑鼠游標</span>
+                            <span class="text-slate-700">|</span>
+                            <span class="flex items-center gap-1.5"><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-mono text-slate-300">滾輪</kbd> 縮放距離</span>
+                        </div>
+                    </div>
+
+                    <!-- Lock Mouse Overlay Center Hint -->
+                    <div id="click-to-lock-overlay" class="absolute inset-0 z-0 flex items-center justify-center bg-slate-950/30 backdrop-blur-[2px] transition-opacity">
+                        <div class="bg-slate-900/90 border border-blue-500/30 text-center p-6 rounded-2xl shadow-2xl max-w-sm pointer-events-none">
+                            <div class="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="mouse-pointer" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="font-bold text-white text-base mb-1">點擊以測試滑鼠控制</h3>
+                            <p class="text-xs text-slate-400 mb-3">按住 <span class="text-blue-400 font-mono font-bold">ALT 鍵</span> 可暫時釋放滑鼠移出視窗或點擊界面。</p>
+                            <span class="inline-block text-[11px] bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30">Click Anywhere to Capture</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Sidebar -->
+            <div class="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 p-5 flex flex-col gap-6 overflow-y-auto">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-200 mb-1 flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> 控制參數調整
+                    </h3>
+                    <p class="text-xs text-slate-400">這些參數對應 Godot 腳本中的 `@export` 變數</p>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Sensitivity -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">滑鼠靈敏度 (Sensitivity)</label>
+                            <span id="val-sens" class="font-mono text-blue-400">0.003</span>
+                        </div>
+                        <input type="range" id="param-sens" min="0.0005" max="0.01" step="0.0005" value="0.003" class="w-full accent-blue-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Min/Max Pitch -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">最小仰角 (Min Pitch)</label>
+                            <span id="val-min-pitch" class="font-mono text-blue-400">-60°</span>
+                        </div>
+                        <input type="range" id="param-min-pitch" min="-85" max="-10" step="5" value="-60" class="w-full accent-blue-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">最大仰角 (Max Pitch)</label>
+                            <span id="val-max-pitch" class="font-mono text-blue-400">75°</span>
+                        </div>
+                        <input type="range" id="param-max-pitch" min="10" max="85" step="5" value="75" class="w-full accent-blue-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Smoothness -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <label class="text-slate-300">平滑插值 (Lerp Weight)</label>
+                            <span id="val-smooth" class="font-mono text-blue-400">15.0</span>
+                        </div>
+                        <input type="range" id="param-smooth" min="2" max="30" step="1" value="15" class="w-full accent-blue-500 bg-slate-800 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Invert Y -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                        <label for="param-invert-y" class="text-xs text-slate-300 cursor-pointer">反轉 Y 軸 (Invert Y Axis)</label>
+                        <input type="checkbox" id="param-invert-y" class="w-4 h-4 text-blue-600 bg-slate-800 border-slate-700 rounded focus:ring-blue-500 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="mt-auto bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2 text-xs">
+                    <div class="font-medium text-slate-300 flex items-center gap-1.5">
+                        <i data-lucide="info" class="w-4 h-4 text-amber-400"></i> Alt 鍵機制說明
+                    </div>
+                    <p class="text-slate-400 leading-relaxed">
+                        在遊戲開發中，通常需要按下 <kbd class="px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-200">Alt</kbd> 顯示游標來操作裝備欄、地圖或 UI 功能。放開後自動重新捕捉滑鼠繼續旋轉攝影機。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CODE TAB ================= -->
+        <div id="tab-code" class="hidden flex-1 flex flex-col w-full h-full bg-slate-950 overflow-hidden">
+            
+            <!-- Code Bar Header -->
+            <div class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-md font-semibold">
+                        CameraPivot.gd
+                    </span>
+                    <span class="text-xs text-slate-400">Godot 4.x 推薦使用 (`SpringArm3D` + `Camera3D`)</span>
+                </div>
+                <button onclick="copyCode()" id="copy-btn" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg flex items-center gap-1.5 transition">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> 複製 GDScript 程式碼
+                </button>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-3 overflow-hidden">
+                <!-- GDScript Editor Area -->
+                <div class="lg:col-span-2 overflow-y-auto p-6 bg-slate-950 border-r border-slate-800/60">
+                    <pre><code id="gdscript-code" class="text-xs text-slate-300 leading-relaxed font-mono"># ==============================================================================
+# Godot 3D 第三人稱攝影機控制器 (SpringArm3D)
+# 挂載對象: 建議掛載於 CharacterBody3D 子節點的 Node3D (Pivot) 或 SpringArm3D 本身
+# ==============================================================================
+extends Node3D
+
+@export_group("Camera Sensitivity")
+## 滑鼠旋轉靈敏度
+@export var mouse_sensitivity: float = 0.0025
+## 上下仰角最小值 (Degrees)
+@export var min_pitch: float = -60.0
+## 上下仰角最大值 (Degrees)
+@export var max_pitch: float = 75.0
+## 反轉 Y 軸
+@export var invert_y: bool = false
+
+@export_group("Camera Distance / Zoom")
+## 滾輪縮放速度
+@export var zoom_speed: float = 0.5
+## 最小視角距離
+@export var min_zoom: float = 1.5
+## 最大視角距離
+@export var max_zoom: float = 10.0
+## 縮放與旋轉平滑插值速度
+@export var smoothness: float = 15.0
+
+@export_group("Mouse Capture Controls")
+## 是否啟用 Alt 鍵釋放滑鼠功能
+@export var enable_alt_release: bool = true
+
+# 內部狀態變數
+var pitch: float = 0.0
+var yaw: float = 0.0
+var target_zoom: float = 5.0
+var is_mouse_captured: bool = true
+
+@onready var spring_arm: SpringArm3D = $SpringArm3D if has_node("SpringArm3D") else null
+
+func _ready() -> void:
+	# 遊戲開始時鎖定並隱藏滑鼠游標
+	capture_mouse(true)
+	
+	# 如果有 SpringArm3D，讀取初始長度
+	if spring_arm:
+		target_zoom = spring_arm.spring_length
+		# 避免攝影機被玩家自己的碰撞體擋住 (請依據需求調整類型)
+		spring_arm.add_excluded_object(get_parent().get_rid())
+
+func _unhandled_input(event: InputEvent) -> void:
+	# 1. 處理 Alt 鍵解鎖 / 恢復滑鼠控制
+	if enable_alt_release and event is InputEventKey:
+		if event.keycode == KEY_ALT:
+			if event.is_pressed() and not event.is_echo():
+				# 按下 Alt -> 釋放滑鼠游標
+				capture_mouse(false)
+			elif event.is_released():
+				# 放開 Alt -> 重新捕捉滑鼠
+				capture_mouse(true)
+
+	# 2. 如果滑鼠未鎖定，不處理攝影機旋轉
+	if not is_mouse_captured:
+		# 允許玩家點擊畫面重新鎖定滑鼠
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed():
+			capture_mouse(true)
+		return
+
+	# 3. 滑鼠移動 -> 控制角度 (Pitch & Yaw)
+	if event is InputEventMouseMotion:
+		var dir_y = -1.0 if invert_y else 1.0
+		yaw -= event.relative.x * mouse_sensitivity
+		pitch -= event.relative.y * mouse_sensitivity * dir_y
+		
+		# 限制 Pitch 上下俯仰角度，避免翻轉攝影機
+		pitch = clamp(pitch, deg_to_rad(min_pitch), deg_to_rad(max_pitch))
+
+	# 4. 滑鼠滾輪 -> 縮放視角距離 (Zoom)
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.is_pressed():
+			target_zoom = max(min_zoom, target_zoom - zoom_speed)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.is_pressed():
+			target_zoom = min(max_zoom, target_zoom + zoom_speed)
+
+func _process(delta: float) -> void:
+	# 平滑應用旋轉 (Lerp)
+	rotation.y = lerp_angle(rotation.y, yaw, delta * smoothness)
+	rotation.x = lerp_angle(rotation.x, pitch, delta * smoothness)
+
+	# 平滑縮放 SpringArm3D 彈簧臂長度
+	if spring_arm:
+		spring_arm.spring_length = lerp(spring_arm.spring_length, target_zoom, delta * smoothness)
+
+## 切換滑鼠鎖定模式
+func capture_mouse(captured: bool) -> void:
+	is_mouse_captured = captured
+	if captured:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+</code></pre>
+                </div>
+
+                <!-- Setup Guide Side Panel -->
+                <div class="p-6 bg-slate-900 border-t lg:border-t-0 border-slate-800 flex flex-col gap-6 overflow-y-auto">
+                    <div>
+                        <h3 class="font-bold text-sm text-white mb-2 flex items-center gap-2">
+                            <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i> Godot 節點結構設置 (Node Hierarchy)
+                        </h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-3">
+                            在 Godot 3D 專案中，請依照以下結構層級配置 CharacterBody3D 與攝影機：
+                        </p>
+
+                        <!-- Node Tree Diagram -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs space-y-1.5 text-slate-300">
+                            <div class="flex items-center gap-2 text-amber-400 font-semibold">
+                                <span>🤖 CharacterBody3D</span> <span class="text-[10px] text-slate-500">(Player角色主體)</span>
+                            </div>
+                            <div class="pl-4 flex items-center gap-2 text-slate-400">
+                                ├── <span>🧱 CollisionShape3D</span>
+                            </div>
+                            <div class="pl-4 flex items-center gap-2 text-slate-400">
+                                ├── <span>🎨 MeshInstance3D</span>
+                            </div>
+                            <div class="pl-4 flex items-center gap-2 text-blue-400 font-semibold">
+                                └── <span>🎯 CameraPivot (Node3D)</span> <span class="text-[10px] text-blue-300/70">← 挂載本 GDScript</span>
+                            </div>
+                            <div class="pl-9 flex items-center gap-2 text-emerald-400">
+                                └── <span>🏹 SpringArm3D</span>
+                            </div>
+                            <div class="pl-14 flex items-center gap-2 text-purple-400">
+                                └── <span>📷 Camera3D</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 border-t border-slate-800 pt-4">
+                        <h4 class="text-xs font-semibold text-slate-200">💡 設定重點提示：</h4>
+                        <ul class="text-xs text-slate-400 space-y-2 list-disc pl-4 leading-relaxed">
+                            <li><strong class="text-slate-200">SpringArm3D 作用：</strong>自動檢測地形/牆壁碰撞，當視角後方有牆時會自動縮短距離，防止攝影機穿牆。</li>
+                            <li><strong class="text-slate-200">Camera3D 位置：</strong>將 Camera3D 設為 SpringArm3D 的子節點，且將 Camera3D 的 Transform 歸零 (`Position (0, 0, 0)`)。</li>
+                            <li><strong class="text-slate-200">SpringArm 偏移量：</strong>可調整 SpringArm3D 的 <code class="text-blue-300">Position.y</code> (如 1.5m) 作為人頭高度的旋轉中心點。</li>
+                            <li><strong class="text-slate-200">Godot 3.x 語法差異：</strong>若使用 Godot 3，請將 `@export` 改為 `export`，`@onready` 改為 `onready`。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tab) {
+            const previewTab = document.getElementById('tab-preview');
+            const codeTab = document.getElementById('tab-code');
+            const previewBtn = document.getElementById('tab-preview-btn');
+            const codeBtn = document.getElementById('tab-code-btn');
+
+            if (tab === 'preview') {
+                previewTab.classList.remove('hidden');
+                codeTab.classList.add('hidden');
+                previewBtn.className = "px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2 transition";
+                codeBtn.className = "px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-2 transition";
+            } else {
+                previewTab.classList.add('hidden');
+                codeTab.classList.remove('hidden');
+                codeBtn.className = "px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-600/20 flex items-center gap-2 transition";
+                previewBtn.className = "px-4 py-2 text-sm font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center gap-2 transition";
+            }
+        }
+
+        // Copy Code feature
+        function copyCode() {
+            const codeText = document.getElementById('gdscript-code').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> 已複製 GDScript!`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = `<i data-lucide="copy" class="w-3.5 h-3.5"></i> 複製 GDScript 程式碼`;
+                    lucide.createIcons();
+                }, 2000);
+            });
+        }
+
+        // Three.js Simulation Variables
+        let scene, camera, renderer;
+        let playerGroup, pivotNode, cameraDistance = 5;
+        let targetYaw = 0, targetPitch = 0;
+        let currentYaw = 0, currentPitch = 0;
+        let isPointerLocked = false;
+        let isAltPressed = false;
+
+        // Interactive parameters
+        let sensitivity = 0.003;
+        let minPitchDeg = -60;
+        let maxPitchDeg = 75;
+        let lerpSmoothness = 15;
+        let invertY = false;
+
+        const container = document.getElementById('canvas-container');
+        const statusBadge = document.getElementById('status-badge');
+        const statusText = document.getElementById('status-text');
+        const clickOverlay = document.getElementById('click-to-lock-overlay');
+
+        function init3D() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.03);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(10, 20, 15);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // Floor Grid
+            const gridHelper = new THREE.GridHelper(40, 40, 0x3b82f6, 0x1e293b);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            // Floor Plane
+            const planeGeo = new THREE.PlaneGeometry(40, 40);
+            const planeMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.8 });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.receiveShadow = true;
+            scene.add(plane);
+
+            // Obstacle Box (To demonstrate SpringArm concept)
+            const boxGeo = new THREE.BoxGeometry(2, 3, 2);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            box.position.set(-3, 1.5, -4);
+            box.castShadow = true;
+            box.receiveShadow = true;
+            scene.add(box);
+
+            // Player Robot / Capsule
+            playerGroup = new THREE.Group();
+            
+            // Body Capsule
+            const bodyGeo = new THREE.CapsuleGeometry(0.5, 1.0, 8, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.3 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.0;
+            body.castShadow = true;
+            playerGroup.add(body);
+
+            // Robot Eyes / Face direction indicator
+            const eyeGeo = new THREE.BoxGeometry(0.4, 0.15, 0.2);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa });
+            const eyes = new THREE.Mesh(eyeGeo, eyeMat);
+            eyes.position.set(0, 1.3, 0.4);
+            playerGroup.add(eyes);
+
+            scene.add(playerGroup);
+
+            // Camera Pivot Node
+            pivotNode = new THREE.Group();
+            pivotNode.position.set(0, 1.5, 0); // Pivot height at head/chest level
+            playerGroup.add(pivotNode);
+
+            // Initial Camera Transform update
+            updateCameraPosition();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            setupInputListeners();
+            setupParamUI();
+        }
+
+        function setupInputListeners() {
+            // Click container to request pointer lock
+            container.addEventListener('click', () => {
+                if (!isPointerLocked && !isAltPressed) {
+                    container.requestPointerLock();
+                }
+            });
+
+            // Pointer lock state changes
+            document.addEventListener('pointerlockchange', () => {
+                if (document.pointerLockElement === container) {
+                    isPointerLocked = true;
+                    updateStatusUI(true, "滑鼠已鎖定 (控制攝影機中)");
+                } else {
+                    isPointerLocked = false;
+                    updateStatusUI(false, isAltPressed ? "Alt 鍵解鎖中 (游標自由移動)" : "滑鼠未鎖定 (點擊畫面鎖定)");
+                }
+            });
+
+            // Mouse Motion
+            document.addEventListener('mousemove', (e) => {
+                if (!isPointerLocked) return;
+
+                const dirY = invertY ? -1 : 1;
+                targetYaw -= e.movementX * sensitivity;
+                targetPitch -= e.movementY * sensitivity * dirY;
+
+                // Clamp Pitch Limits
+                const minRad = THREE.MathUtils.degToRad(minPitchDeg);
+                const maxRad = THREE.MathUtils.degToRad(maxPitchDeg);
+                targetPitch = Math.max(minRad, Math.min(maxRad, targetPitch));
+            });
+
+            // Mouse Zoom Wheel
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance += e.deltaY * 0.005;
+                cameraDistance = Math.max(1.5, Math.min(12, cameraDistance));
+            }, { passive: false });
+
+            // Keyboard Alt key logic
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Alt') {
+                    e.preventDefault();
+                    if (!isAltPressed) {
+                        isAltPressed = true;
+                        if (isPointerLocked) {
+                            document.exitPointerLock();
+                        }
+                    }
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'Alt') {
+                    isAltPressed = false;
+                    // Auto re-capture mouse when Alt released
+                    if (!isPointerLocked) {
+                        container.requestPointerLock();
+                    }
+                }
+            });
+        }
+
+        function updateStatusUI(locked, text) {
+            statusText.innerText = text;
+            if (locked) {
+                statusBadge.className = "pointer-lock-badge bg-slate-950/80 backdrop-blur border border-emerald-500/40 text-emerald-400 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 shadow-lg";
+                statusBadge.querySelector('span').className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                clickOverlay.classList.add('opacity-0', 'pointer-events-none');
+            } else {
+                statusBadge.className = "pointer-lock-badge bg-slate-950/80 backdrop-blur border border-red-500/40 text-red-400 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 shadow-lg";
+                statusBadge.querySelector('span').className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
+                clickOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function setupParamUI() {
+            document.getElementById('param-sens').addEventListener('input', (e) => {
+                sensitivity = parseFloat(e.target.value);
+                document.getElementById('val-sens').innerText = sensitivity.toFixed(4);
+            });
+            document.getElementById('param-min-pitch').addEventListener('input', (e) => {
+                minPitchDeg = parseInt(e.target.value);
+                document.getElementById('val-min-pitch').innerText = minPitchDeg + "°";
+            });
+            document.getElementById('param-max-pitch').addEventListener('input', (e) => {
+                maxPitchDeg = parseInt(e.target.value);
+                document.getElementById('val-max-pitch').innerText = maxPitchDeg + "°";
+            });
+            document.getElementById('param-smooth').addEventListener('input', (e) => {
+                lerpSmoothness = parseInt(e.target.value);
+                document.getElementById('val-smooth').innerText = lerpSmoothness.toFixed(1);
+            });
+            document.getElementById('param-invert-y').addEventListener('change', (e) => {
+                invertY = e.target.checked;
+            });
+        }
+
+        function onWindowResize() {
+            if (!container) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function updateCameraPosition() {
+            // Spherical coordinates calculation relative to Pivot
+            const cosPitch = Math.cos(currentPitch);
+            const sinPitch = Math.sin(currentPitch);
+            const cosYaw = Math.sin(currentYaw);
+            const sinYaw = Math.cos(currentYaw);
+
+            const x = cameraDistance * cosPitch * cosYaw;
+            const y = cameraDistance * sinPitch;
+            const z = cameraDistance * cosPitch * sinYaw;
+
+            const pivotWorldPos = new THREE.Vector3();
+            pivotNode.getWorldPosition(pivotWorldPos);
+
+            camera.position.set(
+                pivotWorldPos.x + x,
+                pivotWorldPos.y + y,
+                pivotWorldPos.z + z
+            );
+
+            camera.lookAt(pivotWorldPos);
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            
+            // Smooth Interpolation (Lerp)
+            const lerpFactor = Math.min(1.0, delta * lerpSmoothness);
+            currentYaw += (targetYaw - currentYaw) * lerpFactor;
+            currentPitch += (targetPitch - currentPitch) * lerpFactor;
+
+            updateCameraPosition();
+
+            // Update HUD values
+            document.getElementById('hud-pitch').innerText = THREE.MathUtils.radToDeg(currentPitch).toFixed(1) + "°";
+            document.getElementById('hud-yaw').innerText = THREE.MathUtils.radToDeg(currentYaw).toFixed(1) + "°";
+            document.getElementById('hud-dist').innerText = cameraDistance.toFixed(1) + "m";
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize icons & 3D loop on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            init3D();
+            animate();
+        });
+    </script>
+</body>
+</html>
