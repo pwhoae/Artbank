@@ -5,6 +5,7 @@ AnimChar Tools是一套基于AI的角色动画制作工具，希望能在动作�
 target user 形象>吉祥物 https://petdex.dev/ 
 Eagle(收費)/pixcall (收費)素材管理工具
 > 整合 2D/3D 美術資源、UI 設計靈感、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
+https://www.bilibili.com/toy/6AF4DstEm8VTOebm/index.html
 
 ## **📌 快速連結 (Quick Links)**
 
