@@ -26,6 +26,8 @@ wennie:會讓人不知不覺地被吸引到某個地方
 開發技巧
 1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
 2. 不要重复造轮子：合理利用引擎资源商;視差省MB,Low poly:[poly.pizza (Quaternius)]與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
+善用現成 Addons / Plugins（不要重複造輪子）
+
 3. 貼圖/复用与旋转角度增加變化:https://ambientcg.com/
 4. 地编參考:https://www.artstation.com/artwork/dyk3nQ
 5. 解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
