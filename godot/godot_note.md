@@ -26,7 +26,7 @@ wennie:會讓人不知不覺地被吸引到某個地方
 開發技巧
 1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
 2. 不要重复造轮子：合理利用引擎资源商;視差省MB,Low poly:[poly.pizza (Quaternius)]與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
-3. 貼圖:https://ambientcg.com/
+3. 貼圖/复用与旋转角度增加變化:https://ambientcg.com/
 4. 地编參考:https://www.artstation.com/artwork/dyk3nQ
 5. 解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
 ```
@@ -281,7 +281,14 @@ interface ItemFactory:
 **思考遊戲什麼需要camera展示/什麼時候用AE**
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8F%83%E8%80%83%E5%9C%96/%E5%BB%BA%E7%AF%89/%E5%BB%BA%E7%AF%89%E5%AD%B8%E7%BF%92%20(3).JPG" width="300" height="300"></img>
-建筑的核心目的是塑造“空”： 无论内部空间还是外部空间，“空”的部分才是人类真正使用和活动的场所。 
+建筑的核心目的是塑造“空”： 无论内部空间还是外部空间，“空”的部分才是人类真正使用和活动的场所。
+高宽比与压迫感： 街道越窄、两侧建筑越高，中间空间的压迫感越强。若无法展宽街道，需采用相应剖面设计解决。 
+退台手法 (Setback)：
+原理： 沿街行人抬头只能看到底层边缘，无法看到高层退进的部分。 
+MD
+效果： 在增加建筑面积的同时，保持街道地面的舒适尺度与开阔感（欧洲老城区高层建筑常用手法）。 
+MD
+
 
 ## 2d/3d 視覺與渲染設定
 ```
