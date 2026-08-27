@@ -278,8 +278,8 @@ interface ItemFactory:
 ### 美術
 **美術=為什麼喜歡這種東西>有梗**
 **思考遊戲什麼需要camera展示/什麼時候用AE**
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8F%83%E8%80%83%E5%9C%96/%E5%BB%BA%E7%AF%89/%E5%BB%BA%E7%AF%89%E5%AD%B8%E7%BF%92%20(3).JPG
-" width="300" height="300"></img>
+
+<img src="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8F%83%E8%80%83%E5%9C%96/%E5%BB%BA%E7%AF%89/%E5%BB%BA%E7%AF%89%E5%AD%B8%E7%BF%92%20(3).JPG" width="300" height="300"></img>
 
 ## 2d/3d 視覺與渲染設定
 ```
