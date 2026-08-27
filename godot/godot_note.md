@@ -281,6 +281,7 @@ interface ItemFactory:
 **思考遊戲什麼需要camera展示/什麼時候用AE**
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8F%83%E8%80%83%E5%9C%96/%E5%BB%BA%E7%AF%89/%E5%BB%BA%E7%AF%89%E5%AD%B8%E7%BF%92%20(3).JPG" width="300" height="300"></img>
+建筑的核心目的是塑造“空”： 无论内部空间还是外部空间，“空”的部分才是人类真正使用和活动的场所。 
 
 ## 2d/3d 視覺與渲染設定
 ```
