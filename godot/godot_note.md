@@ -28,7 +28,7 @@ wennie:會讓人不知不覺地被吸引到某個地方
 2. 不要重复造轮子：合理利用引擎资源商;視差省MB,Low poly:[poly.pizza (Quaternius)]與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
 善用現成 Addons / Plugins（不要重複造輪子）Panku Console：遊戲內即時控制台，可追蹤變數、執行命令，極度利於 Debug 與測試。 
 GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）。 
-
+如何逆向一个Godot游戏？:用GDRE 
 
 3. 貼圖/复用与旋转角度增加變化:https://ambientcg.com/
 4. 地编參考:https://www.artstation.com/artwork/dyk3nQ
