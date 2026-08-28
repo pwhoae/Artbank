@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Contribution GIF Generator</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Gifshot Library for client-side GIF creation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.3.2/gifshot.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars & grid styles */
+    ::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d1117;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #484f58;
+    }
+    
+    .grid-cell {
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    .grid-cell:hover {
+      transform: scale(1.25);
+      z-index: 10;
+    }
+    
+    .glow-effect {
+      box-shadow: 0 0 15px rgba(38, 166, 65, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-[#090d12] text-gray-100 font-sans min-h-screen flex flex-col antialiased selection:bg-green-500 selection:text-black">
+
+  <!-- 頁尾與標頭區 -->
+  <header class="border-b border-gray-800/80 bg-[#0d1117]/80 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-black font-extrabold shadow-lg shadow-green-500/20">
+          <i class="fa-brands fa-github text-lg text-gray-950"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            GitHub Contribution GIF Generator
+            <span class="text-[10px] uppercase font-mono tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-0.5 rounded-full">v2.0</span>
+          </h1>
+          <p class="text-xs text-gray-400 hidden sm:block">設計專屬的 GitHub 貢獻圖形，一鍵產生動態 GIF 橫幅展示於個人主頁！</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com" target="_blank" rel="noopener" class="text-xs text-gray-400 hover:text-white transition flex items-center gap-1.5 bg-gray-800/60 hover:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700/50">
+          <i class="fa-brands fa-github text-sm"></i> GitHub Profile
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要操作區域 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- 左側面板：編輯器與預覽 (8 列) -->
+      <section class="lg:col-span-8 flex flex-col gap-6">
+        
+        <!-- 網格繪圖畫布區 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-2xl relative overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-paintbrush text-green-400"></i> 貢獻網格編輯器 (7 × 52 週)
+            </h2>
+            <div class="flex items-center gap-3 text-xs text-gray-400">
+              <span class="flex items-center gap-1"><i class="fa-solid fa-hand-pointer text-gray-500"></i> 點擊 / 拖曳繪製</span>
+              <span class="flex items-center gap-1"><i class="fa-solid fa-keyboard text-gray-500"></i> 支援快捷操作</span>
+            </div>
+          </div>
+
+          <!-- GitHub 7x52 網格區域 -->
+          <div class="overflow-x-auto pb-2 custom-scrollbar">
+            <div class="inline-block min-w-full">
+              <!-- 月份標籤 -->
+              <div id="month-labels" class="flex text-[10px] font-mono text-gray-500 mb-1 pl-7 space-x-[22px]">
+                <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+                <span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+              </div>
+              
+              <div class="flex items-start gap-1.5">
+                <!-- 星期標籤 -->
+                <div class="flex flex-col text-[9px] font-mono text-gray-500 justify-between h-[100px] pt-0.5 select-none">
+                  <span>Mon</span>
+                  <span>Wed</span>
+                  <span>Fri</span>
+                </div>
+
+                <!-- 7 行 x 52 列動態生成網格 -->
+                <div id="grid-container" class="inline-grid grid-rows-7 grid-flow-col gap-[3px] bg-gray-950 p-3 rounded-lg border border-gray-800/80 shadow-inner">
+                  <!-- JS 會在這裡注入 364 個 (7x52) Cell -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 顏色選擇器與工具箱 -->
+          <div class="flex flex-wrap items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-800/80">
+            <div class="flex items-center space-x-3">
+              <span class="text-xs text-gray-400 font-medium">Commit 濃度:</span>
+              <div id="palette" class="flex items-center space-x-1.5 bg-gray-950 px-2.5 py-1.5 rounded-lg border border-gray-800">
+                <!-- JS 動態產生濃度調色盤 -->
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-shift-left" title="整體左移" class="px-2.5 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition border border-gray-700/50">
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+              <button id="btn-shift-right" title="整體右移" class="px-2.5 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition border border-gray-700/50">
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+              <button id="btn-invert" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition border border-gray-700/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-half-stroke text-yellow-400"></i> 反轉
+              </button>
+              <button id="btn-random" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition border border-gray-700/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-dice text-purple-400"></i> 隨機
+              </button>
+              <button id="btn-clear" class="px-3 py-1.5 text-xs bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 rounded-lg transition flex items-center gap-1.5">
+                <i class="fa-solid fa-trash-can"></i> 清空
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 動態預覽與導出區域 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-2xl">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-play text-green-400"></i> 實時動畫預覽 (GIF Canvas Preview)
+            </h2>
+            <span id="animation-status" class="text-xs px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 font-mono">
+              播放中...
+            </span>
+          </div>
+
+          <!-- 動畫畫布 (Canvas) -->
+          <div class="flex flex-col items-center justify-center bg-gray-950 p-6 rounded-xl border border-gray-800 shadow-inner relative min-h-[160px]">
+            <canvas id="preview-canvas" width="760" height="128" class="max-w-full h-auto rounded-lg border border-gray-800/60 shadow-lg bg-[#0d1117]"></canvas>
+            
+            <div class="mt-4 flex items-center gap-4 w-full max-w-lg">
+              <button id="btn-play-pause" class="p-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl transition border border-gray-700/50 flex items-center justify-center w-10 h-10 shrink-0">
+                <i class="fa-solid fa-pause text-sm" id="play-icon"></i>
+              </button>
+              <div class="flex-1">
+                <div class="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden border border-gray-700/50 cursor-pointer" id="progress-container">
+                  <div id="progress-bar" class="bg-gradient-to-r from-green-500 to-emerald-400 h-2.5 rounded-full w-0 transition-all duration-75"></div>
+                </div>
+              </div>
+              <span id="frame-counter" class="text-xs font-mono text-gray-400 shrink-0 min-w-[50px] text-right">0 / 0</span>
+            </div>
+          </div>
+
+          <!-- 導出按鈕與資訊 -->
+          <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+            <div class="text-xs text-gray-400 flex items-center gap-2">
+              <i class="fa-solid fa-circle-info text-blue-400 text-sm"></i> 
+              <span>提示: 導出的 GIF 檔可以直接嵌入 GitHub README 檔 (Markdown Syntax)。</span>
+            </div>
+            <button id="btn-export-gif" class="px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-bold rounded-xl shadow-lg shadow-green-500/20 transition hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 text-sm">
+              <i class="fa-solid fa-file-video text-base"></i> 產生並下載 GIF
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 右側面板：自訂文字、動畫設定與預設形狀 (4 列) -->
+      <section class="lg:col-span-4 flex flex-col gap-6">
+
+        <!-- 自訂文字形狀區塊 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-2xl">
+          <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-font text-green-400"></i> 自訂文字形狀 (Custom Text)
+          </h2>
+          <div class="space-y-3.5">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">輸入自訂文字 / 標籤</label>
+              <div class="flex gap-2">
+                <input type="text" id="input-custom-text" placeholder="例如: 2026, GITHUB" value="2026" maxlength="12" class="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-green-500 font-mono tracking-wider">
+                <button id="btn-apply-text" class="px-3.5 py-2 bg-green-600 hover:bg-green-500 text-black font-semibold rounded-lg text-xs transition flex items-center gap-1 shrink-0">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> 套用
+                </button>
+              </div>
+            </div>
+
+            <!-- 文字參數調整 -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label class="block text-[11px] text-gray-400 mb-1">字型風格</label>
+                <select id="select-text-font" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-green-500">
+                  <option value="sans-serif">無襯線 (Sans-Serif)</option>
+                  <option value="monospace">等寬字 (Monospace)</option>
+                  <option value="serif">襯線字 (Serif)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-gray-400 mb-1">字型大小 (px)</label>
+                <select id="select-text-size" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-green-500">
+                  <option value="5">小 (5px)</option>
+                  <option value="6" selected>中 (6px)</option>
+                  <option value="7">大 (7px)</option>
+                  <option value="8">特大 (8px)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                <span>水平 X 偏移</span>
+                <span id="val-text-xoffset" class="font-mono text-green-400">0 px</span>
+              </div>
+              <input type="range" id="input-text-xoffset" min="-10" max="10" step="1" value="0" class="w-full accent-green-500 bg-gray-800 rounded-lg h-1.5 cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+        <!-- 預設模板形狀 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-2xl">
+          <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-shapes text-green-400"></i> 快速載入圖形 (Templates)
+          </h2>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-template="heart" class="btn-template p-2.5 bg-gray-950/60 hover:bg-gray-800 border border-gray-800 rounded-lg text-xs font-medium text-left transition flex items-center gap-2 text-gray-300">
+              <i class="fa-solid fa-heart text-red-500"></i> 愛心 (Heart)
+            </button>
+            <button data-template="star" class="btn-template p-2.5 bg-gray-950/60 hover:bg-gray-800 border border-gray-800 rounded-lg text-xs font-medium text-left transition flex items-center gap-2 text-gray-300">
+              <i class="fa-solid fa-star text-yellow-400"></i> 星星 (Star)
+            </button>
+            <button data-template="text-hi" class="btn-template p-2.5 bg-gray-950/60 hover:bg-gray-800 border border-gray-800 rounded-lg text-xs font-medium text-left transition flex items-center gap-2 text-gray-300">
+              <i class="fa-solid fa-comment-dots text-blue-400"></i> 文字 "HI!"
+            </button>
+            <button data-template="text-aris" class="btn-template p-2.5 bg-gray-950/60 hover:bg-gray-800 border border-gray-800 rounded-lg text-xs font-medium text-left transition flex items-center gap-2 text-gray-300">
+              <i class="fa-solid fa-code text-purple-400"></i> 文字 "ARIS"
+            </button>
+            <button data-template="pacman" class="btn-template p-2.5 bg-gray-950/60 hover:bg-gray-800 border border-gray-800 rounded-lg text-xs font-medium text-left transition flex items-center gap-2 text-gray-300">
+              <i class="fa-solid fa-ghost text-amber-400"></i> 小精靈 (Pacman)
+            </button>
+            <button data-template="invader" class="btn-template p-2.5 bg-gray-950/60 hover:bg-gray-800 border border-gray-800 rounded-lg text-xs font-medium text-left transition flex items-center gap-2 text-gray-300">
+              <i class="fa-solid fa-space-shuttle text-green-400"></i> 太空入侵者
+            </button>
+          </div>
+        </div>
+
+        <!-- 動畫效果與效果設定 -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-2xl flex-1 space-y-4">
+          <h2 class="text-sm font-semibold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-green-400"></i> 動畫效果設定
+          </h2>
+
+          <!-- 動畫模式 -->
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">動畫入場效果</label>
+            <select id="select-effect" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-green-500">
+              <option value="scan">時間軸掃描 (Scanline Wave)</option>
+              <option value="draw">順序繪製 (Path Writing)</option>
+              <option value="fade">隨機點亮融合 (Matrix Fade)</option>
+              <option value="pulse">心跳脈衝登場 (Pulse Reveal)</option>
+              <option value="spiral">漩渦擴散 (Spiral Sweep)</option>
+            </select>
+          </div>
+
+          <!-- 色彩主題 -->
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">配色主題 (Theme Palette)</label>
+            <select id="select-theme" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-green-500">
+              <option value="github-green">GitHub 經典綠 (Standard Green)</option>
+              <option value="halloween">萬聖節金黃 (Halloween Fire)</option>
+              <option value="purple-haze">紫色幻影 (Purple Haze)</option>
+              <option value="ocean-blue">海洋蔚藍 (Ocean Blue)</option>
+              <option value="sunset-orange">夕陽暖橙 (Sunset Fire)</option>
+              <option value="cyberpunk">賽博朋克 (Cyberpunk Neon)</option>
+              <option value="monochrome">極簡黑白 (Monochrome)</option>
+            </select>
+          </div>
+
+          <!-- 播放速度 -->
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>動畫速度 (FPS)</span>
+              <span id="val-fps" class="font-mono text-green-400">12 fps</span>
+            </div>
+            <input type="range" id="input-fps" min="4" max="24" value="12" class="w-full accent-green-500 bg-gray-800 rounded-lg h-1.5 cursor-pointer">
+          </div>
+
+          <!-- 定格時間 -->
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>定格留存時間 (Hold Duration)</span>
+              <span id="val-hold" class="font-mono text-green-400">2.0 秒</span>
+            </div>
+            <input type="range" id="input-hold" min="0.5" max="5" step="0.5" value="2.0" class="w-full accent-green-500 bg-gray-800 rounded-lg h-1.5 cursor-pointer">
+          </div>
+
+          <!-- 顯示標籤選項 -->
+          <div class="pt-2 border-t border-gray-800 space-y-2">
+            <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" id="check-show-labels" checked class="rounded bg-gray-800 border-gray-700 text-green-500 focus:ring-0">
+              <span>包含月份與星期標籤 (Include Header Labels)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" id="check-dark-mode" checked class="rounded bg-gray-800 border-gray-700 text-green-500 focus:ring-0">
+              <span>深色背景 (#0d1117)</span>
+            </label>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 導出 Modal 視窗 -->
+  <div id="export-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl transform scale-95 transition-transform duration-300 relative text-center">
+      
+      <button id="btn-close-modal-top" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="w-12 h-12 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-wand-magic-sparkles" id="modal-icon"></i>
+      </div>
+
+      <h3 class="text-lg font-bold text-white mb-1" id="modal-title">正在生成 GIF 動畫...</h3>
+      <p class="text-xs text-gray-400 mb-5" id="modal-status-text">請稍候，系統正在逐張編碼繪製畫布影格...</p>
+
+      <!-- 進度條 -->
+      <div id="export-progress-wrapper" class="w-full bg-gray-950 rounded-full h-3 mb-4 overflow-hidden border border-gray-800 relative">
+        <div id="export-progress-bar" class="bg-gradient-to-r from-green-500 to-emerald-400 h-3 rounded-full w-0 transition-all duration-150"></div>
+      </div>
+
+      <!-- GIF 成果預覽區 -->
+      <div id="export-preview-container" class="hidden my-4 border border-gray-800 rounded-xl p-3 bg-gray-950 flex flex-col items-center justify-center">
+        <img id="export-gif-result" class="max-w-full rounded-lg border border-gray-800 shadow" alt="Generated GIF">
+        <p class="text-[11px] text-gray-500 mt-2 font-mono" id="gif-file-info"></p>
+      </div>
+
+      <!-- 導出 Modal 控制按鈕 -->
+      <div class="flex justify-center gap-3 mt-5">
+        <button id="btn-close-modal" class="px-5 py-2 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition font-medium">
+          關閉
+        </button>
+        <a id="btn-download-gif" href="#" download="github-contribution.gif" class="px-5 py-2 text-xs bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-black font-bold rounded-lg shadow-lg shadow-green-500/20 transition hidden items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> 下載 GIF 檔案
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /* JavaScript Core Application Logic */
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // --- Constants & Configs ---
+      const ROWS = 7; // Sunday to Saturday
+      const COLS = 52; // 52 Weeks
+      const TOTAL_CELLS = ROWS * COLS; // 364 cells
+
+      // Themes Color Palettes (Level 0, 1, 2, 3, 4)
+      const THEMES = {
+        'github-green': ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
+        'halloween':    ['#161b22', '#631c03', '#bd561d', '#fa7a1e', '#fdd835'],
+        'purple-haze':  ['#161b22', '#381a51', '#6b21a8', '#a855f7', '#e9d5ff'],
+        'ocean-blue':   ['#161b22', '#003847', '#006884', '#00a8cc', '#80f3ff'],
+        'sunset-orange':['#161b22', '#4a121a', '#8c1d2c', '#e63946', '#ffb703'],
+        'cyberpunk':    ['#11111b', '#1a0033', '#7000ff', '#ff0055', '#00ffcc'],
+        'monochrome':   ['#161b22', '#30363d', '#6e7681', '#8b949e', '#f0f6fc']
+      };
+
+      // App State
+      let gridState = new Array(TOTAL_CELLS).fill(0); // Level 0-4 for each cell
+      let selectedLevel = 4; // Default draw intensity level
+      let isMouseDown = false;
+
+      // Animation State
+      let isPlaying = true;
+      let currentFrame = 0;
+      let totalFrames = 60;
+      let animInterval = null;
+      let fps = 12;
+      let holdSeconds = 2.0;
+      let currentTheme = 'github-green';
+      let currentEffect = 'scan';
+      let showLabels = true;
+      let isDarkMode = true;
+
+      // Text Generator State
+      let textXOffset = 0;
+
+      // DOM Elements
+      const gridContainer = document.getElementById('grid-container');
+      const paletteContainer = document.getElementById('palette');
+      const previewCanvas = document.getElementById('preview-canvas');
+      const ctx = previewCanvas.getContext('2d');
+      const progressBar = document.getElementById('progress-bar');
+      const frameCounter = document.getElementById('frame-counter');
+      const btnPlayPause = document.getElementById('btn-play-pause');
+      const playIcon = document.getElementById('play-icon');
+      const selectEffect = document.getElementById('select-effect');
+      const selectTheme = document.getElementById('select-theme');
+      const inputFps = document.getElementById('input-fps');
+      const valFps = document.getElementById('val-fps');
+      const inputHold = document.getElementById('input-hold');
+      const valHold = document.getElementById('val-hold');
+      const checkShowLabels = document.getElementById('check-show-labels');
+      const checkDarkMode = document.getElementById('check-dark-mode');
+
+      // Initialize Palette
+      function initPalette() {
+        paletteContainer.innerHTML = '';
+        const colors = THEMES[currentTheme];
+        colors.forEach((color, level) => {
+          const btn = document.createElement('button');
+          btn.className = `w-5 h-5 rounded-md border transition flex items-center justify-center ${level === selectedLevel ? 'border-white scale-110 shadow' : 'border-transparent opacity-80 hover:opacity-100'}`;
+          btn.style.backgroundColor = color;
+          btn.title = `Commit Level ${level}`;
+          btn.addEventListener('click', () => {
+            selectedLevel = level;
+            initPalette();
+          });
+          paletteContainer.appendChild(btn);
+        });
+      }
+
+      // Initialize Grid Cells
+      function initGrid() {
+        gridContainer.innerHTML = '';
+        const colors = THEMES[currentTheme];
+        
+        for (let col = 0; col < COLS; col++) {
+          for (let row = 0; row < ROWS; row++) {
+            const index = col * ROWS + row;
+            const cell = document.createElement('div');
+            cell.className = 'w-[11px] h-[11px] rounded-[2px] cursor-pointer grid-cell border border-black/20';
+            cell.dataset.index = index;
+            cell.style.backgroundColor = colors[gridState[index]];
+
+            cell.addEventListener('mousedown', (e) => {
+              isMouseDown = true;
+              setCellLevel(index, selectedLevel);
+            });
+
+            cell.addEventListener('mouseenter', () => {
+              if (isMouseDown) {
+                setCellLevel(index, selectedLevel);
+              }
+            });
+
+            gridContainer.appendChild(cell);
+          }
+        }
+      }
+
+      function updateGridUI() {
+        const colors = THEMES[currentTheme];
+        const cells = gridContainer.children;
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+          if (cells[i]) {
+            cells[i].style.backgroundColor = colors[gridState[i]];
+          }
+        }
+      }
+
+      function setCellLevel(index, level) {
+        gridState[index] = level;
+        const colors = THEMES[currentTheme];
+        if (gridContainer.children[index]) {
+          gridContainer.children[index].style.backgroundColor = colors[level];
+        }
+        triggerAnimationUpdate();
+      }
+
+      document.addEventListener('mouseup', () => { isMouseDown = false; });
+
+      // Preset Templates Mapping
+      const TEMPLATES = {
+        'heart': [
+          "0000000000000000000000000000000000000000000000000000",
+          "0000000001110001110000000000000000011100011100000000",
+          "0000000011111011111000000000000000111110111110000000",
+          "0000000011111111111000000000000000111111111110000000",
+          "0000000001111111110000000000000000011111111100000000",
+          "0000000000111111100000000000000000001111111000000000",
+          "0000000000001110000000000000000000000011100000000000"
+        ],
+        'star': [
+          "0000000000000000000000000110000000000000000000000000",
+          "0000000000000000000000000110000000000000000000000000",
+          "0000000000000000001111111111111111000000000000000000",
+          "0000000000000000000111111111111100000000000000000000",
+          "0000000000000000000011111111110000000000000000000000",
+          "0000000000000000000111001100111000000000000000000000",
+          "0000000000000000001100000000001100000000000000000000"
+        ],
+        'pacman': [
+          "0000000000001111100000000000000000000000000000000000",
+          "0000000000111111111000000000000000000000000000000000",
+          "0000000001111011111100000003300033000330000000000000",
+          "0000000001111111100000000000000000000000000000000000",
+          "0000000001111111111100000003300033000330000000000000",
+          "0000000000111111111000000000000000000000000000000000",
+          "0000000000001111100000000000000000000000000000000000"
+        ],
+        'invader': [
+          "0000000000000000000000110000110000000000000000000000",
+          "0000000000000000000000011111100000000000000000000000",
+          "0000000000000000000000111111110000000000000000000000",
+          "0000000000000000000011100110011100000000000000000000",
+          "0000000000000000000111111111111110000000000000000000",
+          "0000000000000000000001100000011000000000000000000000",
+          "0000000000000000000011000000001100000000000000000000"
+        ]
+      };
+
+      function loadTemplate(name) {
+        if (TEMPLATES[name]) {
+          gridState.fill(0);
+          const lines = TEMPLATES[name];
+          for (let row = 0; row < Math.min(ROWS, lines.length); row++) {
+            const line = lines[row];
+            for (let col = 0; col < Math.min(COLS, line.length); col++) {
+              const char = line[col];
+              if (char !== '0') {
+                const val = parseInt(char, 10);
+                gridState[col * ROWS + row] = isNaN(val) ? 4 : Math.min(4, val * 2);
+              }
+            }
+          }
+          updateGridUI();
+          triggerAnimationUpdate();
+        }
+      }
+
+      // Custom Text Generator onto Grid
+      function renderTextToGrid(text, font, sizePx, xOffset) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = COLS;
+        offscreen.height = ROWS;
+        const octx = offscreen.getContext('2d');
+
+        octx.fillStyle = '#000000';
+        octx.fillRect(0, 0, COLS, ROWS);
+
+        octx.fillStyle = '#ffffff';
+        octx.font = `bold ${sizePx}px ${font}`;
+        octx.textAlign = 'center';
+        octx.textBaseline = 'middle';
+
+        // Render Text centered
+        const centerX = (COLS / 2) + parseInt(xOffset, 10);
+        const centerY = ROWS / 2 + 0.5;
+        octx.fillText(text.toUpperCase(), centerX, centerY);
+
+        const imgData = octx.getImageData(0, 0, COLS, ROWS).data;
+        gridState.fill(0);
+
+        for (let col = 0; col < COLS; col++) {
+          for (let row = 0; row < ROWS; row++) {
+            const pixelIdx = (row * COLS + col) * 4;
+            const r = imgData[pixelIdx];
+            if (r > 30) {
+              // Convert brightness to Level 1..4
+              const level = Math.ceil((r / 255) * 4);
+              gridState[col * ROWS + row] = Math.min(4, Math.max(1, level));
+            }
+          }
+        }
+        updateGridUI();
+        triggerAnimationUpdate();
+      }
+
+      // Render Single Animation Frame to Canvas
+      function renderFrame(frameIdx) {
+        const colors = THEMES[currentTheme];
+        const darkBg = isDarkMode ? '#0d1117' : '#ffffff';
+        const borderColor = isDarkMode ? '#21262d' : '#e1e4e8';
+        const labelColor = isDarkMode ? '#8b949e' : '#57606a';
+
+        // Dimensions
+        const cellWidth = 10;
+        const cellGap = 3;
+        const headerHeight = showLabels ? 24 : 10;
+        const leftPadding = showLabels ? 28 : 10;
+        const totalW = leftPadding + COLS * (cellWidth + cellGap) + 10;
+        const totalH = headerHeight + ROWS * (cellWidth + cellGap) + 10;
+
+        previewCanvas.width = totalW * 2; // High DPI 2x
+        previewCanvas.height = totalH * 2;
+        previewCanvas.style.width = `${totalW}px`;
+        previewCanvas.style.height = `${totalH}px`;
+
+        ctx.save();
+        ctx.scale(2, 2);
+
+        // Background
+        ctx.fillStyle = darkBg;
+        ctx.fillRect(0, 0, totalW, totalH);
+
+        // Labels
+        if (showLabels) {
+          ctx.fillStyle = labelColor;
+          ctx.font = '9px Inter, sans-serif';
+          ctx.textBaseline = 'top';
+
+          // Month labels
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          months.forEach((m, idx) => {
+            const x = leftPadding + (idx * 4.33) * (cellWidth + cellGap);
+            ctx.fillText(m, x, 6);
+          });
+
+          // Weekday labels
+          ctx.textBaseline = 'middle';
+          const days = ['Mon', 'Wed', 'Fri'];
+          const dayRows = [1, 3, 5];
+          days.forEach((d, idx) => {
+            const y = headerHeight + dayRows[idx] * (cellWidth + cellGap) + cellWidth / 2;
+            ctx.fillText(d, 6, y);
+          });
+        }
+
+        // Calculate progress ratio
+        const totalBuildFrames = Math.max(10, totalFrames - Math.round(holdSeconds * fps));
+        let progress = Math.min(1.0, frameIdx / totalBuildFrames);
+
+        // Render Cells according to effect
+        for (let col = 0; col < COLS; col++) {
+          for (let row = 0; row < ROWS; row++) {
+            const cellIndex = col * ROWS + row;
+            const targetLevel = gridState[cellIndex];
+            let displayLevel = 0;
+
+            if (targetLevel > 0) {
+              if (currentEffect === 'scan') {
+                const colProgress = col / COLS;
+                if (progress >= colProgress) {
+                  displayLevel = targetLevel;
+                }
+              } else if (currentEffect === 'draw') {
+                const cellProgress = cellIndex / TOTAL_CELLS;
+                if (progress >= cellProgress) {
+                  displayLevel = targetLevel;
+                }
+              } else if (currentEffect === 'fade') {
+                // Pseudo random reveal
+                const hash = ((col * 13 + row * 37) % 100) / 100;
+                if (progress >= hash) {
+                  displayLevel = targetLevel;
+                }
+              } else if (currentEffect === 'pulse') {
+                // Distance from center
+                const centerCol = COLS / 2;
+                const centerRow = ROWS / 2;
+                const maxDist = Math.sqrt(centerCol * centerCol + centerRow * centerRow);
+                const dist = Math.sqrt((col - centerCol) ** 2 + (row - centerRow) ** 2);
+                if (progress >= (dist / maxDist)) {
+                  displayLevel = targetLevel;
+                }
+              } else if (currentEffect === 'spiral') {
+                // Distance ring sweep
+                const colNorm = Math.abs(col - COLS/2) / (COLS/2);
+                if (progress >= (1 - colNorm)) {
+                  displayLevel = targetLevel;
+                }
+              }
+            }
+
+            // Draw Cell
+            const x = leftPadding + col * (cellWidth + cellGap);
+            const y = headerHeight + row * (cellWidth + cellGap);
+
+            ctx.fillStyle = colors[displayLevel];
+            
+            // Rounded Rectangle
+            const r = 2;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + cellWidth - r, y);
+            ctx.quadraticCurveTo(x + cellWidth, y, x + cellWidth, y + r);
+            ctx.lineTo(x + cellWidth, y + cellWidth - r);
+            ctx.quadraticCurveTo(x + cellWidth, y + cellWidth, x + cellWidth - r, y + cellWidth);
+            ctx.lineTo(x + r, y + cellWidth);
+            ctx.quadraticCurveTo(x, y + cellWidth, x, y + cellWidth - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Border
+            if (displayLevel === 0) {
+              ctx.strokeStyle = borderColor;
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+
+        ctx.restore();
+      }
+
+      // Animation Loop
+      function triggerAnimationUpdate() {
+        const buildFrames = 30;
+        const holdFrames = Math.round(holdSeconds * fps);
+        totalFrames = buildFrames + holdFrames;
+        
+        if (currentFrame >= totalFrames) {
+          currentFrame = 0;
+        }
+      }
+
+      function startAnimation() {
+        if (animInterval) clearInterval(animInterval);
+        animInterval = setInterval(() => {
+          if (!isPlaying) return;
+          
+          renderFrame(currentFrame);
+          
+          // Update Timeline UI
+          const pct = (currentFrame / (totalFrames - 1)) * 100;
+          progressBar.style.width = `${pct}%`;
+          frameCounter.textContent = `${currentFrame + 1} / ${totalFrames}`;
+
+          currentFrame = (currentFrame + 1) % totalFrames;
+        }, 1000 / fps);
+      }
+
+      // Playback Controls
+      btnPlayPause.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        playIcon.className = isPlaying ? 'fa-solid fa-pause text-sm' : 'fa-solid fa-play text-sm';
+        document.getElementById('animation-status').textContent = isPlaying ? '播放中...' : '已暫停';
+        document.getElementById('animation-status').className = isPlaying 
+          ? 'text-xs px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 font-mono'
+          : 'text-xs px-2.5 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 font-mono';
+      });
+
+      document.getElementById('progress-container').addEventListener('click', (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+        currentFrame = Math.floor(ratio * (totalFrames - 1));
+        renderFrame(currentFrame);
+      });
+
+      // UI Controls Bindings
+      selectEffect.addEventListener('change', (e) => {
+        currentEffect = e.target.value;
+        currentFrame = 0;
+        triggerAnimationUpdate();
+      });
+
+      selectTheme.addEventListener('change', (e) => {
+        currentTheme = e.target.value;
+        initPalette();
+        updateGridUI();
+        triggerAnimationUpdate();
+      });
+
+      inputFps.addEventListener('input', (e) => {
+        fps = parseInt(e.target.value, 10);
+        valFps.textContent = `${fps} fps`;
+        triggerAnimationUpdate();
+        startAnimation();
+      });
+
+      inputHold.addEventListener('input', (e) => {
+        holdSeconds = parseFloat(e.target.value);
+        valHold.textContent = `${holdSeconds.toFixed(1)} 秒`;
+        triggerAnimationUpdate();
+      });
+
+      checkShowLabels.addEventListener('change', (e) => {
+        showLabels = e.target.checked;
+        renderFrame(currentFrame);
+      });
+
+      checkDarkMode.addEventListener('change', (e) => {
+        isDarkMode = e.target.checked;
+        renderFrame(currentFrame);
+      });
+
+      // Quick Tools
+      document.getElementById('btn-clear').addEventListener('click', () => {
+        gridState.fill(0);
+        updateGridUI();
+        triggerAnimationUpdate();
+      });
+
+      document.getElementById('btn-invert').addEventListener('click', () => {
+        gridState = gridState.map(val => val === 0 ? 4 : 0);
+        updateGridUI();
+        triggerAnimationUpdate();
+      });
+
+      document.getElementById('btn-random').addEventListener('click', () => {
+        gridState = gridState.map(() => Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 1 : 0);
+        updateGridUI();
+        triggerAnimationUpdate();
+      });
+
+      document.getElementById('btn-shift-left').addEventListener('click', () => {
+        const newGrid = new Array(TOTAL_CELLS).fill(0);
+        for (let col = 0; col < COLS - 1; col++) {
+          for (let row = 0; row < ROWS; row++) {
+            newGrid[col * ROWS + row] = gridState[(col + 1) * ROWS + row];
+          }
+        }
+        gridState = newGrid;
+        updateGridUI();
+        triggerAnimationUpdate();
+      });
+
+      document.getElementById('btn-shift-right').addEventListener('click', () => {
+        const newGrid = new Array(TOTAL_CELLS).fill(0);
+        for (let col = 1; col < COLS; col++) {
+          for (let row = 0; row < ROWS; row++) {
+            newGrid[col * ROWS + row] = gridState[(col - 1) * ROWS + row];
+          }
+        }
+        gridState = newGrid;
+        updateGridUI();
+        triggerAnimationUpdate();
+      });
+
+      // Template Buttons
+      document.querySelectorAll('.btn-template').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tmpl = btn.dataset.template;
+          if (tmpl === 'text-hi') {
+            renderTextToGrid('HI!', 'sans-serif', 7, 0);
+          } else if (tmpl === 'text-aris') {
+            renderTextToGrid('ARIS', 'monospace', 6, 0);
+          } else {
+            loadTemplate(tmpl);
+          }
+        });
+      });
+
+      // Text Input Apply
+      document.getElementById('btn-apply-text').addEventListener('click', () => {
+        const text = document.getElementById('input-custom-text').value.trim() || '2026';
+        const font = document.getElementById('select-text-font').value;
+        const size = document.getElementById('select-text-size').value;
+        const xOffset = document.getElementById('input-text-xoffset').value;
+        renderTextToGrid(text, font, size, xOffset);
+      });
+
+      document.getElementById('input-text-xoffset').addEventListener('input', (e) => {
+        document.getElementById('val-text-xoffset').textContent = `${e.target.value} px`;
+      });
+
+      // Export GIF Logic
+      const exportModal = document.getElementById('export-modal');
+      const btnExport = document.getElementById('btn-export-gif');
+      const btnCloseModal = document.getElementById('btn-close-modal');
+      const btnCloseModalTop = document.getElementById('btn-close-modal-top');
+      const exportProgressBar = document.getElementById('export-progress-bar');
+      const exportPreviewContainer = document.getElementById('export-preview-container');
+      const exportGifResult = document.getElementById('export-gif-result');
+      const btnDownloadGif = document.getElementById('btn-download-gif');
+      const modalTitle = document.getElementById('modal-title');
+      const modalStatusText = document.getElementById('modal-status-text');
+
+      function closeModal() {
+        exportModal.classList.add('opacity-0', 'pointer-events-none');
+        exportModal.classList.remove('opacity-100');
+      }
+
+      btnCloseModal.addEventListener('click', closeModal);
+      btnCloseModalTop.addEventListener('click', closeModal);
+
+      btnExport.addEventListener('click', () => {
+        // Show Modal
+        exportModal.classList.remove('opacity-0', 'pointer-events-none');
+        exportModal.classList.add('opacity-100');
+        
+        exportProgressBar.style.width = '0%';
+        exportPreviewContainer.classList.add('hidden');
+        btnDownloadGif.classList.add('hidden');
+        btnDownloadGif.classList.remove('flex');
+        
+        modalTitle.textContent = '正在生成 GIF 動畫...';
+        modalStatusText.textContent = '系統正在擷取畫布影格並處理圖層編碼...';
+
+        // Capture Frames as Data URLs
+        const frames = [];
+        const frameInterval = 1 / fps;
+
+        for (let f = 0; f < totalFrames; f++) {
+          renderFrame(f);
+          frames.push(previewCanvas.toDataURL('image/png'));
+        }
+
+        // Use Gifshot to compile GIF
+        gifshot.createGIF({
+          images: frames,
+          gifWidth: previewCanvas.width / 2,
+          gifHeight: previewCanvas.height / 2,
+          interval: frameInterval,
+          numFrames: frames.length,
+          progressCallback: (captureProgress) => {
+            const pct = Math.round(captureProgress * 100);
+            exportProgressBar.style.width = `${pct}%`;
+          }
+        }, function (obj) {
+          if (!obj.error) {
+            const animatedGIF = obj.image;
+            exportGifResult.src = animatedGIF;
+            btnDownloadGif.href = animatedGIF;
+
+            // Display file details
+            modalTitle.textContent = 'GIF 動畫生成成功！';
+            modalStatusText.textContent = '您可以直接複製下方圖片或點擊下載按鈕保存至電腦。';
+            
+            exportPreviewContainer.classList.remove('hidden');
+            btnDownloadGif.classList.remove('hidden');
+            btnDownloadGif.classList.add('flex');
+
+            document.getElementById('gif-file-info').textContent = 
+              `解析度: ${Math.round(previewCanvas.width / 2)}x${Math.round(previewCanvas.height / 2)}px | 總影格數: ${frames.length} | 速度: ${fps} FPS`;
+          } else {
+            modalTitle.textContent = '生成失敗';
+            modalStatusText.textContent = '發生錯誤: ' + obj.error;
+          }
+        });
+      });
+
+      // --- Initialization Bootstrapping ---
+      initPalette();
+      initGrid();
+      loadTemplate('heart'); // Load Heart by default
+      triggerAnimationUpdate();
+      startAnimation();
+
+    });
+  </script>
+</body>
+</html>

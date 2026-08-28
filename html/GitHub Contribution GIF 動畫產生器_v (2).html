@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub 貢獻圖形 GIF 產生器 (含貪吃蛇動畫)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- gif.js for rendering animated GIFs in browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+  <style>
+    .grid-cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      user-select: none;
+    }
+    .grid-cell:hover {
+      transform: scale(1.25);
+      z-index: 20;
+      box-shadow: 0 0 6px rgba(57, 211, 83, 0.6);
+    }
+    /* 自訂滾動條 */
+    ::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d1117;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #21262d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #30363d;
+    }
+    .snake-badge {
+      background: linear-gradient(135deg, #26a641 0%, #39d353 100%);
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-sans selection:bg-green-500 selection:text-black">
+
+  <!-- 頂部標題列 -->
+  <header class="border-b border-gray-800 bg-gray-900/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-green-500/10 rounded-xl border border-green-500/20 text-green-400">
+          <i class="fa-solid fa-staff-snake text-2xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">GitHub Commit GIF 動畫產生器</h1>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+              <i class="fa-solid fa-worm mr-1"></i>貪吃蛇新功能
+            </span>
+          </div>
+          <p class="text-xs text-gray-400">設計自訂貢獻圖形，支援「貪吃蛇漫遊吃圖」等多種動畫效果！</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <a href="https://github.com" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center gap-1.5 transition">
+          <i class="fa-brands fa-github"></i> Profile README
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 左側面板：編輯器與預覽 (8 列) -->
+    <section class="lg:col-span-8 flex flex-col gap-6">
+      
+      <!-- 網格繪圖畫布區 -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl relative overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-paintbrush text-green-400"></i> 貢獻網格編輯器 (7 × 52 週)
+          </h2>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-gray-400"><i class="fa-solid fa-hand-pointer text-gray-500 mr-1"></i> 提示: 按住滑鼠左鍵可連續繪製</span>
+          </div>
+        </div>
+
+        <!-- GitHub 7x52 網格區域 -->
+        <div class="overflow-x-auto pb-2">
+          <div id="grid-container" class="inline-grid grid-rows-7 grid-flow-col gap-[3px] bg-gray-950 p-4 rounded-lg border border-gray-800/80">
+            <!-- 由 JS 動態生成 364 個 (7x52) 網格細胞 -->
+          </div>
+        </div>
+
+        <!-- 顏色選擇器與工具箱 -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-800">
+          <div class="flex items-center space-x-3">
+            <span class="text-xs text-gray-400 font-medium">Commit 濃度畫筆:</span>
+            <div id="palette" class="flex items-center space-x-1.5">
+              <!-- JS 會生成顏色顆粒 -->
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-random" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-dice text-purple-400"></i> 隨機點陣
+            </button>
+            <button id="btn-invert" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-half-stroke text-amber-400"></i> 反轉顏色
+            </button>
+            <button id="btn-clear" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-red-900/40 hover:text-red-300 text-gray-300 rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-trash-can text-red-400"></i> 清空
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 動態預覽與導出區域 -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+            <i class="fa-solid fa-play text-green-400"></i> 實時動畫預覽 (GIF Preview)
+          </h2>
+          <span id="animation-status" class="text-xs px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> 播放中
+          </span>
+        </div>
+
+        <!-- 動畫畫布 (Canvas) -->
+        <div class="flex flex-col items-center justify-center bg-gray-950 p-6 rounded-lg border border-gray-800 min-h-[160px]">
+          <canvas id="preview-canvas" width="760" height="128" class="max-w-full h-auto rounded border border-gray-800/50 shadow-inner bg-gray-950"></canvas>
+          
+          <!-- 播放控制條 -->
+          <div class="mt-4 flex items-center gap-4 w-full max-w-md">
+            <button id="btn-play-pause" class="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition">
+              <i class="fa-solid fa-pause" id="play-icon"></i>
+            </button>
+            <div class="flex-1">
+              <div class="w-full bg-gray-800 rounded-full h-2 overflow-hidden cursor-pointer" id="progress-bar-container">
+                <div id="progress-bar" class="bg-green-500 h-2 rounded-full w-0 transition-all duration-75"></div>
+              </div>
+            </div>
+            <span id="frame-counter" class="text-xs font-mono text-gray-400 min-w-[50px] text-right">0 / 0</span>
+          </div>
+        </div>
+
+        <!-- 導出按鈕 -->
+        <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+          <div class="text-xs text-gray-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-blue-400"></i>
+            <span>動畫最後定格將完整展示您繪製的 shape 圖形！</span>
+          </div>
+          <button id="btn-export-gif" class="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-black font-bold rounded-lg shadow-lg shadow-green-600/20 transition flex items-center gap-2 text-sm">
+            <i class="fa-solid fa-file-video"></i> 產生並下載 GIF 動畫
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 右側面板：動畫設定與預設形狀 (4 列) -->
+    <section class="lg:col-span-4 flex flex-col gap-6">
+
+      <!-- 預設模板形狀 -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl">
+        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-shapes text-green-400"></i> 快速載入圖形 (Templates)
+        </h2>
+        <div class="grid grid-cols-2 gap-2">
+          <button data-template="heart" class="btn-template p-2.5 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-medium text-left transition flex items-center gap-2">
+            <i class="fa-solid fa-heart text-red-400"></i> 愛心 (Heart)
+          </button>
+          <button data-template="star" class="btn-template p-2.5 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-medium text-left transition flex items-center gap-2">
+            <i class="fa-solid fa-star text-yellow-400"></i> 星星 (Star)
+          </button>
+          <button data-template="text-hi" class="btn-template p-2.5 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-medium text-left transition flex items-center gap-2">
+            <i class="fa-solid fa-font text-blue-400"></i> 文字 "HI!"
+          </button>
+          <button data-template="text-aris" class="btn-template p-2.5 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-medium text-left transition flex items-center gap-2">
+            <i class="fa-solid fa-code text-purple-400"></i> 文字 "ARIS"
+          </button>
+          <button data-template="snake-art" class="btn-template p-2.5 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-medium text-left transition flex items-center gap-2">
+            <i class="fa-solid fa-staff-snake text-emerald-400"></i> 貪吃蛇圖騰
+          </button>
+          <button data-template="invader" class="btn-template p-2.5 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-medium text-left transition flex items-center gap-2">
+            <i class="fa-solid fa-ghost text-green-400"></i> 太空入侵者
+          </button>
+        </div>
+      </div>
+
+      <!-- 動畫效果與效果設定 -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-xl flex-1">
+        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-green-400"></i> 動畫效果與參數設定
+        </h2>
+
+        <div class="space-y-4">
+          <!-- 動畫模式選擇 -->
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1 flex items-center justify-between">
+              <span>動畫入場效果 (Effect)</span>
+              <span class="text-[10px] text-green-400 font-bold">✨ 新增貪吃蛇</span>
+            </label>
+            <select id="select-effect" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-green-500 font-medium">
+              <option value="snake" selected>🐍 貪吃蛇漫遊 (Snake Nibble - 吃出圖案)</option>
+              <option value="scan">⚡ 時間軸掃描 (Scanline Wave)</option>
+              <option value="draw">✍️ 路徑逐漸繪製 (Path Writing)</option>
+              <option value="fade">✨ 隨機點亮融合 (Matrix Fade)</option>
+              <option value="pulse">💗 心跳脈衝登場 (Pulse Reveal)</option>
+            </select>
+          </div>
+
+          <!-- 貪吃蛇專用設定 (動態隱顯) -->
+          <div id="snake-options-box" class="p-3 bg-green-950/30 border border-green-500/20 rounded-lg space-y-2">
+            <div class="text-[11px] text-green-400 font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 貪吃蛇效果說明
+            </div>
+            <p class="text-[11px] text-gray-300 leading-relaxed">
+              貪吃蛇將以 S 型路線穿梭於貢獻圖，沿途吃下並留存您所設定的圖案，最後昂首離開，留下璀璨圖騰！
+            </p>
+          </div>
+
+          <!-- 色彩主題 -->
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">配色主題 (Theme Palette)</label>
+            <select id="select-theme" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-green-500">
+              <option value="github-green">GitHub 經典綠 (Standard Green)</option>
+              <option value="cyber-neon">賽博霓虹 (Cyber Neon)</option>
+              <option value="purple-haze">紫色幻影 (Purple Haze)</option>
+              <option value="ocean-blue">海洋蔚藍 (Ocean Blue)</option>
+              <option value="sunset-orange">夕陽暖橙 (Sunset Fire)</option>
+            </select>
+          </div>
+
+          <!-- 播放速度 -->
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>動畫速度 (FPS)</span>
+              <span id="val-fps" class="font-mono text-green-400">14 fps</span>
+            </div>
+            <input type="range" id="input-fps" min="4" max="24" value="14" class="w-full accent-green-500 bg-gray-800 rounded-lg h-1.5 cursor-pointer">
+          </div>
+
+          <!-- 定格時間 -->
+          <div>
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>最後圖形保留時間 (Hold Time)</span>
+              <span id="val-hold" class="font-mono text-green-400">2.5 秒</span>
+            </div>
+            <input type="range" id="input-hold" min="0.5" max="5" step="0.5" value="2.5" class="w-full accent-green-500 bg-gray-800 rounded-lg h-1.5 cursor-pointer">
+          </div>
+
+          <!-- 底色模式 -->
+          <div class="pt-2 border-t border-gray-800">
+            <label class="flex items-center space-x-2 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" id="check-dark-mode" checked class="rounded bg-gray-800 border-gray-700 text-green-500 focus:ring-0">
+              <span>使用 GitHub 暗色背景 (#0d1117)</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 渲染生成 GIF 彈出層 Modal -->
+  <div id="modal-export" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl text-center relative">
+      <div class="mb-4">
+        <i class="fa-solid fa-spinner fa-spin text-4xl text-green-400 mb-3" id="export-spinner"></i>
+        <i class="fa-solid fa-circle-check text-4xl text-green-400 mb-3 hidden" id="export-success-icon"></i>
+        <h3 id="export-title" class="text-lg font-bold text-gray-100">正在生成 GIF...</h3>
+        <p id="export-desc" class="text-xs text-gray-400 mt-1">正在編碼畫布動畫幀，請稍候。</p>
+      </div>
+
+      <!-- 進度條 -->
+      <div class="w-full bg-gray-800 rounded-full h-3 mb-4 overflow-hidden border border-gray-700">
+        <div id="export-progress-bar" class="bg-green-500 h-3 rounded-full w-0 transition-all duration-150"></div>
+      </div>
+
+      <div id="export-preview-container" class="hidden my-4 border border-gray-800 rounded-lg p-2 bg-gray-950 flex justify-center">
+        <img id="export-gif-result" class="max-w-full rounded shadow-md" alt="Generated GIF">
+      </div>
+
+      <div class="flex justify-center gap-3 mt-5">
+        <button id="btn-close-modal" class="px-4 py-2 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition">
+          關閉
+        </button>
+        <a id="btn-download-gif" class="px-5 py-2 text-xs bg-green-600 hover:bg-green-500 text-black font-bold rounded-lg shadow-lg transition hidden flex items-center gap-1.5" download="github-contribution.gif">
+          <i class="fa-solid fa-download"></i> 下載 GIF 檔案
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 常數與全域狀態
+    // =========================================================================
+    const COLS = 52; // 52 週
+    const ROWS = 7;  // 7 天
+    const TOTAL_CELLS = COLS * ROWS;
+
+    // 配色主題 definitions (0: empty, 1-4: level 1-4 intensity)
+    const THEMES = {
+      'github-green': ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
+      'cyber-neon':   ['#161b22', '#1b2d37', '#007f7f', '#00e5ff', '#39ff14'],
+      'purple-haze':  ['#161b22', '#2c1a4d', '#572b8c', '#8a3ffc', '#be95ff'],
+      'ocean-blue':   ['#161b22', '#002d5a', '#00529b', '#007fff', '#66b2ff'],
+      'sunset-orange':['#161b22', '#4a1500', '#8c2d00', '#d95300', '#ff8c1a']
+    };
+
+    // 蛇頭/蛇身特別強調配色
+    const SNAKE_COLORS = {
+      head: '#00ff88',
+      headEye: '#000000',
+      body1: '#26a641',
+      body2: '#0e4429'
+    };
+
+    // 當前狀態
+    let activeTheme = 'github-green';
+    let selectedLevel = 4; // 預設繪製最高等級 4
+    let isMouseDown = false;
+
+    // 7x52 網格資料，每個元素代表 level (0~4)
+    let gridData = Array(TOTAL_CELLS).fill(0);
+
+    // 動畫控制相關
+    let animationFrames = [];
+    let currentFrameIndex = 0;
+    let isPlaying = true;
+    let animTimer = null;
+    let fps = 14;
+    let holdDuration = 2.5; // 最後定格 seconds
+    let activeEffect = 'snake'; // 預設使用新出的貪吃蛇效果
+
+    // DOM 元素引用
+    const gridContainer = document.getElementById('grid-container');
+    const paletteContainer = document.getElementById('palette');
+    const previewCanvas = document.getElementById('preview-canvas');
+    const ctx = previewCanvas.getContext('2d');
+    const progressBar = document.getElementById('progress-bar');
+    const frameCounter = document.getElementById('frame-counter');
+    const playPauseBtn = document.getElementById('btn-play-pause');
+    const playIcon = document.getElementById('play-icon');
+
+    // =========================================================================
+    // 預設樣板圖形資料庫
+    // =========================================================================
+    const TEMPLATES = {
+      'heart': [
+        {r:1, c:22}, {r:1, c:23}, {r:1, c:28}, {r:1, c:29},
+        {r:2, c:21}, {r:2, c:24}, {r:2, c:27}, {r:2, c:30},
+        {r:3, c:21}, {r:3, c:25}, {r:3, c:26}, {r:3, c:30},
+        {r:4, c:22}, {r:4, c:29},
+        {r:5, c:23}, {r:5, c:28},
+        {r:6, c:24}, {r:6, c:25}, {r:6, c:26}, {r:6, c:27}
+      ],
+      'star': [
+        {r:0, c:25},
+        {r:1, c:25},
+        {r:2, c:20}, {r:2, c:21}, {r:2, c:22}, {r:2, c:23}, {r:2, c:24}, {r:2, c:25}, {r:2, c:26}, {r:2, c:27}, {r:2, c:28}, {r:2, c:29}, {r:2, c:30},
+        {r:3, c:22}, {r:3, c:23}, {r:3, c:24}, {r:3, c:25}, {r:3, c:26}, {r:3, c:27}, {r:3, c:28},
+        {r:4, c:23}, {r:4, c:24}, {r:4, c:26}, {r:4, c:27},
+        {r:5, c:22}, {r:5, c:28},
+        {r:6, c:21}, {r:6, c:29}
+      ],
+      'text-hi': [
+        // 'H'
+        {r:1,c:20},{r:2,c:20},{r:3,c:20},{r:4,c:20},{r:5,c:20},
+        {r:3,c:21},{r:3,c:22},
+        {r:1,c:23},{r:2,c:23},{r:3,c:23},{r:4,c:23},{r:5,c:23},
+        // 'I'
+        {r:1,c:26},{r:1,c:27},{r:1,c:28},
+        {r:2,c:27},{r:3,c:27},{r:4,c:27},
+        {r:5,c:26},{r:5,c:27},{r:5,c:28},
+        // '!'
+        {r:1,c:30},{r:2,c:30},{r:3,c:30},
+        {r:5,c:30}
+      ],
+      'text-aris': [
+        // 'A'
+        {r:1,c:16},{r:2,c:15},{r:2,c:17},{r:3,c:15},{r:3,c:16},{r:3,c:17},{r:4,c:15},{r:4,c:17},{r:5,c:15},{r:5,c:17},
+        // 'R'
+        {r:1,c:20},{r:1,c:21},{r:1,c:22},{r:2,c:20},{r:2,c:22},{r:3,c:20},{r:3,c:21},{r:4,c:20},{r:4,c:22},{r:5,c:20},{r:5,c:22},
+        // 'I'
+        {r:1,c:25},{r:1,c:26},{r:1,c:27},{r:2,c:26},{r:3,c:26},{r:4,c:26},{r:5,c:25},{r:5,c:26},{r:5,c:27},
+        // 'S'
+        {r:1,c:30},{r:1,c:31},{r:1,c:32},{r:2,c:30},{r:3,c:30},{r:3,c:31},{r:3,c:32},{r:4,c:32},{r:5,c:30},{r:5,c:31},{r:5,c:32}
+      ],
+      'snake-art': [
+        // 貪吃蛇小蛇造型圖騰
+        {r:1,c:21},{r:1,c:22},{r:1,c:23},{r:1,c:24},
+        {r:2,c:21},{r:2,c:24},
+        {r:3,c:21},{r:3,c:24},{r:3,c:25},{r:3,c:26},{r:3,c:27},
+        {r:4,c:21},{r:4,c:27},
+        {r:5,c:21},{r:5,c:22},{r:5,c:23},{r:5,c:24},{r:5,c:25},{r:5,c:26},{r:5,c:27}
+      ],
+      'invader': [
+        {r:1,c:23},{r:1,c:27},
+        {r:2,c:24},{r:2,c:26},
+        {r:3,c:23},{r:3,c:24},{r:3,c:25},{r:3,c:26},{r:3,c:27},
+        {r:4,c:22},{r:4,c:23},{r:4,c:25},{r:4,c:27},{r:4,c:28},
+        {r:5,c:21},{r:5,c:22},{r:5,c:23},{r:5,c:24},{r:5,c:25},{r:5,c:26},{r:5,c:27},{r:5,c:28},{r:5,c:29},
+        {r:6,c:21},{r:6,c:23},{r:6,c:27},{r:6,c:29}
+      ]
+    };
+
+    // =========================================================================
+    // 初始化 UI 與 事件監聽
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initPalette();
+      initGridUI();
+      loadTemplate('text-aris'); // 預設載入範例圖形
+      setupEventListeners();
+      generateAnimationFrames();
+      startPlayback();
+    });
+
+    // 初始化色塊選擇器
+    function initPalette() {
+      paletteContainer.innerHTML = '';
+      const colors = THEMES[activeTheme];
+
+      colors.forEach((color, level) => {
+        const btn = document.createElement('button');
+        btn.className = `w-5 h-5 rounded-sm border ${level === selectedLevel ? 'border-white scale-110 shadow-sm' : 'border-transparent'} transition-all`;
+        btn.style.backgroundColor = color;
+        btn.title = `Commit 密集度 Level ${level}`;
+        btn.addEventListener('click', () => {
+          selectedLevel = level;
+          updatePaletteUI();
+        });
+        paletteContainer.appendChild(btn);
+      });
+    }
+
+    function updatePaletteUI() {
+      Array.from(paletteContainer.children).forEach((btn, idx) => {
+        if (idx === selectedLevel) {
+          btn.classList.add('border-white', 'scale-110');
+          btn.classList.remove('border-transparent');
+        } else {
+          btn.classList.remove('border-white', 'scale-110');
+          btn.classList.add('border-transparent');
+        }
+      });
+    }
+
+    // 生成 7x52 網格元素
+    function initGridUI() {
+      gridContainer.innerHTML = '';
+      
+      // 注意：CSS grid-flow-col 會按照 Col, Row 填入
+      for (let col = 0; col < COLS; col++) {
+        for (let row = 0; row < ROWS; row++) {
+          const index = col * ROWS + row;
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell cursor-pointer';
+          cell.dataset.index = index;
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+
+          // 滑鼠點擊與拖曳繪製事件
+          cell.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            paintCell(index);
+          });
+          cell.addEventListener('mouseenter', () => {
+            if (isMouseDown) paintCell(index);
+          });
+
+          gridContainer.appendChild(cell);
+        }
+      }
+
+      window.addEventListener('mouseup', () => {
+        if (isMouseDown) {
+          isMouseDown = false;
+          onShapeUpdated();
+        }
+      });
+    }
+
+    // 更新特定格子的顏色 level
+    function paintCell(index) {
+      gridData[index] = selectedLevel;
+      renderGridUI();
+    }
+
+    // 重新繪製整個 HTML 網格
+    function renderGridUI() {
+      const colors = THEMES[activeTheme];
+      const cells = gridContainer.children;
+
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const level = gridData[i];
+        cells[i].style.backgroundColor = colors[level];
+      }
+    }
+
+    // 載入預設圖形模板
+    function loadTemplate(key) {
+      gridData.fill(0);
+      if (TEMPLATES[key]) {
+        TEMPLATES[key].forEach(({r, c, lvl}) => {
+          if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+            const idx = c * ROWS + r;
+            gridData[idx] = lvl || 4;
+          }
+        });
+      }
+      renderGridUI();
+      onShapeUpdated();
+    }
+
+    // 事件監聽設置
+    function setupEventListeners() {
+      // 模板按鈕
+      document.querySelectorAll('.btn-template').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const tKey = e.currentTarget.dataset.template;
+          loadTemplate(tKey);
+        });
+      });
+
+      // 工具按鈕
+      document.getElementById('btn-clear').addEventListener('click', () => {
+        gridData.fill(0);
+        renderGridUI();
+        onShapeUpdated();
+      });
+
+      document.getElementById('btn-invert').addEventListener('click', () => {
+        gridData = gridData.map(val => (val === 0 ? 4 : 0));
+        renderGridUI();
+        onShapeUpdated();
+      });
+
+      document.getElementById('btn-random').addEventListener('click', () => {
+        gridData = gridData.map(() => (Math.random() > 0.8 ? Math.floor(Math.random() * 4) + 1 : 0));
+        renderGridUI();
+        onShapeUpdated();
+      });
+
+      // 動畫選項變更
+      document.getElementById('select-effect').addEventListener('change', (e) => {
+        activeEffect = e.target.value;
+        const snakeBox = document.getElementById('snake-options-box');
+        if (activeEffect === 'snake') {
+          snakeBox.classList.remove('hidden');
+        } else {
+          snakeBox.classList.add('hidden');
+        }
+        onShapeUpdated();
+      });
+
+      document.getElementById('select-theme').addEventListener('change', (e) => {
+        activeTheme = e.target.value;
+        initPalette();
+        renderGridUI();
+        onShapeUpdated();
+      });
+
+      // 滑桿設定
+      const fpsInput = document.getElementById('input-fps');
+      fpsInput.addEventListener('input', (e) => {
+        fps = parseInt(e.target.value);
+        document.getElementById('val-fps').innerText = `${fps} fps`;
+        startPlayback(); // 重設計時器
+      });
+
+      const holdInput = document.getElementById('input-hold');
+      holdInput.addEventListener('input', (e) => {
+        holdDuration = parseFloat(e.target.value);
+        document.getElementById('val-hold').innerText = `${holdDuration.toFixed(1)} 秒`;
+        onShapeUpdated();
+      });
+
+      // 點擊進度條跳轉
+      document.getElementById('progress-bar-container').addEventListener('click', (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+        if (animationFrames.length > 0) {
+          currentFrameIndex = Math.floor(ratio * (animationFrames.length - 1));
+          renderCurrentFrame();
+        }
+      });
+
+      // 播放/暫停按鈕
+      playPauseBtn.addEventListener('click', () => {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+          playIcon.className = 'fa-solid fa-pause';
+          document.getElementById('animation-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> 播放中';
+          document.getElementById('animation-status').className = 'text-xs px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-1.5';
+        } else {
+          playIcon.className = 'fa-solid fa-play';
+          document.getElementById('animation-status').innerHTML = '<span class="w-2 h-2 rounded-full bg-gray-400"></span> 已暫停';
+          document.getElementById('animation-status').className = 'text-xs px-2.5 py-0.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20 flex items-center gap-1.5';
+        }
+      });
+
+      // 下載 GIF Modal
+      document.getElementById('btn-export-gif').addEventListener('click', exportGIF);
+      document.getElementById('btn-close-modal').addEventListener('click', () => {
+        document.getElementById('modal-export').classList.add('hidden');
+      });
+    }
+
+    // 當用戶圖形或效果改變時呼叫
+    function onShapeUpdated() {
+      generateAnimationFrames();
+      currentFrameIndex = 0;
+      renderCurrentFrame();
+    }
+
+    // =========================================================================
+    // 蛇形 S 型走位路徑產生器
+    // =========================================================================
+    function buildSnakePath() {
+      // 產生一個貫穿全域 7x52 的 S 型 serpentine 順序陣列
+      const path = [];
+      for (let col = 0; col < COLS; col++) {
+        if (col % 2 === 0) {
+          // 從上到下
+          for (let row = 0; row < ROWS; row++) {
+            path.push({ col, row, idx: col * ROWS + row });
+          }
+        } else {
+          // 從下到上
+          for (let row = ROWS - 1; row >= 0; row--) {
+            path.push({ col, row, idx: col * ROWS + row });
+          }
+        }
+      }
+      return path;
+    }
+
+    // =========================================================================
+    // 動畫幀生成引擎 (支援「貪吃蛇」、「掃描」、「繪製」、「漸顯」、「脈衝」)
+    // =========================================================================
+    function generateAnimationFrames() {
+      animationFrames = [];
+
+      const snakePath = buildSnakePath();
+      const holdFramesCount = Math.max(1, Math.round(fps * holdDuration));
+
+      if (activeEffect === 'snake') {
+        // ---------------------------------------------------------------------
+        // 【貪吃蛇動畫效果】: 蛇沿著 S 型路線移動，走過的點保留 targetValShape
+        // ---------------------------------------------------------------------
+        const snakeLength = 6; // 蛇身長度 (含蛇頭)
+        const stepPerFrame = 6; // 每幀進度跨越幾個格子 (調整動畫節奏)
+        const totalPathSteps = snakePath.length;
+        
+        // 移動總步數包含蛇完全走出地圖
+        const totalSteps = totalPathSteps + snakeLength + 5;
+        const totalAnimFrames = Math.ceil(totalSteps / stepPerFrame);
+
+        for (let f = 0; f < totalAnimFrames; f++) {
+          const currentStep = f * stepPerFrame;
+          
+          // 建立這一幀的網格資料快照
+          const frameGrid = Array(TOTAL_CELLS).fill(0);
+          
+          // 1. 先計算並填入「蛇已經吃過/經過」的目標 shape
+          const headPathIdx = Math.min(currentStep, totalPathSteps);
+          for (let p = 0; p < headPathIdx; p++) {
+            const cellIdx = snakePath[p].idx;
+            frameGrid[cellIdx] = gridData[cellIdx]; // 留下用戶定義的顏色
+          }
+
+          // 2. 疊加蛇身與蛇頭標記 (透過 meta 物件附加在 frame 資訊中)
+          const snakeOverlay = [];
+          for (let seg = 0; seg < snakeLength; seg++) {
+            const segStep = currentStep - seg;
+            if (segStep >= 0 && segStep < totalPathSteps) {
+              const segCell = snakePath[segStep];
+              snakeOverlay.push({
+                col: segCell.col,
+                row: segCell.row,
+                idx: segCell.idx,
+                isHead: (seg === 0)
+              });
+            }
+          }
+
+          // 將網格與蛇 overlay 打包為一幀
+          animationFrames.push({
+            grid: frameGrid,
+            snakeOverlay: snakeOverlay
+          });
+        }
+
+      } else {
+        // ---------------------------------------------------------------------
+        // 其他傳統入場效果
+        // ---------------------------------------------------------------------
+        const buildFramesCount = 28; // 28 幀入場
+
+        for (let f = 0; f < buildFramesCount; f++) {
+          const progress = f / (buildFramesCount - 1);
+          const frameGrid = Array(TOTAL_CELLS).fill(0);
+
+          for (let col = 0; col < COLS; col++) {
+            for (let row = 0; row < ROWS; row++) {
+              const idx = col * ROWS + row;
+              const targetVal = gridData[idx];
+
+              if (targetVal === 0) continue;
+
+              switch (activeEffect) {
+                case 'scan': {
+                  const colProgress = col / COLS;
+                  if (progress >= colProgress) {
+                    frameGrid[idx] = targetVal;
+                  } else if (progress >= colProgress - 0.08) {
+                    frameGrid[idx] = Math.max(1, Math.floor(targetVal * 0.5));
+                  }
+                  break;
+                }
+                case 'draw': {
+                  const activeIndices = [];
+                  gridData.forEach((v, i) => { if (v > 0) activeIndices.push(i); });
+                  const threshold = Math.floor(activeIndices.length * progress);
+                  const posInActive = activeIndices.indexOf(idx);
+                  if (posInActive !== -1 && posInActive <= threshold) {
+                    frameGrid[idx] = targetVal;
+                  }
+                  break;
+                }
+                case 'fade': {
+                  const hash = Math.sin(idx * 9999 + f * 123) * 10000;
+                  const randVal = hash - Math.floor(hash);
+                  if (progress >= randVal) {
+                    frameGrid[idx] = targetVal;
+                  }
+                  break;
+                }
+                case 'pulse': {
+                  const centerCol = COLS / 2;
+                  const centerRow = ROWS / 2;
+                  const dist = Math.sqrt(Math.pow(col - centerCol, 2) + Math.pow(row - centerRow, 2));
+                  const maxDist = Math.sqrt(Math.pow(centerCol, 2) + Math.pow(centerRow, 2));
+                  const currentDistThreshold = progress * maxDist * 1.2;
+                  if (dist <= currentDistThreshold) {
+                    frameGrid[idx] = targetVal;
+                  }
+                  break;
+                }
+              }
+            }
+          }
+
+          animationFrames.push({ grid: frameGrid, snakeOverlay: null });
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 【定格階段】: 蛇離開後，加入定格幀保留完整圖案！
+      // -----------------------------------------------------------------------
+      for (let h = 0; h < holdFramesCount; h++) {
+        animationFrames.push({
+          grid: [...gridData],
+          snakeOverlay: null
+        });
+      }
+    }
+
+    // =========================================================================
+    // Canvas 繪製與動畫播放器
+    // =========================================================================
+    function startPlayback() {
+      if (animTimer) clearInterval(animTimer);
+      animTimer = setInterval(() => {
+        if (!isPlaying || animationFrames.length === 0) return;
+
+        currentFrameIndex = (currentFrameIndex + 1) % animationFrames.length;
+        renderCurrentFrame();
+      }, 1000 / fps);
+    }
+
+    // 將單一幀渲染至 Canvas 畫布
+    function renderCanvasFrame(ctxTarget, frameObj) {
+      const isDark = document.getElementById('check-dark-mode').checked;
+      const themeColors = THEMES[activeTheme];
+
+      const width = previewCanvas.width;
+      const height = previewCanvas.height;
+
+      // 清空背景
+      ctxTarget.fillStyle = isDark ? '#0d1117' : '#ffffff';
+      ctxTarget.fillRect(0, 0, width, height);
+
+      // 網格繪製參數
+      const paddingX = 20;
+      const paddingY = 20;
+      const gap = 3.5;
+      const cellSize = (height - paddingY * 2 - gap * (ROWS - 1)) / ROWS;
+
+      const frameGrid = frameObj.grid;
+
+      // 1. 繪製標準貢獻網格
+      for (let col = 0; col < COLS; col++) {
+        for (let row = 0; row < ROWS; row++) {
+          const idx = col * ROWS + row;
+          const level = frameGrid[idx] || 0;
+          const x = paddingX + col * (cellSize + gap);
+          const y = paddingY + row * (cellSize + gap);
+
+          ctxTarget.fillStyle = themeColors[level];
+          drawRoundedRect(ctxTarget, x, y, cellSize, cellSize, 2);
+        }
+      }
+
+      // 2. 如果存在貪吃蛇 Overlay，繪製蛇頭與蛇身
+      if (frameObj.snakeOverlay && frameObj.snakeOverlay.length > 0) {
+        frameObj.snakeOverlay.forEach((seg, index) => {
+          const x = paddingX + seg.col * (cellSize + gap);
+          const y = paddingY + seg.row * (cellSize + gap);
+
+          if (seg.isHead) {
+            // 蛇頭：鮮豔螢光綠與高亮眼睛
+            ctxTarget.fillStyle = '#00ff88';
+            drawRoundedRect(ctxTarget, x, y, cellSize, cellSize, 3);
+
+            // 外發光效果
+            ctxTarget.shadowColor = '#00ff88';
+            ctxTarget.shadowBlur = 6;
+            ctxTarget.fillStyle = '#ffffff';
+            ctxTarget.fillRect(x + 3, y + 3, cellSize - 6, cellSize - 6);
+            ctxTarget.shadowBlur = 0; // 重置發光
+          } else {
+            // 蛇身：漸變綠色
+            const alpha = 1 - (index / frameObj.snakeOverlay.length) * 0.5;
+            ctxTarget.fillStyle = `rgba(38, 166, 65, ${alpha})`;
+            drawRoundedRect(ctxTarget, x + 0.5, y + 0.5, cellSize - 1, cellSize - 1, 2);
+          }
+        });
+      }
+    }
+
+    function renderCurrentFrame() {
+      if (animationFrames.length === 0) return;
+      const frameObj = animationFrames[currentFrameIndex];
+      renderCanvasFrame(ctx, frameObj);
+
+      // 更新進度條 UI
+      const percent = ((currentFrameIndex + 1) / animationFrames.length) * 100;
+      progressBar.style.width = `${percent}%`;
+      frameCounter.innerText = `${currentFrameIndex + 1} / ${animationFrames.length}`;
+    }
+
+    // Canvas 繪製圓角矩形輔助函數
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // =========================================================================
+    // GIF 生成與下載 (使用 gif.js + 安全 Fallback)
+    // =========================================================================
+    function exportGIF() {
+      const modal = document.getElementById('modal-export');
+      const spinner = document.getElementById('export-spinner');
+      const successIcon = document.getElementById('export-success-icon');
+      const title = document.getElementById('export-title');
+      const desc = document.getElementById('export-desc');
+      const progressBar = document.getElementById('export-progress-bar');
+      const downloadBtn = document.getElementById('btn-download-gif');
+      const previewContainer = document.getElementById('export-preview-container');
+      const gifResultImg = document.getElementById('export-gif-result');
+
+      // 初始化 Modal UI
+      modal.classList.remove('hidden');
+      spinner.classList.remove('hidden');
+      successIcon.classList.add('hidden');
+      title.innerText = '正在生成 GIF...';
+      desc.innerText = '正在逐幀編碼動畫畫布，這可能需要幾秒鐘。';
+      progressBar.style.width = '0%';
+      downloadBtn.classList.add('hidden');
+      previewContainer.classList.add('hidden');
+
+      // 建立 gif.js 實例 (使用 inline worker code 避免跨域問題)
+      let gif;
+      try {
+        gif = new GIF({
+          workers: 2,
+          quality: 10,
+          width: previewCanvas.width,
+          height: previewCanvas.height,
+          workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'
+        });
+      } catch (err) {
+        console.warn("Worker setup error, fallbacking to direct render mode", err);
+        gif = new GIF({
+          quality: 10,
+          width: previewCanvas.width,
+          height: previewCanvas.height
+        });
+      }
+
+      // 建立臨時離屏 Canvas 用於繪製每一幀
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = previewCanvas.width;
+      tempCanvas.height = previewCanvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      const frameDelay = 1000 / fps;
+
+      animationFrames.forEach((frameObj) => {
+        renderCanvasFrame(tempCtx, frameObj);
+        gif.addFrame(tempCtx, { copy: true, delay: frameDelay });
+      });
+
+      // 監聽渲染進度
+      gif.on('progress', (p) => {
+        progressBar.style.width = `${Math.round(p * 100)}%`;
+      });
+
+      // 渲染完成
+      gif.on('finished', (blob) => {
+        const url = URL.createObjectURL(blob);
+        
+        spinner.classList.add('hidden');
+        successIcon.classList.remove('hidden');
+        title.innerText = 'GIF 動畫生成成功！';
+        desc.innerText = '貪吃蛇已完成圖騰繪製，最終幀將永久保留您的作品 shape。';
+        
+        gifResultImg.src = url;
+        previewContainer.classList.remove('hidden');
+
+        downloadBtn.href = url;
+        downloadBtn.download = 'github-snake-contribution.gif';
+        downloadBtn.classList.remove('hidden');
+      });
+
+      // 開始渲染
+      gif.render();
+    }
+  </script>
+</body>
+</html>
