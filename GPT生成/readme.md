@@ -1,21 +1,17 @@
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
-<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a><br> 
-1-2天法則
-<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
-">glb</a><br> 
-<hr>如何驗證「真需求」？服務：小紅書內容自動化與人設拆解,營運專家設定 SOP
-
-寫故事用九宮圖
-生動表情包 猫和老鼠拼豆/像素畫表情包 像素化加深線條>拚豆
-cardgame
-差異化
+<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
+"> GLB/GLTF</a><br> 
+<hr>
+差異化<br>
+如何驗證「真需求」？小紅書內容自動化與人設拆解,營運專家設定 SOP<br>
+寫故事用九宮圖<br>
+生動表情包 猫和老鼠拼豆/像素畫表情包+加深線條>拚豆<br>
 【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-
-【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-排布插件 ：github.com/HungryProton/scatter
-地形插件 ：Terrain 3D
-材质下载插件：	
-Poly Haven Import/Ambient CG (error)
+<br>
+【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e<br>
+排布插件 ：github.com/HungryProton/scatter<br>
+地形插件 ：Terrain 3D<br>
+材质下载插件：	Poly Haven Import/Ambient CG (error) <br>
 <hr>
 
 ### 整活>過程要好玩快樂
