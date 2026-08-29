@@ -6,6 +6,7 @@ target user 形象>吉祥物 https://petdex.dev/
 Eagle(收費)/pixcall (收費)素材管理工具
 https://www.bilibili.com/toy/6AF4DstEm8VTOebm/index.html
 https://icons8.com/
+Sound:https://www.zapsplat.com/
 
 > 整合 2D/3D 美術資源、UI 設計靈感、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
 
