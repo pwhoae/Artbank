@@ -2,6 +2,7 @@
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 "> GLB/GLTF</a><br> 
 <hr>
+Sound:https://www.zapsplat.com/
 差異化<br>
 棄置:漫畫,建模,角設,遊戲動畫研究<br>
 如何驗證「真需求」？小紅書內容自動化與人設拆解,營運專家設定 SOP<br>
