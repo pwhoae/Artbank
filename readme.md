@@ -9,6 +9,9 @@ https://icons8.com/
 Sound:https://www.zapsplat.com/
 https://getsoundly.com/
 
+工具地址 mowangblog.github.io/game-sfx-generator-web/
+
+
 > 整合 2D/3D 美術資源、UI 設計靈感、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
 
 ## **📌 快速連結 (Quick Links)**
