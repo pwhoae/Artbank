@@ -46,7 +46,7 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 ```
 6. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）;收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
 7. 上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
-8. 
+8. asd rotate xyz
 
 碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。  
 ### 思考方向
