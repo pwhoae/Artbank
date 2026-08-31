@@ -49,6 +49,7 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 ### check
 
 <hr>
+gridmap 調cell size
 7. 
 8. 上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
 9. asd rotate xyz
