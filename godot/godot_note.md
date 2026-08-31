@@ -45,10 +45,16 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
 ```
 6. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）;收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
-7. 上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
-8. asd rotate xyz
+
+### check
+
+<hr>
+7. 
+8. 上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
+9. asd rotate xyz
 动态天花板算法（Dynamic Ceiling Generation）开发思路：为方便在编辑器中俯瞰布置房间与摆放物件，场景内不预先绘制天花板。  代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
 碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。  
+
 ### 思考方向
 1. filedialog:玩家upload file
 2. DisplayServer.clipboard_set("要複製的內容")
