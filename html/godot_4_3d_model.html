@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Godot 4 3D 角色、貼圖與動畫工作坊</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+  <style>
+    /* Custom scrollbar for editors */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1f2937; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    
+    .pixelated {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- Top Header -->
+  <header class="bg-gray-800 border-b border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl tracking-wider flex items-center gap-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        <span>Godot 4 Character Studio</span>
+      </div>
+      <span class="text-xs bg-gray-700 text-gray-300 px-2.5 py-1 rounded-full border border-gray-600">Based on Ep 03/18 Dungeon Crawler</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Quick Palette Presets -->
+      <span class="text-xs text-gray-400">快速皮膚裝扮:</span>
+      <button onclick="loadPreset('human')" class="text-xs bg-gray-700 hover:bg-gray-600 text-blue-300 px-2.5 py-1.5 rounded border border-gray-600 transition">藍色人類騎士</button>
+      <button onclick="loadPreset('goblin')" class="text-xs bg-gray-700 hover:bg-gray-600 text-green-300 px-2.5 py-1.5 rounded border border-gray-600 transition">哥布林怪物</button>
+      <button onclick="loadPreset('dark')" class="text-xs bg-gray-700 hover:bg-gray-600 text-purple-300 px-2.5 py-1.5 rounded border border-gray-600 transition">暗黑骷髏兵</button>
+
+      <div class="h-4 w-px bg-gray-700 mx-1"></div>
+
+      <button onclick="exportGLBModel()" class="flex items-center gap-1.5 text-xs bg-purple-600 hover:bg-purple-500 text-white font-medium px-3 py-1.5 rounded transition shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        導出 GLB 模型
+      </button>
+
+      <button onclick="exportTexturePNG()" class="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-3 py-1.5 rounded transition shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        導出 PNG 貼圖
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid Workspace -->
+  <main class="flex-1 grid grid-cols-12 overflow-hidden gap-1 p-2 bg-gray-950">
+
+    <!-- Left Panel: 32x32 Pixel Editor (4 cols) -->
+    <section class="col-span-4 bg-gray-800 rounded-lg border border-gray-700 flex flex-col p-3 gap-3 overflow-hidden">
+      <div class="flex items-center justify-between border-b border-gray-700 pb-2">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+          <h2 class="font-bold text-sm text-gray-200">32x32 像素貼圖編輯器</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-400 flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="uvGuideToggle" onchange="drawPixelCanvas()" checked class="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-0">
+            UV分區引導
+          </label>
+        </div>
+      </div>
+
+      <!-- Canvas Container -->
+      <div class="flex-1 flex items-center justify-center bg-gray-900 rounded border border-gray-700 relative p-2 overflow-hidden">
+        <div class="relative shadow-2xl border-2 border-gray-600 rounded overflow-hidden">
+          <canvas id="pixelCanvas" width="512" height="512" class="pixelated cursor-crosshair block bg-gray-950"></canvas>
+          <canvas id="offscreenCanvas" width="32" height="32" class="hidden"></canvas>
+        </div>
+      </div>
+
+      <!-- Tools & Palette -->
+      <div class="flex flex-col gap-2.5 bg-gray-900/60 p-2.5 rounded border border-gray-700/60">
+        <!-- Tool Buttons -->
+        <div class="flex items-center justify-between gap-1.5">
+          <div class="flex gap-1">
+            <button id="tool-pencil" onclick="setTool('pencil')" class="tool-btn bg-blue-600 text-white p-2 rounded text-xs font-semibold flex items-center gap-1">
+              ✏️ 畫筆
+            </button>
+            <button id="tool-bucket" onclick="setTool('bucket')" class="tool-btn bg-gray-700 hover:bg-gray-600 text-gray-200 p-2 rounded text-xs font-semibold flex items-center gap-1">
+              🪣 油漆桶
+            </button>
+            <button id="tool-picker" onclick="setTool('picker')" class="tool-btn bg-gray-700 hover:bg-gray-600 text-gray-200 p-2 rounded text-xs font-semibold flex items-center gap-1">
+              🧪 吸管
+            </button>
+            <button id="tool-eraser" onclick="setTool('eraser')" class="tool-btn bg-gray-700 hover:bg-gray-600 text-gray-200 p-2 rounded text-xs font-semibold flex items-center gap-1">
+              🧹 橡皮擦
+            </button>
+          </div>
+          <button onclick="clearCanvas()" class="text-xs bg-red-900/50 hover:bg-red-800 text-red-200 px-2 py-1.5 rounded border border-red-700/50 transition">
+            清空
+          </button>
+        </div>
+
+        <!-- Color Swatches & Picker -->
+        <div class="flex items-center justify-between gap-2 border-t border-gray-700/50 pt-2">
+          <div class="flex items-center gap-2">
+            <input type="color" id="primaryColor" value="#3b82f6" class="w-8 h-8 rounded cursor-pointer border border-gray-600 bg-transparent">
+            <span class="text-xs font-mono text-gray-400" id="colorHex">#3B82F6</span>
+          </div>
+
+          <!-- Quick Palette -->
+          <div class="flex items-center gap-1 overflow-x-auto py-0.5" id="paletteContainer">
+            <!-- Dynamic Palette Buttons populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Middle Panel: 3D Viewport & Animation Controls (5 cols) -->
+    <section class="col-span-5 bg-gray-800 rounded-lg border border-gray-700 flex flex-col p-3 gap-3 relative overflow-hidden">
+      <!-- 3D Header Controls -->
+      <div class="flex items-center justify-between border-b border-gray-700 pb-2 z-10">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+          <h2 class="font-bold text-sm text-gray-200">3D 角色模型實時預覽</h2>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-gray-400 flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="showBonesToggle" onchange="toggleBones(this.checked)" class="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-0">
+            顯示骨骼 (Armature)
+          </label>
+          <label class="text-xs text-gray-400 flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="wireframeToggle" onchange="toggleWireframe(this.checked)" class="rounded bg-gray-700 border-gray-600 text-blue-600 focus:ring-0">
+            網格線
+          </label>
+        </div>
+      </div>
+
+      <!-- 3D Canvas WebGL Container -->
+      <div id="canvas3dContainer" class="flex-1 bg-gradient-to-b from-gray-950 to-gray-900 rounded border border-gray-700 relative overflow-hidden">
+        <!-- Floating Info Overlay -->
+        <div class="absolute top-2 left-2 bg-gray-900/80 backdrop-blur border border-gray-700/60 rounded px-2.5 py-1.5 text-[11px] text-gray-300 pointer-events-none z-10">
+          <div>按住<span class="text-blue-400 font-semibold">左鍵拖拽</span>：旋轉視角</div>
+          <div>按住<span class="text-blue-400 font-semibold">右鍵拖拽</span>：平移視角</div>
+          <div>滾輪：縮放</div>
+        </div>
+
+        <!-- Animation Watermark State -->
+        <div class="absolute bottom-2 right-2 bg-blue-900/60 border border-blue-700/60 rounded px-2 py-1 text-xs text-blue-200 font-mono z-10" id="currentAnimBadge">
+          State: IDLE_LOOP
+        </div>
+      </div>
+
+      <!-- Animation Bar -->
+      <div class="bg-gray-900/80 p-2.5 rounded border border-gray-700 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5">
+          <button onclick="setAnimation('idle')" id="anim-idle" class="anim-btn bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-semibold shadow transition">
+            🚶 待機 (Idle)
+          </button>
+          <button onclick="setAnimation('run')" id="anim-run" class="anim-btn bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded text-xs font-semibold transition">
+            🏃 跑步 (Run)
+          </button>
+          <button onclick="setAnimation('attack')" id="anim-attack" class="anim-btn bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded text-xs font-semibold transition">
+            ⚔️ 攻擊 (Attack)
+          </button>
+          <button onclick="setAnimation('jump')" id="anim-jump" class="anim-btn bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1.5 rounded text-xs font-semibold transition">
+            🦘 跳躍 (Jump)
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400">速度:</span>
+          <input type="range" id="animSpeed" min="0.2" max="2.0" step="0.1" value="1.0" oninput="updateAnimSpeed(this.value)" class="w-20 accent-blue-500 cursor-pointer">
+          <span class="text-xs font-mono text-gray-300 w-8" id="animSpeedVal">1.0x</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Godot Code & Integration Setup (3 cols) -->
+    <section class="col-span-3 bg-gray-800 rounded-lg border border-gray-700 flex flex-col p-3 gap-3 overflow-hidden">
+      <!-- Tabs Header -->
+      <div class="flex border-b border-gray-700">
+        <button onclick="switchTab('code')" id="tab-code" class="px-3 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500">
+          GDScript 腳本
+        </button>
+        <button onclick="switchTab('guide')" id="tab-guide" class="px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200">
+           Godot 工作流
+        </button>
+      </div>
+
+      <!-- Tab 1: GDScript -->
+      <div id="tabContentCode" class="flex-1 flex flex-col gap-2 overflow-hidden">
+        <div class="flex items-center justify-between text-xs text-gray-400">
+          <span>player.gd (CharacterBody3D)</span>
+          <button onclick="copyCode()" class="bg-gray-700 hover:bg-gray-600 text-blue-300 px-2 py-1 rounded flex items-center gap-1 transition">
+            📋 複製代碼
+          </button>
+        </div>
+        <textarea id="gdscriptCode" readonly class="flex-1 bg-gray-950 border border-gray-700 rounded p-2.5 font-mono text-[11px] text-emerald-400 resize-none focus:outline-none"></textarea>
+      </div>
+
+      <!-- Tab 2: Workflow Checklist Guide -->
+      <div id="tabContentGuide" class="flex-1 overflow-y-auto hidden pr-1">
+        <div class="space-y-3 text-xs text-gray-300">
+          <div class="bg-gray-900/80 p-2.5 rounded border border-gray-700">
+            <h3 class="font-bold text-blue-400 mb-1">1. 骨骼加載與末端骨骼 (Leaf Bones)</h3>
+            <p class="text-gray-400 leading-relaxed">
+              在 Blender 中導出角色前，務必為手部、腳部與頭部添加 **Leaf Bones**（末端小骨骼）。否則 Godot 自動對齊骨骼時會忽略未連接末端，導致 Ragdoll 布娃娃物理無法正常彎曲折疊。
+            </p>
+          </div>
+
+          <div class="bg-gray-900/80 p-2.5 rounded border border-gray-700">
+            <h3 class="font-bold text-emerald-400 mb-1">2. 循環動畫命名規範</h3>
+            <p class="text-gray-400 leading-relaxed">
+              Blender Action Editor 中動畫命名後綴加上 <code class="text-amber-300 bg-gray-800 px-1 rounded">_loop</code>（如 <code class="text-amber-300 bg-gray-800 px-1 rounded">idle_loop</code>, <code class="text-amber-300 bg-gray-800 px-1 rounded">run_loop</code>）。Godot 導出 glTF 時會自動激活 Loop 循環屬性。
+            </p>
+          </div>
+
+          <div class="bg-gray-900/80 p-2.5 rounded border border-gray-700">
+            <h3 class="font-bold text-purple-400 mb-1">3. 貼圖渲染優化（Nearest）</h3>
+            <p class="text-gray-400 leading-relaxed">
+              低解析度像素風格（32x32）在 Godot 中，需將 Material 材底的 Sampling Filter 改為 **Nearest**（最近鄰居），防止像素邊緣產生模糊糊的線性插值。
+            </p>
+          </div>
+
+          <div class="bg-gray-900/80 p-2.5 rounded border border-gray-700">
+            <h3 class="font-bold text-amber-400 mb-1">4. 性能腳本點評</h3>
+            <p class="text-gray-400 leading-relaxed">
+              使用 <code class="text-amber-300 bg-gray-800 px-1 rounded">velocity.length_squared() > 0.1</code> 取代標準開根號長度計算，可避免每幀執行平方根，大幅提升大批次怪物的運算效能。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // --- 1. GLOBAL STATE & PALETTES ---
+    const PALETTES = {
+      human: ['#fecaca', '#fca5a5', '#3b82f6', '#1d4ed8', '#1e3a8a', '#475569', '#334155', '#1e293b'],
+      goblin: ['#bbf7d0', '#4ade80', '#15803d', '#166534', '#78350f', '#451a03', '#f59e0b', '#d97706'],
+      dark: ['#e2e8f0', '#94a3b8', '#475569', '#0f172a', '#dc2626', '#991b1b', '#f59e0b', '#78350f']
+    };
+
+    let currentPalette = PALETTES.human;
+    let currentTool = 'pencil';
+    let currentColor = '#3b82f6';
+    let isDrawing = false;
+    let activeAnimation = 'idle';
+    let animSpeed = 1.0;
+
+    // 32x32 Pixel Array Data (RGBA string hex)
+    let pixelData = Array(32 * 32).fill('#1d4ed8');
+
+    // UV Mapping Boundaries (Normalized 0-1 mapped on 32x32 grid)
+    // Head: [0, 16] to [16, 32]
+    // Torso: [16, 16] to [32, 32]
+    // Arms: [0, 0] to [16, 16]
+    // Legs: [16, 0] to [32, 16]
+
+    // --- 2. PIXEL EDITOR INITIALIZATION ---
+    const canvas = document.getElementById('pixelCanvas');
+    const ctx = canvas.getContext('2d');
+    const offscreenCanvas = document.getElementById('offscreenCanvas');
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+
+    function initPixelEditor() {
+      // Build Palette UI
+      renderPaletteUI();
+
+      // Initial Preset Render
+      loadPreset('human');
+
+      // Event Listeners
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', draw);
+      window.addEventListener('mouseup', endDraw);
+
+      // Color picker change
+      document.getElementById('primaryColor').addEventListener('input', (e) => {
+        currentColor = e.target.value;
+        document.getElementById('colorHex').innerText = currentColor.toUpperCase();
+      });
+    }
+
+    function renderPaletteUI() {
+      const container = document.getElementById('paletteContainer');
+      container.innerHTML = '';
+      currentPalette.forEach(color => {
+        const btn = document.createElement('button');
+        btn.className = 'w-5 h-5 rounded border border-gray-600 shrink-0 cursor-pointer transition transform hover:scale-110';
+        btn.style.backgroundColor = color;
+        btn.onclick = () => {
+          currentColor = color;
+          document.getElementById('primaryColor').value = color;
+          document.getElementById('colorHex').innerText = color.toUpperCase();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function loadPreset(type) {
+      currentPalette = PALETTES[type];
+      renderPaletteUI();
+
+      // Fill basic default skin texture map into pixelData
+      const bg = currentPalette[2]; // primary main
+      const sec = currentPalette[0]; // skin tone
+      const accent = currentPalette[4]; // dark trim
+      const eye = currentPalette[7]; // dark detail
+
+      pixelData.fill(bg);
+
+      // Map Head Region (Top Left 16x16: Y: 0-15, X: 0-15)
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          let idx = y * 32 + x;
+          if (y < 4) pixelData[idx] = currentPalette[5]; // Hair
+          else pixelData[idx] = sec; // Face skin
+          if (y === 7 && (x === 4 || x === 10)) pixelData[idx] = eye; // Eyes
+        }
+      }
+
+      // Map Torso (Top Right 16x16: Y: 0-15, X: 16-31)
+      for (let y = 0; y < 16; y++) {
+        for (let x = 16; x < 32; x++) {
+          let idx = y * 32 + x;
+          if ((x + y) % 3 === 0) pixelData[idx] = currentPalette[3]; // Chainmail pattern
+          else pixelData[idx] = bg;
+        }
+      }
+
+      // Map Arms (Bottom Left 16x16: Y: 16-31, X: 0-15)
+      for (let y = 16; y < 32; y++) {
+        for (let x = 0; x < 16; x++) {
+          let idx = y * 32 + x;
+          pixelData[idx] = (y > 24) ? sec : accent;
+        }
+      }
+
+      // Map Legs (Bottom Right 16x16: Y: 16-31, X: 16-31)
+      for (let y = 16; y < 32; y++) {
+        for (let x = 16; x < 32; x++) {
+          let idx = y * 32 + x;
+          pixelData[idx] = (y > 26) ? currentPalette[6] : currentPalette[1];
+        }
+      }
+
+      drawPixelCanvas();
+      update3DTexture();
+    }
+
+    function setTool(tool) {
+      currentTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-700', 'text-gray-200');
+      });
+      document.getElementById(`tool-${tool}`).classList.remove('bg-gray-700', 'text-gray-200');
+      document.getElementById(`tool-${tool}`).classList.add('bg-blue-600', 'text-white');
+    }
+
+    function getPixelCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scale = 512 / 32;
+      const x = Math.floor((e.clientX - rect.left) / scale);
+      const y = Math.floor((e.clientY - rect.top) / scale);
+      return { x: Math.max(0, Math.min(31, x)), y: Math.max(0, Math.min(31, y)) };
+    }
+
+    function startDraw(e) {
+      isDrawing = true;
+      handlePixelAction(e);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      handlePixelAction(e);
+    }
+
+    function endDraw() {
+      if (isDrawing) {
+        isDrawing = false;
+        update3DTexture();
+      }
+    }
+
+    function handlePixelAction(e) {
+      const { x, y } = getPixelCoords(e);
+      const idx = y * 32 + x;
+
+      if (currentTool === 'pencil') {
+        pixelData[idx] = currentColor;
+      } else if (currentTool === 'eraser') {
+        pixelData[idx] = '#111827';
+      } else if (currentTool === 'picker') {
+        currentColor = pixelData[idx];
+        document.getElementById('primaryColor').value = currentColor;
+        document.getElementById('colorHex').innerText = currentColor.toUpperCase();
+        setTool('pencil');
+        return;
+      } else if (currentTool === 'bucket') {
+        floodFill(x, y, pixelData[idx], currentColor);
+      }
+
+      drawPixelCanvas();
+      update3DTexture();
+    }
+
+    function floodFill(startX, startY, targetColor, replacementColor) {
+      if (targetColor === replacementColor) return;
+      const queue = [[startX, startY]];
+
+      while (queue.length > 0) {
+        const [x, y] = queue.pop();
+        if (x < 0 || x >= 32 || y < 0 || y >= 32) continue;
+        const idx = y * 32 + x;
+        if (pixelData[idx] === targetColor) {
+          pixelData[idx] = replacementColor;
+          queue.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+      }
+    }
+
+    function clearCanvas() {
+      pixelData.fill('#111827');
+      drawPixelCanvas();
+      update3DTexture();
+    }
+
+    function drawPixelCanvas() {
+      const scale = 512 / 32;
+      ctx.clearRect(0, 0, 512, 512);
+
+      // Draw Pixels
+      for (let y = 0; y < 32; y++) {
+        for (let x = 0; x < 32; x++) {
+          const color = pixelData[y * 32 + x];
+          ctx.fillStyle = color;
+          ctx.fillRect(x * scale, y * scale, scale, scale);
+        }
+      }
+
+      // Draw Pixel Grid Lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 32; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * scale, 0); ctx.lineTo(i * scale, 512);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i * scale); ctx.lineTo(512, i * scale);
+        ctx.stroke();
+      }
+
+      // UV Guide Overlays
+      if (document.getElementById('uvGuideToggle').checked) {
+        ctx.lineWidth = 2;
+
+        // Head (Top Left)
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+        ctx.strokeRect(0, 0, 16 * scale, 16 * scale);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('HEAD (頭部)', 8, 18);
+
+        // Torso (Top Right)
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+        ctx.strokeRect(16 * scale, 0, 16 * scale, 16 * scale);
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.9)';
+        ctx.fillText('TORSO (軀干)', 16 * scale + 8, 18);
+
+        // Arms (Bottom Left)
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
+        ctx.strokeRect(0, 16 * scale, 16 * scale, 16 * scale);
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.9)';
+        ctx.fillText('ARMS (雙臂)', 8, 16 * scale + 18);
+
+        // Legs (Bottom Right)
+        ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
+        ctx.strokeRect(16 * scale, 16 * scale, 16 * scale, 16 * scale);
+        ctx.fillStyle = 'rgba(168, 85, 247, 0.9)';
+        ctx.fillText('LEGS (雙腿)', 16 * scale + 8, 16 * scale + 18);
+      }
+
+      // Sync with 32x32 offscreen canvas for Three.js texture update
+      for (let y = 0; y < 32; y++) {
+        for (let x = 0; x < 32; x++) {
+          offscreenCtx.fillStyle = pixelData[y * 32 + x];
+          offscreenCtx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+
+    function exportTexturePNG() {
+      const link = document.createElement('a');
+      link.download = 'skin-human-32x32.png';
+      link.href = offscreenCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function exportGLBModel() {
+      if (typeof THREE.GLTFExporter === 'undefined') {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
+        modal.innerHTML = `
+          <div class="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-xl text-center max-w-sm">
+            <p class="text-sm text-amber-400 mb-3">GLTFExporter 組件正在加載中，請稍後再試。</p>
+            <button onclick="this.parentElement.parentElement.remove()" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded text-xs text-white">確定</button>
+          </div>`;
+        document.body.appendChild(modal);
+        return;
+      }
+
+      const exporter = new THREE.GLTFExporter();
+      const options = {
+        binary: true,
+        embedImages: true,
+        onlyVisible: true
+      };
+
+      exporter.parse(
+        characterGroup,
+        function (result) {
+          if (result instanceof ArrayBuffer) {
+            saveArrayBuffer(result, 'character.glb');
+          } else {
+            const output = JSON.stringify(result, null, 2);
+            saveString(output, 'character.gltf');
+          }
+        },
+        function (error) {
+          console.error('GLB 導出時發生錯誤:', error);
+        },
+        options
+      );
+    }
+
+    function saveArrayBuffer(buffer, filename) {
+      const blob = new Blob([buffer], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+
+    function saveString(text, filename) {
+      const blob = new Blob([text], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+
+    // --- 3. THREE.JS 3D VIEWPORT & CHARACTER SETUP ---
+    let scene, camera, renderer, characterGroup, canvasTexture, characterMaterial;
+    let bones = {}, skeletonHelper;
+    let clock = new THREE.Clock();
+    let animTime = 0;
+
+    function init3DViewport() {
+      const container = document.getElementById('canvas3dContainer');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      // Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0b0f17);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 1.8, 3.8);
+      camera.lookAt(0, 1.0, 0);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Dynamic Canvas Texture
+      canvasTexture = new THREE.CanvasTexture(offscreenCanvas);
+      canvasTexture.magFilter = THREE.NearestFilter;
+      canvasTexture.minFilter = THREE.NearestFilter;
+
+      characterMaterial = new THREE.MeshStandardMaterial({
+        map: canvasTexture,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+      dirLight.position.set(3, 6, 4);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0x3b82f6, 0.4);
+      fillLight.position.set(-3, 2, -3);
+      scene.add(fillLight);
+
+      // Ground Shadow Plane
+      const shadowPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(10, 10),
+        new THREE.ShadowMaterial({ opacity: 0.3 })
+      );
+      shadowPlane.rotation.x = -Math.PI / 2;
+      shadowPlane.receiveShadow = true;
+      scene.add(shadowPlane);
+
+      // Grid Floor
+      const grid = new THREE.GridHelper(10, 10, 0x374151, 0x1f2937);
+      grid.position.y = 0.01;
+      scene.add(grid);
+
+      // Build Character Mesh & Bone Hierarchy
+      buildLowPolyCharacter();
+
+      // Orbit controls via Mouse
+      setupOrbitControls(container);
+
+      // Resize Handler
+      window.addEventListener('resize', onWindowResize);
+
+      // Start Loop
+      animate3D();
+    }
+
+    // Custom Box UV Assignment Helper to map specific quadrant of 32x32 texture
+    function setBoxUVs(geometry, uMin, vMin, uMax, vMax) {
+      const uvs = geometry.attributes.uv;
+      for (let i = 0; i < uvs.count; i++) {
+        let u = uvs.getX(i);
+        let v = uvs.getY(i);
+
+        // Remap UV coordinates
+        uvs.setX(i, uMin + u * (uMax - uMin));
+        uvs.setY(i, vMin + v * (vMax - vMin));
+      }
+      uvs.needsUpdate = true;
+    }
+
+    function buildLowPolyCharacter() {
+      characterGroup = new THREE.Group();
+      scene.add(characterGroup);
+
+      // --- BONE HIERARCHY SETUP ---
+      const rootBone = new THREE.Bone(); // Hips
+      rootBone.position.set(0, 0.9, 0);
+
+      const spineBone = new THREE.Bone(); // Chest
+      spineBone.position.set(0, 0.3, 0);
+      rootBone.add(spineBone);
+
+      const headBone = new THREE.Bone(); // Head
+      headBone.position.set(0, 0.4, 0);
+      spineBone.add(headBone);
+
+      // Arms
+      const leftArmBone = new THREE.Bone();
+      leftArmBone.position.set(0.3, 0.3, 0);
+      spineBone.add(leftArmBone);
+
+      const rightArmBone = new THREE.Bone();
+      rightArmBone.position.set(-0.3, 0.3, 0);
+      spineBone.add(rightArmBone);
+
+      // Legs
+      const leftLegBone = new THREE.Bone();
+      leftLegBone.position.set(0.15, -0.1, 0);
+      rootBone.add(leftLegBone);
+
+      const rightLegBone = new THREE.Bone();
+      rightLegBone.position.set(-0.15, -0.1, 0);
+      rootBone.add(rightLegBone);
+
+      bones = {
+        root: rootBone,
+        spine: spineBone,
+        head: headBone,
+        leftArm: leftArmBone,
+        rightArm: rightArmBone,
+        leftLeg: leftLegBone,
+        rightLeg: rightLegBone
+      };
+
+      // Skeleton Helper
+      skeletonHelper = new THREE.SkeletonHelper(rootBone);
+      skeletonHelper.material.linewidth = 2;
+      skeletonHelper.visible = false;
+      scene.add(skeletonHelper);
+
+      // --- MESH CREATION & UV Remapping ---
+
+      // 1. Head (0.45 x 0.45 x 0.45) - Uses UV Region (0, 0.5) to (0.5, 1.0)
+      const headGeo = new THREE.BoxGeometry(0.45, 0.45, 0.45);
+      setBoxUVs(headGeo, 0.0, 0.5, 0.5, 1.0);
+      const headMesh = new THREE.Mesh(headGeo, characterMaterial);
+      headMesh.position.set(0, 0.225, 0);
+      headMesh.castShadow = true;
+      headBone.add(headMesh);
+
+      // 2. Torso (0.5 x 0.6 x 0.3) - Uses UV Region (0.5, 0.5) to (1.0, 1.0)
+      const torsoGeo = new THREE.BoxGeometry(0.5, 0.6, 0.3);
+      setBoxUVs(torsoGeo, 0.5, 0.5, 1.0, 1.0);
+      const torsoMesh = new THREE.Mesh(torsoGeo, characterMaterial);
+      torsoMesh.position.set(0, 0.1, 0);
+      torsoMesh.castShadow = true;
+      spineBone.add(torsoMesh);
+
+      // 3. Arms (0.16 x 0.55 x 0.16) - Uses UV Region (0.0, 0.0) to (0.5, 0.5)
+      const leftArmGeo = new THREE.BoxGeometry(0.16, 0.55, 0.16);
+      setBoxUVs(leftArmGeo, 0.0, 0.0, 0.5, 0.5);
+      const leftArmMesh = new THREE.Mesh(leftArmGeo, characterMaterial);
+      leftArmMesh.position.set(0.08, -0.2, 0);
+      leftArmMesh.castShadow = true;
+      leftArmBone.add(leftArmMesh);
+
+      const rightArmGeo = new THREE.BoxGeometry(0.16, 0.55, 0.16);
+      setBoxUVs(rightArmGeo, 0.0, 0.0, 0.5, 0.5);
+      const rightArmMesh = new THREE.Mesh(rightArmGeo, characterMaterial);
+      rightArmMesh.position.set(-0.08, -0.2, 0);
+      rightArmMesh.castShadow = true;
+      rightArmBone.add(rightArmMesh);
+
+      // 4. Legs (0.2 x 0.7 x 0.2) - Uses UV Region (0.5, 0.0) to (1.0, 0.5)
+      const leftLegGeo = new THREE.BoxGeometry(0.2, 0.7, 0.2);
+      setBoxUVs(leftLegGeo, 0.5, 0.0, 1.0, 0.5);
+      const leftLegMesh = new THREE.Mesh(leftLegGeo, characterMaterial);
+      leftLegMesh.position.set(0, -0.35, 0);
+      leftLegMesh.castShadow = true;
+      leftLegBone.add(leftLegMesh);
+
+      const rightLegGeo = new THREE.BoxGeometry(0.2, 0.7, 0.2);
+      setBoxUVs(rightLegGeo, 0.5, 0.0, 1.0, 0.5);
+      const rightLegMesh = new THREE.Mesh(rightLegGeo, characterMaterial);
+      rightLegMesh.position.set(0, -0.35, 0);
+      rightLegMesh.castShadow = true;
+      rightLegBone.add(rightLegMesh);
+
+      characterGroup.add(rootBone);
+    }
+
+    function update3DTexture() {
+      if (canvasTexture) {
+        canvasTexture.needsUpdate = true;
+      }
+    }
+
+    function toggleBones(show) {
+      if (skeletonHelper) skeletonHelper.visible = show;
+    }
+
+    function toggleWireframe(wireframe) {
+      if (characterMaterial) characterMaterial.wireframe = wireframe;
+    }
+
+    // --- 4. ANIMATION PROCEDURAL CONTROLLER ---
+    function setAnimation(anim) {
+      activeAnimation = anim;
+      document.querySelectorAll('.anim-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-700', 'text-gray-200');
+      });
+      document.getElementById(`anim-${anim}`).classList.remove('bg-gray-700', 'text-gray-200');
+      document.getElementById(`anim-${anim}`).classList.add('bg-blue-600', 'text-white');
+
+      document.getElementById('currentAnimBadge').innerText = `State: ${anim.toUpperCase()}_LOOP`;
+    }
+
+    function updateAnimSpeed(val) {
+      animSpeed = parseFloat(val);
+      document.getElementById('animSpeedVal').innerText = `${animSpeed.toFixed(1)}x`;
+    }
+
+    function updateSkeletalAnimations(delta) {
+      animTime += delta * animSpeed * 4.0;
+      const t = animTime;
+
+      // Reset transforms
+      bones.root.position.y = 0.9;
+      bones.root.rotation.set(0, 0, 0);
+      bones.spine.rotation.set(0, 0, 0);
+      bones.head.rotation.set(0, 0, 0);
+      bones.leftArm.rotation.set(0, 0, 0);
+      bones.rightArm.rotation.set(0, 0, 0);
+      bones.leftLeg.rotation.set(0, 0, 0);
+      bones.rightLeg.rotation.set(0, 0, 0);
+
+      if (activeAnimation === 'idle') {
+        // Subtle Breathing
+        const breathe = Math.sin(t * 0.8) * 0.03;
+        bones.root.position.y = 0.9 + breathe;
+        bones.spine.rotation.x = Math.sin(t * 0.8) * 0.02;
+        bones.leftArm.rotation.z = 0.1 + Math.sin(t * 0.8) * 0.03;
+        bones.rightArm.rotation.z = -0.1 - Math.sin(t * 0.8) * 0.03;
+
+      } else if (activeAnimation === 'run') {
+        // High pace running loop
+        const legSwing = Math.sin(t * 2.0) * 0.6;
+        const armSwing = Math.sin(t * 2.0) * 0.7;
+
+        bones.root.position.y = 0.9 + Math.abs(Math.sin(t * 2.0)) * 0.08;
+        bones.spine.rotation.y = Math.sin(t * 2.0) * 0.15;
+
+        // Opposite leg/arm movement
+        bones.leftLeg.rotation.x = legSwing;
+        bones.rightLeg.rotation.x = -legSwing;
+        bones.leftArm.rotation.x = -armSwing;
+        bones.rightArm.rotation.x = armSwing;
+
+      } else if (activeAnimation === 'attack') {
+        // Sword Slash Loop
+        const slash = Math.sin(t * 1.5);
+        bones.spine.rotation.y = slash * 0.5;
+        bones.rightArm.rotation.x = -1.2 + Math.cos(t * 1.5) * 0.8;
+        bones.rightArm.rotation.z = -0.4;
+        bones.leftArm.rotation.x = 0.3;
+
+      } else if (activeAnimation === 'jump') {
+        // Crouching & Airborne Jump
+        const jumpPhase = Math.sin(t * 1.2);
+        bones.root.position.y = 0.9 + Math.max(-0.2, jumpPhase * 0.4);
+        bones.leftLeg.rotation.x = -Math.max(0, jumpPhase * 0.5);
+        bones.rightLeg.rotation.x = -Math.max(0, jumpPhase * 0.5);
+        bones.leftArm.rotation.z = 0.6;
+        bones.rightArm.rotation.z = -0.6;
+      }
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      const delta = clock.getDelta();
+
+      updateSkeletalAnimations(delta);
+
+      renderer.render(scene, camera);
+    }
+
+    function setupOrbitControls(container) {
+      let isMouseDown = false;
+      let mouseMode = 0; // 0: Rotate, 1: Pan
+      let prevMouse = { x: 0, y: 0 };
+
+      container.addEventListener('contextmenu', e => e.preventDefault());
+
+      container.addEventListener('mousedown', e => {
+        isMouseDown = true;
+        mouseMode = e.button === 2 ? 1 : 0;
+        prevMouse = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('mouseup', () => isMouseDown = false);
+
+      container.addEventListener('mousemove', e => {
+        if (!isMouseDown) return;
+        const deltaX = e.clientX - prevMouse.x;
+        const deltaY = e.clientY - prevMouse.y;
+
+        if (mouseMode === 0) {
+          // Orbit rotate
+          characterGroup.rotation.y += deltaX * 0.01;
+          camera.position.y = Math.max(0.5, Math.min(4.0, camera.position.y + deltaY * 0.01));
+        } else {
+          // Pan camera
+          camera.position.x -= deltaX * 0.005;
+          camera.position.y += deltaY * 0.005;
+        }
+
+        prevMouse = { x: e.clientX, y: e.clientY };
+      });
+
+      container.addEventListener('wheel', e => {
+        camera.position.z = Math.max(1.8, Math.min(7.0, camera.position.z + e.deltaY * 0.003));
+      });
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas3dContainer');
+      if (!container) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    // --- 5. GDSCRIPT GENERATOR & UI TABS ---
+    const GDSCRIPT_TEMPLATE = `extends CharacterBody3D
+
+# Godot 4 Dungeon Crawler - Player Controller (Ep 03/18)
+# Supports Velocity Length Squared checks and AnimationPlayer state switching.
+
+const SPEED = 5.0
+const JUMP_VELOCITY = 4.5
+
+# Reference to AnimationPlayer child node
+@onready var animation_player = $AnimationPlayer
+@onready var character_mesh = $CharacterMesh
+
+var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+
+func _physics_process(delta: float) -> void:
+	# Apply gravity
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+
+	# Jump Action
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+
+	# Movement Directions (WASD / Arrow keys)
+	var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+
+	if direction:
+		velocity.x = direction.x * SPEED
+		velocity.z = direction.z * SPEED
+		# Rotate mesh towards moving direction
+		character_mesh.rotation.y = atan2(-direction.x, -direction.z)
+	else:
+		velocity.x = move_toward(velocity.x, 0, SPEED)
+		velocity.z = move_toward(velocity.z, 0, SPEED)
+
+	move_and_slide()
+
+	# Animation State Machine based on horizontal velocity length_squared
+	_update_animation()
+
+func _update_animation() -> void:
+	var horizontal_velocity = Vector2(velocity.x, velocity.z)
+	
+	# Optimization: length_squared avoids expensive sqrt calculation per frame
+	if horizontal_velocity.length_squared() > 0.1 and is_on_floor():
+		if animation_player.has_animation("run_loop"):
+			animation_player.play("run_loop")
+	else:
+		if is_on_floor():
+			if animation_player.has_animation("idle_loop"):
+				animation_player.play("idle_loop")
+`;
+
+    function initCodeView() {
+      document.getElementById('gdscriptCode').value = GDSCRIPT_TEMPLATE;
+    }
+
+    function copyCode() {
+      const code = document.getElementById('gdscriptCode');
+      code.select();
+      document.execCommand('copy');
+      alert('已成功將 Godot 4 GDScript 代碼複製至剪貼簿！');
+    }
+
+    function switchTab(tab) {
+      if (tab === 'code') {
+        document.getElementById('tabContentCode').classList.remove('hidden');
+        document.getElementById('tabContentGuide').classList.add('hidden');
+        document.getElementById('tab-code').className = 'px-3 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500';
+        document.getElementById('tab-guide').className = 'px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200';
+      } else {
+        document.getElementById('tabContentCode').classList.add('hidden');
+        document.getElementById('tabContentGuide').classList.remove('hidden');
+        document.getElementById('tab-guide').className = 'px-3 py-1.5 text-xs font-semibold text-blue-400 border-b-2 border-blue-500';
+        document.getElementById('tab-code').className = 'px-3 py-1.5 text-xs font-semibold text-gray-400 hover:text-gray-200';
+      }
+    }
+
+    // --- ON LOAD INITIALIZATION ---
+    window.onload = function() {
+      initPixelEditor();
+      init3DViewport();
+      initCodeView();
+    };
+  </script>
+</body>
+</html>

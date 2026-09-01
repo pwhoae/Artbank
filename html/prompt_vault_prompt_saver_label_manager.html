@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Vault - Saver & Label Manager</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbars and sleek transition styles */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.5);
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col antialiased transition-colors duration-200">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- App Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-brand-600 text-white rounded-xl shadow-md shadow-brand-500/20">
+                        <i data-lucide="bookmark-plus" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold bg-gradient-to-r from-brand-600 to-indigo-500 bg-clip-text text-transparent">
+                            Prompt Vault
+                        </h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Label, search & manage AI prompts</p>
+                    </div>
+                </div>
+
+                <!-- Global Quick Search Bar (Header desktop view) -->
+                <div class="flex-1 max-w-md mx-4 hidden md:block">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input id="searchInputHeader" type="text" placeholder="Search titles, contents, or #labels..." 
+                            class="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-brand-500 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all">
+                    </div>
+                </div>
+
+                <!-- Action Controls (New Prompt & Theme Toggle) -->
+                <div class="flex items-center space-x-3">
+                    <button id="toggleThemeBtn" title="Toggle Theme" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                        <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+                    </button>
+                    <button id="openNewPromptModalBtn" class="flex items-center space-x-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-xl shadow-md shadow-brand-600/20 active:scale-95 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">New Prompt</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row gap-6">
+
+        <!-- Left Sidebar: Filters & Labels -->
+        <aside class="w-full md:w-64 flex-shrink-0 space-y-6">
+            <!-- Navigation Filters -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-1">
+                <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Views</p>
+                <button id="filterAllBtn" class="nav-filter-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+                    <span class="flex items-center space-x-2.5">
+                        <i data-lucide="layers" class="w-4 h-4"></i>
+                        <span>All Prompts</span>
+                    </span>
+                    <span id="countAll" class="text-xs px-2 py-0.5 rounded-full bg-white dark:bg-slate-800 shadow-xs font-semibold">0</span>
+                </button>
+                <button id="filterFavBtn" class="nav-filter-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                    <span class="flex items-center space-x-2.5">
+                        <i data-lucide="star" class="w-4 h-4"></i>
+                        <span>Favorites</span>
+                    </span>
+                    <span id="countFav" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-semibold">0</span>
+                </button>
+                <button id="filterArchivedBtn" class="nav-filter-btn w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                    <span class="flex items-center space-x-2.5">
+                        <i data-lucide="archive" class="w-4 h-4"></i>
+                        <span>Archived</span>
+                    </span>
+                    <span id="countArchived" class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 font-semibold">0</span>
+                </button>
+            </div>
+
+            <!-- Labels / Tags Filter Box -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Labels</p>
+                    <button id="clearLabelFilterBtn" class="text-xs text-brand-600 dark:text-brand-400 hover:underline hidden">Clear filter</button>
+                </div>
+                <!-- Dynamic Tag List -->
+                <div id="labelsList" class="flex flex-wrap gap-1.5 min-h-[40px] items-center">
+                    <p class="text-xs text-slate-400 italic">No labels added yet.</p>
+                </div>
+            </div>
+
+            <!-- Import / Export Utilities -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-2">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Data Management</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="exportDataBtn" class="flex items-center justify-center space-x-1.5 px-3 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-medium transition-colors">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Export</span>
+                    </button>
+                    <label class="flex items-center justify-center space-x-1.5 px-3 py-2 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800 hover:bg-brand-100 dark:hover:bg-brand-900/50 rounded-xl text-xs font-medium cursor-pointer transition-colors">
+                        <i data-lucide="file-up" class="w-3.5 h-3.5"></i>
+                        <span>Upload File</span>
+                        <input type="file" id="importFileInput" accept=".txt,.md,.json,.csv,.log" class="hidden">
+                    </label>
+                </div>
+                <p class="text-[10px] text-slate-400 text-center pt-1">Supports .txt, .md, .json prompt lists</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col space-y-4">
+
+            <!-- Controls Header (Mobile Search, Sorting, Filter Indicator) -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                <!-- Mobile Search Input -->
+                <div class="w-full md:hidden relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input id="searchInputMobile" type="text" placeholder="Search prompts or #labels..." 
+                        class="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-brand-500 rounded-xl text-sm focus:outline-none">
+                </div>
+
+                <!-- Active Filter Title Indicator -->
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <h2 id="viewTitle" class="text-base font-bold text-slate-800 dark:text-slate-100">All Prompts</h2>
+                    <span id="activeTagBadge" class="hidden inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-300">
+                        <!-- Filled dynamically -->
+                    </span>
+                </div>
+
+                <!-- Sorting & View Options -->
+                <div class="flex items-center justify-between sm:justify-end space-x-3 w-full sm:w-auto">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400 font-medium">Sort:</span>
+                        <select id="sortSelect" class="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="title">Title (A-Z)</option>
+                            <option value="usage">Most Used</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prompts Display Grid -->
+            <div id="promptsGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Prompt cards are dynamically rendered here -->
+            </div>
+
+            <!-- Empty State Display -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center py-16 px-4 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 text-center">
+                <div class="p-4 bg-slate-100 dark:bg-slate-800 rounded-full mb-3 text-slate-400">
+                    <i data-lucide="file-search" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">No prompts found</h3>
+                <p class="text-xs text-slate-400 max-w-xs mt-1">Try tweaking your search query or add a brand new prompt to get started.</p>
+                <button id="emptyStateAddBtn" class="mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl shadow-md shadow-brand-600/20 transition-all">
+                    Create New Prompt
+                </button>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Create / Edit Prompt Modal -->
+    <div id="promptModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transform scale-95 transition-transform duration-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 id="modalTitle" class="text-base font-bold text-slate-800 dark:text-slate-100">Create New Prompt</h3>
+                <button id="closeModalBtn" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Form -->
+            <form id="promptForm" class="p-6 space-y-4 overflow-y-auto flex-1">
+                <input type="hidden" id="promptId">
+                
+                <!-- Title Input -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1" for="inputTitle">Title *</label>
+                    <input type="text" id="inputTitle" required placeholder="e.g. Code Refactoring & Optimization" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all">
+                </div>
+
+                <!-- Labels Input -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1" for="inputLabels">
+                        Labels / Tags <span class="text-slate-400 font-normal lowercase">(separated by comma)</span>
+                    </label>
+                    <input type="text" id="inputLabels" placeholder="Coding, Refactor, Web" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all">
+                </div>
+
+                <!-- Prompt Content Textarea -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500" for="inputContent">Prompt Content *</label>
+                        <span class="text-[11px] text-slate-400">Use <code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-brand-600 dark:text-brand-400">{var}</code> for template variables</span>
+                    </div>
+                    <textarea id="inputContent" rows="7" required placeholder="Write your prompt text here... Tip: Add variables like {language} or {topic} to fill in later when copying!" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-mono transition-all"></textarea>
+                </div>
+
+                <!-- Notes / Context Input -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1" for="inputNotes">Notes / Usage Guide (Optional)</label>
+                    <input type="text" id="inputNotes" placeholder="e.g. Best used with GPT-4 or Claude 3.5 Sonnet" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all">
+                </div>
+            </form>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <button type="button" id="cancelModalBtn" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" form="promptForm" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl shadow-md shadow-brand-600/20 active:scale-95 transition-all">
+                    Save Prompt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Variable Filler Modal -->
+    <div id="variableModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transform scale-95 transition-transform duration-200">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Fill Template Variables</h3>
+                <button id="closeVarModalBtn" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-500">Provide values for placeholders detected in this prompt before copying:</p>
+                <div id="variableInputsContainer" class="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    <!-- Variable fields injected dynamically -->
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Preview Output</label>
+                    <div id="variablePreviewText" class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 max-h-36 overflow-y-auto whitespace-pre-wrap"></div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <button id="cancelVarModalBtn" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button id="copyFilledPromptBtn" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl shadow-md shadow-brand-600/20 active:scale-95 flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                    <span>Copy Filled Prompt</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal (Replaces browser confirm) -->
+    <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transform scale-95 transition-transform duration-200 text-center space-y-4">
+            <div class="w-12 h-12 bg-rose-100 dark:bg-rose-950/50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h4 id="confirmModalTitle" class="text-base font-bold text-slate-800 dark:text-slate-100">Delete Prompt?</h4>
+                <p id="confirmModalMessage" class="text-xs text-slate-500 mt-1">This action cannot be undone.</p>
+            </div>
+            <div class="flex items-center justify-center space-x-3 pt-2">
+                <button id="cancelConfirmBtn" class="w-full py-2 border border-slate-200 dark:border-slate-700 text-xs font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button id="proceedConfirmBtn" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded-xl shadow-md shadow-rose-600/20 active:scale-95 transition-all">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Import / Parsed Document Preview Modal -->
+    <div id="importPreviewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transform scale-95 transition-transform duration-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">Batch Import Detected Prompts</h3>
+                    <p id="importSourceFilename" class="text-xs text-slate-400">Parsed from uploaded document</p>
+                </div>
+                <button id="closeImportPreviewModalBtn" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body - List of Parsed Items -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-4">
+                <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                    <span id="importItemCount" class="text-xs font-semibold text-slate-600 dark:text-slate-300">Found 0 prompts</span>
+                    <button id="selectAllImportItemsBtn" class="text-xs text-brand-600 dark:text-brand-400 hover:underline font-medium">Select / Deselect All</button>
+                </div>
+
+                <div id="parsedPromptsContainer" class="space-y-3">
+                    <!-- Dynamic preview list of prompts to import -->
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-3 bg-slate-50/50 dark:bg-slate-900/50">
+                <button id="cancelImportPreviewBtn" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button id="confirmBatchImportBtn" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-medium text-xs rounded-xl shadow-md shadow-brand-600/20 active:scale-95 flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Save Selected to Vault</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Hidden Copy Auxiliary Textarea -->
+    <textarea id="copyAuxArea" class="sr-only" aria-hidden="true"></textarea>
+
+    <script>
+        // Default Pre-populated Sample Data
+        const SAMPLE_PROMPTS = [
+            {
+                id: '1',
+                title: 'Code Refactoring & Optimization',
+                content: 'Act as a Senior Software Engineer. Please review the following {language} code for performance bottlenecks, code smells, and security risks. Provide specific refactored improvements and explain why:\n\n```\n{code}\n```',
+                labels: ['Coding', 'Refactor', 'Dev'],
+                notes: 'Ideal for code reviews in ChatGPT, Claude, or Copilot',
+                isFavorite: true,
+                isArchived: false,
+                createdAt: Date.now() - 3600000 * 24 * 3,
+                usageCount: 15
+            },
+            {
+                id: '2',
+                title: 'SEO Blog Post Outline Generator',
+                content: 'Create a comprehensive, search-engine-optimized article outline for the topic: "{topic}". Target audience is {audience}. Include a catchy H1 title, key meta description suggestions, 5 subheadings (H2/H3), and key bullet points to cover under each section.',
+                labels: ['Writing', 'SEO', 'Marketing'],
+                notes: 'Generates structured long-form content briefs',
+                isFavorite: false,
+                isArchived: false,
+                createdAt: Date.now() - 3600000 * 24 * 2,
+                usageCount: 8
+            },
+            {
+                id: '3',
+                title: 'Language Translation & Polishing',
+                content: 'Translate the following text into natural, professional {target_language}. Maintain the tone of voice ({tone}) and ensure idioms are adapted accurately:\n\n"{text}"',
+                labels: ['Translation', 'Productivity'],
+                notes: 'Useful for business correspondence',
+                isFavorite: true,
+                isArchived: false,
+                createdAt: Date.now() - 3600000 * 12,
+                usageCount: 22
+            }
+        ];
+
+        // Global State
+        let prompts = [];
+        let activeFilter = 'all'; // 'all', 'fav', 'archived'
+        let selectedLabel = null;
+        let searchQuery = '';
+        let currentSort = 'newest';
+        let promptToDeleteId = null;
+        let activeExecutingPrompt = null;
+        let parsedImportBatch = []; // Stores temporarily parsed document items
+
+        function parseTextContent(text, filename) {
+            // 1. Try parsing JSON format directly
+            try {
+                const parsed = JSON.parse(text);
+                if (Array.isArray(parsed)) {
+                    return parsed.map((item, index) => ({
+                        id: 'parsed_' + index + '_' + Date.now(),
+                        title: item.title || `Prompt ${index + 1}`,
+                        content: item.content || '',
+                        labels: Array.isArray(item.labels) && item.labels.length ? item.labels : ['Imported'],
+                        notes: item.notes || `Imported from ${filename}`,
+                        selected: true
+                    }));
+                }
+            } catch (e) {
+                // Not JSON, continue with text & markdown structure parsing
+            }
+
+            // 2. Parse TXT / MD format with header delimiters (e.g., ============= Title ============= or # Title)
+            const results = [];
+            const lines = text.split(/\r?\n/);
+            
+            // Matches headers like ============= Title ============= or === Title === or # Title
+            const headerRegex = /^(?:={3,}\s*(.*?)\s*={3,}|#{1,6}\s+(.+)|===\s*(.*?)\s*===)$/;
+            
+            let currentTitle = '';
+            let currentLines = [];
+
+            lines.forEach((line) => {
+                const trimmed = line.trim();
+                const match = trimmed.match(headerRegex);
+
+                if (match) {
+                    // Save previous block if content exists
+                    if (currentTitle || currentLines.join('\n').trim()) {
+                        const contentText = currentLines.join('\n').trim();
+                        if (contentText || currentTitle) {
+                            const titleStr = currentTitle || `Prompt Section ${results.length + 1}`;
+                            results.push({
+                                id: 'parsed_' + results.length + '_' + Date.now(),
+                                title: titleStr,
+                                content: contentText,
+                                labels: extractAutoLabels(titleStr, contentText),
+                                notes: `Imported from ${filename}`,
+                                selected: true
+                            });
+                        }
+                    }
+                    // Start new block with extracted title
+                    currentTitle = (match[1] || match[2] || match[3] || '').trim();
+                    currentLines = [];
+                } else {
+                    currentLines.push(line);
+                }
+            });
+
+            // Push final section
+            if (currentTitle || currentLines.join('\n').trim()) {
+                const contentText = currentLines.join('\n').trim();
+                if (contentText || currentTitle) {
+                    const titleStr = currentTitle || (results.length === 0 ? filename.replace(/\.[^/.]+$/, '') : `Prompt Section ${results.length + 1}`);
+                    results.push({
+                        id: 'parsed_' + results.length + '_' + Date.now(),
+                        title: titleStr,
+                        content: contentText,
+                        labels: extractAutoLabels(titleStr, contentText),
+                        notes: `Imported from ${filename}`,
+                        selected: true
+                    });
+                }
+            }
+
+            return results.filter(p => p.content.trim() !== '' || p.title.trim() !== '');
+        }
+
+        function extractAutoLabels(title, content) {
+            const labels = new Set(['Imported']);
+            const combined = (title + ' ' + content).toLowerCase();
+            
+            if (combined.includes('二次元') || combined.includes('動漫') || combined.includes('动漫') || combined.includes('anime')) {
+                labels.add('二次元');
+            }
+            if (combined.includes('攝影') || combined.includes('摄影') || combined.includes('photo') || combined.includes('cinematic')) {
+                labels.add('攝影');
+            }
+            if (combined.includes('街景') || combined.includes('城市') || combined.includes('背景') || combined.includes('插畫')) {
+                labels.add('場景');
+            }
+            if (combined.includes('fail') || combined.includes('negative') || combined.includes('睡衣')) {
+                labels.add('Fail');
+            }
+            return Array.from(labels);
+        }
+
+        function openImportPreviewModal(parsedItems, filename) {
+            parsedImportBatch = parsedItems;
+            document.getElementById('importSourceFilename').textContent = `Parsed from ${filename} (${parsedItems.length} found)`;
+            renderImportPreviewList();
+            openModal('importPreviewModal');
+        }
+
+        function renderImportPreviewList() {
+            const container = document.getElementById('parsedPromptsContainer');
+            const countLabel = document.getElementById('importItemCount');
+            const selectedCount = parsedImportBatch.filter(item => item.selected).length;
+            
+            countLabel.textContent = `Selected ${selectedCount} of ${parsedImportBatch.length} prompts to import`;
+
+            if (parsedImportBatch.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No valid prompts or text sections detected in this file.</p>`;
+                return;
+            }
+
+            container.innerHTML = parsedImportBatch.map((item, idx) => `
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-3">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleImportSelection(${idx})" 
+                            class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500 border-slate-300">
+                        <input type="text" value="${escapeHtml(item.title)}" onchange="updateImportTitle(${idx}, this.value)" 
+                            class="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <input type="text" value="${escapeHtml(item.labels.join(', '))}" onchange="updateImportLabels(${idx}, this.value)" placeholder="Labels (comma separated)..." 
+                            class="w-full px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] focus:outline-none">
+                    </div>
+                    <textarea rows="3" onchange="updateImportContent(${idx}, this.value)" 
+                        class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-mono focus:outline-none">${escapeHtml(item.content)}</textarea>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function toggleImportSelection(idx) {
+            parsedImportBatch[idx].selected = !parsedImportBatch[idx].selected;
+            renderImportPreviewList();
+        }
+
+        function updateImportTitle(idx, val) {
+            parsedImportBatch[idx].title = val;
+        }
+
+        function updateImportLabels(idx, val) {
+            parsedImportBatch[idx].labels = val.split(',').map(l => l.trim()).filter(l => l);
+        }
+
+        function updateImportContent(idx, val) {
+            parsedImportBatch[idx].content = val;
+        }
+
+        function initApp() {
+            const savedData = localStorage.getItem('prompt_vault_data');
+            if (savedData) {
+                try {
+                    prompts = JSON.parse(savedData);
+                } catch (e) {
+                    prompts = JSON.parse(JSON.stringify(SAMPLE_PROMPTS));
+                }
+            } else {
+                prompts = JSON.parse(JSON.stringify(SAMPLE_PROMPTS));
+            }
+            setupEventListeners();
+            render();
+            lucide.createIcons();
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('prompt_vault_data', JSON.stringify(prompts));
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' 
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-700' 
+                : 'bg-rose-600 text-white border-rose-500';
+
+            toast.className = `flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-medium transform translate-y-2 opacity-0 transition-all duration-200 pointer-events-auto ${bgClass}`;
+            
+            const iconName = type === 'success' ? 'check-circle' : 'alert-circle';
+            toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4"></i><span>${escapeHtml(message)}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 200);
+            }, 2500);
+        }
+
+        function copyToClipboard(text) {
+            const aux = document.getElementById('copyAuxArea');
+            aux.value = text;
+            aux.select();
+            aux.setSelectionRange(0, 99999); // Mobile support
+            
+            let successful = false;
+            try {
+                successful = document.execCommand('copy');
+            } catch (err) {
+                successful = false;
+            }
+
+            if (!successful && navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('Copied prompt to clipboard!');
+                }).catch(() => {
+                    showToast('Failed to copy prompt', 'error');
+                });
+            } else if (successful) {
+                showToast('Copied prompt to clipboard!');
+            } else {
+                showToast('Copy failed. Please manually select text.', 'error');
+            }
+        }
+
+        // Helper to extract variables `{variable_name}` from text
+        function extractVariables(text) {
+            const regex = /\{([a-zA-Z0-9_-]+)\}/g;
+            const matches = new Set();
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                matches.add(match[1]);
+            }
+            return Array.from(matches);
+        }
+
+        function render() {
+            renderSidebar();
+            renderPromptsGrid();
+        }
+
+        function renderSidebar() {
+            // Count metrics
+            const countAll = prompts.filter(p => !p.isArchived).length;
+            const countFav = prompts.filter(p => p.isFavorite && !p.isArchived).length;
+            const countArchived = prompts.filter(p => p.isArchived).length;
+
+            document.getElementById('countAll').textContent = countAll;
+            document.getElementById('countFav').textContent = countFav;
+            document.getElementById('countArchived').textContent = countArchived;
+
+            // Highlight Active Filter Button
+            document.querySelectorAll('.nav-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-50', 'dark:bg-brand-900/30', 'text-brand-600', 'dark:text-brand-400');
+                btn.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+
+            if (activeFilter === 'all') {
+                document.getElementById('filterAllBtn').classList.add('bg-brand-50', 'dark:bg-brand-900/30', 'text-brand-600', 'dark:text-brand-400');
+            } else if (activeFilter === 'fav') {
+                document.getElementById('filterFavBtn').classList.add('bg-brand-50', 'dark:bg-brand-900/30', 'text-brand-600', 'dark:text-brand-400');
+            } else if (activeFilter === 'archived') {
+                document.getElementById('filterArchivedBtn').classList.add('bg-brand-50', 'dark:bg-brand-900/30', 'text-brand-600', 'dark:text-brand-400');
+            }
+
+            // Render Labels List
+            const labelsMap = new Map();
+            prompts.forEach(p => {
+                if (!p.isArchived) {
+                    p.labels.forEach(lbl => {
+                        const trimmed = lbl.trim();
+                        if (trimmed) {
+                            labelsMap.set(trimmed, (labelsMap.get(trimmed) || 0) + 1);
+                        }
+                    });
+                }
+            });
+
+            const labelsContainer = document.getElementById('labelsList');
+            const clearLabelBtn = document.getElementById('clearLabelFilterBtn');
+
+            if (selectedLabel) {
+                clearLabelBtn.classList.remove('hidden');
+            } else {
+                clearLabelBtn.classList.add('hidden');
+            }
+
+            if (labelsMap.size === 0) {
+                labelsContainer.innerHTML = `<p class="text-xs text-slate-400 italic">No labels created yet.</p>`;
+            } else {
+                labelsContainer.innerHTML = Array.from(labelsMap.entries()).map(([label, count]) => {
+                    const isSelected = selectedLabel === label;
+                    const badgeClasses = isSelected
+                        ? 'bg-brand-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700';
+                    return `
+                        <button onclick="setLabelFilter('${escapeJs(label)}')" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${badgeClasses}">
+                            <span>#${escapeHtml(label)}</span>
+                            <span class="opacity-60 text-[10px]">(${count})</span>
+                        </button>
+                    `;
+                }).join('');
+            }
+
+            // Header View Title Update
+            const viewTitle = document.getElementById('viewTitle');
+            if (activeFilter === 'all') viewTitle.textContent = 'All Prompts';
+            if (activeFilter === 'fav') viewTitle.textContent = 'Favorite Prompts';
+            if (activeFilter === 'archived') viewTitle.textContent = 'Archived Prompts';
+
+            const activeTagBadge = document.getElementById('activeTagBadge');
+            if (selectedLabel) {
+                activeTagBadge.classList.remove('hidden');
+                activeTagBadge.innerHTML = `#${escapeHtml(selectedLabel)} <button onclick="setLabelFilter(null)" class="ml-1 hover:text-slate-900 dark:hover:text-white">&times;</button>`;
+            } else {
+                activeTagBadge.classList.add('hidden');
+            }
+        }
+
+        function renderPromptsGrid() {
+            let filtered = prompts.filter(p => {
+                // Category view filter
+                if (activeFilter === 'all' && p.isArchived) return false;
+                if (activeFilter === 'fav' && (!p.isFavorite || p.isArchived)) return false;
+                if (activeFilter === 'archived' && !p.isArchived) return false;
+
+                // Label filter
+                if (selectedLabel && !p.labels.includes(selectedLabel)) return false;
+
+                // Search Query filter
+                if (searchQuery.trim() !== '') {
+                    const q = searchQuery.toLowerCase();
+                    const titleMatch = p.title.toLowerCase().includes(q);
+                    const contentMatch = p.content.toLowerCase().includes(q);
+                    const labelMatch = p.labels.some(l => l.toLowerCase().includes(q));
+                    const notesMatch = p.notes && p.notes.toLowerCase().includes(q);
+                    return titleMatch || contentMatch || labelMatch || notesMatch;
+                }
+
+                return true;
+            });
+
+            // Apply Sorting
+            filtered.sort((a, b) => {
+                if (currentSort === 'newest') return b.createdAt - a.createdAt;
+                if (currentSort === 'oldest') return a.createdAt - b.createdAt;
+                if (currentSort === 'title') return a.title.localeCompare(b.title);
+                if (currentSort === 'usage') return (b.usageCount || 0) - (a.usageCount || 0);
+                return 0;
+            });
+
+            const grid = document.getElementById('promptsGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+
+                grid.innerHTML = filtered.map(p => {
+                    const variables = extractVariables(p.content);
+                    const hasVars = variables.length > 0;
+
+                    return `
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+                            <div>
+                                <!-- Top Row: Tags & Actions -->
+                                <div class="flex items-start justify-between gap-2 mb-2">
+                                    <div class="flex flex-wrap gap-1 items-center">
+                                        ${p.labels.map(lbl => `
+                                            <span onclick="setLabelFilter('${escapeJs(lbl)}')" class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30 dark:hover:text-brand-400 cursor-pointer transition-colors">
+                                                #${escapeHtml(lbl)}
+                                            </span>
+                                        `).join('')}
+                                        ${hasVars ? `
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                <i data-lucide="variable" class="w-3 h-3 mr-0.5"></i> ${variables.length} var${variables.length > 1 ? 's' : ''}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- Quick Favorite & Actions -->
+                                    <div class="flex items-center space-x-1">
+                                        <button onclick="toggleFavorite('${p.id}')" title="Favorite" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors">
+                                            <i data-lucide="star" class="w-4 h-4 ${p.isFavorite ? 'fill-amber-400 text-amber-400' : ''}"></i>
+                                        </button>
+                                        <button onclick="toggleArchive('${p.id}')" title="${p.isArchived ? 'Unarchive' : 'Archive'}" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                            <i data-lucide="${p.isArchived ? 'rotate-ccw' : 'archive'}" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Prompt Title -->
+                                <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 mb-1.5 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                    ${escapeHtml(p.title)}
+                                </h3>
+
+                                <!-- Prompt Notes/Description -->
+                                ${p.notes ? `<p class="text-xs text-slate-400 mb-3 italic">${escapeHtml(p.notes)}</p>` : ''}
+
+                                <!-- Prompt Content Box -->
+                                <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 mb-4 font-mono text-xs text-slate-600 dark:text-slate-300 line-clamp-3 whitespace-pre-wrap select-all">
+                                    ${escapeHtml(p.content)}
+                                </div>
+                            </div>
+
+                            <!-- Bottom Row: Metadata & Execute Buttons -->
+                            <div class="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                                <span>Used ${p.usageCount || 0} times</span>
+
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="editPrompt('${p.id}')" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" title="Edit Prompt">
+                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="confirmDeletePrompt('${p.id}')" class="p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-500 hover:text-rose-600 transition-colors" title="Delete">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="handleCopyAction('${p.id}')" class="flex items-center space-x-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl shadow-xs active:scale-95 transition-all">
+                                        <i data-lucide="${hasVars ? 'play' : 'copy'}" class="w-3.5 h-3.5"></i>
+                                        <span>${hasVars ? 'Use' : 'Copy'}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            lucide.createIcons();
+        }
+
+        function setLabelFilter(label) {
+            selectedLabel = label;
+            render();
+        }
+
+        function toggleFavorite(id) {
+            const p = prompts.find(item => item.id === id);
+            if (p) {
+                p.isFavorite = !p.isFavorite;
+                saveToLocalStorage();
+                render();
+            }
+        }
+
+        function toggleArchive(id) {
+            const p = prompts.find(item => item.id === id);
+            if (p) {
+                p.isArchived = !p.isArchived;
+                saveToLocalStorage();
+                render();
+                showToast(p.isArchived ? 'Prompt archived' : 'Prompt unarchived');
+            }
+        }
+
+        function confirmDeletePrompt(id) {
+            promptToDeleteId = id;
+            openModal('confirmModal');
+        }
+
+        function deletePrompt() {
+            if (promptToDeleteId) {
+                prompts = prompts.filter(p => p.id !== promptToDeleteId);
+                saveToLocalStorage();
+                render();
+                closeModal('confirmModal');
+                showToast('Prompt deleted');
+                promptToDeleteId = null;
+            }
+        }
+
+        function handleCopyAction(id) {
+            const p = prompts.find(item => item.id === id);
+            if (!p) return;
+
+            // Increment usage count
+            p.usageCount = (p.usageCount || 0) + 1;
+            saveToLocalStorage();
+
+            const vars = extractVariables(p.content);
+            if (vars.length > 0) {
+                // Open Variable Filler Modal
+                activeExecutingPrompt = p;
+                openVariableModal(p, vars);
+            } else {
+                copyToClipboard(p.content);
+                renderPromptsGrid();
+            }
+        }
+
+        function openVariableModal(promptObj, variables) {
+            const container = document.getElementById('variableInputsContainer');
+            container.innerHTML = variables.map(v => `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">{${escapeHtml(v)}}</label>
+                    <input type="text" data-var="${escapeHtml(v)}" placeholder="Enter value for ${escapeHtml(v)}..." 
+                        class="var-input w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+            `).join('');
+
+            updateVariablePreview();
+
+            // Attach input event listeners for live preview update
+            container.querySelectorAll('.var-input').forEach(input => {
+                input.addEventListener('input', updateVariablePreview);
+            });
+
+            openModal('variableModal');
+        }
+
+        function updateVariablePreview() {
+            if (!activeExecutingPrompt) return;
+            let text = activeExecutingPrompt.content;
+
+            document.querySelectorAll('.var-input').forEach(input => {
+                const varName = input.getAttribute('data-var');
+                const val = input.value || `{${varName}}`;
+                text = text.replaceAll(`{${varName}}`, val);
+            });
+
+            document.getElementById('variablePreviewText').textContent = text;
+        }
+
+        // Modal Helpers with smooth CSS animations
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                const content = modal.querySelector('div');
+                if (content) content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            const content = modal.querySelector('div');
+            if (content) content.classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function editPrompt(id) {
+            const p = prompts.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('promptId').value = p.id;
+            document.getElementById('inputTitle').value = p.title;
+            document.getElementById('inputLabels').value = p.labels.join(', ');
+            document.getElementById('inputContent').value = p.content;
+            document.getElementById('inputNotes').value = p.notes || '';
+
+            document.getElementById('modalTitle').textContent = 'Edit Prompt';
+            openModal('promptModal');
+        }
+
+        function resetForm() {
+            document.getElementById('promptId').value = '';
+            document.getElementById('promptForm').reset();
+            document.getElementById('modalTitle').textContent = 'Create New Prompt';
+        }
+
+        function setupEventListeners() {
+            // Theme Toggle
+            document.getElementById('toggleThemeBtn').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+
+            // Search Inputs Sync
+            const searchDesktop = document.getElementById('searchInputHeader');
+            const searchMobile = document.getElementById('searchInputMobile');
+
+            const handleSearch = (e) => {
+                searchQuery = e.target.value;
+                searchDesktop.value = searchQuery;
+                searchMobile.value = searchQuery;
+                render();
+            };
+
+            searchDesktop.addEventListener('input', handleSearch);
+            searchMobile.addEventListener('input', handleSearch);
+
+            // Sort Selector
+            document.getElementById('sortSelect').addEventListener('change', (e) => {
+                currentSort = e.target.value;
+                renderPromptsGrid();
+            });
+
+            // Navigation Filter Buttons
+            document.getElementById('filterAllBtn').addEventListener('click', () => {
+                activeFilter = 'all';
+                selectedLabel = null;
+                render();
+            });
+            document.getElementById('filterFavBtn').addEventListener('click', () => {
+                activeFilter = 'fav';
+                selectedLabel = null;
+                render();
+            });
+            document.getElementById('filterArchivedBtn').addEventListener('click', () => {
+                activeFilter = 'archived';
+                selectedLabel = null;
+                render();
+            });
+            document.getElementById('clearLabelFilterBtn').addEventListener('click', () => {
+                selectedLabel = null;
+                render();
+            });
+
+            // Modal Trigger Buttons
+            document.getElementById('openNewPromptModalBtn').addEventListener('click', () => {
+                resetForm();
+                openModal('promptModal');
+            });
+            document.getElementById('emptyStateAddBtn').addEventListener('click', () => {
+                resetForm();
+                openModal('promptModal');
+            });
+
+            // Form Submit Listener (Create / Edit Prompt)
+            document.getElementById('promptForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = document.getElementById('promptId').value;
+                const title = document.getElementById('inputTitle').value.trim();
+                const labelsRaw = document.getElementById('inputLabels').value;
+                const content = document.getElementById('inputContent').value;
+                const notes = document.getElementById('inputNotes').value.trim();
+
+                const labels = labelsRaw.split(',').map(l => l.trim()).filter(l => l.length > 0);
+
+                if (id) {
+                    const existing = prompts.find(p => p.id === id);
+                    if (existing) {
+                        existing.title = title;
+                        existing.labels = labels;
+                        existing.content = content;
+                        existing.notes = notes;
+                    }
+                    showToast('Prompt updated!');
+                } else {
+                    prompts.unshift({
+                        id: Date.now().toString(),
+                        title,
+                        labels,
+                        content,
+                        notes,
+                        isFavorite: false,
+                        isArchived: false,
+                        createdAt: Date.now(),
+                        usageCount: 0
+                    });
+                    showToast('New prompt created!');
+                }
+
+                saveToLocalStorage();
+                render();
+                closeModal('promptModal');
+            });
+
+            // Modal Action Listeners
+            document.getElementById('closeModalBtn').addEventListener('click', () => closeModal('promptModal'));
+            document.getElementById('cancelModalBtn').addEventListener('click', () => closeModal('promptModal'));
+            document.getElementById('closeVarModalBtn').addEventListener('click', () => closeModal('variableModal'));
+            document.getElementById('cancelVarModalBtn').addEventListener('click', () => closeModal('variableModal'));
+            document.getElementById('cancelConfirmBtn').addEventListener('click', () => closeModal('confirmModal'));
+            document.getElementById('proceedConfirmBtn').addEventListener('click', deletePrompt);
+
+            // Copy filled variable template prompt
+            document.getElementById('copyFilledPromptBtn').addEventListener('click', () => {
+                const previewText = document.getElementById('variablePreviewText').textContent;
+                copyToClipboard(previewText);
+                closeModal('variableModal');
+                if (activeExecutingPrompt) {
+                    renderPromptsGrid();
+                }
+            });
+
+            // Batch Import Modal Event Listeners
+            document.getElementById('closeImportPreviewModalBtn').addEventListener('click', () => closeModal('importPreviewModal'));
+            document.getElementById('cancelImportPreviewBtn').addEventListener('click', () => closeModal('importPreviewModal'));
+            
+            document.getElementById('selectAllImportItemsBtn').addEventListener('click', () => {
+                const allSelected = parsedImportBatch.every(i => i.selected);
+                parsedImportBatch.forEach(i => i.selected = !allSelected);
+                renderImportPreviewList();
+            });
+
+            document.getElementById('confirmBatchImportBtn').addEventListener('click', () => {
+                const toImport = parsedImportBatch.filter(item => item.selected);
+                if (toImport.length === 0) {
+                    showToast('Please select at least one prompt to import', 'error');
+                    return;
+                }
+
+                toImport.forEach(item => {
+                    prompts.unshift({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                        title: item.title,
+                        labels: item.labels,
+                        content: item.content,
+                        notes: item.notes,
+                        isFavorite: false,
+                        isArchived: false,
+                        createdAt: Date.now(),
+                        usageCount: 0
+                    });
+                });
+
+                saveToLocalStorage();
+                render();
+                closeModal('importPreviewModal');
+                showToast(`Successfully imported ${toImport.length} prompts!`);
+            });
+
+            // Export Data as JSON file
+            document.getElementById('exportDataBtn').addEventListener('click', () => {
+                const jsonStr = JSON.stringify(prompts, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `prompt_vault_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Prompts exported');
+            });
+
+            // Enhanced Import & Text Upload Handler (.txt, .md, .json, .csv)
+            document.getElementById('importFileInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const fileText = event.target.result;
+                    const parsedItems = parseTextContent(fileText, file.name);
+
+                    if (parsedItems.length > 0) {
+                        openImportPreviewModal(parsedItems, file.name);
+                    } else {
+                        showToast('Could not parse any prompt content from this file', 'error');
+                    }
+                };
+
+                reader.onerror = () => {
+                    showToast('Failed to read file', 'error');
+                };
+
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input
+            });
+        }
+
+        // HTML Escape Security Helpers
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        // Initialize App on DOM load
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
