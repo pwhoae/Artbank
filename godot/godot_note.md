@@ -85,6 +85,7 @@ gridmap 調cell size
 
 ScriptableObject (SO)：针对技能能力组合与复杂触发逻辑，使用 Unity SO 等可视化资源进行配置。 
 
+blender做low-poly character+animation https://youtu.be/fkSegL1vLrk?si=84eb4FkC5pDiZmsz 
 在 Action Editor 中创建 default（默认姿态）、idle_loop（待机循环）和 run_loop（跑步循环）动画。  
 <hr>
 设计规划图模板
