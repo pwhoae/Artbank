@@ -57,6 +57,7 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 MD
 封挡视角与防漏光：建立主视角构图后，即使背面看不到也需要封闭场景，确保模块之间完全契合且无穿插隙缝，防止外部光线意外泄露。 
 [UE]
+AnimGen Example
 https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
 攻击音+受击音+攻击vector+粒子特效+相机震动
 
