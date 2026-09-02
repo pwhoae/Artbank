@@ -4,7 +4,7 @@ source: "https://www.youtube.com/watch?v=vZkAbeMLcvc"
 author:
   - "[[PtroDev]]"
 published: 2026-08-07
-created: 2026-08-19
+created: 2026-09-02
 description: "Every game mechanic is built from a few simple patterns. Learning them changed how I make games.Join the Godot Mastery Discord: https://discord.gg/vqM8ry9c9W..."
 tags:
   - "clippings"
