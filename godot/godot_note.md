@@ -50,6 +50,9 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 ### check
 
 <hr>
+利用 Godot 的 BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。 
+巧妙地添加了一个 Node3D 作为 武器占位符（Weapon Placeholder），方便后续通过代码动态替换/实例化不同的武器，而无需在代码里硬编码旋转角度。 
+
 gridmap 調cell size
 7. 
 8. 上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
