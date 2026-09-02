@@ -48,8 +48,12 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 6. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）;收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
 
 ### check
+攻击音+受击音+攻击vector+粒子特效+相机震动
 
 <hr>
+1. 开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。 
+
+
 利用 Godot 的 BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。 
 巧妙地添加了一个 Node3D 作为 武器占位符（Weapon Placeholder），方便后续通过代码动态替换/实例化不同的武器，而无需在代码里硬编码旋转角度。 
 
