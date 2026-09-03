@@ -1,14 +1,19 @@
 ### 流程
-認證玩法->確立美術>均衡性能+美術 
-wennie:會讓人不知不覺地被吸引到某個地方
-但遊戲底層卻是一個嚴謹的數學 Excel 試算表
+認證玩法->確立美術>均衡性能+美術<br>
 
-信息量=完成度
-juicy
-skilltree 只要互動就加音效
-連段
-處決動畫
-中間插入漫畫演出
+### Juicy 方法
+wennie:會讓人不知不覺地被吸引到某個地方<br>
+信息量=完成度<br>
+skilltree+連線 只要互動就加音效<br>
+連段<br>
+斬殺boss 擊破 動畫+處決動畫<br>
+攻击音+受击音+攻击vector+粒子特效+相机震动<br>
+中間插入漫畫演出<br>
+利用 Godot 的 BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。 
+上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
+
+
+
 <hr>
 游戏规则改造与迭代指南
 （三坐标八象限博弈系改造法）
@@ -16,7 +21,6 @@ X 坐标：信息（完全 vs 不完全）
 Y 坐标：随机性（确定性 vs 随机性）
 Z 坐标：博弈结构（动态 vs 静态 / 竞技性）
 控制论：正反馈与负反馈的应用
-
 
 第二象限：完全信息 / 非随机 / 静态博弈
 典型代表：猜拳、田忌赛马、格斗游戏（如《街霸》的核心立回切片）。 
@@ -36,8 +40,6 @@ Z 坐标：博弈结构（动态 vs 静态 / 竞技性）
 <hr>
 
 ### 玩法靈感
-1. "The Weenie" 指的是一種視覺吸引物或地標（例如城堡），就像用香腸誘惑小狗一樣，用來吸引遊客不知不覺地朝那個方向走去。
-2. skilltree+連線
 3. 組合
 4. 偽3d效果,彩虹字,浮動,互動流體模擬,卡反絕區零火鍋,3D 掃雷
 5. 瘋狂鴿子3d /滾動的天空/ 號角保齡球/ 閃避球/ 滑雪/ 美夢zzz/ TNT弹道轨迹
@@ -45,7 +47,6 @@ Z 坐标：博弈结构（动态 vs 静态 / 竞技性）
 7. 派對屬性
 8. render texture=subviewer
 9. AtlasTexture 拼圖
-10. 斬殺boss 擊破 動畫
 11. 宝箱/抓钩
 12. 勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門
 13. robot核心就是key
@@ -53,7 +54,6 @@ Z 坐标：博弈结构（动态 vs 静态 / 竞技性）
 15. 遠路+直接 ## 找开源demo>做遊戲:miss hit/鏡像密碼
 破局关键：资深开发者并非掌握了数百种秘密机制，而是能够看出机制背后的通用模式。 常见游戏机制拆解示例
 宝箱 / 门|NPC|子弹|抓钩 (Grappling Hook)
-
 手忙腳亂開鎖遊戲
 <hr>
 
@@ -72,42 +72,28 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
 ```
 6. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）;收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
+7. mesh.create_convex_shape（）
+8. asd rotate xyz
+9. 动态天花板算法（Dynamic Ceiling Generation）开发思路：为方便在编辑器中俯瞰布置房间与摆放物件，场景内不预先绘制天花板。  代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
+10. 碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。
+11. 开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。 
+
 
 ### check
-mesh.create_convex_shape（）
 
 [UE]
-小白盒搭构图：
-确定镜头视界与高度：首先设立半地平线高度的镜头视界，在中间位置确定洞穴的大致形态。利用物体模式（根据物体的轴心坐标与方向旋转）调节基础组件。 
-
-
+小白盒搭构图：确定镜头视界与高度：首先设立半地平线高度的镜头视界，在中间位置确定洞穴的大致形态。利用物体模式（根据物体的轴心坐标与方向旋转）调节基础组件。 
 尺寸参照：借助场景中 1 米见方的标准网格，使用基础白盒体建立角色比例参照（如骷髅/角色高度约 1.8 米，宽度约 50 厘米等）。 
-MD
 封挡视角与防漏光：建立主视角构图后，即使背面看不到也需要封闭场景，确保模块之间完全契合且无穿插隙缝，防止外部光线意外泄露。 
+AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
 [UE]
-AnimGen Example
-https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
-攻击音+受击音+攻击vector+粒子特效+相机震动
 
 <hr>
-1. 开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。 
 
-
-利用 Godot 的 BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。 
-巧妙地添加了一个 Node3D 作为 武器占位符（Weapon Placeholder），方便后续通过代码动态替换/实例化不同的武器，而无需在代码里硬编码旋转角度。 
-
-gridmap 調cell size
-7. 
-8. 上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
-9. asd rotate xyz
-动态天花板算法（Dynamic Ceiling Generation）开发思路：为方便在编辑器中俯瞰布置房间与摆放物件，场景内不预先绘制天花板。  代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
-碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。  
 1. 属性系统
 类型划分：属性（生命、攻击、防御）与专门作用于技能标签的技能属性。 
 数值分层：支持“基础值 + 额外值 + 百分比加成 = 最终值”的计算链路。 
-
 基础属性：包含技能等级、释放条件、资源消耗、冷却时间（CD）及运行时技能数据。 
-
 技能原子化：将复杂技能拆解为多个独立“技能能力（Skill Ability）”。例如：一个技能可组合“近战范围 AOE + 子弹位移 + 附加 Buff”。 
 
 3. Buff 系统（Buff System）
@@ -115,7 +101,6 @@ gridmap 調cell size
 
 4. 统一触发系统（Trigger System）
 配置链路：将一次触发拆解为 事件 → 条件 → 目标 → 触发效果。 
-
 通用性：受击、造成暴击、击杀目标、Buff 周期结算等均走同一套配置链路，绝大多数被动技能也基于此系统实现。 
 
 5. 伤害结算（Damage Processing）
@@ -123,18 +108,17 @@ gridmap 調cell size
 
 6. AI 与状态机（AI & State Machine）
 行为树 AI：怪物与召唤物使用行为树处理寻路、追击、站位、距离判断及普通怪与 Boss 的技能选择差异。 
-
 逻辑状态机：非动画状态机，用于控制单位逻辑状态（移动、待机、释放技能、受击、死亡），并将状态驱动给动画与定位逻辑。 
 
 7. 配置表与数据流（Data & Table Pipelines）
 二维表格（Excel/AI辅助生成）：用于技能基础数据、数值等级、Buff 等数据，通过导表工具转码。 
-
 ScriptableObject (SO)：针对技能能力组合与复杂触发逻辑，使用 Unity SO 等可视化资源进行配置。 
 
 Godot 4《3D 地牢爬行者》
 blender做low-poly character+animation https://youtu.be/fkSegL1vLrk?si=84eb4FkC5pDiZmsz 
 blender做low-poly 武器 https://www.youtube.com/watch?v=8vKzfsgLOIk
 在 Action Editor 中创建 default（默认姿态）、idle_loop（待机循环）和 run_loop（跑步循环）动画。  
+
 <hr>
 设计规划图模板
 
