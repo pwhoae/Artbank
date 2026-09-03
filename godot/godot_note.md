@@ -74,6 +74,8 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 6. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）;收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
 
 ### check
+mesh.create_convex_shape（）
+
 [UE]
 小白盒搭构图：
 确定镜头视界与高度：首先设立半地平线高度的镜头视界，在中间位置确定洞穴的大致形态。利用物体模式（根据物体的轴心坐标与方向旋转）调节基础组件。 
