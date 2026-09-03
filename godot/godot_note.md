@@ -27,6 +27,7 @@ skilltree 只要互動就加音效
 13. robot核心就是key
 14. 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖 ## 被動遊戲 vs 主動遊戲
 15. 遠路+直接 ## 找开源demo>做遊戲:miss hit/鏡像密碼
+宝箱 / 门|NPC|子弹|抓钩 (Grappling Hook)
 
 手忙腳亂開鎖遊戲
 <hr>
