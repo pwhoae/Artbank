@@ -30,6 +30,15 @@ Sound:https://www.zapsplat.com/
  "角色畫風": "3渲2畫風"， "場景畫風": "3A遊戲畫風"
 ```
 
+### 向量藝術
+```
+風格主軸： ⁠minimalist vector art⁠（極簡向量藝術）, ⁠vector illustration style⁠（向量插畫風格）。
+幾何與形狀： ⁠clean geometric shapes⁠（乾淨的幾何圖形）, ⁠large blocks of color⁠（大色塊）。
+人物細節： ⁠featureless face⁠（無五官面孔）, ⁠simple hands⁠（簡單的手部描繪）。
+排版與構圖： ⁠negative space⁠（負空間）, ⁠strong sense of hierarchy⁠（強烈的層次感）, ⁠large text overlay⁠（大文字疊加）。
+紋理： ⁠halftone texture⁠（網點紋理）, ⁠paper texture finish⁠（紙張紋理效果）。
+```
+
 ### <a href="https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1">平面設計 prompt html</a>
 ```
 畫面所有元素用矩形+矩形坐標框住並加中文描述
