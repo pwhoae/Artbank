@@ -1,21 +1,22 @@
 ### 流程
 認證玩法->確立美術>均衡性能+美術<br>
+策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
+<hr>
 
 ### Juicy 方法
-wennie:會讓人不知不覺地被吸引到某個地方<br>
-信息量=完成度<br>
-skilltree+連線 只要互動就加音效<br>
-連段<br>
-斬殺boss 擊破 動畫+處決動畫<br>
-攻击音+受击音+攻击vector+粒子特效+相机震动<br>
-中間插入漫畫演出<br>
-利用 Godot 的 BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。 
-上限與下限：策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
-
-
-
+1. wennie:會讓人不知不覺地被吸引到某個地方
+2. 信息量=完成度|中間插入漫畫演出
+3. skilltree+連線 只要互動就加音效
+4. 連段+斬殺boss 擊破 動畫+處決動畫 攻击音+受击音+攻击vector+粒子特效+相机震动|BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。 
 <hr>
-游戏规则改造与迭代指南
+
+### Godot 4《3D 地牢爬行者》
+blender做low-poly character+animation https://youtu.be/fkSegL1vLrk?si=84eb4FkC5pDiZmsz 
+blender做low-poly 武器 https://www.youtube.com/watch?v=8vKzfsgLOIk
+<hr>
+
+<details>
+	<summary> ###  游戏规则改造与迭代指南</summary>
 （三坐标八象限博弈系改造法）
 X 坐标：信息（完全 vs 不完全）
 Y 坐标：随机性（确定性 vs 随机性）
@@ -37,80 +38,72 @@ Y 坐标：随机性（确定性 vs 随机性）
 Z 坐标：博弈结构（动态 vs 静态 / 竞技性）
 中国象棋（引入静态博弈）：每隔 10 回合触发一次“同时行动”，双方将策略写在纸上/系统判定同时移动（类似猜拳博弈）。
 梯蛇棋（提高竞争性/飞行棋化）：增加为每人 4 个棋子（需投出 6 点启动），落到他人棋子格可将其撞回起点，棋子可叠放移动。
+</details>
+
 <hr>
 
-### 玩法靈感
-3. 組合
-4. 偽3d效果,彩虹字,浮動,互動流體模擬,卡反絕區零火鍋,3D 掃雷
-5. 瘋狂鴿子3d /滾動的天空/ 號角保齡球/ 閃避球/ 滑雪/ 美夢zzz/ TNT弹道轨迹
+### 玩法靈感 (资深开发者并非掌握了数百种秘密机制，而是能够看出机制背后的通用模式。 常见游戏机制拆解示例)
+1. 組合
+2. 偽3d效果,彩虹字,浮動,互動流體模擬,卡反絕區零火鍋,3D 掃雷
+3. 瘋狂鴿子3d /滾動的天空/ 號角保齡球/ 閃避球/ 滑雪/ 美夢zzz/ TNT弹道轨迹
 6. 互動式動態霧氣
 7. 派對屬性
 8. render texture=subviewer
 9. AtlasTexture 拼圖
-11. 宝箱/抓钩
-12. 勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門
-13. robot核心就是key
+11. 宝箱 / 门|NPC|子弹|抓钩 (Grappling Hook)+勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門+robot核心就是key
 14. 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖 ## 被動遊戲 vs 主動遊戲
 15. 遠路+直接 ## 找开源demo>做遊戲:miss hit/鏡像密碼
-破局关键：资深开发者并非掌握了数百种秘密机制，而是能够看出机制背后的通用模式。 常见游戏机制拆解示例
-宝箱 / 门|NPC|子弹|抓钩 (Grappling Hook)
-手忙腳亂開鎖遊戲
+16. 手忙腳亂開鎖遊戲
 <hr>
 
-### godot note (pck)
-開發技巧
-1. 沒有遊戲經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch 
-2. 不要重复造轮子：合理利用引擎资源商;視差省MB,Low poly:[poly.pizza (Quaternius)]與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
+### godot note (開發技巧 pck)
+1. 沒經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch
+AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
+
+3. 不要重复造轮子：合理利用引擎资源商;視差省MB,Low poly:[poly.pizza (Quaternius)]與低解析度貼圖;減法,別做镜子(魔术)[3d要加入場景光照+環境光+camera]
 善用現成 Addons / Plugins（不要重複造輪子）Panku Console：遊戲內即時控制台，可追蹤變數、執行命令，極度利於 Debug 與測試。 
 GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）。 
 如何逆向一个Godot游戏？:用GDRE 
 
-3. 貼圖/复用与旋转角度增加變化:https://ambientcg.com/
-4. 地编參考:https://www.artstation.com/artwork/dyk3nQ
-5. 解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
+4. 貼圖/复用与旋转角度增加變化:https://ambientcg.com/
+5. 地编參考:https://www.artstation.com/artwork/dyk3nQ
+6. 解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
 ```
 把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
 ```
-6. tscn | gdscript | assets (audio,png,glb,)>核心痛點：為什麼不該為每把武器建一個獨立場景（Scene）;收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
-7. mesh.create_convex_shape（）
+小白盒搭构图：确定镜头视界与高度：确定洞穴的大致形态。利用物体模式（根据物体的轴心坐标与方向旋转）调节基础组件。 
+尺寸参照：借助场景中 1 米见方的标准网格，使用基础白盒体建立角色比例参照（如骷髅/角色高度约 1.8 米，宽度约 50 厘米等）。 
+封挡视角与防漏光：建立主视角构图后，即使背面看不到也需要封闭场景，确保模块之间完全契合且无穿插隙缝，防止外部光线意外泄露。 
+建筑蓝图与模块化拼装:通用建筑优先：先搭建占比最高的高频居民建筑，再制作低频建筑
+
+设计规划图模板:地貌与历史背景+多维细节参考库+建筑结构+灯光氛围：确定时间段及角落光影+贴花与破损细节：收集管道、污渍、电线、海报等生活化元素+空间测量: 放入角色模型进行实际跑图测试，反复测量比例与空间感。 
+
+6. tscn | gdscript | assets (audio,png,glb,);收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
+7. mesh.create_convex_shape（）給static+collsion|碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。在 Action Editor 中创建 default（默认姿态）、idle_loop（待机循环）和 run_loop（跑步循环）动画。  
 8. asd rotate xyz
-9. 动态天花板算法（Dynamic Ceiling Generation）开发思路：为方便在编辑器中俯瞰布置房间与摆放物件，场景内不预先绘制天花板。  代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
-10. 碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。
-11. 开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。 
+9. 动态天花板算法:代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
+10.  开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。 
 
+### Common function
 
-### check
-映射比例
-remap(value, istart, istop, ostart, ostop)
-
+映射比例 remap(value, istart, istop, ostart, ostop)
+```
 value：目前你要轉換的數值。
 istart / istop：原本舊範圍的「起點」與「終點」（Input start/stop）。
 ostart / ostop：想要轉換過去新範圍的「起點」與「終點」（Output start/stop）。
-var distance = 50.0
-# 注意：這裡把新範圍倒過來放（200對應0，0對應100）
-var damage = remap(distance, 0, 200, 100, 0)
-print(damage) # 輸出: 75
+
 1. 手电筒电池电量与灯光强度联动
 逻辑：随着电池电量从 max_battery 消耗至 0，通过 remap(battery, max_battery, 0, max_energy, 0) 动态调整 2D 点光源（Light2D）的强度。 
-
 
 2. 经验值进度条适配
 逻辑：人物升级后所需经验值呈指数增长（如递增 25%），使用 remap(current_exp, 0, required_exp, 0, bar.max_value) 将经验自动映射到 UI 进度条。 
 
-
 3. 移动速度与脚步声音调（Pitch）变化
 逻辑：根据角色的移动速度 X 轴绝对值 abs(velocity.x)，在 0 到 max_speed 范围内，映射到音效播放器（AudioStreamPlayer）的 pitch_scale 范围（如 0.8 至 1.3）。 
-
-
-
-[UE]
-小白盒搭构图：确定镜头视界与高度：首先设立半地平线高度的镜头视界，在中间位置确定洞穴的大致形态。利用物体模式（根据物体的轴心坐标与方向旋转）调节基础组件。 
-尺寸参照：借助场景中 1 米见方的标准网格，使用基础白盒体建立角色比例参照（如骷髅/角色高度约 1.8 米，宽度约 50 厘米等）。 
-封挡视角与防漏光：建立主视角构图后，即使背面看不到也需要封闭场景，确保模块之间完全契合且无穿插隙缝，防止外部光线意外泄露。 
-AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
-[UE]
-
+```
 <hr>
+<details>
+	<summary> ###  游戏属性系统</summary>
 
 1. 属性系统
 类型划分：属性（生命、攻击、防御）与专门作用于技能标签的技能属性。 
@@ -135,26 +128,8 @@ AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c76979
 7. 配置表与数据流（Data & Table Pipelines）
 二维表格（Excel/AI辅助生成）：用于技能基础数据、数值等级、Buff 等数据，通过导表工具转码。 
 ScriptableObject (SO)：针对技能能力组合与复杂触发逻辑，使用 Unity SO 等可视化资源进行配置。 
-
-Godot 4《3D 地牢爬行者》
-blender做low-poly character+animation https://youtu.be/fkSegL1vLrk?si=84eb4FkC5pDiZmsz 
-blender做low-poly 武器 https://www.youtube.com/watch?v=8vKzfsgLOIk
-在 Action Editor 中创建 default（默认姿态）、idle_loop（待机循环）和 run_loop（跑步循环）动画。  
-
+</details>
 <hr>
-设计规划图模板
-
-地貌与历史背景
-多维细节参考库
-建筑结构
-灯光氛围：确定时间段及角落光影。
-贴花与破损细节：收集管道、污渍、电线、海报等生活化元素。 
-
-空间测量: 放入角色模型进行实际跑图测试，反复测量比例与空间感。 
-
-建筑蓝图与模块化拼装:通用建筑优先：先搭建占比最高的高频居民建筑，再制作低频建筑
-<hr>
-
 
 ### 思考方向
 1. filedialog:玩家upload file
