@@ -1,6 +1,11 @@
 ### 流程
 認證玩法->確立美術>均衡性能+美術<br>
 策劃案 vs. Demo 策劃案決定上限：個人獨立製作 Demo 的美術、動作與特效資源極度有限。完整的設計案可以寫出更帥氣的連招、複雜的系統與理想中的戰鬥效果，展現你的設計天花板。 Demo 決定下限：即使資源受限，Demo 必須把核心玩法（Core Loop）與核心機制做簡化版的實作，做到自圓其說。
+
+
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(1).JPG" width="300" height="300"></img>
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(2).JPG" width="300" height="300"></img>
+
 <hr>
 
 ### Juicy 方法
