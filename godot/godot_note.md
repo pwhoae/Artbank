@@ -80,6 +80,17 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 
 
 ### check
+映射比例
+remap(value, istart, istop, ostart, ostop)
+
+value：目前你要轉換的數值。
+istart / istop：原本舊範圍的「起點」與「終點」（Input start/stop）。
+ostart / ostop：想要轉換過去新範圍的「起點」與「終點」（Output start/stop）。
+var distance = 50.0
+# 注意：這裡把新範圍倒過來放（200對應0，0對應100）
+var damage = remap(distance, 0, 200, 100, 0)
+print(damage) # 輸出: 75
+
 
 [UE]
 小白盒搭构图：确定镜头视界与高度：首先设立半地平线高度的镜头视界，在中间位置确定洞穴的大致形态。利用物体模式（根据物体的轴心坐标与方向旋转）调节基础组件。 
