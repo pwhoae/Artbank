@@ -408,8 +408,13 @@ interface ItemFactory:
 
 <a id="美術"></a>
 ### 美術
+
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B2%BC%E5%9C%96_2_4_%E7%89%B9%E6%AE%8A.PNG" width="300" height="300"></img>
+
 **美術=為什麼喜歡這種東西>有梗**
 **思考遊戲什麼需要camera展示/什麼時候用AE**
+
+
 先大后小》抓轮廓〉拒绝过度细化
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8F%83%E8%80%83%E5%9C%96/%E5%BB%BA%E7%AF%89/%E5%BB%BA%E7%AF%89%E5%AD%B8%E7%BF%92%20(3).JPG" width="300" height="300"></img>
