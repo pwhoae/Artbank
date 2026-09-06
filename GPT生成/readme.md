@@ -1,8 +1,9 @@
-死守筆記容易讓思維停留在當初的淺層水平；真正掌握技術的人更多是純興趣驅動與手動實作。 
+死守筆記容易讓思維停留在當初的淺層水平；真正掌握技術的人更多是純興趣驅動與手動實作。 <br>
 [回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 "> GLB/GLTF</a><br> 
 <hr>
+原圖建模
 設定 Prompt 身份與規範：告訴 AI：「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 
 
 https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F
