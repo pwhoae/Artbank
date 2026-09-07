@@ -10,6 +10,9 @@ Sound:https://www.zapsplat.com/
 https://getsoundly.com/
 
 工具地址 mowangblog.github.io/game-sfx-generator-web/
+魔裁网页剧本编辑器：https://www.bilibili.com/toy/Manosaba_ScriptEditor/index.html
+魔裁网页立绘编辑器：
+https://www.bilibili.com/toy/Manosaba_CharacterEditor/index.html
 
 
 > 整合 2D/3D 美術資源、UI 設計靈感、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
