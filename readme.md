@@ -14,6 +14,7 @@ https://getsoundly.com/
 魔裁网页立绘编辑器：
 https://www.bilibili.com/toy/Manosaba_CharacterEditor/index.html
 UE建模神器 - Blockout Tools Plugin
+Pascal Editor 是一个运行在浏览器里的 3D 建筑/室内设计工具。
 
 
 > 整合 2D/3D 美術資源、UI 設計靈感、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
