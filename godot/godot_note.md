@@ -568,7 +568,16 @@ unity插件:Easy Build System
 6.  **經濟系統邏輯：** （部分文字被遮擋）
 <hr>
 
+### **文字說明：什麼是數據表？**
+数据与大盘分析：Data.ai、AppAnnie、七麦数据（Qimai）。 
+买量与广告出海监测：SocialPeta（广固）、Sensor Tower 
+
 ### **音樂**
 通过通道索引（Index）分流管理音讯，既能保证背景音乐持续循环，又能严格限制音效并发数量，从根本上避免了音效堆叠导致的爆音问题，极大地简化了音频调用的复杂度。 
 
+<hr>
+
+### 運營
+数据与大盘分析：Data.ai、AppAnnie、七麦数据（Qimai）。 
+买量与广告出海监测：SocialPeta（广固）、Sensor Tower 
 
