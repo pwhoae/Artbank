@@ -47,6 +47,7 @@ Z ：博弈结构（动态 vs 静态 / 竞技性）[中国象棋（引入静态�
 ### godot note (開發技巧 pck)
 1. 沒經驗:不要動作遊戲>劇情+玩法+美術>ui+bgm>demo玩法1個月>開發:宣發>PV不要Logo=5:5 >手遊 (次要)簡單化+同質化 >itch
 AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
+lego人動作
 
 <details><summary>動作解析</summary>
 格挡框架解析
