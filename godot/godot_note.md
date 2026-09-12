@@ -426,6 +426,9 @@ UI 与 3D 元素的结合:Ipad/iphone show setting/音效/粒子/字體
 material>DiffuseMode,Specular Mode都改成Toon+roughness要拉到1>toon 3渲2,卡通着色（Toon shading）,菲涅尔效应（Fresnel）,抖动輪廓
 gpuparticle(process material)>cpuparticle
 像素風設定 Texture → Filter 設為 Nearest/Project → Rendering → Pixel Snap
+
+准备好模型+GitHub上找开源的渲染>先用deepseek调研并验证HoyoToon与NiloToon两套开源渲染管线的技术特性，参考搭建渲染流程；然后使用gpt利用多模态能力分析参考图像的光影特征还原绝区零角色的渲染风格，进行多轮参数调整与视觉效果验证
+
 ```
 ## 2d/3d map 地圖
 unity插件:Easy Build System
