@@ -8,6 +8,7 @@ https://www.bilibili.com/toy/6AF4DstEm8VTOebm/index.html
 https://icons8.com/
 Sound:https://www.zapsplat.com/
 https://getsoundly.com/
+kimodo
 
 工具地址 mowangblog.github.io/game-sfx-generator-web/
 魔裁网页剧本编辑器：https://www.bilibili.com/toy/Manosaba_ScriptEditor/index.html
