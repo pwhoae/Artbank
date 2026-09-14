@@ -3,6 +3,7 @@
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
 "> GLB/GLTF</a><br> 
 <hr>
+漫畫分鏡技巧
 原圖建模
 設定 Prompt 身份與規範：告訴 AI：「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 
 
