@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-gray-950 text-gray-100 select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PS Eraser & Precision Measurement Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Checkerboard pattern for opacity background */
+        .checkerboard {
+            background-color: #1e293b;
+            background-image:     linear-gradient(45deg, #0f172a 25%, transparent 25%),
+                                linear-gradient(-45deg, #0f172a 25%, transparent 25%),
+                                linear-gradient(45deg, transparent 75%, #0f172a 75%),
+                                linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .tool-btn {
+            @apply p-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-150 flex items-center justify-center relative group;
+        }
+        .tool-btn.active {
+            @apply bg-indigo-600 text-white shadow-lg shadow-indigo-600/30;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-gray-950">
+
+    <!-- Top Header Bar -->
+    <header class="h-14 bg-gray-900 border-b border-gray-800 px-4 flex items-center justify-between z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-bold text-lg shadow-md">
+                <i class="fa-solid font-mono">P</i>
+            </div>
+            <div>
+                <h1 class="text-sm font-semibold tracking-wide text-gray-200">PS 圖像擦除與高精度量度 Studio</h1>
+                <p class="text-[10px] text-gray-400">圖像編輯、透明擦除與幾何結構精確測量</p>
+            </div>
+        </div>
+
+        <!-- Global Quick Actions -->
+        <div class="flex items-center space-x-2">
+            <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-md font-medium transition flex items-center space-x-1.5 shadow">
+                <i class="fa-solid fa-folder-open"></i>
+                <span>開啟圖片</span>
+                <input type="file" id="imageInput" accept="image/*" class="hidden">
+            </label>
+            <button id="undoBtn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-1.5 rounded-md disabled:opacity-40 transition" title="復原 (Ctrl+Z)">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button id="redoBtn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-2.5 py-1.5 rounded-md disabled:opacity-40 transition" title="重做 (Ctrl+Y)">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <div class="h-4 w-[1px] bg-gray-700 mx-1"></div>
+            <button id="exportBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-md font-medium transition flex items-center space-x-1.5 shadow">
+                <i class="fa-solid fa-download"></i>
+                <span>匯出圖片</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sub Options Bar (Dynamic based on selected tool) -->
+    <div id="optionsBar" class="h-11 bg-gray-900/90 border-b border-gray-800/80 px-4 flex items-center text-xs space-x-6 text-gray-300 z-10 overflow-x-auto">
+        <!-- Eraser Options -->
+        <div id="eraserOptions" class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-400 font-medium">筆刷大小:</span>
+                <input type="range" id="brushSize" min="1" max="200" value="30" class="w-24 accent-indigo-500">
+                <span id="brushSizeVal" class="w-8 font-mono text-indigo-400">30px</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-400 font-medium">羽化/硬度:</span>
+                <input type="range" id="brushHardness" min="0" max="100" value="80" class="w-20 accent-indigo-500">
+                <span id="brushHardnessVal" class="w-8 font-mono text-indigo-400">80%</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-400 font-medium">不透明度:</span>
+                <input type="range" id="brushOpacity" min="1" max="100" value="100" class="w-20 accent-indigo-500">
+                <span id="brushOpacityVal" class="w-8 font-mono text-indigo-400">100%</span>
+            </div>
+            <div class="flex items-center space-x-2 border-l border-gray-700 pl-4">
+                <span class="text-gray-400 font-medium">擦除模式:</span>
+                <select id="eraseMode" class="bg-gray-800 border border-gray-700 text-gray-200 rounded px-2 py-1 focus:outline-none">
+                    <option value="transparent">透明 (Alfa Erase)</option>
+                    <option value="bgcolor">背景顏色填充</option>
+                </select>
+                <input type="color" id="bgColorPicker" value="#ffffff" class="w-6 h-6 rounded cursor-pointer hidden">
+            </div>
+        </div>
+
+        <!-- Measurement Options -->
+        <div id="measureOptions" class="hidden flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-400 font-medium">單位校正:</span>
+                <span class="text-gray-400">100 px =</span>
+                <input type="number" id="unitScaleVal" value="10" min="0.1" step="0.1" class="w-16 bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 text-center font-mono">
+                <select id="unitName" class="bg-gray-800 border border-gray-700 rounded px-1 py-0.5">
+                    <option value="px">px</option>
+                    <option value="cm" selected>cm</option>
+                    <option value="mm">mm</option>
+                    <option value="in">inch</option>
+                </select>
+            </div>
+            <div class="flex items-center space-x-2 border-l border-gray-700 pl-4">
+                <label class="flex items-center space-x-1.5 cursor-pointer">
+                    <input type="checkbox" id="toggleGrid" class="rounded accent-indigo-500">
+                    <span>顯示網格</span>
+                </label>
+                <input type="number" id="gridSize" value="50" min="10" max="200" class="w-14 bg-gray-800 border border-gray-700 rounded px-1 py-0.5 text-center font-mono text-xs" title="網格大小(px)">
+                <span class="text-gray-500">px</span>
+            </div>
+            <div class="flex items-center space-x-2 border-l border-gray-700 pl-4">
+                <button id="clearMeasurementsBtn" class="text-red-400 hover:text-red-300 hover:bg-red-950/40 px-2 py-1 rounded transition">
+                    <i class="fa-solid fa-trash-can mr-1"></i>清除所有標記
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Layout -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Toolbar -->
+        <aside class="w-14 bg-gray-900 border-r border-gray-800 flex flex-col items-center py-3 space-y-2 z-10 shadow-lg">
+            <button id="toolPan" class="tool-btn" title="抓手/平移工具 (H)">
+                <i class="fa-solid fa-hand"></i>
+                <span class="absolute left-16 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-30">抓手平移 (H)</span>
+            </button>
+            <button id="toolEraser" class="tool-btn active" title="橡皮擦工具 (E)">
+                <i class="fa-solid fa-eraser"></i>
+                <span class="absolute left-16 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-30">橡皮擦 (E)</span>
+            </button>
+
+            <div class="w-8 h-[1px] bg-gray-800 my-1"></div>
+
+            <!-- Measurement Tools Section -->
+            <button id="toolRuler" class="tool-btn" title="直線距離量測 (M)">
+                <i class="fa-solid fa-ruler"></i>
+                <span class="absolute left-16 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-30">距離/長度量測 (M)</span>
+            </button>
+            <button id="toolAngle" class="tool-btn" title="三點角度測量 (A)">
+                <i class="fa-solid fa-compass"></i>
+                <span class="absolute left-16 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-30">三點夾角測量 (A)</span>
+            </button>
+            <button id="toolColorPicker" class="tool-btn" title="顏色/像素探測器 (I)">
+                <i class="fa-solid fa-eye-dropper"></i>
+                <span class="absolute left-16 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-30">像素探測器 (I)</span>
+            </button>
+
+            <div class="w-8 h-[1px] bg-gray-800 my-1"></div>
+
+            <button id="zoomInBtn" class="tool-btn" title="放大 (+)">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+            </button>
+            <button id="zoomOutBtn" class="tool-btn" title="縮小 (-)">
+                <i class="fa-solid fa-magnifying-glass-minus"></i>
+            </button>
+            <button id="resetViewBtn" class="tool-btn" title="重設檢視 (100%)">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </aside>
+
+        <!-- Canvas Center Viewport (with Rulers) -->
+        <div id="viewport" class="flex-1 relative bg-gray-950 overflow-hidden cursor-crosshair flex flex-col">
+            
+            <!-- Top Dynamic Ruler Bar -->
+            <div class="h-6 w-full bg-gray-900 border-b border-gray-800 relative overflow-hidden select-none flex">
+                <div class="w-6 h-6 bg-gray-800 border-r border-gray-700 flex items-center justify-center text-[9px] text-gray-400 font-mono">px</div>
+                <canvas id="topRulerCanvas" class="flex-1 h-6"></canvas>
+            </div>
+
+            <div class="flex-1 flex relative overflow-hidden">
+                <!-- Left Dynamic Ruler Bar -->
+                <div class="w-6 h-full bg-gray-900 border-r border-gray-800 relative overflow-hidden select-none">
+                    <canvas id="leftRulerCanvas" class="w-6 h-full"></canvas>
+                </div>
+
+                <!-- Interactive Main Canvas Container -->
+                <div id="canvasContainer" class="flex-1 relative overflow-hidden checkerboard">
+                    <!-- Layer 1: Image Canvas (Main editing) -->
+                    <canvas id="mainCanvas" class="absolute left-0 top-0 origin-top-left"></canvas>
+                    <!-- Layer 2: Overlay UI Canvas (Rulers, Measurements, Angles, Cursor preview) -->
+                    <canvas id="overlayCanvas" class="absolute left-0 top-0 origin-top-left pointer-events-none"></canvas>
+                </div>
+            </div>
+
+            <!-- Bottom Status Bar -->
+            <div class="h-6 bg-gray-900 border-t border-gray-800 px-4 flex items-center justify-between text-[11px] text-gray-400 font-mono z-10">
+                <div class="flex items-center space-x-4">
+                    <span id="statusPos">X: 0 px, Y: 0 px</span>
+                    <span id="statusSelection" class="text-indigo-400"></span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="statusColor">RGBA: -, -, -, -</span>
+                    <span id="statusZoom">縮放: 100%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel (Measurement Log & Inspector) -->
+        <aside class="w-72 bg-gray-900 border-l border-gray-800 flex flex-col z-10">
+            <!-- Sidebar Tabs -->
+            <div class="flex border-b border-gray-800 text-xs font-medium">
+                <button id="tabMeasureLog" class="flex-1 py-2.5 text-center text-indigo-400 border-b-2 border-indigo-500 font-semibold bg-gray-800/50">
+                    <i class="fa-solid fa-list-check mr-1"></i>量度紀錄
+                </button>
+                <button id="tabInfo" class="flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200">
+                    <i class="fa-solid fa-circle-info mr-1"></i>像素資訊
+                </button>
+            </div>
+
+            <!-- Panel Content 1: Measurement Log -->
+            <div id="measureLogPanel" class="flex-1 flex flex-col p-3 overflow-hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-gray-300">已記錄測量物 (<span id="logCount">0</span>)</span>
+                    <button id="exportCsvBtn" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>匯出 CSV</span>
+                    </button>
+                </div>
+
+                <div id="logList" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <div class="text-center text-gray-500 text-xs py-8">
+                        <i class="fa-solid fa-ruler-combined text-2xl mb-2 block opacity-40"></i>
+                        尚未建立量度標記<br>使用「距離」或「角度」工具在圖上拉線
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Content 2: Pixel Inspector (Hidden by default) -->
+            <div id="infoPanel" class="hidden flex-1 p-4 text-xs space-y-4 overflow-y-auto">
+                <div class="bg-gray-800/60 p-3 rounded-lg border border-gray-700/50">
+                    <h3 class="font-semibold text-gray-300 mb-2 flex items-center">
+                        <i class="fa-solid fa-palette text-indigo-400 mr-2"></i>當前取色與探測
+                    </h3>
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div id="colorPreviewBox" class="w-10 h-10 rounded border border-gray-600 bg-transparent shadow-inner"></div>
+                        <div>
+                            <div id="hexText" class="font-mono text-sm font-bold text-gray-100">#000000</div>
+                            <div id="rgbaText" class="font-mono text-gray-400 text-[11px]">rgba(0, 0, 0, 0)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/60 p-3 rounded-lg border border-gray-700/50 space-y-2 font-mono">
+                    <h3 class="font-semibold text-gray-300 mb-1 font-sans flex items-center">
+                        <i class="fa-solid fa-image text-indigo-400 mr-2"></i>畫布尺寸
+                    </h3>
+                    <div class="flex justify-between text-gray-400">
+                        <span>寬度:</span>
+                        <span id="canvasWidthText" class="text-gray-200">0 px</span>
+                    </div>
+                    <div class="flex justify-between text-gray-400">
+                        <span>高度:</span>
+                        <span id="canvasHeightText" class="text-gray-200">0 px</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Notification Toast Modal -->
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg shadow-xl text-xs transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center space-x-2">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-indigo-400"></i>
+        <span id="toastMsg">通知訊息</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Core State Management
+        const state = {
+            currentTool: 'eraser', // 'pan', 'eraser', 'ruler', 'angle', 'colorPicker'
+            zoom: 1,
+            panX: 0,
+            panY: 0,
+            isPanning: false,
+            startPanX: 0,
+            startPanY: 0,
+            
+            // Brush / Eraser options
+            brushSize: 30,
+            brushHardness: 80,
+            brushOpacity: 100,
+            eraseMode: 'transparent',
+            bgColor: '#ffffff',
+            isDrawing: false,
+            lastX: 0,
+            lastY: 0,
+
+            // Measurement Settings
+            unitScaleVal: 10, // 100px = 10 units
+            unitName: 'cm',
+            showGrid: false,
+            gridSize: 50,
+
+            // Active Measurement Drawing State
+            measurements: [], // Array of stored measurement objects
+            tempPoints: [], // Temp points for interactive drawing
+            
+            // Undo/Redo History Stack
+            history: [],
+            historyStep: -1,
+            maxHistory: 15
+        };
+
+        // DOM Elements
+        const viewport = document.getElementById('viewport');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const mainCanvas = document.getElementById('mainCanvas');
+        const mainCtx = mainCanvas.getContext('2d', { willReadFrequently: true });
+        const overlayCanvas = document.getElementById('overlayCanvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        const topRulerCanvas = document.getElementById('topRulerCanvas');
+        const topRulerCtx = topRulerCanvas.getContext('2d');
+        const leftRulerCanvas = document.getElementById('leftRulerCanvas');
+        const leftRulerCtx = leftRulerCanvas.getContext('2d');
+
+        // Initial setup
+        window.onload = () => {
+            initCanvasSize(800, 600);
+            drawInitialCanvas();
+            saveHistory();
+            setupEventListeners();
+            updateRulers();
+            renderOverlay();
+            showToast('歡迎使用！上傳圖片或直接使用畫布開始擦除與量度。');
+        };
+
+        function initCanvasSize(w, h) {
+            mainCanvas.width = w;
+            mainCanvas.height = h;
+            overlayCanvas.width = w;
+            overlayCanvas.height = h;
+            
+            document.getElementById('canvasWidthText').innerText = `${w} px`;
+            document.getElementById('canvasHeightText').innerText = `${h} px`;
+
+            // Center image in viewport
+            const rect = canvasContainer.getBoundingClientRect();
+            state.panX = (rect.width - w * state.zoom) / 2;
+            state.panY = (rect.height - h * state.zoom) / 2;
+            applyTransform();
+        }
+
+        function drawInitialCanvas() {
+            mainCtx.fillStyle = '#ffffff';
+            mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            // Draw dummy pattern for quick test
+            mainCtx.fillStyle = '#3b82f6';
+            mainCtx.fillRect(150, 150, 200, 200);
+            mainCtx.fillStyle = '#ef4444';
+            mainCtx.beginPath();
+            mainCtx.arc(500, 300, 80, 0, Math.PI * 2);
+            mainCtx.fill();
+
+            mainCtx.fillStyle = '#10b981';
+            mainCtx.font = '24px sans-serif';
+            mainCtx.fillText('PS 擦除與精密量度 Studio', 200, 100);
+        }
+
+        // Apply Zoom and Pan transform to Canvases
+        function applyTransform() {
+            const transformStr = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+            mainCanvas.style.transform = transformStr;
+            overlayCanvas.style.transform = transformStr;
+            document.getElementById('statusZoom').innerText = `縮放: ${Math.round(state.zoom * 100)}%`;
+            updateRulers();
+        }
+
+        // Eraser / Brush logic
+        function erase(x, y) {
+            mainCtx.save();
+            
+            // Setup brush opacity
+            mainCtx.globalAlpha = state.brushOpacity / 100;
+
+            if (state.eraseMode === 'transparent') {
+                mainCtx.globalCompositeOperation = 'destination-out';
+            } else {
+                mainCtx.globalCompositeOperation = 'source-over';
+            }
+
+            const radius = state.brushSize / 2;
+
+            if (state.brushHardness >= 95) {
+                // Solid Brush
+                mainCtx.fillStyle = state.eraseMode === 'transparent' ? '#000000' : state.bgColor;
+                mainCtx.beginPath();
+                mainCtx.arc(x, y, radius, 0, Math.PI * 2);
+                mainCtx.fill();
+            } else {
+                // Soft / Feathered Brush using Radial Gradient
+                const gradient = mainCtx.createRadialGradient(x, y, radius * (state.brushHardness / 100), x, y, radius);
+                if (state.eraseMode === 'transparent') {
+                    gradient.addColorStop(0, 'rgba(0,0,0,1)');
+                    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                } else {
+                    const rgb = hexToRgb(state.bgColor);
+                    gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 1)`);
+                    gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+                }
+                mainCtx.fillStyle = gradient;
+                mainCtx.beginPath();
+                mainCtx.arc(x, y, radius, 0, Math.PI * 2);
+                mainCtx.fill();
+            }
+
+            mainCtx.restore();
+        }
+
+        // Interpolate line between points to smooth fast stroke
+        function eraseLine(x1, y1, x2, y2) {
+            const dist = Math.hypot(x2 - x1, y2 - y1);
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const step = Math.max(1, state.brushSize / 4);
+
+            for (let i = 0; i < dist; i += step) {
+                const rx = x1 + Math.cos(angle) * i;
+                const ry = y1 + Math.sin(angle) * i;
+                erase(rx, ry);
+            }
+            erase(x2, y2);
+        }
+
+        // Dynamic Ruler rendering engine
+        function updateRulers() {
+            const rect = canvasContainer.getBoundingClientRect();
+            
+            // Top Ruler
+            topRulerCanvas.width = rect.width;
+            topRulerCanvas.height = 24;
+            topRulerCtx.clearRect(0, 0, topRulerCanvas.width, topRulerCanvas.height);
+            topRulerCtx.fillStyle = '#0f172a';
+            topRulerCtx.fillRect(0, 0, topRulerCanvas.width, topRulerCanvas.height);
+            topRulerCtx.strokeStyle = '#475569';
+            topRulerCtx.fillStyle = '#94a3b8';
+            topRulerCtx.font = '9px monospace';
+
+            const startX = -state.panX / state.zoom;
+            const endX = (rect.width - state.panX) / state.zoom;
+            const step = getRulerStep(state.zoom);
+
+            for (let x = Math.floor(startX / step) * step; x < endX; x += step) {
+                const screenX = x * state.zoom + state.panX;
+                topRulerCtx.beginPath();
+                topRulerCtx.moveTo(screenX, 14);
+                topRulerCtx.lineTo(screenX, 24);
+                topRulerCtx.stroke();
+                topRulerCtx.fillText(Math.round(x), screenX + 2, 12);
+            }
+
+            // Left Ruler
+            leftRulerCanvas.width = 24;
+            leftRulerCanvas.height = rect.height;
+            leftRulerCtx.clearRect(0, 0, leftRulerCanvas.width, leftRulerCanvas.height);
+            leftRulerCtx.fillStyle = '#0f172a';
+            leftRulerCtx.fillRect(0, 0, leftRulerCanvas.width, leftRulerCanvas.height);
+            leftRulerCtx.strokeStyle = '#475569';
+            leftRulerCtx.fillStyle = '#94a3b8';
+            leftRulerCtx.font = '9px monospace';
+
+            const startY = -state.panY / state.zoom;
+            const endY = (rect.height - state.panY) / state.zoom;
+
+            for (let y = Math.floor(startY / step) * step; y < endY; y += step) {
+                const screenY = y * state.zoom + state.panY;
+                leftRulerCtx.beginPath();
+                leftRulerCtx.moveTo(14, screenY);
+                leftRulerCtx.lineTo(24, screenY);
+                leftRulerCtx.stroke();
+                
+                leftRulerCtx.save();
+                leftRulerCtx.translate(12, screenY + 2);
+                leftRulerCtx.rotate(-Math.PI / 2);
+                leftRulerCtx.fillText(Math.round(y), 0, 0);
+                leftRulerCtx.restore();
+            }
+        }
+
+        function getRulerStep(zoom) {
+            if (zoom > 3) return 10;
+            if (zoom > 1.5) return 20;
+            if (zoom > 0.7) return 50;
+            if (zoom > 0.3) return 100;
+            return 200;
+        }
+
+        // Overlay Rendering (Grid, Active Measurements, Angles, Cursor)
+        function renderOverlay() {
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            // 1. Draw Grid
+            if (state.showGrid && state.gridSize > 5) {
+                overlayCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                overlayCtx.lineWidth = 1 / state.zoom;
+                
+                for (let x = 0; x <= mainCanvas.width; x += state.gridSize) {
+                    overlayCtx.beginPath();
+                    overlayCtx.moveTo(x, 0);
+                    overlayCtx.lineTo(x, mainCanvas.height);
+                    overlayCtx.stroke();
+                }
+                for (let y = 0; y <= mainCanvas.height; y += state.gridSize) {
+                    overlayCtx.beginPath();
+                    overlayCtx.moveTo(0, y);
+                    overlayCtx.lineTo(mainCanvas.width, y);
+                    overlayCtx.stroke();
+                }
+            }
+
+            // 2. Draw Stored Measurements
+            state.measurements.forEach((m, idx) => {
+                drawSingleMeasurement(m, idx + 1);
+            });
+
+            // 3. Draw Active Interactive Drawing Points
+            if (state.tempPoints.length > 0) {
+                overlayCtx.strokeStyle = '#38bdf8';
+                overlayCtx.fillStyle = '#38bdf8';
+                overlayCtx.lineWidth = 2 / state.zoom;
+
+                if (state.currentTool === 'ruler' && state.tempPoints.length === 2) {
+                    const [p1, p2] = state.tempPoints;
+                    drawDistanceLine(p1, p2, '測量中...');
+                } else if (state.currentTool === 'angle') {
+                    state.tempPoints.forEach(p => {
+                        overlayCtx.beginPath();
+                        overlayCtx.arc(p.x, p.y, 4 / state.zoom, 0, Math.PI * 2);
+                        overlayCtx.fill();
+                    });
+                    if (state.tempPoints.length === 2) {
+                        overlayCtx.beginPath();
+                        overlayCtx.moveTo(state.tempPoints[0].x, state.tempPoints[0].y);
+                        overlayCtx.lineTo(state.tempPoints[1].x, state.tempPoints[1].y);
+                        overlayCtx.stroke();
+                    } else if (state.tempPoints.length === 3) {
+                        drawAngleArc(state.tempPoints[0], state.tempPoints[1], state.tempPoints[2]);
+                    }
+                }
+            }
+        }
+
+        function drawSingleMeasurement(m, index) {
+            overlayCtx.save();
+            if (m.type === 'distance') {
+                drawDistanceLine(m.p1, m.p2, `#${index}: ${m.value} ${m.unit}`);
+            } else if (m.type === 'angle') {
+                drawAngleArc(m.p1, m.p2, m.p3, `#${index}: ${m.value}°`);
+            }
+            overlayCtx.restore();
+        }
+
+        function drawDistanceLine(p1, p2, label) {
+            overlayCtx.strokeStyle = '#f43f5e';
+            overlayCtx.fillStyle = '#f43f5e';
+            overlayCtx.lineWidth = 2 / state.zoom;
+
+            // Main Line
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(p1.x, p1.y);
+            overlayCtx.lineTo(p2.x, p2.y);
+            overlayCtx.stroke();
+
+            // End Handles
+            overlayCtx.beginPath();
+            overlayCtx.arc(p1.x, p1.y, 4 / state.zoom, 0, Math.PI * 2);
+            overlayCtx.arc(p2.x, p2.y, 4 / state.zoom, 0, Math.PI * 2);
+            overlayCtx.fill();
+
+            // Text Label
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+
+            overlayCtx.font = `${Math.max(12, 14 / state.zoom)}px Inter, sans-serif`;
+            overlayCtx.fillStyle = '#ffffff';
+            
+            // Text background pill
+            const textWidth = overlayCtx.measureText(label).width;
+            overlayCtx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            overlayCtx.fillRect(midX - textWidth / 2 - 4, midY - 10, textWidth + 8, 20);
+
+            overlayCtx.fillStyle = '#38bdf8';
+            overlayCtx.textAlign = 'center';
+            overlayCtx.textBaseline = 'middle';
+            overlayCtx.fillText(label, midX, midY);
+        }
+
+        function drawAngleArc(p1, vertex, p2, label) {
+            overlayCtx.strokeStyle = '#a855f7';
+            overlayCtx.fillStyle = '#a855f7';
+            overlayCtx.lineWidth = 2 / state.zoom;
+
+            // Lines connecting to vertex
+            overlayCtx.beginPath();
+            overlayCtx.moveTo(p1.x, p1.y);
+            overlayCtx.lineTo(vertex.x, vertex.y);
+            overlayCtx.lineTo(p2.x, p2.y);
+            overlayCtx.stroke();
+
+            // Vertex point
+            overlayCtx.beginPath();
+            overlayCtx.arc(vertex.x, vertex.y, 5 / state.zoom, 0, Math.PI * 2);
+            overlayCtx.fill();
+
+            // Arc
+            const angle1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
+            const angle2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
+            const arcRadius = 30 / state.zoom;
+
+            overlayCtx.beginPath();
+            overlayCtx.arc(vertex.x, vertex.y, arcRadius, angle1, angle2);
+            overlayCtx.stroke();
+
+            if (label) {
+                overlayCtx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                const textWidth = overlayCtx.measureText(label).width;
+                overlayCtx.fillRect(vertex.x - textWidth / 2 - 4, vertex.y - 30, textWidth + 8, 18);
+                
+                overlayCtx.fillStyle = '#c084fc';
+                overlayCtx.font = `${Math.max(12, 13 / state.zoom)}px Inter, sans-serif`;
+                overlayCtx.textAlign = 'center';
+                overlayCtx.textBaseline = 'middle';
+                overlayCtx.fillText(label, vertex.x, vertex.y - 21);
+            }
+        }
+
+        function setupEventListeners() {
+            // Image Upload
+            document.getElementById('imageInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        initCanvasSize(img.width, img.height);
+                        mainCtx.clearRect(0, 0, img.width, img.height);
+                        mainCtx.drawImage(img, 0, 0);
+                        state.history = [];
+                        state.historyStep = -1;
+                        saveHistory();
+                        showToast(`已成功載入圖片: ${img.width} x ${img.height} px`);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Tool Switchers
+            const tools = {
+                'toolPan': 'pan',
+                'toolEraser': 'eraser',
+                'toolRuler': 'ruler',
+                'toolAngle': 'angle',
+                'toolColorPicker': 'colorPicker'
+            };
+
+            Object.keys(tools).forEach(id => {
+                document.getElementById(id).addEventListener('click', () => {
+                    setActiveTool(tools[id]);
+                });
+            });
+
+            // Tool Options listeners
+            document.getElementById('brushSize').addEventListener('input', (e) => {
+                state.brushSize = parseInt(e.target.value);
+                document.getElementById('brushSizeVal').innerText = `${state.brushSize}px`;
+            });
+            document.getElementById('brushHardness').addEventListener('input', (e) => {
+                state.brushHardness = parseInt(e.target.value);
+                document.getElementById('brushHardnessVal').innerText = `${state.brushHardness}%`;
+            });
+            document.getElementById('brushOpacity').addEventListener('input', (e) => {
+                state.brushOpacity = parseInt(e.target.value);
+                document.getElementById('brushOpacityVal').innerText = `${state.brushOpacity}%`;
+            });
+            document.getElementById('eraseMode').addEventListener('change', (e) => {
+                state.eraseMode = e.target.value;
+                document.getElementById('bgColorPicker').classList.toggle('hidden', state.eraseMode !== 'bgcolor');
+            });
+            document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+                state.bgColor = e.target.value;
+            });
+
+            // Measurement options listeners
+            document.getElementById('unitScaleVal').addEventListener('change', (e) => {
+                state.unitScaleVal = parseFloat(e.target.value) || 10;
+                renderOverlay();
+            });
+            document.getElementById('unitName').addEventListener('change', (e) => {
+                state.unitName = e.target.value;
+                renderOverlay();
+            });
+            document.getElementById('toggleGrid').addEventListener('change', (e) => {
+                state.showGrid = e.target.checked;
+                renderOverlay();
+            });
+            document.getElementById('gridSize').addEventListener('change', (e) => {
+                state.gridSize = parseInt(e.target.value) || 50;
+                renderOverlay();
+            });
+            document.getElementById('clearMeasurementsBtn').addEventListener('click', () => {
+                state.measurements = [];
+                state.tempPoints = [];
+                renderOverlay();
+                updateLogUI();
+                showToast('已清除所有測量標記');
+            });
+
+            // Canvas Interaction Handlers
+            viewport.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            viewport.addEventListener('wheel', handleWheel, { passive: false });
+
+            // Undo / Redo
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+
+            // Export
+            document.getElementById('exportBtn').addEventListener('click', exportImage);
+            document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+
+            // Tabs
+            document.getElementById('tabMeasureLog').addEventListener('click', () => switchTab('log'));
+            document.getElementById('tabInfo').addEventListener('click', () => switchTab('info'));
+
+            // Zoom buttons
+            document.getElementById('zoomInBtn').addEventListener('click', () => zoomAtCenter(1.2));
+            document.getElementById('zoomOutBtn').addEventListener('click', () => zoomAtCenter(0.8));
+            document.getElementById('resetViewBtn').addEventListener('click', () => {
+                state.zoom = 1;
+                const rect = canvasContainer.getBoundingClientRect();
+                state.panX = (rect.width - mainCanvas.width) / 2;
+                state.panY = (rect.height - mainCanvas.height) / 2;
+                applyTransform();
+            });
+
+            // Keyboard Shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
+                if (e.key === 'e' || e.key === 'E') setActiveTool('eraser');
+                if (e.key === 'h' || e.key === 'H') setActiveTool('pan');
+                if (e.key === 'm' || e.key === 'M') setActiveTool('ruler');
+                if (e.key === 'a' || e.key === 'A') setActiveTool('angle');
+                if (e.key === 'i' || e.key === 'I') setActiveTool('colorPicker');
+                if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+                if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+            });
+        }
+
+        function setActiveTool(tool) {
+            state.currentTool = tool;
+            state.tempPoints = [];
+            
+            // Highlight tool button
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            const toolMap = {
+                'pan': 'toolPan',
+                'eraser': 'toolEraser',
+                'ruler': 'toolRuler',
+                'angle': 'toolAngle',
+                'colorPicker': 'toolColorPicker'
+            };
+            if (toolMap[tool]) document.getElementById(toolMap[tool]).classList.add('active');
+
+            // Toggle top option panels
+            document.getElementById('eraserOptions').classList.toggle('hidden', tool !== 'eraser');
+            document.getElementById('measureOptions').classList.toggle('hidden', tool !== 'ruler' && tool !== 'angle');
+
+            viewport.style.cursor = tool === 'pan' ? 'grab' : 'crosshair';
+            renderOverlay();
+        }
+
+        // Coordinate helper
+        function getCanvasPos(e) {
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / state.zoom;
+            const y = (e.clientY - rect.top) / state.zoom;
+            return { x, y };
+        }
+
+        function handleMouseDown(e) {
+            const pos = getCanvasPos(e);
+            
+            if (state.currentTool === 'pan' || e.button === 1) {
+                state.isPanning = true;
+                state.startPanX = e.clientX - state.panX;
+                state.startPanY = e.clientY - state.panY;
+                viewport.style.cursor = 'grabbing';
+                return;
+            }
+
+            if (pos.x < 0 || pos.x > mainCanvas.width || pos.y < 0 || pos.y > mainCanvas.height) return;
+
+            if (state.currentTool === 'eraser') {
+                state.isDrawing = true;
+                state.lastX = pos.x;
+                state.lastY = pos.y;
+                erase(pos.x, pos.y);
+            } else if (state.currentTool === 'ruler') {
+                state.tempPoints = [pos, pos];
+            } else if (state.currentTool === 'angle') {
+                state.tempPoints.push(pos);
+                if (state.tempPoints.length === 3) {
+                    // Complete Angle measurement
+                    const [p1, vertex, p2] = state.tempPoints;
+                    const angle1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
+                    const angle2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
+                    let deg = Math.abs((angle2 - angle1) * 180 / Math.PI);
+                    if (deg > 180) deg = 360 - deg;
+
+                    state.measurements.push({
+                        type: 'angle',
+                        p1, vertex, p2,
+                        value: deg.toFixed(1)
+                    });
+                    state.tempPoints = [];
+                    updateLogUI();
+                }
+            } else if (state.currentTool === 'colorPicker') {
+                inspectPixelColor(pos.x, pos.y);
+            }
+
+            renderOverlay();
+        }
+
+        function handleMouseMove(e) {
+            const pos = getCanvasPos(e);
+
+            // Update status bar position
+            document.getElementById('statusPos').innerText = `X: ${Math.round(pos.x)} px, Y: ${Math.round(pos.y)} px`;
+
+            if (state.isPanning) {
+                state.panX = e.clientX - state.startPanX;
+                state.panY = e.clientY - state.startPanY;
+                applyTransform();
+                return;
+            }
+
+            if (state.isDrawing && state.currentTool === 'eraser') {
+                eraseLine(state.lastX, state.lastY, pos.x, pos.y);
+                state.lastX = pos.x;
+                state.lastY = pos.y;
+            } else if (state.currentTool === 'ruler' && state.tempPoints.length === 2) {
+                state.tempPoints[1] = pos;
+                renderOverlay();
+            } else if (state.currentTool === 'colorPicker') {
+                inspectPixelColor(pos.x, pos.y);
+            }
+        }
+
+        function handleMouseUp(e) {
+            if (state.isPanning) {
+                state.isPanning = false;
+                viewport.style.cursor = state.currentTool === 'pan' ? 'grab' : 'crosshair';
+            }
+
+            if (state.isDrawing) {
+                state.isDrawing = false;
+                saveHistory();
+            }
+
+            if (state.currentTool === 'ruler' && state.tempPoints.length === 2) {
+                const [p1, p2] = state.tempPoints;
+                const distPx = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const realDist = (distPx / (100 / state.unitScaleVal)).toFixed(2);
+
+                if (distPx > 2) {
+                    state.measurements.push({
+                        type: 'distance',
+                        p1, p2,
+                        value: realDist,
+                        unit: state.unitName,
+                        px: distPx.toFixed(1)
+                    });
+                    updateLogUI();
+                }
+                state.tempPoints = [];
+                renderOverlay();
+            }
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            const rect = canvasContainer.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const newZoom = Math.min(Math.max(0.1, state.zoom * zoomFactor), 15);
+            
+            // Zoom towards mouse pointer
+            state.panX = mouseX - (mouseX - state.panX) * (newZoom / state.zoom);
+            state.panY = mouseY - (mouseY - state.panY) * (newZoom / state.zoom);
+            state.zoom = newZoom;
+
+            applyTransform();
+        }
+
+        function zoomAtCenter(factor) {
+            const rect = canvasContainer.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const newZoom = Math.min(Math.max(0.1, state.zoom * factor), 15);
+            state.panX = centerX - (centerX - state.panX) * (newZoom / state.zoom);
+            state.panY = centerY - (centerY - state.panY) * (newZoom / state.zoom);
+            state.zoom = newZoom;
+            applyTransform();
+        }
+
+        // Pixel Color Inspector
+        function inspectPixelColor(x, y) {
+            if (x < 0 || x >= mainCanvas.width || y < 0 || y >= mainCanvas.height) return;
+            const pixel = mainCtx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+            const rgbaStr = `rgba(${pixel[0]}, ${pixel[1]}, ${pixel[2]}, ${(pixel[3]/255).toFixed(2)})`;
+            const hexStr = rgbToHex(pixel[0], pixel[1], pixel[2]);
+
+            document.getElementById('statusColor').innerText = `RGBA: ${pixel[0]}, ${pixel[1]}, ${pixel[2]}, ${pixel[3]}`;
+            document.getElementById('colorPreviewBox').style.backgroundColor = rgbaStr;
+            document.getElementById('hexText').innerText = hexStr.toUpperCase();
+            document.getElementById('rgbaText').innerText = rgbaStr;
+        }
+
+        function updateLogUI() {
+            const list = document.getElementById('logList');
+            document.getElementById('logCount').innerText = state.measurements.length;
+
+            if (state.measurements.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center text-gray-500 text-xs py-8">
+                        <i class="fa-solid fa-ruler-combined text-2xl mb-2 block opacity-40"></i>
+                        尚未建立量度標記<br>使用「距離」或「角度」工具在圖上拉線
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            state.measurements.forEach((m, idx) => {
+                const item = document.createElement('div');
+                item.className = 'bg-gray-800/80 border border-gray-700/60 rounded p-2 text-xs flex items-center justify-between hover:border-gray-600 transition';
+                
+                if (m.type === 'distance') {
+                    item.innerHTML = `
+                        <div>
+                            <div class="font-medium text-indigo-300">#${idx+1} 直線距離</div>
+                            <div class="font-mono text-gray-200">${m.value} ${m.unit} <span class="text-gray-500 text-[10px]">(${m.px} px)</span></div>
+                        </div>
+                        <button onclick="removeMeasurement(${idx})" class="text-gray-500 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>`;
+                } else {
+                    item.innerHTML = `
+                        <div>
+                            <div class="font-medium text-purple-300">#${idx+1} 三點夾角</div>
+                            <div class="font-mono text-gray-200">${m.value}° 角度</div>
+                        </div>
+                        <button onclick="removeMeasurement(${idx})" class="text-gray-500 hover:text-red-400 p-1">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>`;
+                }
+                list.appendChild(item);
+            });
+        }
+
+        window.removeMeasurement = function(idx) {
+            state.measurements.splice(idx, 1);
+            renderOverlay();
+            updateLogUI();
+        };
+
+        // Undo / Redo System
+        function saveHistory() {
+            if (state.historyStep < state.history.length - 1) {
+                state.history = state.history.slice(0, state.historyStep + 1);
+            }
+            state.history.push(mainCtx.getImageData(0, 0, mainCanvas.width, mainCanvas.height));
+            if (state.history.length > state.maxHistory) {
+                state.history.shift();
+            } else {
+                state.historyStep++;
+            }
+            updateUndoBtns();
+        }
+
+        function undo() {
+            if (state.historyStep > 0) {
+                state.historyStep--;
+                mainCtx.putImageData(state.history[state.historyStep], 0, 0);
+                updateUndoBtns();
+                showToast('已復原上一步');
+            }
+        }
+
+        function redo() {
+            if (state.historyStep < state.history.length - 1) {
+                state.historyStep++;
+                mainCtx.putImageData(state.history[state.historyStep], 0, 0);
+                updateUndoBtns();
+                showToast('已重做');
+            }
+        }
+
+        function updateUndoBtns() {
+            document.getElementById('undoBtn').disabled = state.historyStep <= 0;
+            document.getElementById('redoBtn').disabled = state.historyStep >= state.history.length - 1;
+        }
+
+        // Export Functionality
+        function exportImage() {
+            // Combine Image + Measurement Overlays into one canvas for saving
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = mainCanvas.width;
+            exportCanvas.height = mainCanvas.height;
+            const ctx = exportCanvas.getContext('2d');
+
+            ctx.drawImage(mainCanvas, 0, 0);
+            ctx.drawImage(overlayCanvas, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = 'edited_measure_image.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+            showToast('圖片已開始下載');
+        }
+
+        function exportCSV() {
+            if (state.measurements.length === 0) {
+                showToast('尚無任何量度數據可導出');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Index,Type,Value,Unit,RawPixels\n";
+            state.measurements.forEach((m, idx) => {
+                if (m.type === 'distance') {
+                    csvContent += `${idx+1},Distance,${m.value},${m.unit},${m.px}\n`;
+                } else {
+                    csvContent += `${idx+1},Angle,${m.value},Degree,-\n`;
+                }
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'measurement_log.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('CSV 數據已匯出');
+        }
+
+        // Helpers
+        function switchTab(tab) {
+            document.getElementById('measureLogPanel').classList.toggle('hidden', tab !== 'log');
+            document.getElementById('infoPanel').classList.toggle('hidden', tab !== 'info');
+            
+            const btnLog = document.getElementById('tabMeasureLog');
+            const btnInfo = document.getElementById('tabInfo');
+
+            if (tab === 'log') {
+                btnLog.className = 'flex-1 py-2.5 text-center text-indigo-400 border-b-2 border-indigo-500 font-semibold bg-gray-800/50';
+                btnInfo.className = 'flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200';
+            } else {
+                btnInfo.className = 'flex-1 py-2.5 text-center text-indigo-400 border-b-2 border-indigo-500 font-semibold bg-gray-800/50';
+                btnLog.className = 'flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200';
+            }
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
