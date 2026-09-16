@@ -41,6 +41,7 @@ Z ：博弈结构（动态 vs 静态 / 竞技性）[中国象棋（引入静态�
 15. 遠路+直接 ## 找开源demo>做遊戲:miss hit/鏡像密碼
 16. 手忙腳亂開鎖遊戲
 17. Galumb:彈床/滾木/棍/拳頭/激光
+18. 大希王模拟器 https://game.hiro.idealland.info/
 <hr>
 
 ### godot note (開發技巧 pck)
