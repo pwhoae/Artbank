@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 書本翻頁效果 Demo (Web 模擬版)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #2b3a4a;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .handwritten {
+            font-family: 'Zhi Mang Xing', cursive, 'Noto Sans TC', sans-serif;
+        }
+
+        /* 3D 書本容器 Perspective */
+        .book-stage {
+            perspective: 2200px;
+        }
+
+        /* 書本整體 */
+        .book-container {
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6);
+            border-radius: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        /* 頁面共同樣式 */
+        .page {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background-color: #fdfdf9;
+            background-image: 
+                linear-gradient(to right, rgba(200, 200, 200, 0.25) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(200, 200, 200, 0.25) 1px, transparent 1px);
+            background-size: 20px 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .page-left {
+            left: 0;
+            border-radius: 12px 0 0 12px;
+            border-right: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .page-right {
+            right: 0;
+            border-radius: 0 12px 12px 0;
+            border-left: 1px solid rgba(0,0,0,0.08);
+        }
+
+        /* 書脊陰影 */
+        .spine-shadow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 100%;
+            background: linear-gradient(to right, 
+                rgba(0, 0, 0, 0.15) 0%, 
+                rgba(0, 0, 0, 0.05) 30%, 
+                rgba(0, 0, 0, 0.25) 50%, 
+                rgba(0, 0, 0, 0.05) 70%, 
+                rgba(0, 0, 0, 0.15) 100%);
+            z-index: 25;
+            pointer-events: none;
+        }
+
+        /* 頁面邊緣厚度層疊感 (Book Thickness) */
+        .stack-layer {
+            position: absolute;
+            background: #eaeae0;
+            border: 1px solid #c8c8b8;
+            border-radius: 8px;
+            pointer-events: none;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* 翻頁動態片 (3D 翻轉) */
+        .flipper {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            transform-style: preserve-3d;
+            z-index: 30;
+            display: none;
+        }
+
+        .flipper.flip-right {
+            right: 0;
+            transform-origin: left center;
+        }
+
+        .flipper.flip-left {
+            left: 0;
+            transform-origin: right center;
+        }
+
+        .flipper-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background-color: #fdfdf9;
+            background-image: 
+                linear-gradient(to right, rgba(200, 200, 200, 0.25) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(200, 200, 200, 0.25) 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+        }
+
+        .flipper-front {
+            z-index: 2;
+        }
+
+        .flipper-back {
+            transform: rotateY(180deg);
+            z-index: 1;
+        }
+
+        /* 動態頁面陰影 overlay */
+        .flip-shadow {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            transition: opacity 0.1s linear;
+        }
+
+        /* 自訂按鈕特效 */
+        .btn-nav {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+        }
+        .btn-nav:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        .btn-nav:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-800 antialiased p-4 md:p-8">
+
+    <header class="max-w-6xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/40 p-4 rounded-2xl backdrop-blur-md border border-slate-700/50 text-white shadow-xl">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center font-bold text-indigo-300">
+                📖
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wide">Godot 4 書本翻頁效果模擬 (Page Flip Demo)</h1>
+                <p class="text-xs text-slate-400">雙頁繪圖筆記本 / 3D Perspective + 動態層疊動畫</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 text-sm">
+            <button id="toggleAudioBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center gap-2 transition">
+                <span id="audioIcon">🔊</span> <span id="audioStatus">音效: 開啟</span>
+            </button>
+            <button id="toggleGridBtn" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center gap-2 transition">
+                <span>📐</span> <span id="gridStatus">網格: 顯示</span>
+            </button>
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 font-mono text-indigo-300">
+                頁碼: <span id="pageIndicator" class="font-bold">1 / 3</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="my-auto py-6 flex items-center justify-center w-full">
+        <div class="relative w-full max-w-5xl flex items-center justify-center">
+
+            <!-- 左翻頁按鈕 -->
+            <button id="prevBtn" class="btn-nav absolute -left-2 md:-left-12 lg:-left-16 z-40 w-12 h-12 md:w-14 md:h-14 rounded-full text-white flex items-center justify-center shadow-2xl border border-white/20">
+                <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+
+            <!-- 3D 舞台 -->
+            <div class="book-stage w-full max-w-4xl aspect-[1.45/1] max-h-[680px] relative">
+
+                <!-- 堆疊厚度層 (Book Thickness Stack Effects) -->
+                <div class="stack-layer" style="top: 10px; bottom: -10px; left: -8px; right: -8px; z-index: 1;"></div>
+                <div class="stack-layer" style="top: 6px; bottom: -6px; left: -5px; right: -5px; z-index: 2;"></div>
+                <div class="stack-layer" style="top: 3px; bottom: -3px; left: -2px; right: -2px; z-index: 3;"></div>
+
+                <!-- 書本主體 -->
+                <div id="book" class="book-container w-full h-full relative z-10">
+
+                    <!-- 中央書脊陰影 -->
+                    <div class="spine-shadow"></div>
+
+                    <!-- 靜態左頁 -->
+                    <div id="leftPage" class="page page-left p-4 md:p-6 flex flex-col justify-between">
+                        <!-- 動態插入內容 -->
+                    </div>
+
+                    <!-- 靜態右頁 -->
+                    <div id="rightPage" class="page page-right p-4 md:p-6 flex flex-col justify-between">
+                        <!-- 動態插入內容 -->
+                    </div>
+
+                    <!-- 動態翻頁層 (Flipper) -->
+                    <div id="flipper" class="flipper">
+                        <!-- 正面 (舊頁面) -->
+                        <div id="flipperFront" class="flipper-face flipper-front p-4 md:p-6 flex flex-col justify-between">
+                            <div class="flip-shadow" id="frontShadow"></div>
+                            <div class="content-container h-full flex flex-col justify-between"></div>
+                        </div>
+                        <!-- 背面 (新頁面) -->
+                        <div id="flipperBack" class="flipper-face flipper-back p-4 md:p-6 flex flex-col justify-between">
+                            <div class="flip-shadow" id="backShadow"></div>
+                            <div class="content-container h-full flex flex-col justify-between"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 右翻頁按鈕 -->
+            <button id="nextBtn" class="btn-nav absolute -right-2 md:-right-12 lg:-right-16 z-40 w-12 h-12 md:w-14 md:h-14 rounded-full text-white flex items-center justify-center shadow-2xl border border-white/20">
+                <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+        </div>
+    </main>
+
+    <footer class="max-w-6xl w-full mx-auto bg-slate-900/40 p-4 rounded-2xl backdrop-blur-md border border-slate-700/50 text-slate-300 text-xs flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-bold">Godot 4 Tips</span>
+            <span>在 Godot 中可使用 <code class="text-amber-300 font-mono">Tween</code> 驅動 <code class="text-amber-300 font-mono">ShaderParameter("progress")</code> 或 3D 骨骼動畫達到此效果。</span>
+        </div>
+        <div class="flex items-center gap-4 text-slate-400">
+            <span>💡 提示：可使用鍵盤 <b>←</b> <b>→</b> 箭頭鍵翻頁</span>
+        </div>
+    </footer>
+
+    <script>
+        const pagesData = [
+            // 第一組雙頁 (箭頭練習)
+            {
+                left: {
+                    tag: "美日常練習",
+                    search: "OnebeanUI",
+                    title: "箭頭---填充版",
+                    sub: "Arrow Solid",
+                    items: [
+                        { type: "path", path: "M 10,15 L 25,30 L 10,45 M 25,15 L 40,30 L 25,45", fill: false, strokeWidth: 5 },
+                        { type: "path", path: "M 10,10 L 40,30 L 10,50 Z", fill: true },
+                        { type: "path", path: "M 10,10 L 30,30 L 10,50 L 25,30 Z", fill: true },
+                        { type: "path", path: "M 15,10 L 40,30 L 15,50 L 22,30 Z", fill: true },
+                        
+                        { type: "path", path: "M 20,10 L 40,30 L 20,50 L 10,30 Z", fill: true },
+                        { type: "path", path: "M 10,10 L 25,10 L 40,30 L 25,50 L 10,50 L 25,30 Z", fill: true },
+                        { type: "path", path: "M 15,10 L 35,30 L 15,50 M 25,10 L 45,30 L 25,50", fill: false, strokeWidth: 5 },
+                        { type: "path", path: "M 10,10 L 40,30 L 10,50 L 20,30 Z", fill: true },
+
+                        { type: "path", path: "M 40,30 L 10,30 M 20,10 L 10,30 L 20,50", fill: false, strokeWidth: 6 },
+                        { type: "path", path: "M 40,30 L 10,30 M 25,15 L 10,30 L 25,45", fill: true, customArrow: true },
+                        { type: "path", path: "M 40,30 L 15,30 M 25,15 L 10,30 L 25,45 M 20,30 L 35,30", fill: false, strokeWidth: 5 },
+                        { type: "path", path: "M 40,30 L 10,30 M 18,20 L 10,30 L 18,40", fill: false, strokeWidth: 3 },
+
+                        { type: "path", path: "M 10,20 Q 25,10 40,30 Q 25,50 10,40 Z", fill: true },
+                        { type: "path", path: "M 10,15 L 25,30 L 10,45 M 30,15 L 45,30 L 30,45", fill: false, strokeWidth: 5 },
+                        { type: "path", path: "M 25,10 L 30,25 L 45,30 L 30,35 L 25,50 L 20,35 L 5,30 L 20,25 Z", fill: true },
+                        { type: "path", path: "M 10,10 L 40,30 L 10,50 L 20,30 Z", fill: true }
+                    ]
+                },
+                right: {
+                    tag: "美日常練習",
+                    search: "OnebeanUI",
+                    title: "箭頭--墨水線條",
+                    sub: "Arrow Line Art",
+                    items: [
+                        { type: "path", path: "M 10,15 L 25,30 L 10,45 M 25,15 L 40,30 L 25,45", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 10,10 L 40,30 L 10,50 Z", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 10,10 L 30,30 L 10,50 L 25,30 Z", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 15,10 L 40,30 L 15,50 L 22,30 Z", fill: false, strokeWidth: 2 },
+                        
+                        { type: "path", path: "M 20,10 L 40,30 L 20,50 L 10,30 Z", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 10,10 L 25,10 L 40,30 L 25,50 L 10,50 L 25,30 Z", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 15,10 L 35,30 L 15,50 M 25,10 L 45,30 L 25,50", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 10,10 L 40,30 L 10,50 L 20,30 Z", fill: false, strokeWidth: 2 },
+
+                        { type: "path", path: "M 40,30 L 10,30 M 20,10 L 10,30 L 20,50", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 40,30 L 10,30 M 25,15 L 10,30 L 25,45", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 40,30 L 15,30 M 25,15 L 10,30 L 25,45", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 40,30 L 10,30 M 18,20 L 10,30 L 18,40", fill: false, strokeWidth: 1.5 },
+
+                        { type: "path", path: "M 10,20 Q 25,10 40,30 Q 25,50 10,40 Z", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 10,15 L 25,30 L 10,45 M 30,15 L 45,30 L 30,45", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 25,10 L 30,25 L 45,30 L 30,35 L 25,50 L 20,35 L 5,30 L 20,25 Z", fill: false, strokeWidth: 2 },
+                        { type: "path", path: "M 10,10 L 40,30 L 10,50 L 20,30 Z", fill: false, strokeWidth: 2 }
+                    ]
+                }
+            },
+            // 第二組雙頁 (遊戲 UI 元素)
+            {
+                left: {
+                    tag: "Godot 專案草稿",
+                    search: "UI Design",
+                    title: "控制組件---實心",
+                    sub: "Control Elements",
+                    items: Array(16).fill(null).map((_, i) => ({
+                        type: "icon",
+                        icon: ["⚔️", "🛡️", "🔮", "🎒", "⚙️", "❤️", "⚡", "📜", "💎", "🔑", "🧪", "🎯", "👑", "🗺️", "💍", "🏹"][i]
+                    }))
+                },
+                right: {
+                    tag: "Godot 專案草稿",
+                    search: "UI Design",
+                    title: "控制組件---線條",
+                    sub: "Wireframe Outline",
+                    items: Array(16).fill(null).map((_, i) => ({
+                        type: "icon",
+                        icon: ["🗡️", "🔰", "✨", "💼", "🔧", "🖤", "🌩️", "📄", "🔹", "🗝️", "🍷", "🎪", "🎓", "🧭", "⭕", "🪃"][i]
+                    }))
+                }
+            },
+            // 第三組雙頁 (架構與流程)
+            {
+                left: {
+                    tag: "Godot 4 教學",
+                    search: "Page Flip",
+                    title: "翻頁架構---層級",
+                    sub: "Layer Structure",
+                    note: "1. 底層: 下一頁 (Next)\n2. 中層: 當前頁 (Current)\n3. 頂層: 動態翻頁 (Turning Page)\n4. Tween 驅動 progress: 0 -> 1"
+                },
+                right: {
+                    tag: "Godot 4 教學",
+                    search: "Page Flip",
+                    title: "Shader---捲曲計算",
+                    sub: "Page Curl Math",
+                    note: "uniform float progress : hint_range(0, 1);\n\nvoid fragment() {\n  float angle = progress * PI;\n  // 頂點變形與背面陰影計算...\n}"
+                }
+            }
+        ];
+
+        let currentSpreadIndex = 0; // 當前雙頁索引 (0, 1, 2)
+        let isAnimating = false;
+        let soundEnabled = true;
+        let gridVisible = true;
+
+        function playPageTurnSound() {
+            if (!soundEnabled) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioCtx();
+                
+                // 建立白噪音 (模擬紙張摩擦聲)
+                const bufferSize = ctx.sampleRate * 0.35; // 0.35秒
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                // 帶通濾波器
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(800, ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.3);
+                filter.Q.value = 1.2;
+
+                // 音量包絡
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.01, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                noise.start();
+                noise.stop(ctx.currentTime + 0.35);
+            } catch (e) {
+                console.log("Audio play error", e);
+            }
+        }
+
+        const leftPageEl = document.getElementById('leftPage');
+        const rightPageEl = document.getElementById('rightPage');
+        const flipperEl = document.getElementById('flipper');
+        const flipperFrontEl = document.getElementById('flipperFront');
+        const flipperBackEl = document.getElementById('flipperBack');
+        const frontShadowEl = document.getElementById('frontShadow');
+        const backShadowEl = document.getElementById('backShadow');
+
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageIndicator = document.getElementById('pageIndicator');
+        const audioBtn = document.getElementById('toggleAudioBtn');
+        const gridBtn = document.getElementById('toggleGridBtn');
+
+        function renderPageHTML(data) {
+            if (!data) return '<div class="h-full flex items-center justify-center text-slate-300 font-bold">End of Book</div>';
+
+            let itemsHTML = '';
+            
+            if (data.items) {
+                itemsHTML = `
+                    <div class="grid grid-cols-4 gap-2 md:gap-3 my-auto py-2">
+                        ${data.items.map(item => {
+                            if (item.type === 'path') {
+                                return `
+                                    <div class="aspect-square border border-slate-300/60 rounded-md flex items-center justify-center p-1 bg-white/40 hover:scale-105 transition">
+                                        <svg viewBox="0 0 50 60" class="w-full h-full text-slate-900">
+                                            <path d="${item.path}" 
+                                                  fill="${item.fill ? 'currentColor' : 'none'}" 
+                                                  stroke="currentColor" 
+                                                  stroke-width="${item.strokeWidth || 3}" 
+                                                  stroke-linecap="round" 
+                                                  stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="aspect-square border border-slate-300/60 rounded-md flex items-center justify-center text-xl md:text-2xl bg-white/40 hover:scale-105 transition">
+                                        ${item.icon}
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                `;
+            } else if (data.note) {
+                itemsHTML = `
+                    <div class="my-auto p-4 bg-amber-50/60 border border-amber-200 rounded-xl font-mono text-xs md:text-sm leading-relaxed text-slate-700 whitespace-pre-line shadow-inner">
+                        ${data.note}
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2 text-[10px] md:text-xs text-slate-400 font-mono">
+                    <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">${data.tag}</span>
+                    <div class="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                        <span>🔍</span> <span>${data.search}</span>
+                    </div>
+                </div>
+
+                ${itemsHTML}
+
+                <div class="pt-2 border-t border-slate-200 flex items-baseline justify-between">
+                    <div>
+                        <h2 class="text-base md:text-xl font-black text-slate-800 tracking-tight">${data.title}</h2>
+                        <p class="text-[10px] md:text-xs text-amber-600 handwritten font-bold">${data.sub}</p>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono">OnebeanUI »</span>
+                </div>
+            `;
+        }
+
+        function updateStaticPages() {
+            const spread = pagesData[currentSpreadIndex];
+            leftPageEl.innerHTML = renderPageHTML(spread.left);
+            rightPageEl.innerHTML = renderPageHTML(spread.right);
+            pageIndicator.textContent = `${currentSpreadIndex + 1} / ${pagesData.length}`;
+
+            // 控制按鈕狀態
+            prevBtn.style.opacity = currentSpreadIndex === 0 ? '0.3' : '1';
+            nextBtn.style.opacity = currentSpreadIndex === pagesData.length - 1 ? '0.3' : '1';
+        }
+
+        function flipToNext() {
+            if (isAnimating || currentSpreadIndex >= pagesData.length - 1) return;
+            isAnimating = true;
+
+            const currentSpread = pagesData[currentSpreadIndex];
+            const nextSpread = pagesData[currentSpreadIndex + 1];
+
+            // 準備 Flipper：正面為當前右頁，背面為下一組左頁
+            flipperFrontEl.querySelector('.content-container').innerHTML = renderPageHTML(currentSpread.right);
+            flipperBackEl.querySelector('.content-container').innerHTML = renderPageHTML(nextSpread.left);
+
+            // 更新底層右頁為下一組右頁
+            rightPageEl.innerHTML = renderPageHTML(nextSpread.right);
+
+            // 設定 Flipper 位置 (從右邊開始翻到左邊)
+            flipperEl.className = 'flipper flip-right';
+            flipperEl.style.display = 'block';
+
+            playPageTurnSound();
+
+            // 執行 3D 翻轉動畫 (0deg -> -180deg)
+            const duration = 650; // ms
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease-in-out quadratic curve
+                const easeProgress = progress < 0.5 
+                    ? 2 * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                const angle = -180 * easeProgress;
+                flipperEl.style.transform = `rotateY(${angle}deg)`;
+
+                // 陰影變化
+                frontShadowEl.style.background = `rgba(0, 0, 0, ${0.4 * easeProgress})`;
+                backShadowEl.style.background = `rgba(0, 0, 0, ${0.4 * (1 - easeProgress)})`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // 動畫結束，更新狀態
+                    currentSpreadIndex++;
+                    updateStaticPages();
+                    flipperEl.style.display = 'none';
+                    flipperEl.style.transform = 'rotateY(0deg)';
+                    isAnimating = false;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function flipToPrev() {
+            if (isAnimating || currentSpreadIndex <= 0) return;
+            isAnimating = true;
+
+            const currentSpread = pagesData[currentSpreadIndex];
+            const prevSpread = pagesData[currentSpreadIndex - 1];
+
+            // 準備 Flipper：正面為當前左頁，背面為前一組右頁
+            flipperFrontEl.querySelector('.content-container').innerHTML = renderPageHTML(currentSpread.left);
+            flipperBackEl.querySelector('.content-container').innerHTML = renderPageHTML(prevSpread.right);
+
+            // 更新底層左頁為前一組左頁
+            leftPageEl.innerHTML = renderPageHTML(prevSpread.left);
+
+            // 設定 Flipper 位置 (從左邊翻回到右邊)
+            flipperEl.className = 'flipper flip-left';
+            flipperEl.style.display = 'block';
+
+            playPageTurnSound();
+
+            const duration = 650;
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                const easeProgress = progress < 0.5 
+                    ? 2 * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                const angle = 180 * easeProgress;
+                flipperEl.style.transform = `rotateY(${angle}deg)`;
+
+                frontShadowEl.style.background = `rgba(0, 0, 0, ${0.4 * easeProgress})`;
+                backShadowEl.style.background = `rgba(0, 0, 0, ${0.4 * (1 - easeProgress)})`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentSpreadIndex--;
+                    updateStaticPages();
+                    flipperEl.style.display = 'none';
+                    flipperEl.style.transform = 'rotateY(0deg)';
+                    isAnimating = false;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        nextBtn.addEventListener('click', flipToNext);
+        prevBtn.addEventListener('click', flipToPrev);
+
+        // 鍵盤左右鍵控制
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') flipToNext();
+            if (e.key === 'ArrowLeft') flipToPrev();
+        });
+
+        // 音效開關
+        audioBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('audioStatus').textContent = `音效: ${soundEnabled ? '開啟' : '關閉'}`;
+            document.getElementById('audioIcon').textContent = soundEnabled ? '🔊' : '🔇';
+        });
+
+        // 網格顯隱控制
+        gridBtn.addEventListener('click', () => {
+            gridVisible = !gridVisible;
+            document.getElementById('gridStatus').textContent = `網格: ${gridVisible ? '顯示' : '隱藏'}`;
+            const pages = document.querySelectorAll('.page, .flipper-face');
+            pages.forEach(p => {
+                p.style.backgroundImage = gridVisible ? '' : 'none';
+            });
+        });
+
+        // 初始化渲染
+        window.onload = () => {
+            updateStaticPages();
+        };
+    </script>
+</body>
+</html>
