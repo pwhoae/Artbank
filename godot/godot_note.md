@@ -411,6 +411,11 @@ interface ItemFactory:
 
 <a id="美術"></a>
 ### 美術
+【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+<br>【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e<br>
+排布插件 ：github.com/HungryProton/scatter<br>
+地形插件 ：Terrain 3D<br>
+材质下载插件：	Poly Haven Import/Ambient CG (error) <br>
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B2%BC%E5%9C%96_2_4_%E7%89%B9%E6%AE%8A.PNG" width="300" height="300"></img>
 
