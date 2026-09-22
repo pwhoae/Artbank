@@ -1,27 +1,20 @@
-死守筆記容易讓思維停留在當初的淺層水平；真正掌握技術的人更多是純興趣驅動與手動實作。 <br>
-[回到底部](#readme)| <a id="readme_begin"></a><a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a><br>
-<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md
-"> GLB/GLTF</a><br> 
+|死守筆記容易讓思維停留在當初的淺層水平|真正掌握技術的人更多是純興趣驅動與手動實作|
+|--|--|
+|[回到底部](#readme) <a id="readme_begin"></a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|
+|<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md"> GLB/GLTF</a>|
+
 <hr>
-漫畫分鏡技巧
-原圖建模
-設定 Prompt 身份與規範：告訴 AI：「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 
-根據圖中角色設計提示詞：居高臨下 二郎腿 英倫皇帝座位，紅酒，頭頂假的天使光環道具
-天使惡魔邦手天翼
-https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F
-要減法
-Sound:https://www.zapsplat.com/
-差異化<br>
-棄置:漫畫,建模,角設,遊戲動畫研究<br>
+設定 Prompt 身份與規範：告訴 AI：**「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 **
 如何驗證「真需求」？小紅書內容自動化與人設拆解,營運專家設定 SOP<br>
+
+<hr>差異化+要減法
+<a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>
+根據圖中角色設計提示詞：居高臨下 二郎腿 英倫皇帝座位，紅酒，頭頂假的天使光環道具,天使惡魔邦手天翼
 寫故事用九宮圖<br>
 生動表情包 猫和老鼠拼豆/像素畫表情包+加深線條>拚豆<br>
-【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-<br>
-【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e<br>
-排布插件 ：github.com/HungryProton/scatter<br>
-地形插件 ：Terrain 3D<br>
-材质下载插件：	Poly Haven Import/Ambient CG (error) <br>
+
+在切蛋糕,生日會,生日帽,豐富這個生日會畫面
+
 <hr>
 
 ### 整活>過程要好玩快樂
