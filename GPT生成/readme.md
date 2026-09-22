@@ -6,7 +6,8 @@
 漫畫分鏡技巧
 原圖建模
 設定 Prompt 身份與規範：告訴 AI：「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 
-
+根據圖中角色設計提示詞：居高臨下 二郎腿 英倫皇帝座位，紅酒，頭頂假的天使光環道具
+天使惡魔邦手天翼
 https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F
 要減法
 Sound:https://www.zapsplat.com/
