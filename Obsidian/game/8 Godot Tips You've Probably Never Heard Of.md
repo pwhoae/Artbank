@@ -1,10 +1,10 @@
 ---
 title: "8 Godot Tips You've Probably Never Heard Of"
-source: "https://www.youtube.com/watch?v=P8ssMWWQ1R8"
+source: "https://www.youtube.com/watch?v=P8ssMWWQ1R8&list=WL&index=2"
 author:
   - "[[Firebelley Games]]"
 published: 2026-07-18
-created: 2026-07-20
+created: 2026-09-25
 description: "🕹️ Wishlist Alchemortis on Steam! https://store.steampowered.com/app/3967230/Alchemortis/➡️ Support me on Patreon: https://www.patreon.com/Firebelley💬 Join the Discord: https://discord.gg/4DYepmB"
 tags:
   - "clippings"
@@ -47,8 +47,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 
 ## Transcript
 
-### Manage Editor Features
-
 **0:00** · Number one, manage editor features.
 
 **0:02** · A lot of people don't know that you can actually turn certain Godot features off.
@@ -76,8 +74,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 **1:03** · So that's a way that you can streamline your Godot experience to only the features that you need.
 
 **1:07** · It reduces the noise, reduces the clutter, makes your workspace a lot cleaner.
-
-### Self-Contained Mode
 
 **1:12** · Tip number two, self-contained mode.
 
@@ -119,8 +115,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 
 **2:58** · The link is in the description below.
 
-### Upgrade Project Files
-
 **3:00** · Tip number three, upgrade project files.
 
 **3:03** · If you're constantly updating Godot or at least upgrading from one version to another, there's a good chance that how Godot stores data changes.
@@ -143,8 +137,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 
 **4:09** · So that's a great way of getting all of your files and imports up-to-date with whatever Godot version you're currently on.
 
-### Center/Frame Selection
-
 **4:15** · Tip number four is center and frame selection.
 
 **4:19** · So I've got a color rect here just for demonstration purposes.
@@ -162,8 +154,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 **4:58** · That will not change your zoom settings on your viewport, but if you press Shift F, that will bring it into a nice, more full screen view there.
 
 **5:07** · So that's a great way of getting your viewport camera to center on the thing that you want to look at.
-
-### Testing Feature Tags
 
 **5:14** · Tip number five is adding feature tags to your editor running instance.
 
@@ -196,8 +186,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 **6:41** · But if you just want to test if those tags are working without having to build the game, that's how you do it.
 
 **6:47** · You go to debug, customize run instances, and you can change those tags right there.
-
-### Quick Open Dialogs
 
 **6:52** · Tip number six is the various quick open dialogs.
 
@@ -236,8 +224,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 **8:11** · And the third type of quick open is the quick open script, which is control alt o by default on Windows.
 
 **8:19** · So again, that's control alt o. And this is the same thing again, except it restricts the type that you're searching to only scripts.
-
-### Override \_has\_point
 
 **8:30** · Tip number seven is the overrideable has point method for control nodes. So here's a problem. If I wanted to detect my mouse entering and exiting a control node area, I'm only able to do that on the rectangular area of the control. So here I've set up a script in my ready method. I'm connecting to the color rects, mouse entered and mouse exited signals. And I'm just changing the label text as handlers in there.
 
@@ -287,8 +273,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 
 **11:14** · So the hasPoint is a great way of providing your own custom logic to tell Godot when the mouse should actually be considered as inside of the area.
 
-### Shader Includes
-
 **11:24** · Tip number eight is shader includes.
 
 **11:27** · If you don't write shaders, then maybe this isn't applicable to you, but a shader include essentially allows you to share code between shaders.
@@ -330,8 +314,6 @@ Feature flags video: https://www.youtube.com/watch?v=9Ts0psApR5s
 **13:10** · Now, obviously, this is a very, very simple example.
 
 **13:13** · But it shouldn't be hard to see how you could use this to share common functions between all of your shaders.
-
-### Conclusion
 
 **13:20** · OK, that was eight Godot tips and tricks that you may not have heard of.
 

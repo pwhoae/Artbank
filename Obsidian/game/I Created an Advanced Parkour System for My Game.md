@@ -1,10 +1,10 @@
 ---
 title: "I Created an Advanced Parkour System for My Game"
-source: "https://www.youtube.com/watch?v=2QrLTJlPbQ0"
+source: "https://www.youtube.com/watch?v=2QrLTJlPbQ0&list=WL&index=3"
 author:
   - "[[endeetree]]"
 published: 2024-10-25
-created: 2026-08-15
+created: 2026-09-25
 description: "Parkour in Velkyn is so much fun - I need to limit my own playtest time! :DWishlist VELKYN on Steam: https://store.steampowered.com/app/2728320/VELKYN/Welcome back to the character controller seri"
 tags:
   - "clippings"

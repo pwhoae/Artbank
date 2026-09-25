@@ -1,10 +1,10 @@
 ---
 title: "Animating Juicy UI in Godot is EASY Now"
-source: "https://www.youtube.com/watch?v=J5HlXFguaX0"
+source: "https://www.youtube.com/watch?v=J5HlXFguaX0&list=WL&index=3"
 author:
   - "[[KobeDev]]"
 published: 2026-07-15
-created: 2026-08-13
+created: 2026-09-25
 description: "Code and assets used: https://github.com/kobeDevStuff/Offset-transform-tutorialPlay Monkey Business now! https://store.steampowered.com/app/2888940/Monkey_Business/Join the discord! https://discord."
 tags:
   - "clippings"
