@@ -586,3 +586,9 @@ suno
 数据与大盘分析：Data.ai、AppAnnie、七麦数据（Qimai）。 
 买量与广告出海监测：SocialPeta（广固）、Sensor Tower 
 
+### 网站
+
+贴图下载网站：https://ambientcg.com/
+HDR、模型、贴图素材：https://polyhaven.com/
+素材、参考：https://pixabay.com/
+插件等：https://blenderco.cn/
