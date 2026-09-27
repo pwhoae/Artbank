@@ -2,23 +2,24 @@
 |--|--|
 |[回到底部](#readme) <a id="readme_begin"></a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|
 |<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md"> GLB/GLTF</a>|
+|寫故事用九宮圖|生動表情包|
 
 <hr>
-設定 Prompt 身份與規範：告訴 AI：**「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 **
+<a href="https://search.bilibili.com/all?vt=27811681&keyword=%E7%8C%AB%E5%92%8C%E8%80%81%E9%BC%A0&from_source=web_search&search_source=5
+">猫和老鼠</a>
+
+<hr>
+告訴 AI：**「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 **
 如何驗證「真需求」？小紅書內容自動化與人設拆解,營運專家設定 SOP<br>
 
-<hr>差異化+要減法
-奧拉星復刻 
-一个简易的关卡设计前期规划工具
-
+<hr>
+差異化+要減法<br>
+奧拉星復刻<br> 
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>
-根據圖中角色設計提示詞：居高臨下 二郎腿 英倫皇帝座位，紅酒，頭頂假的天使光環道具,天使惡魔邦手天翼
-寫故事用九宮圖<br>
-生動表情包 猫和老鼠拼豆/像素畫表情包+加深線條>拚豆<br>
-香港路牌編輯器與貼圖生成器
-在切蛋糕,生日會,生日帽,豐富這個生日會畫面
-擬人化/毛衣處男/護士服
+<br>
 
+<hr>
+<hr>
 <hr>
 
 ### 整活>過程要好玩快樂
@@ -32,11 +33,7 @@
 
 ### 向量藝術
 ```
-風格主軸： ⁠minimalist vector art⁠（極簡向量藝術）, ⁠vector illustration style⁠（向量插畫風格）。
-幾何與形狀： ⁠clean geometric shapes⁠（乾淨的幾何圖形）, ⁠large blocks of color⁠（大色塊）。
-人物細節： ⁠featureless face⁠（無五官面孔）, ⁠simple hands⁠（簡單的手部描繪）。
-排版與構圖： ⁠negative space⁠（負空間）, ⁠strong sense of hierarchy⁠（強烈的層次感）, ⁠large text overlay⁠（大文字疊加）。
-紋理： ⁠halftone texture⁠（網點紋理）, ⁠paper texture finish⁠（紙張紋理效果）。
+風格主軸： ⁠minimalist vector art⁠（極簡向量藝術）, ⁠vector illustration style⁠（向量插畫風格）。幾何與形狀： ⁠clean geometric shapes⁠（乾淨的幾何圖形）, ⁠large blocks of color⁠（大色塊）。人物細節： ⁠featureless face⁠（無五官面孔）, ⁠simple hands⁠（簡單的手部描繪）。排版與構圖： ⁠negative space⁠（負空間）, ⁠strong sense of hierarchy⁠（強烈的層次感）, ⁠large text overlay⁠（大文字疊加）。紋理： ⁠halftone texture⁠（網點紋理）, ⁠paper texture finish⁠（紙張紋理效果）。
 ```
 
 ### <a href="https://github.com/pwhoae/Artbank/tree/main/html/Prompt%20%E5%B9%B3%E9%9D%A2%E8%A8%AD%E8%A8%88%E5%BF%AB%E9%80%9F%E4%BF%AE%E6%94%B9%E8%88%87%E6%95%B4%E5%90%88%E5%B7%A5%E5%85%B7%201.1">平面設計 prompt html</a>
