@@ -442,6 +442,8 @@ interface ItemFactory:
 
 <a id="美術"></a>
 ### 美術
+Fresnel實現「透肉感」
+
 【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 <br>【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e<br>
 排布插件 ：github.com/HungryProton/scatter<br>
