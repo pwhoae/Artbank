@@ -8,6 +8,7 @@
 如何驗證「真需求」？小紅書內容自動化與人設拆解,營運專家設定 SOP<br>
 
 <hr>差異化+要減法
+奧拉星復刻 
 一个简易的关卡设计前期规划工具
 
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>
