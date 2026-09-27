@@ -1,5 +1,8 @@
 總是xx:https://www.bilibili.com/toy/6AF4DstEm8VTOebm/index.html
 nvidia:Kimodo: Scaling Controllable Human Motion Generation
+
+BlenderKit:https://www.blendkit.com
+Camera Shakify：用於為攝影機添加自然的手持鏡頭晃動效果。 
 # 🎨 Artbank & GameDev Resource Hub
 
 
