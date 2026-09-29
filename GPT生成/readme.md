@@ -14,7 +14,8 @@
 
 <hr>
 差異化+要減法<br>
-奧拉星復刻<br> 
+奧拉星復刻<br> 體驗老板,陪伴類,戰鬥力系統,每周期更新,打卡,互動,桌宠agent,3d打印
+
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>
 <br>
 
