@@ -4,6 +4,7 @@ nvidia:Kimodo: Scaling Controllable Human Motion Generation
 BlenderKit:https://www.blendkit.com
 Camera Shakify：用於為攝影機添加自然的手持鏡頭晃動效果。 
 ui:https://bencho.dev/
+https://genvizu.com/zh
 # 🎨 Artbank & GameDev Resource Hub
 
 
