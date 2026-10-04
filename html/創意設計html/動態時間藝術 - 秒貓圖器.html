@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動態時間藝術 - 秒貓圖器 (TheCatAPI)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        art: {
+                            bg: '#f8f9fa',
+                            panel: '#ffffff',
+                            accent: '#f59e0b',
+                            dark: '#18181b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #fafafa;
+            color: #18181b;
+            overflow-x: hidden;
+        }
+
+        /* Custom scrollbar for control panel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.02);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input[type=range] {
+            accent-color: #f59e0b;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col antialiased bg-slate-50 text-slate-800 select-none">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center text-white shadow-md shadow-amber-500/25">
+                <i class="fa-solid fa-cat text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                    動態時間藝術 <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold flex items-center gap-1"><i class="fa-solid fa-bolt text-amber-500"></i> 秒貓圖器</span>
+                </h1>
+                <p class="text-xs text-slate-500">每秒自動載入 TheCatAPI 全新貓咪照片，隨秒針旋轉展開藝術扇面</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="btnSoundToggle" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium transition flex items-center gap-1.5" title="音效切換">
+                <i class="fa-solid fa-volume-xmark text-slate-400"></i>
+                <span class="hidden sm:inline">音效: 關</span>
+            </button>
+            <button id="btnFullscreen" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-medium transition flex items-center gap-1.5" title="全螢幕專注">
+                <i class="fa-solid fa-expand"></i>
+                <span class="hidden sm:inline">全螢幕</span>
+            </button>
+            <button id="btnExport" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition flex items-center gap-2 shadow-md shadow-amber-500/20">
+                <i class="fa-solid fa-camera"></i>
+                <span>導出快照</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Left Panel: DEPLOY Controls -->
+        <aside id="deployPanel" class="w-full md:w-96 lg:w-[420px] bg-white border-r border-slate-200 flex flex-col h-full z-20 shadow-sm transition-all duration-300">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <span class="text-xs font-mono font-bold tracking-wider text-slate-400 uppercase">( DEPLOY )</span>
+                <span class="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> TheCatAPI 連線正常
+                </span>
+            </div>
+
+            <!-- Scrollable Controls -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                
+                <!-- Section 1: Cat API & Custom Images -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-cat text-amber-500"></i> 1. TheCatAPI 貓咪相片庫
+                        </label>
+                        <span id="imgCountBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200/60">0 張相片</span>
+                    </div>
+
+                    <!-- Cat API Live Status Box -->
+                    <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2 font-bold text-amber-900">
+                                <span class="text-base">🐱</span>
+                                <span>每秒自動更換全新貓圖</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="checkCatEverySecond" checked class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+                        <p class="text-[11px] text-amber-700/90 leading-relaxed">
+                            開啟後，每當秒針跳動一秒，將自動向 TheCatAPI 抓取並展示一張不重複的可愛貓咪相片！
+                        </p>
+                        <div class="flex gap-2 pt-1">
+                            <button id="btnFetchCatBatch" class="flex-1 py-1.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-medium text-xs transition flex items-center justify-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-arrows-rotate"></i> 批量載入 20 張新貓圖
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Presets & Custom Upload -->
+                    <div class="space-y-2 pt-1">
+                        <p class="text-[11px] font-medium text-slate-500">更多主題與自訂：</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button data-preset="cyber" class="preset-btn px-2 py-1.5 rounded-xl border border-slate-200 hover:border-amber-300 bg-white text-xs text-slate-600 transition flex items-center justify-center gap-1">
+                                <span>🌆</span> 霓虹
+                            </button>
+                            <button data-preset="nature" class="preset-btn px-2 py-1.5 rounded-xl border border-slate-200 hover:border-amber-300 bg-white text-xs text-slate-600 transition flex items-center justify-center gap-1">
+                                <span>🌿</span> 自然
+                            </button>
+                            <button data-preset="art" class="preset-btn px-2 py-1.5 rounded-xl border border-slate-200 hover:border-amber-300 bg-white text-xs text-slate-600 transition flex items-center justify-center gap-1">
+                                <span>🎨</span> 名畫
+                            </button>
+                        </div>
+
+                        <!-- Dropzone for custom files -->
+                        <div id="dropzone" class="border border-dashed border-slate-300 hover:border-amber-400 bg-slate-50 hover:bg-amber-50/30 rounded-xl p-2.5 text-center cursor-pointer relative transition">
+                            <input type="file" id="fileInput" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <span class="text-xs text-slate-500 font-medium flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-cloud-arrow-up text-amber-500"></i> 上傳你自己的相片庫
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Thumbnails Preview Grid -->
+                    <div id="thumbnailsContainer" class="flex items-center gap-2 overflow-x-auto py-2 px-1 border-t border-slate-100 min-h-[52px]">
+                        <!-- Dynamic Thumbnails inserted here -->
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 2: Fan Arc Dynamics -->
+                <div class="space-y-4">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-fan text-amber-500"></i> 2. 秒針相片扇面軌跡
+                    </label>
+
+                    <!-- Visible Cards Count -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600 font-medium">展開相片數量</span>
+                            <span id="valCardCount" class="font-mono text-slate-800 font-semibold">16</span>
+                        </div>
+                        <input type="range" id="inputCardCount" min="3" max="30" value="16" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Arc Angle Spread -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600 font-medium">扇形張角範圍 (度)</span>
+                            <span id="valArcAngle" class="font-mono text-slate-800 font-semibold">120°</span>
+                        </div>
+                        <input type="range" id="inputArcAngle" min="20" max="240" value="120" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Radius Offset -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600 font-medium">秒針懸掛距離</span>
+                            <span id="valRadius" class="font-mono text-slate-800 font-semibold">210px</span>
+                        </div>
+                        <input type="range" id="inputRadius" min="100" max="360" value="210" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Card Size -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600 font-medium">相片尺寸</span>
+                            <span id="valCardSize" class="font-mono text-slate-800 font-semibold">80px</span>
+                        </div>
+                        <input type="range" id="inputCardSize" min="40" max="140" value="80" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+
+                    <!-- Card Style -->
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <span class="text-[11px] text-slate-500 block mb-1">邊框風格</span>
+                            <select id="selectCardStyle" class="w-full text-xs p-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700">
+                                <option value="polaroid">拍立得框 (Polaroid)</option>
+                                <option value="sleek">無邊框 Modern</option>
+                                <option value="glass">晶瑩玻璃 (Glass)</option>
+                                <option value="vintage">復古金邊 (Vintage)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500 block mb-1">尾端漸變衰減</span>
+                            <select id="selectFadeMode" class="w-full text-xs p-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700">
+                                <option value="both">透明度 + 尺寸雙重</option>
+                                <option value="alpha">透明度漸隱 (Alpha)</option>
+                                <option value="scale">尺寸縮小漸隱</option>
+                                <option value="none">保持不變</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 3: Clock Style & Motion -->
+                <div class="space-y-4">
+                    <label class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock text-amber-500"></i> 3. 時鐘表盤與動態
+                    </label>
+
+                    <!-- Clock Theme -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <button data-theme="minimal" class="theme-btn active px-2.5 py-1.5 rounded-xl border border-amber-500 bg-amber-50/60 text-amber-800 text-xs font-medium transition text-center">
+                            極簡白盤
+                        </button>
+                        <button data-theme="dark" class="theme-btn px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-600 text-xs font-medium transition text-center">
+                            深邃夜色
+                        </button>
+                        <button data-theme="vintage" class="theme-btn px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-600 text-xs font-medium transition text-center">
+                            羊皮復古
+                        </button>
+                    </div>
+
+                    <!-- Motion Mode -->
+                    <div class="space-y-2">
+                        <span class="text-[11px] font-medium text-slate-500">秒針轉動模式：</span>
+                        <div class="flex items-center gap-4 text-xs">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="motionMode" value="smooth" checked class="text-amber-500 focus:ring-amber-400">
+                                <span class="text-slate-700">平滑流暢 (Smooth)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="motionMode" value="tick" class="text-amber-500 focus:ring-amber-400">
+                                <span class="text-slate-700">逐秒石英 (Tick)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Show Ticks & Dial Numbers -->
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <span class="text-slate-700 font-medium">顯示表盤刻度與數字</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="checkShowTicks" checked class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- Sound Type Selector -->
+                    <div class="space-y-1.5 pt-1">
+                        <span class="text-[11px] font-medium text-slate-500">秒針聲音風格：</span>
+                        <select id="selectSoundType" class="w-full text-xs p-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700">
+                            <option value="meow">🐱 貓咪喵喵聲 (Meow Sound)</option>
+                            <option value="tick">⏱️ 經典嘀嗒聲 (Mechanical Tick)</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="p-3 border-t border-slate-100 text-center bg-slate-50/80">
+                <p class="text-[11px] text-slate-400 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-circle-check text-emerald-500"></i> TheCatAPI 即時串流運作中
+                </p>
+            </div>
+        </aside>
+
+        <!-- Right Panel: PREVIEW Canvas Viewport -->
+        <section class="flex-1 bg-white relative flex flex-col items-center justify-center overflow-hidden p-4 md:p-8" id="previewArea">
+            
+            <!-- Reference Style Header Label -->
+            <div class="absolute top-6 right-8 text-xs font-mono font-bold tracking-wider text-slate-300 uppercase pointer-events-none z-10">
+                ( PREVIEW )
+            </div>
+
+            <!-- Live Digital Time Badge -->
+            <div class="absolute top-6 left-8 flex items-center gap-3 z-10">
+                <div class="flex items-center gap-2.5 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-200/90 shadow-sm text-xs font-mono text-slate-700">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="liveTimeDisplay" class="font-bold tracking-widest">00:00:00</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="canvas-container w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center">
+                <canvas id="clockCanvas" class="w-full h-full object-contain cursor-grab active:cursor-grabbing"></canvas>
+            </div>
+
+            <!-- Interactive Floating Control Bar -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-slate-200/90 shadow-lg flex items-center space-x-4 z-20">
+                <button id="btnPause" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs transition" title="暫停/播放">
+                    <i class="fa-solid fa-pause"></i>
+                </button>
+                <div class="h-4 w-[1px] bg-slate-200"></div>
+                <button id="btnRandomize" class="text-xs text-slate-600 hover:text-amber-600 font-medium flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-shuffle text-amber-500"></i> 打亂相片順序
+                </button>
+                <div class="h-4 w-[1px] bg-slate-200"></div>
+                <div class="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                    <i class="fa-solid fa-hand-pointer text-slate-400"></i>
+                    <span>滾輪縮放 / 拖拽平移</span>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State Management
+        const state = {
+            images: [],             // Active stack of Image objects
+            imageUrls: [],          
+            cardCount: 16,
+            arcAngle: 120,          // Arc angle in degrees
+            radius: 210,            // Radial distance from clock center
+            cardSize: 80,           // Width/height of photo cards
+            cardStyle: 'polaroid',  // 'polaroid', 'sleek', 'glass', 'vintage'
+            fadeMode: 'both',       // 'alpha', 'scale', 'both', 'none'
+            theme: 'minimal',       // 'minimal', 'dark', 'vintage'
+            motionMode: 'smooth',   // 'smooth', 'tick'
+            showTicks: true,
+            isPaused: false,
+            soundEnabled: false,
+            soundType: 'meow',      // 'meow' or 'tick'
+            autoCatEverySecond: true, // Fetch a new cat from TheCatAPI every second tick
+            // Viewport Transforms
+            zoom: 1.0,
+            panX: 0,
+            panY: 0,
+            isDragging: false,
+            dragStart: { x: 0, y: 0 }
+        };
+
+        // DOM Element References
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        const thumbnailsContainer = document.getElementById('thumbnailsContainer');
+        const imgCountBadge = document.getElementById('imgCountBadge');
+        const liveTimeDisplay = document.getElementById('liveTimeDisplay');
+
+        // Preset Collections
+        const PRESETS = {
+            cyber: [
+                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=400&auto=format&fit=crop'
+            ],
+            nature: [
+                'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&auto=format&fit=crop'
+            ],
+            art: [
+                'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1549887534-1541e9326642?w=400&auto=format&fit=crop'
+            ]
+        };
+
+        // High-Speed TheCatAPI Preloader Pool (Prevents latency flicker)
+        const CAT_API_URL = 'https://api.thecatapi.com/v1/images/search?limit=10';
+        let catPool = [];
+        let isFetchingCats = false;
+
+        async function topUpCatPool() {
+            if (catPool.length >= 15 || isFetchingCats) return;
+            isFetchingCats = true;
+            try {
+                const res = await fetch(CAT_API_URL);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(item => {
+                        if (item.url) {
+                            const img = new Image();
+                            img.crossOrigin = 'anonymous';
+                            img.onload = () => {
+                                catPool.push(img);
+                            };
+                            img.src = item.url;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn("TheCatAPI standard batch fetch failed, using cataas fallback:", err);
+                for (let i = 0; i < 5; i++) {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => catPool.push(img);
+                    img.src = `https://cataas.com/cat?width=400&height=400&t=${Date.now()}_${Math.random()}`;
+                }
+            } finally {
+                isFetchingCats = false;
+            }
+        }
+
+        // Initial Cat Loader
+        async function initCatImages(count = 20) {
+            topUpCatPool();
+            const initialUrls = Array.from({ length: count }, (_, i) => 
+                `https://cataas.com/cat?width=400&height=400&t=${Date.now()}_${i}`
+            );
+            loadImages(initialUrls);
+        }
+
+        // Web Audio Context for Tick / Meow Sound Effects
+        let audioCtx = null;
+        function playTickSound() {
+            if (!state.soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                if (state.soundType === 'meow') {
+                    // Synthesize cute playful meow frequency glide
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(550, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    osc.frequency.exponentialRampToValueAtTime(420, now + 0.22);
+
+                    gain.gain.setValueAtTime(0.01, now);
+                    gain.gain.linearRampToValueAtTime(0.09, now + 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.23);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.24);
+                } else {
+                    // Quartz mechanical tick
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1200, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.015);
+
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.02);
+                }
+            } catch (e) {
+                console.warn("Audio play prevented:", e);
+            }
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function createFallbackGraphic(text, c1, c2) {
+            const temp = document.createElement('canvas');
+            temp.width = 300;
+            temp.height = 300;
+            const tCtx = temp.getContext('2d');
+            const grad = tCtx.createLinearGradient(0, 0, 300, 300);
+            grad.addColorStop(0, c1);
+            grad.addColorStop(1, c2);
+            tCtx.fillStyle = grad;
+            tCtx.fillRect(0, 0, 300, 300);
+
+            tCtx.fillStyle = 'white';
+            tCtx.font = 'bold 24px sans-serif';
+            tCtx.textAlign = 'center';
+            tCtx.textBaseline = 'middle';
+            tCtx.fillText(text, 150, 150);
+
+            const img = new Image();
+            img.src = temp.toDataURL();
+            return img;
+        }
+
+        function loadImages(sources) {
+            state.images = [];
+            state.imageUrls = sources;
+
+            if (sources.length === 0) {
+                const colors = [
+                    ['#f59e0b', '#d97706'], ['#ec4899', '#8b5cf6'],
+                    ['#3b82f6', '#10b981'], ['#ef4444', '#f59e0b']
+                ];
+                colors.forEach((c, idx) => {
+                    const img = createFallbackGraphic(`Cat ${idx+1}`, c[0], c[1]);
+                    img.onload = () => updateThumbnails();
+                    state.images.push(img);
+                });
+                updateThumbnails();
+                return;
+            }
+
+            let loadedCount = 0;
+            sources.forEach((src, idx) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    loadedCount++;
+                    if (loadedCount === sources.length) updateThumbnails();
+                };
+                img.onerror = () => {
+                    img.src = `https://placehold.co/400x400/1e293b/ffffff?text=Cat+${idx+1}`;
+                };
+                img.src = src;
+                state.images.push(img);
+            });
+            updateThumbnails();
+        }
+
+        function updateThumbnails() {
+            thumbnailsContainer.innerHTML = '';
+            imgCountBadge.innerText = `${state.images.length} 張相片`;
+
+            state.images.slice(0, 30).forEach((img, idx) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200 relative group cursor-pointer shadow-sm bg-slate-100';
+                
+                const imgEl = document.createElement('img');
+                imgEl.src = img.src;
+                imgEl.className = 'w-full h-full object-cover';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'absolute inset-0 bg-amber-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs';
+                deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    state.images.splice(idx, 1);
+                    updateThumbnails();
+                };
+
+                thumb.appendChild(imgEl);
+                thumb.appendChild(deleteBtn);
+                thumbnailsContainer.appendChild(thumb);
+            });
+        }
+
+        let lastSecondTick = -1;
+
+        function renderClock() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2 + state.panX;
+            const centerY = height / 2 + state.panY;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.save();
+
+            // Apply Camera Viewport Zoom & Center Translation
+            ctx.translate(centerX, centerY);
+            ctx.scale(state.zoom, state.zoom);
+
+            // Get Current Time
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const millis = now.getMilliseconds();
+
+            // Format Live Digital Time Display
+            const pad = (n) => n.toString().padStart(2, '0');
+            liveTimeDisplay.innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+            // Handle Second Ticking & TheCatAPI Fetching
+            if (seconds !== lastSecondTick) {
+                lastSecondTick = seconds;
+                playTickSound();
+
+                // If auto Cat API enabled, shift a new cat from pool on every second!
+                if (state.autoCatEverySecond) {
+                    if (catPool.length > 0) {
+                        const newCatImg = catPool.shift();
+                        state.images.unshift(newCatImg);
+                        if (state.images.length > 40) {
+                            state.images.pop();
+                        }
+                        updateThumbnails();
+                    }
+                    topUpCatPool(); // Keep preloader pool full
+                }
+            }
+
+            // Theme Color Palette
+            let themeColors = {
+                dialBg: 'rgba(255, 255, 255, 0.85)',
+                dialBorder: '#e2e8f0',
+                ticks: '#94a3b8',
+                numbers: '#334155',
+                hourHand: '#1e293b',
+                minuteHand: '#475569',
+                secondHand: '#f59e0b',
+                hub: '#1e293b'
+            };
+
+            if (state.theme === 'dark') {
+                themeColors = {
+                    dialBg: 'rgba(15, 23, 42, 0.9)',
+                    dialBorder: '#334155',
+                    ticks: '#64748b',
+                    numbers: '#f8fafc',
+                    hourHand: '#f1f5f9',
+                    minuteHand: '#cbd5e1',
+                    secondHand: '#f59e0b',
+                    hub: '#f8fafc'
+                };
+            } else if (state.theme === 'vintage') {
+                themeColors = {
+                    dialBg: 'rgba(254, 243, 199, 0.85)',
+                    dialBorder: '#d97706',
+                    ticks: '#b45309',
+                    numbers: '#78350f',
+                    hourHand: '#78350f',
+                    minuteHand: '#92400e',
+                    secondHand: '#dc2626',
+                    hub: '#78350f'
+                };
+            }
+
+            // 1. Draw Clock Face Dial Circle
+            const dialRadius = Math.max(state.radius + state.cardSize, 240);
+            ctx.beginPath();
+            ctx.arc(0, 0, dialRadius, 0, Math.PI * 2);
+            ctx.fillStyle = themeColors.dialBg;
+            ctx.fill();
+            ctx.strokeStyle = themeColors.dialBorder;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 2. Draw Hour & Minute Ticks + Numbers
+            if (state.showTicks) {
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 15px Inter, sans-serif';
+
+                for (let i = 0; i < 60; i++) {
+                    const angle = (i * Math.PI) / 30 - Math.PI / 2;
+                    const isHour = i % 5 === 0;
+                    const tickLen = isHour ? 12 : 6;
+                    const innerR = dialRadius - 20;
+                    const outerR = innerR - tickLen;
+
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * innerR, Math.sin(angle) * innerR);
+                    ctx.lineTo(Math.cos(angle) * outerR, Math.sin(angle) * outerR);
+                    ctx.strokeStyle = isHour ? themeColors.numbers : themeColors.ticks;
+                    ctx.lineWidth = isHour ? 2.5 : 1;
+                    ctx.stroke();
+
+                    if (isHour) {
+                        const num = i === 0 ? 12 : i / 5;
+                        const numR = dialRadius - 42;
+                        ctx.fillStyle = themeColors.numbers;
+                        ctx.fillText(num.toString(), Math.cos(angle) * numR, Math.sin(angle) * numR);
+                    }
+                }
+                ctx.restore();
+            }
+
+            // Calculate Hand Angles
+            const hourAngle = ((hours % 12 + minutes / 60) / 12) * Math.PI * 2 - Math.PI / 2;
+            const minuteAngle = ((minutes + seconds / 60) / 60) * Math.PI * 2 - Math.PI / 2;
+            
+            let secondAngle;
+            if (state.motionMode === 'smooth') {
+                secondAngle = ((seconds + millis / 1000) / 60) * Math.PI * 2 - Math.PI / 2;
+            } else {
+                secondAngle = (seconds / 60) * Math.PI * 2 - Math.PI / 2;
+            }
+
+            // 3. Draw Hour & Minute Hands
+            // Hour Hand
+            ctx.save();
+            ctx.rotate(hourAngle);
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(dialRadius * 0.45, 0);
+            ctx.strokeStyle = themeColors.hourHand;
+            ctx.lineWidth = 7;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.restore();
+
+            // Minute Hand
+            ctx.save();
+            ctx.rotate(minuteAngle);
+            ctx.beginPath();
+            ctx.moveTo(-14, 0);
+            ctx.lineTo(dialRadius * 0.68, 0);
+            ctx.strokeStyle = themeColors.minuteHand;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.restore();
+
+            // 4. Draw Fan Arc Photo Trail attached to Second Hand!
+            const count = Math.min(state.cardCount, Math.max(state.images.length, 1));
+            const arcAngleRad = (state.arcAngle * Math.PI) / 180;
+
+            if (state.images.length > 0) {
+                // Render cards from tail to head (back to front)
+                for (let i = count - 1; i >= 0; i--) {
+                    const t = count === 1 ? 1 : 1 - i / (count - 1); // t=1 at head (second hand), t=0 at tail
+                    const cardAngle = secondAngle - (1 - t) * arcAngleRad;
+                    
+                    const cardDist = state.radius;
+                    const cx = Math.cos(cardAngle) * cardDist;
+                    const cy = Math.sin(cardAngle) * cardDist;
+
+                    // Compute Fade Alpha & Scale
+                    let alpha = 1.0;
+                    let scale = 1.0;
+
+                    if (state.fadeMode === 'alpha' || state.fadeMode === 'both') {
+                        alpha = 0.18 + 0.82 * t;
+                    }
+                    if (state.fadeMode === 'scale' || state.fadeMode === 'both') {
+                        scale = 0.55 + 0.45 * t;
+                    }
+
+                    const cardW = state.cardSize * scale;
+                    const cardH = state.cardSize * 1.2 * scale;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    // Orient card tangentially along the fan arc circle
+                    ctx.rotate(cardAngle + Math.PI / 2);
+                    ctx.globalAlpha = alpha;
+
+                    // Draw Frame & Shadow
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+                    ctx.shadowBlur = 12 * scale;
+                    ctx.shadowOffsetY = 6 * scale;
+
+                    if (state.cardStyle === 'polaroid') {
+                        // Polaroid White Frame
+                        const pad = 6 * scale;
+                        const bottomPad = 18 * scale;
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.roundRect(-cardW / 2 - pad, -cardH / 2 - pad, cardW + pad * 2, cardH + pad + bottomPad, 8 * scale);
+                        ctx.fill();
+
+                        // Inner Photo
+                        ctx.shadowColor = 'transparent';
+                        const img = state.images[i % state.images.length];
+                        if (img && img.complete) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 4 * scale);
+                            ctx.clip();
+                            ctx.drawImage(img, -cardW / 2, -cardH / 2, cardW, cardH);
+                            ctx.restore();
+                        }
+                    } else if (state.cardStyle === 'glass') {
+                        // Glass translucent frame
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                        ctx.lineWidth = 2 * scale;
+                        ctx.beginPath();
+                        ctx.roundRect(-cardW / 2 - 4, -cardH / 2 - 4, cardW + 8, cardH + 8, 10 * scale);
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.shadowColor = 'transparent';
+                        const img = state.images[i % state.images.length];
+                        if (img && img.complete) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 6 * scale);
+                            ctx.clip();
+                            ctx.drawImage(img, -cardW / 2, -cardH / 2, cardW, cardH);
+                            ctx.restore();
+                        }
+                    } else if (state.cardStyle === 'vintage') {
+                        // Vintage Gold Frame
+                        ctx.fillStyle = '#b45309';
+                        ctx.beginPath();
+                        ctx.roundRect(-cardW / 2 - 4, -cardH / 2 - 4, cardW + 8, cardH + 8, 6 * scale);
+                        ctx.fill();
+
+                        ctx.shadowColor = 'transparent';
+                        const img = state.images[i % state.images.length];
+                        if (img && img.complete) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 3 * scale);
+                            ctx.clip();
+                            ctx.drawImage(img, -cardW / 2, -cardH / 2, cardW, cardH);
+                            ctx.restore();
+                        }
+                    } else {
+                        // Sleek Modern (Borderless)
+                        const img = state.images[i % state.images.length];
+                        if (img && img.complete) {
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.roundRect(-cardW / 2, -cardH / 2, cardW, cardH, 8 * scale);
+                            ctx.clip();
+                            ctx.drawImage(img, -cardW / 2, -cardH / 2, cardW, cardH);
+                            ctx.restore();
+                        }
+                    }
+
+                    ctx.restore();
+                }
+            }
+
+            // 5. Draw Second Hand Line & Connecting Pin
+            ctx.save();
+            ctx.rotate(secondAngle);
+
+            // Connecting guide line to fan center
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(state.radius + state.cardSize * 0.6, 0);
+            ctx.strokeStyle = themeColors.secondHand;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Needle Tail Counterweight
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-24, 0);
+            ctx.strokeStyle = themeColors.secondHand;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Center Cap Hub
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI * 2);
+            ctx.fillStyle = themeColors.secondHand;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            ctx.restore();
+
+            // Next Frame Request
+            if (!state.isPaused) {
+                requestAnimationFrame(renderClock);
+            }
+        }
+
+        // Control Inputs Binding
+        const inputCardCount = document.getElementById('inputCardCount');
+        const inputArcAngle = document.getElementById('inputArcAngle');
+        const inputRadius = document.getElementById('inputRadius');
+        const inputCardSize = document.getElementById('inputCardSize');
+
+        inputCardCount.addEventListener('input', (e) => {
+            state.cardCount = parseInt(e.target.value);
+            document.getElementById('valCardCount').innerText = state.cardCount;
+        });
+
+        inputArcAngle.addEventListener('input', (e) => {
+            state.arcAngle = parseInt(e.target.value);
+            document.getElementById('valArcAngle').innerText = `${state.arcAngle}°`;
+        });
+
+        inputRadius.addEventListener('input', (e) => {
+            state.radius = parseInt(e.target.value);
+            document.getElementById('valRadius').innerText = `${state.radius}px`;
+        });
+
+        inputCardSize.addEventListener('input', (e) => {
+            state.cardSize = parseInt(e.target.value);
+            document.getElementById('valCardSize').innerText = `${state.cardSize}px`;
+        });
+
+        document.getElementById('selectCardStyle').addEventListener('change', (e) => {
+            state.cardStyle = e.target.value;
+        });
+
+        document.getElementById('selectFadeMode').addEventListener('change', (e) => {
+            state.fadeMode = e.target.value;
+        });
+
+        document.getElementById('checkShowTicks').addEventListener('change', (e) => {
+            state.showTicks = e.target.checked;
+        });
+
+        document.getElementById('selectSoundType').addEventListener('change', (e) => {
+            state.soundType = e.target.value;
+        });
+
+        document.getElementById('checkCatEverySecond').addEventListener('change', (e) => {
+            state.autoCatEverySecond = e.target.checked;
+        });
+
+        document.getElementById('btnFetchCatBatch').addEventListener('click', () => {
+            initCatImages(20);
+        });
+
+        // Motion Mode Radios
+        document.querySelectorAll('input[name="motionMode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                state.motionMode = e.target.value;
+            });
+        });
+
+        // Theme Switchers
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.theme-btn').forEach(b => {
+                    b.classList.remove('active', 'border-amber-500', 'bg-amber-50/60', 'text-amber-800');
+                    b.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
+                });
+                btn.classList.add('active', 'border-amber-500', 'bg-amber-50/60', 'text-amber-800');
+                btn.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
+                state.theme = btn.dataset.theme;
+            });
+        });
+
+        // Preset Buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const presetKey = btn.dataset.preset;
+                if (PRESETS[presetKey]) {
+                    loadImages(PRESETS[presetKey]);
+                }
+            });
+        });
+
+        // Drag & Drop Custom Files
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-amber-500', 'bg-amber-50/40');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-amber-500', 'bg-amber-50/40');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-amber-500', 'bg-amber-50/40');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+
+        function handleFiles(files) {
+            const newUrls = [];
+            let readCount = 0;
+            const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+
+            if (validFiles.length === 0) return;
+
+            validFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    newUrls.push(e.target.result);
+                    readCount++;
+                    if (readCount === validFiles.length) {
+                        loadImages(newUrls);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Sound Toggle Button
+        const btnSoundToggle = document.getElementById('btnSoundToggle');
+        btnSoundToggle.addEventListener('click', () => {
+            state.soundEnabled = !state.soundEnabled;
+            if (state.soundEnabled) {
+                btnSoundToggle.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-200');
+                btnSoundToggle.innerHTML = '<i class="fa-solid fa-volume-high text-amber-500"></i> <span class="hidden sm:inline">音效: 開</span>';
+                playTickSound();
+            } else {
+                btnSoundToggle.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-200');
+                btnSoundToggle.innerHTML = '<i class="fa-solid fa-volume-xmark text-slate-400"></i> <span class="hidden sm:inline">音效: 關</span>';
+            }
+        });
+
+        // Fullscreen Mode
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        btnFullscreen.addEventListener('click', () => {
+            const previewArea = document.getElementById('previewArea');
+            if (!document.fullscreenElement) {
+                previewArea.requestFullscreen().catch(err => console.warn(err));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Screenshot Export
+        document.getElementById('btnExport').addEventListener('click', () => {
+            try {
+                const link = document.createElement('a');
+                link.download = `second-cat-clock-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                console.error("Snapshot failed:", err);
+            }
+        });
+
+        // Pause / Play
+        const btnPause = document.getElementById('btnPause');
+        btnPause.addEventListener('click', () => {
+            state.isPaused = !state.isPaused;
+            btnPause.innerHTML = state.isPaused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+            if (!state.isPaused) {
+                requestAnimationFrame(renderClock);
+            }
+        });
+
+        // Randomize / Shuffle
+        document.getElementById('btnRandomize').addEventListener('click', () => {
+            for (let i = state.images.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [state.images[i], state.images[j]] = [state.images[j], state.images[i]];
+            }
+            updateThumbnails();
+        });
+
+        // Interactive Canvas Pan & Zoom
+        canvas.addEventListener('mousedown', (e) => {
+            state.isDragging = true;
+            state.dragStart = { x: e.clientX - state.panX, y: e.clientY - state.panY };
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (state.isDragging) {
+                state.panX = e.clientX - state.dragStart.x;
+                state.panY = e.clientY - state.dragStart.y;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            state.isDragging = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+            state.zoom = Math.max(0.4, Math.min(2.5, state.zoom * zoomFactor));
+        }, { passive: false });
+
+        canvas.addEventListener('dblclick', () => {
+            state.zoom = 1.0;
+            state.panX = 0;
+            state.panY = 0;
+        });
+
+        window.onload = function() {
+            resizeCanvas();
+            // Initialize with cat images from TheCatAPI
+            initCatImages(20);
+            // Start render loop
+            requestAnimationFrame(renderClock);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4.7 UI Tween 动画演示与生成器</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            dark: '#1e222b',
+                            card: '#282c37',
+                            border: '#3a3f4d',
+                            blue: '#478cbf',
+                            accent: '#41b883',
+                            hover: '#3b78a4'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e222b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a3f4d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+    </style>
+</head>
+<body class="bg-godot-dark text-slate-200 font-sans min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-godot-card border-b border-godot-border px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="bg-godot-blue/20 text-godot-blue p-2.5 rounded-xl border border-godot-blue/40">
+                <i class="fa-solid fa-gamepad text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    Godot 4.7 UI Tween 动画实战演示
+                    <span class="text-xs bg-godot-blue/30 text-godot-blue px-2 py-0.5 rounded-full border border-godot-blue/50 font-mono">v4.7+</span>
+                </h1>
+                <p class="text-xs text-slate-400">基于 Hi小胡 教程：使用 Tween 轻松实现图标悬浮缩放旋转与列表平滑加载</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+            <button onclick="switchTab('sim')" id="tab-btn-sim" class="px-4 py-2 rounded-lg font-medium transition-all bg-godot-blue text-white shadow">
+                <i class="fa-solid fa-play mr-1.5"></i> 实时效果模拟器
+            </button>
+            <button onclick="switchTab('code')" id="tab-btn-code" class="px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-godot-border">
+                <i class="fa-solid fa-code mr-1.5"></i> GDScript 代码
+            </button>
+            <button onclick="switchTab('tree')" id="tab-btn-tree" class="px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-godot-border">
+                <i class="fa-solid fa-sitemap mr-1.5"></i> 节点结构与参数
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-6 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- TAB 1: SIMULATOR VIEW -->
+        <section id="tab-sim" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            
+            <!-- Controls Sidebar (4 cols) -->
+            <div class="lg:col-span-4 bg-godot-card border border-godot-border rounded-xl p-5 shadow-lg flex flex-col gap-5">
+                <div class="border-b border-godot-border pb-3 flex items-center justify-between">
+                    <h2 class="font-semibold text-white flex items-center gap-2">
+                        <i class="fa-sliders text-godot-blue"></i> Tween 缓动参数配置
+                    </h2>
+                    <button onclick="resetControls()" class="text-xs text-slate-400 hover:text-white transition-colors">
+                        <i class="fa-rotate-left"></i> 重置
+                    </button>
+                </div>
+
+                <!-- Hover Scale -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-medium text-slate-300">
+                        <label for="param-scale">悬停缩放比例 (Scale)</label>
+                        <span id="val-scale" class="font-mono text-godot-blue">1.3x</span>
+                    </div>
+                    <input type="range" id="param-scale" min="1.0" max="2.0" step="0.05" value="1.3" class="w-full accent-godot-blue bg-godot-dark rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Hover Rotation -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-medium text-slate-300">
+                        <label for="param-rot">悬停旋转角度 (Degrees)</label>
+                        <span id="val-rot" class="font-mono text-godot-blue">5.0°</span>
+                    </div>
+                    <input type="range" id="param-rot" min="-30" max="30" step="1" value="5" class="w-full accent-godot-blue bg-godot-dark rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Tween Duration -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-medium text-slate-300">
+                        <label for="param-dur">动画过渡时间 (Duration)</label>
+                        <span id="val-dur" class="font-mono text-godot-blue">0.20s</span>
+                    </div>
+                    <input type="range" id="param-dur" min="0.05" max="0.8" step="0.05" value="0.2" class="w-full accent-godot-blue bg-godot-dark rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Transition Curve Type -->
+                <div class="space-y-1.5">
+                    <label for="param-trans" class="text-xs font-medium text-slate-300 block">过渡曲线 (Trans Type)</label>
+                    <select id="param-trans" class="w-full bg-godot-dark border border-godot-border text-white text-sm rounded-lg p-2.5 focus:border-godot-blue focus:outline-none">
+                        <option value="cubic" selected>TRANS_CUBIC (三次曲线 - 推荐)</option>
+                        <option value="bounce">TRANS_BOUNCE (弹跳曲线)</option>
+                        <option value="elastic">TRANS_ELASTIC (弹性曲线)</option>
+                        <option value="back">TRANS_BACK (超越回弹)</option>
+                        <option value="linear">TRANS_LINEAR (线性变化)</option>
+                    </select>
+                </div>
+
+                <!-- Easing Mode -->
+                <div class="space-y-1.5">
+                    <label for="param-ease" class="text-xs font-medium text-slate-300 block">缓动模式 (Ease Mode)</label>
+                    <select id="param-ease" class="w-full bg-godot-dark border border-godot-border text-white text-sm rounded-lg p-2.5 focus:border-godot-blue focus:outline-none">
+                        <option value="in_out" selected>EASE_IN_OUT (两端缓动)</option>
+                        <option value="out">EASE_OUT (减速减缓)</option>
+                        <option value="in">EASE_IN (加速启动)</option>
+                    </select>
+                </div>
+
+                <!-- Stagger Delay -->
+                <div class="space-y-1.5 border-t border-godot-border pt-4">
+                    <div class="flex justify-between text-xs font-medium text-slate-300">
+                        <label for="param-stagger">列表逐条生成间隔 (Stagger)</label>
+                        <span id="val-stagger" class="font-mono text-godot-accent">0.12s</span>
+                    </div>
+                    <input type="range" id="param-stagger" min="0.02" max="0.4" step="0.02" value="0.12" class="w-full accent-godot-accent bg-godot-dark rounded-lg cursor-pointer">
+                </div>
+
+                <!-- Helper Tip Box -->
+                <div class="bg-godot-dark/70 border border-godot-border/60 rounded-lg p-3 text-xs text-slate-400 space-y-1">
+                    <p class="text-godot-blue font-medium flex items-center gap-1.5">
+                        <i class="fa-lightbulb"></i> Godot Tween 核心要点
+                    </p>
+                    <p>设置 <code class="text-slate-200 font-mono">tween.set_parallel(true)</code> 可使 <code class="text-slate-200 font-mono">scale</code> 与 <code class="text-slate-200 font-mono">rotation</code> 同时并行播放。</p>
+                </div>
+            </div>
+
+            <!-- Godot Preview Window / Game Screen (8 cols) -->
+            <div class="lg:col-span-8 bg-godot-dark border border-godot-border rounded-xl shadow-2xl flex flex-col overflow-hidden relative min-h-[500px]">
+                
+                <!-- Game Viewport Header Bar -->
+                <div class="bg-godot-card border-b border-godot-border px-4 py-2.5 flex items-center justify-between text-xs text-slate-400">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+                        <span class="font-mono ml-2 text-slate-300">Godot Game Viewport (Interactive Simulator)</span>
+                    </div>
+                    <span class="text-slate-500 font-mono">1280x720 Node: Control</span>
+                </div>
+
+                <!-- Game Canvas Area -->
+                <div class="flex-1 p-8 flex flex-col md:flex-row items-center justify-around gap-8 relative overflow-hidden bg-[radial-gradient(#282c37_1px,transparent_1px)] [background-size:16px_16px]">
+                    
+                    <!-- Left Demo: Icon Hover Test -->
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-regular fa-hand-pointer text-godot-blue"></i> 1. TextureRect Hover 动作
+                        </div>
+                        
+                        <!-- Animated TextureRect Simulated Icon -->
+                        <div id="godot-icon-wrapper" class="relative group cursor-pointer my-4">
+                            <div id="godot-icon" class="w-28 h-28 bg-slate-800 border-2 border-godot-blue/60 rounded-2xl flex flex-col items-center justify-center shadow-xl select-none transition-none" style="transform-origin: center center;">
+                                <svg class="w-16 h-16 text-godot-blue drop-shadow-md" viewBox="0 0 128 128" fill="currentColor">
+                                    <path d="M42.2 12.2c1.7 0 3.3.8 4.2 2.2l6.2 9.8c5.8-1 11.7-1.5 17.6-1.5s11.8.5 17.6 1.5l6.2-9.8c1-1.4 2.5-2.2 4.2-2.2 3.6 0 6.2 3.4 5.3 6.9l-2.4 9.6c8.5 3 16.2 7.7 22.8 13.8l7.6-6.4c2.8-2.3 7-.5 7.3 3.2l1.1 9.9c.3 3-1.6 5.8-4.5 6.7-1.3.4-2.6.6-4 .8 1.4 4.8 2.1 9.8 2.1 14.9 0 27.6-22.4 50-50 50S14 100.1 14 72.5c0-5.1.7-10.1 2.1-14.9-1.4-.2-2.7-.4-4-.8-2.9-.9-4.8-3.7-4.5-6.7l1.1-9.9c.3-3.7 4.5-5.5 7.3-3.2l7.6 6.4c6.6-6.1 14.3-10.8 22.8-13.8l-2.4-9.6c-.9-3.5 1.7-6.9 5.3-6.9zM38 60c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm52 0c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm-26 18c-8 0-14.5 4.5-16 10h32c-1.5-5.5-8-10-16-10z"/>
+                                </svg>
+                                <span class="text-[10px] font-mono text-slate-400 mt-1">TextureRect</span>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-400 text-center max-w-[200px]">
+                            请把鼠标移入/移出图标，体验并行的平滑缩放与角度旋转动画。
+                        </p>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="hidden md:block w-px h-64 bg-godot-border"></div>
+
+                    <!-- Right Demo: Dynamic VBox List Loading -->
+                    <div class="flex-1 max-w-xs w-full flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-check text-godot-accent"></i> 2. VBoxContainer 列表动画
+                            </span>
+                            <button id="btn-trigger-list" onclick="playListAnimation()" class="px-3 py-1.5 bg-godot-blue hover:bg-godot-hover text-white text-xs font-semibold rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate-right"></i> 生成任务列表
+                            </button>
+                        </div>
+
+                        <!-- Item Container (VBoxContainer representation) -->
+                        <div id="vbox-container" class="bg-godot-card border border-godot-border rounded-xl p-3 min-h-[260px] flex flex-col gap-2 relative overflow-hidden shadow-inner">
+                            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-xs gap-2">
+                                <i class="fa-regular fa-folder-open text-2xl"></i>
+                                <span>点击上方按钮生成序列动画</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer Console / Status bar -->
+                <div class="bg-godot-card/80 border-t border-godot-border px-4 py-2 font-mono text-[11px] text-slate-400 flex items-center justify-between">
+                    <span id="log-status" class="text-godot-blue">Status: Ready. Move mouse over icon or click generate list.</span>
+                    <span class="hidden sm:inline text-slate-500">Signal: mouse_entered() / mouse_exited()</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: GDSCRIPT CODE -->
+        <section id="tab-code" class="lg:col-span-12 hidden w-full">
+            <div class="bg-godot-card border border-godot-border rounded-xl shadow-xl overflow-hidden">
+                <div class="bg-godot-dark px-6 py-3 border-b border-godot-border flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-regular fa-file-code text-godot-blue text-lg"></i>
+                        <span class="font-mono text-sm font-semibold text-white">UIAnimationDemo.gd</span>
+                        <span class="text-xs text-slate-500 font-mono">(Godot 4.x Compatible)</span>
+                    </div>
+                    <button onclick="copyCode()" id="btn-copy" class="px-3 py-1.5 bg-godot-border hover:bg-slate-600 text-slate-200 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i> 复制代码
+                    </button>
+                </div>
+                <pre class="p-6 bg-[#161920] text-slate-200 font-mono text-sm overflow-x-auto leading-relaxed border-b border-godot-border"><code id="code-block" class="language-gdscript"># Godot 4.x UI Tween 动画全面解析脚本
+# 适用节点挂载：UI 根节点 Control
+extends Control
+
+@onready var texture_rect: TextureRect = $TextureRect
+@onready var action_button: Button = $Button
+@onready var item_box: VBoxContainer = %ItemBox
+@onready var item_template: HBoxContainer = %ItemTemplate
+
+# 保存克隆的模板对象
+var template_copy: Control
+
+func _ready() -> void:
+	# 1. 关键细节：设置中心缩放点 Pivot Offset 为节点中心 (0.5, 0.5)
+	# 避免缩放/旋转时围绕左上角偏移
+	texture_rect.pivot_offset = texture_rect.size / 2.0
+	action_button.pivot_offset = action_button.size / 2.0
+	
+	# 2. 连接鼠标移入与移出信号 (Mouse Entered / Exited)
+	texture_rect.mouse_entered.connect(_on_texture_rect_mouse_entered)
+	texture_rect.mouse_exited.connect(_on_texture_rect_mouse_exited)
+	
+	action_button.mouse_entered.connect(_on_button_mouse_entered)
+	action_button.mouse_exited.connect(_on_button_mouse_exited)
+	action_button.pressed.connect(_on_button_pressed)
+	
+	# 3. 初始化列表模板：深拷贝模板并移除原始 UI 节点
+	if item_template:
+		template_copy = item_template.duplicate() as Control
+		item_template.queue_free()
+
+# ==========================================
+# 悬停动画通用函数 (Hover Action)
+# ==========================================
+func image_hover_action(target: Control, target_scale: float, target_rotation_deg: float) -> void:
+	# 创建新的 Tween 句柄
+	var tween: Tween = create_tween()
+	
+	# 设置动画过渡曲线类型 (Cubic) 与缓动模式 (Ease In Out)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	
+	# 开启并行模式，使得缩放(Scale)与旋转(Rotation)同时播放
+	tween.set_parallel(true)
+	
+	# 绑定缩放属性属性变化 (0.2秒)
+	tween.tween_property(target, "scale", Vector2.ONE * target_scale, 0.2)
+	
+	# 绑定旋转属性 (角度转弧度deg_to_rad)
+	var rad_angle: float = deg_to_rad(target_rotation_deg)
+	tween.tween_property(target, "rotation", rad_angle, 0.2)
+
+# TextureRect 信号响应
+func _on_texture_rect_mouse_entered() -> void:
+	image_hover_action(texture_rect, 1.3, 5.0) # 放大 1.3 倍，顺时针旋转 5 度
+
+func _on_texture_rect_mouse_exited() -> void:
+	image_hover_action(texture_rect, 1.0, 0.0) # 恢复默认大小与 0 度
+
+# Button 信号响应
+func _on_button_mouse_entered() -> void:
+	image_hover_action(action_button, 1.1, -3.0)
+
+func _on_button_mouse_exited() -> void:
+	image_hover_action(action_button, 1.0, 0.0)
+
+# ==========================================
+# 列表平滑生成动画 (Staggered VBox Items)
+# ==========================================
+func _on_button_pressed() -> void:
+	generate_animated_list(5)
+
+func generate_animated_list(count: int) -> void:
+	# 清空现有子节点
+	for child in item_box.get_children():
+		child.queue_free()
+		
+	if not template_copy:
+		return
+		
+	# 循环生成条目并设置逐条弹出动画
+	for i in range(count):
+		var new_item: Control = template_copy.duplicate() as Control
+		new_item.visible = true
+		
+		# 设置初始状态：横向/纵向缩放归零，透明度(Alpha)归零
+		new_item.scale = Vector2(0.0, 1.0) 
+		new_item.modulate.a = 0.0
+		new_item.pivot_offset = Vector2(0, new_item.size.y / 2.0)
+		
+		item_box.add_child(new_item)
+		
+		# 为新插入的条目创建 Tween 动画
+		var tween: Tween = create_tween()
+		tween.set_trans(Tween.TRANS_CUBIC)
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_parallel(true)
+		
+		# 展开动画：缩放恢复 Vector2(1, 1)，Alpha 恢复 1.0
+		tween.tween_property(new_item, "scale", Vector2.ONE, 0.25)
+		tween.tween_property(new_item, "modulate:a", 1.0, 0.25)
+		
+		# 关键实现：每条生成后等待 0.12 秒，创造阶梯式/错落有致的加载效果
+		await get_tree().create_timer(0.12).timeout
+</code></pre>
+            </div>
+        </section>
+
+        <!-- TAB 3: SCENE TREE & SETUP GUIDE -->
+        <section id="tab-tree" class="lg:col-span-12 hidden grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            
+            <!-- Node Structure Diagram -->
+            <div class="bg-godot-card border border-godot-border rounded-xl p-5 shadow-lg flex flex-col gap-4">
+                <h3 class="font-semibold text-white flex items-center gap-2 border-b border-godot-border pb-3">
+                    <i class="fa-solid fa-sitemap text-godot-blue"></i> Godot 场景节点树层级结构
+                </h3>
+                <div class="bg-godot-dark p-4 rounded-lg font-mono text-xs text-slate-300 leading-relaxed border border-godot-border/60">
+                    <div class="text-godot-blue">Control (根节点 - 挂载脚本)</div>
+                    <div class="pl-4 border-l border-slate-700 ml-2 mt-1">
+                        <div>├── <span class="text-yellow-400">TextureRect</span> <span class="text-slate-500">(Godot 图标 / UI 示例图片)</span></div>
+                        <div>├── <span class="text-emerald-400">Button</span> <span class="text-slate-500">(触发加载动画的按钮)</span></div>
+                        <div>└── <span class="text-purple-400">VBoxContainer</span> <span class="text-slate-500">(名称: %ItemBox, 勾选 Unique Name)</span></div>
+                        <div class="pl-8 border-l border-slate-700 ml-2">
+                            <div>└── <span class="text-orange-400">HBoxContainer</span> <span class="text-slate-500">(名称: %ItemTemplate, 单元格模板)</span></div>
+                            <div class="pl-8 border-l border-slate-700 ml-2">
+                                <div>├── Label <span class="text-slate-500 font-sans">(任务名称)</span></div>
+                                <div>└── Label <span class="text-slate-500 font-sans">(奖励金额)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400 space-y-2">
+                    <p class="font-semibold text-white">设置说明：</p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>在右键菜单中将 <code class="text-godot-blue">ItemBox</code> 与 <code class="text-godot-blue">ItemTemplate</code> 设为 <strong class="text-slate-200">Access as Unique Name (%名称)</strong>，方便 GDScript 直接通过 <code class="text-slate-200">%ItemBox</code> 索引。</li>
+                        <li>运行脚本后，代码会自动克隆 <code class="text-slate-200">ItemTemplate</code> 成为通用模板，并用 <code class="text-slate-200">queue_free()</code> 销毁原始模板，确保干净的界面逻辑。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Key Pivot & Transform Adjustments -->
+            <div class="bg-godot-card border border-godot-border rounded-xl p-5 shadow-lg flex flex-col gap-4">
+                <h3 class="font-semibold text-white flex items-center gap-2 border-b border-godot-border pb-3">
+                    <i class="fa-solid fa-bullseye text-godot-accent"></i> 踩坑排查与关键配置
+                </h3>
+
+                <div class="space-y-3 text-xs">
+                    <div class="bg-godot-dark p-3.5 rounded-lg border border-godot-border">
+                        <h4 class="font-semibold text-godot-blue mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-crosshairs"></i> 1. 中心缩放点 (Pivot Offset) 偏移
+                        </h4>
+                        <p class="text-slate-300 leading-normal">
+                            默认情况下，Godot UI 节点的锚点在左上角 <code class="text-slate-400">(0, 0)</code>。若直接缩放旋转，动画会围绕左上角倾斜。必须将 <code class="text-slate-200">Pivot Offset</code> 设置为节点尺寸的一半（或在属性面板 Layout -> Transform 中设置 Ratio 为 0.5, 0.5）。
+                        </p>
+                    </div>
+
+                    <div class="bg-godot-dark p-3.5 rounded-lg border border-godot-border">
+                        <h4 class="font-semibold text-godot-accent mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-layer-group"></i> 2. 容器节点 (Container) 内缩放无效问题
+                        </h4>
+                        <p class="text-slate-300 leading-normal">
+                            放在 <code class="text-slate-400">VBoxContainer</code> / <code class="text-slate-400">HBoxContainer</code> 内部的子节点，其默认 Transform 常会被容器重置。解决方案是使用 <code class="text-slate-200">scale</code> 与 <code class="text-slate-200">modulate:a</code> 组合，或对列表子项使用局部偏移。
+                        </p>
+                    </div>
+
+                    <div class="bg-godot-dark p-3.5 rounded-lg border border-godot-border">
+                        <h4 class="font-semibold text-yellow-400 mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt"></i> 3. 并行动画 (Parallel) 与 顺序动画
+                        </h4>
+                        <p class="text-slate-300 leading-normal">
+                            如果不调用 <code class="text-slate-200">tween.set_parallel(true)</code>，Tween 内部的多个 <code class="text-slate-200">tween_property()</code> 会按顺序依次播放（例如先完放大，再旋转）。开启并行后才能得到同步顺滑的效果。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-godot-card border-t border-godot-border py-4 px-6 text-center text-xs text-slate-500 mt-auto">
+        Godot 4.7 UI Tween Interactive Guide & System Simulator — Made for Game Developers
+    </footer>
+
+    <!-- Interactive JavaScript Simulation Script -->
+    <script>
+        // Parameters State
+        const params = {
+            scale: 1.3,
+            rotation: 5.0,
+            duration: 0.2,
+            trans: 'cubic',
+            ease: 'in_out',
+            stagger: 0.12
+        };
+
+        // DOM elements
+        const iconWrapper = document.getElementById('godot-icon-wrapper');
+        const icon = document.getElementById('godot-icon');
+        const vbox = document.getElementById('vbox-container');
+        const logStatus = document.getElementById('log-status');
+        const emptyState = document.getElementById('empty-state');
+
+        // Parameter Sliders Listener setup
+        function initControls() {
+            setupSlider('param-scale', 'val-scale', 'x', (v) => params.scale = parseFloat(v));
+            setupSlider('param-rot', 'val-rot', '°', (v) => params.rotation = parseFloat(v));
+            setupSlider('param-dur', 'val-dur', 's', (v) => params.duration = parseFloat(v));
+            setupSlider('param-stagger', 'val-stagger', 's', (v) => params.stagger = parseFloat(v));
+
+            document.getElementById('param-trans').addEventListener('change', (e) => {
+                params.trans = e.target.value;
+                updateStatus(`Trans curve set to: Tween.TRANS_${e.target.value.toUpperCase()}`);
+            });
+
+            document.getElementById('param-ease').addEventListener('change', (e) => {
+                params.ease = e.target.value;
+                updateStatus(`Ease mode set to: Tween.EASE_${e.target.value.toUpperCase()}`);
+            });
+        }
+
+        function setupSlider(id, valId, unit, callback) {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(valId);
+            el.addEventListener('input', (e) => {
+                const val = e.target.value;
+                valEl.innerText = val + unit;
+                callback(val);
+            });
+        }
+
+        function resetControls() {
+            document.getElementById('param-scale').value = 1.3;
+            document.getElementById('val-scale').innerText = '1.3x';
+            params.scale = 1.3;
+
+            document.getElementById('param-rot').value = 5;
+            document.getElementById('val-rot').innerText = '5.0°';
+            params.rotation = 5;
+
+            document.getElementById('param-dur').value = 0.2;
+            document.getElementById('val-dur').innerText = '0.20s';
+            params.duration = 0.2;
+
+            document.getElementById('param-trans').value = 'cubic';
+            params.trans = 'cubic';
+
+            document.getElementById('param-ease').value = 'in_out';
+            params.ease = 'in_out';
+
+            document.getElementById('param-stagger').value = 0.12;
+            document.getElementById('val-stagger').innerText = '0.12s';
+            params.stagger = 0.12;
+
+            updateStatus("Parameters reset to Godot 4 tutorial defaults.");
+        }
+
+        // CSS Transition Timing Function mapping for Godot Tween curve simulation
+        function getCssEasing() {
+            const { trans, ease } = params;
+
+            if (trans === 'bounce') return 'cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            if (trans === 'elastic') return 'cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            if (trans === 'back') return 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+            if (trans === 'linear') return 'linear';
+
+            // Default cubic
+            if (ease === 'in') return 'cubic-bezier(0.55, 0.055, 0.675, 0.19)';
+            if (ease === 'out') return 'cubic-bezier(0.215, 0.61, 0.355, 1)';
+            return 'cubic-bezier(0.645, 0.045, 0.355, 1)'; // in_out
+        }
+
+        // Hover Simulation Logic
+        let currentTweenTimeout = null;
+
+        iconWrapper.addEventListener('mouseenter', () => {
+            animateIcon(params.scale, params.rotation);
+            updateStatus(`[Tween Start] scale: ${params.scale}x, rot: ${params.rotation}°, duration: ${params.duration}s`);
+        });
+
+        iconWrapper.addEventListener('mouseleave', () => {
+            animateIcon(1.0, 0.0);
+            updateStatus(`[Tween Reset] scale: 1.0x, rot: 0.0°`);
+        });
+
+        function animateIcon(targetScale, targetRot) {
+            const easing = getCssEasing();
+            const dur = params.duration;
+
+            icon.style.transition = `transform ${dur}s ${easing}, border-color ${dur}s ease, box-shadow ${dur}s ease`;
+            icon.style.transform = `scale(${targetScale}) rotate(${targetRot}deg)`;
+
+            if (targetScale > 1.0) {
+                icon.classList.add('border-godot-accent', 'shadow-2xl', 'shadow-godot-blue/30');
+            } else {
+                icon.classList.remove('border-godot-accent', 'shadow-2xl', 'shadow-godot-blue/30');
+            }
+        }
+
+        // List Stagger Generation Logic
+        let isGeneratingList = false;
+
+        async function playListAnimation() {
+            if (isGeneratingList) return;
+            isGeneratingList = true;
+
+            const btn = document.getElementById('btn-trigger-list');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Clear previous items except emptyState
+            const oldItems = vbox.querySelectorAll('.quest-item');
+            oldItems.forEach(item => item.remove());
+
+            if (emptyState) emptyState.style.display = 'none';
+
+            const sampleQuests = [
+                { title: '查看 Godot 4.7 新特性', reward: '+500 EXP' },
+                { title: '测试 Tween 缓动曲线', reward: '$120' },
+                { title: '配置 VBox 自动排列节点', reward: '$250' },
+                { title: '绑定 Signal 信号逻辑', reward: '+300 EXP' },
+                { title: '提交独立游戏测试 Demo', reward: '$1,000' }
+            ];
+
+            updateStatus(`[List Tween] Generating ${sampleQuests.length} items with ${params.stagger}s stagger delay...`);
+
+            for (let i = 0; i < sampleQuests.length; i++) {
+                const quest = sampleQuests[i];
+                const item = document.createElement('div');
+                item.className = 'quest-item bg-godot-dark/90 border border-godot-border p-3 rounded-lg flex items-center justify-between text-xs transform transition-all duration-300 opacity-0 scale-x-0 origin-left shadow-sm';
+                
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-godot-blue"></span>
+                        <span class="font-medium text-slate-200">${quest.title}</span>
+                    </div>
+                    <span class="font-mono text-godot-accent bg-godot-accent/10 border border-godot-accent/20 px-2 py-0.5 rounded">${quest.reward}</span>
+                `;
+
+                vbox.appendChild(item);
+
+                // Force reflow for transition
+                void item.offsetWidth;
+
+                // Animate entry with CSS simulating Godot Tween
+                const easing = getCssEasing();
+                item.style.transition = `transform ${params.duration + 0.05}s ${easing}, opacity ${params.duration + 0.05}s ease`;
+                item.style.opacity = '1';
+                item.style.transform = 'scaleX(1) scaleY(1)';
+
+                // Stagger wait
+                await new Promise(res => setTimeout(res, params.stagger * 1000));
+            }
+
+            updateStatus(`[List Tween Complete] ${sampleQuests.length} items loaded smoothly.`);
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            isGeneratingList = false;
+        }
+
+        function updateStatus(msg) {
+            logStatus.innerText = `Status: ${msg}`;
+        }
+
+        // Tab Switcher
+        function switchTab(tabKey) {
+            const simSec = document.getElementById('tab-sim');
+            const codeSec = document.getElementById('tab-code');
+            const treeSec = document.getElementById('tab-tree');
+
+            const btnSim = document.getElementById('tab-btn-sim');
+            const btnCode = document.getElementById('tab-btn-code');
+            const btnTree = document.getElementById('tab-btn-tree');
+
+            // Hide all
+            simSec.classList.add('hidden');
+            codeSec.classList.add('hidden');
+            treeSec.classList.add('hidden');
+
+            // Reset buttons
+            [btnSim, btnCode, btnTree].forEach(btn => {
+                btn.className = 'px-4 py-2 rounded-lg font-medium transition-all text-slate-300 hover:bg-godot-border';
+            });
+
+            if (tabKey === 'sim') {
+                simSec.classList.remove('hidden');
+                btnSim.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-godot-blue text-white shadow';
+            } else if (tabKey === 'code') {
+                codeSec.classList.remove('hidden');
+                btnCode.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-godot-blue text-white shadow';
+            } else if (tabKey === 'tree') {
+                treeSec.classList.remove('hidden');
+                btnTree.className = 'px-4 py-2 rounded-lg font-medium transition-all bg-godot-blue text-white shadow';
+            }
+        }
+
+        // Copy Code Functionality
+        function copyCode() {
+            const codeText = document.getElementById('code-block').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                const btn = document.getElementById('btn-copy');
+                btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> 已复制到剪贴板`;
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa-regular fa-copy"></i> 复制代码`;
+                }, 2000);
+            });
+        }
+
+        // Initialize on DOM load
+        window.addEventListener('DOMContentLoaded', () => {
+            initControls();
+        });
+    </script>
+</body>
+</html>

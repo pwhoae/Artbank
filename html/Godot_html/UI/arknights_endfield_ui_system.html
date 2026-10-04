@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arknights: Endfield UI System in Godot 4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #0b0d10;
+            color: #e2e8f0;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Tech clipped shapes */
+        .clip-tech-card {
+            clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+        }
+
+        .clip-tech-tab {
+            clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+        }
+
+        .clip-tech-btn {
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .clip-slant-right {
+            clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
+        }
+
+        .clip-angle-lb {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        }
+
+        /* Endfield Yellow Theme */
+        .bg-endfield-yellow {
+            background-color: #ffe600;
+        }
+        .text-endfield-yellow {
+            color: #ffe600;
+        }
+        .border-endfield-yellow {
+            border-color: #ffe600;
+        }
+
+        /* UI Scanline and Grid overlays */
+        .bg-tech-grid {
+            background-image: linear-gradient(rgba(255, 230, 0, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 230, 0, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.3) 50%,
+                rgba(0, 0, 0, 0.3)
+            );
+            background-size: 100% 4px;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ffe600;
+            border-radius: 2px;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.03); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        @keyframes radar-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-radar {
+            animation: radar-spin 12s linear infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen relative bg-black flex flex-col justify-between overflow-hidden">
+
+    <!-- Simulated 3D Environment Background -->
+    <div id="game-viewport" class="absolute inset-0 z-0 bg-neutral-900 transition-all duration-500">
+        <!-- Sci-Fi Ruins 3D Simulation Canvas -->
+        <canvas id="world-canvas" class="w-full h-full object-cover"></canvas>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 pointer-events-none"></div>
+    </div>
+
+    <!-- Top HUD Navigation (Always present, adapts to current menu) -->
+    <header class="relative z-30 p-4 flex justify-between items-center pointer-events-auto select-none">
+        <!-- Top Left Info -->
+        <div class="flex items-center space-gap-4 space-x-3">
+            <div class="bg-black/70 backdrop-blur border-l-4 border-endfield-yellow px-3 py-1.5 flex items-center gap-3 clip-slant-right">
+                <div class="w-3 h-3 bg-endfield-yellow rotate-45 animate-pulse"></div>
+                <span class="font-orbitron font-bold tracking-widest text-sm text-white">ENDFIELD</span>
+                <span class="text-xs text-neutral-400 font-mono">v1.0.4 - GODOT 4 DEMO</span>
+            </div>
+            
+            <div id="hud-quest" class="hidden md:flex flex-col bg-black/60 backdrop-blur px-3 py-1 border-l-2 border-neutral-600">
+                <div class="text-[10px] text-endfield-yellow uppercase font-bold tracking-wider flex items-center gap-1">
+                    <i class="fa-solid fa-location-crosshairs"></i> 终其一生
+                </div>
+                <div class="text-xs text-neutral-200">前往目的地点：前往谷地松林完成...</div>
+            </div>
+        </div>
+
+        <!-- Top Right Controls & Switches -->
+        <div class="flex items-center space-x-3">
+            <!-- Mode Switch Buttons -->
+            <button onclick="switchView('gameplay')" id="btn-mode-game" class="px-3 py-1.5 text-xs font-bold transition-all clip-tech-btn flex items-center gap-2 bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700">
+                <i class="fa-solid fa-gamepad"></i> 3D 世界 HUD
+            </button>
+            <button onclick="switchView('radial')" id="btn-mode-radial" class="px-3 py-1.5 text-xs font-bold transition-all clip-tech-btn flex items-center gap-2 bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700">
+                <i class="fa-solid fa-compass"></i> 环形快捷菜单
+            </button>
+            <button onclick="switchView('events')" id="btn-mode-events" class="px-3 py-1.5 text-xs font-bold transition-all clip-tech-btn flex items-center gap-2 bg-endfield-yellow text-black shadow-lg shadow-yellow-500/20">
+                <i class="fa-solid fa-calendar-days"></i> 活动中心
+            </button>
+            <button onclick="toggleGodotCodeModal()" class="px-3 py-1.5 text-xs font-bold transition-all clip-tech-btn bg-cyan-600/90 hover:bg-cyan-500 text-white flex items-center gap-2">
+                <i class="fa-solid fa-code"></i> Godot 4 代码
+            </button>
+        </div>
+    </header>
+
+    <!-- VIEW 1: GAMEPLAY HUD OVERLAY -->
+    <div id="view-gameplay" class="relative z-10 flex-1 flex flex-col justify-between p-6 pointer-events-none transition-opacity duration-300">
+        <!-- Top Right Quick Badges -->
+        <div class="self-end flex items-center gap-2 pointer-events-auto">
+            <div class="bg-black/60 backdrop-blur px-3 py-1 border border-neutral-700 text-xs flex items-center gap-2">
+                <span class="text-neutral-400">FPS:</span> <span class="text-green-400 font-mono">60</span>
+                <span class="text-neutral-400 ml-2">MS:</span> <span class="text-endfield-yellow font-mono">21ms</span>
+            </div>
+            <div class="bg-black/60 backdrop-blur px-2 py-1 border border-neutral-700 text-xs font-mono text-neutral-300">
+                UID: 1360188094
+            </div>
+        </div>
+
+        <!-- Bottom Controls & Character Status -->
+        <div class="flex justify-between items-end pointer-events-auto">
+            <!-- Party / Character Switcher (Bottom Left) -->
+            <div class="flex items-center gap-3">
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2 bg-black/70 px-3 py-1.5 border-l-2 border-endfield-yellow clip-slant-right">
+                        <span class="w-5 h-5 rounded-full bg-endfield-yellow text-black font-bold flex items-center justify-center text-[10px]">1</span>
+                        <span class="text-xs font-bold text-white">佩丽卡</span>
+                        <div class="w-16 h-1.5 bg-neutral-800 rounded-full overflow-hidden ml-2">
+                            <div class="w-full h-full bg-cyan-400"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-black/40 px-3 py-1 border-l-2 border-neutral-600 clip-slant-right opacity-70">
+                        <span class="w-5 h-5 rounded-full bg-neutral-700 text-white font-bold flex items-center justify-center text-[10px]">2</span>
+                        <span class="text-xs text-neutral-300">管理员</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Prompt (Center-Bottom) -->
+            <div class="bg-black/60 backdrop-blur border border-neutral-700 px-6 py-2 text-center clip-tech-btn">
+                <div class="text-xs text-neutral-400">按 <span class="bg-endfield-yellow text-black px-1.5 py-0.5 rounded font-bold font-mono">TAB</span> 打开快捷轮盘 / 按 <span class="bg-white text-black px-1.5 py-0.5 rounded font-bold font-mono">F1</span> 打开活动中心</div>
+            </div>
+
+            <!-- Skills & Ultimate Indicator (Bottom Right) -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full border-2 border-endfield-yellow/80 bg-black/80 flex items-center justify-center text-endfield-yellow shadow-lg shadow-yellow-500/10">
+                    <i class="fa-solid fa-bolt text-lg"></i>
+                </div>
+                <div class="w-14 h-14 rounded-full border-2 border-cyan-400 bg-black/80 flex items-center justify-center text-cyan-400 shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: RADIAL WHEEL MENU (Endfield Style Menu Overlay) -->
+    <div id="view-radial" class="hidden absolute inset-0 z-20 bg-black/85 backdrop-blur-md flex items-center justify-center transition-all duration-300">
+        <!-- Background Sci-Fi Grid Overlay -->
+        <div class="absolute inset-0 bg-tech-grid opacity-30"></div>
+
+        <!-- Center Radar / Map Core -->
+        <div class="relative w-[500px] h-[500px] flex items-center justify-center">
+            
+            <!-- Outer Ring HUD Elements -->
+            <div class="absolute inset-0 rounded-full border border-neutral-700/60 animate-radar pointer-events-none"></div>
+            <div class="absolute w-[440px] h-[440px] rounded-full border border-dashed border-endfield-yellow/30 pointer-events-none"></div>
+
+            <!-- Central Mini Radar Screen -->
+            <div class="relative w-64 h-64 rounded-full border-2 border-endfield-yellow/70 bg-neutral-900/90 overflow-hidden shadow-2xl shadow-yellow-500/10 flex items-center justify-center cursor-pointer group hover:scale-105 transition-transform" onclick="switchView('events')">
+                <div class="absolute inset-0 bg-neutral-950 opacity-90"></div>
+                <!-- Radar Map Contour Overlay -->
+                <svg class="absolute inset-0 w-full h-full opacity-40 text-endfield-yellow" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 2"/>
+                    <path d="M20,50 Q40,20 80,50 T20,80" fill="none" stroke="currentColor" stroke-width="0.8"/>
+                    <polygon points="50,20 60,60 40,60" fill="rgba(255, 230, 0, 0.2)" stroke="currentColor" stroke-width="0.5"/>
+                </svg>
+                
+                <!-- Radar Center Label -->
+                <div class="relative z-10 text-center">
+                    <div class="bg-endfield-yellow text-black font-extrabold text-xs px-2 py-0.5 rounded uppercase tracking-wider mb-1">基质谷</div>
+                    <div class="text-[10px] text-neutral-400 font-mono">EXPLORATION LEVEL 07</div>
+                    <div class="text-xs text-neutral-200 mt-2 flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-arrows-to-eye text-endfield-yellow"></i> 点击进入菜单
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radial Quick Buttons (Orbiting Center) -->
+            <!-- Top Button: 干员 (Operators) -->
+            <div class="absolute top-2 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-12 h-12 bg-neutral-900 border-2 border-neutral-600 group-hover:border-endfield-yellow group-hover:bg-endfield-yellow group-hover:text-black text-white rounded-lg flex items-center justify-center transition-all clip-tech-btn">
+                    <i class="fa-solid fa-users text-lg"></i>
+                </div>
+                <span class="text-xs font-bold mt-1 text-neutral-300 group-hover:text-endfield-yellow">干员</span>
+            </div>
+
+            <!-- Right Button: 活动 (Events / Activities) -->
+            <div class="absolute right-2 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-12 h-12 bg-neutral-900 border-2 border-endfield-yellow bg-endfield-yellow/10 group-hover:bg-endfield-yellow group-hover:text-black text-endfield-yellow rounded-lg flex items-center justify-center transition-all clip-tech-btn shadow-lg shadow-yellow-500/20">
+                    <i class="fa-solid fa-star text-lg"></i>
+                </div>
+                <span class="text-xs font-bold mt-1 text-endfield-yellow">活动中心</span>
+            </div>
+
+            <!-- Bottom Button: 工业规划 (Industry Plan) -->
+            <div class="absolute bottom-2 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-12 h-12 bg-neutral-900 border-2 border-neutral-600 group-hover:border-endfield-yellow group-hover:bg-endfield-yellow group-hover:text-black text-white rounded-lg flex items-center justify-center transition-all clip-tech-btn">
+                    <i class="fa-solid fa-industry text-lg"></i>
+                </div>
+                <span class="text-xs font-bold mt-1 text-neutral-300 group-hover:text-endfield-yellow">工业规划</span>
+            </div>
+
+            <!-- Left Button: 采购中心 (Store) -->
+            <div class="absolute left-2 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-12 h-12 bg-neutral-900 border-2 border-neutral-600 group-hover:border-endfield-yellow group-hover:bg-endfield-yellow group-hover:text-black text-white rounded-lg flex items-center justify-center transition-all clip-tech-btn">
+                    <i class="fa-solid fa-cart-shopping text-lg"></i>
+                </div>
+                <span class="text-xs font-bold mt-1 text-neutral-300 group-hover:text-endfield-yellow">采购中心</span>
+            </div>
+
+            <!-- Top Left: 导访 (Recruit) -->
+            <div class="absolute top-16 left-16 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-10 h-10 bg-neutral-900 border border-neutral-600 group-hover:border-endfield-yellow text-white rounded flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-compass-drafting"></i>
+                </div>
+                <span class="text-[11px] text-neutral-400 group-hover:text-white mt-1">导访</span>
+            </div>
+
+            <!-- Top Right: 档案库 (Archives) -->
+            <div class="absolute top-16 right-16 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-10 h-10 bg-neutral-900 border border-neutral-600 group-hover:border-endfield-yellow text-white rounded flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-box-archive"></i>
+                </div>
+                <span class="text-[11px] text-neutral-400 group-hover:text-white mt-1">档案库</span>
+            </div>
+
+            <!-- Bottom Left: 区域建设 (Infrastructure) -->
+            <div class="absolute bottom-16 left-16 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-10 h-10 bg-neutral-900 border border-neutral-600 group-hover:border-endfield-yellow text-white rounded flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <span class="text-[11px] text-neutral-400 group-hover:text-white mt-1">区域建设</span>
+            </div>
+
+            <!-- Bottom Right: 编队 (Squad) -->
+            <div class="absolute bottom-16 right-16 flex flex-col items-center cursor-pointer group" onclick="switchView('events')">
+                <div class="w-10 h-10 bg-neutral-900 border border-neutral-600 group-hover:border-endfield-yellow text-white rounded flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <span class="text-[11px] text-neutral-400 group-hover:text-white mt-1">编队</span>
+            </div>
+        </div>
+
+        <!-- User Profile Banner at Bottom -->
+        <div class="absolute bottom-8 left-12 flex items-center gap-4 bg-neutral-900/80 border border-neutral-700 px-4 py-2 clip-tech-card">
+            <div class="w-10 h-10 bg-endfield-yellow text-black font-black flex items-center justify-center rounded">
+                60
+            </div>
+            <div>
+                <div class="text-sm font-bold text-white flex items-center gap-2">
+                    XuBoring <span class="bg-neutral-800 text-neutral-400 text-[10px] px-1.5 py-0.5 rounded">权限等级 07</span>
+                </div>
+                <div class="text-xs text-neutral-400 font-mono">UID: 1360188094</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 3: EVENT CENTER (活动中心) - Exact 1:1 match with video timestamps 00:14 - 01:12 -->
+    <div id="view-events" class="relative z-20 flex-1 flex flex-col p-6 max-w-7xl mx-auto w-full h-[calc(100vh-80px)]">
+        
+        <!-- Top Bar / Title & Resources -->
+        <div class="flex justify-between items-center border-b border-neutral-800 pb-3 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-6 bg-endfield-yellow"></div>
+                <h1 class="text-2xl font-black text-white tracking-wide uppercase font-orbitron flex items-center gap-2">
+                    活动中心 <span class="text-xs font-mono text-endfield-yellow font-normal">// EVENT CENTER</span>
+                </h1>
+            </div>
+
+            <!-- Currencies / Resources -->
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 bg-neutral-900/80 border border-neutral-800 px-3 py-1 rounded">
+                    <i class="fa-solid fa-gem text-amber-400 text-sm"></i>
+                    <span class="font-mono text-sm text-white font-bold">157</span>
+                </div>
+                <div class="flex items-center gap-2 bg-neutral-900/80 border border-neutral-800 px-3 py-1 rounded">
+                    <i class="fa-solid fa-coins text-endfield-yellow text-sm"></i>
+                    <span class="font-mono text-sm text-white font-bold">7850</span>
+                </div>
+                <div class="flex items-center gap-2 bg-neutral-900/80 border border-neutral-800 px-3 py-1 rounded">
+                    <i class="fa-solid fa-bolt text-cyan-400 text-sm"></i>
+                    <span class="font-mono text-sm text-white font-bold">110/360</span>
+                </div>
+                <button onclick="switchView('gameplay')" class="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area: Left Tabs + Right Dynamic Panel -->
+        <div class="flex-1 flex gap-6 overflow-hidden">
+            
+            <!-- LEFT NAVIGATION TABS -->
+            <div class="w-72 flex flex-col gap-2 overflow-y-auto pr-2">
+                
+                <!-- Tab 1: 我们的大森林！来袭！ -->
+                <button onclick="selectEventTab('forest')" id="tab-forest" class="event-tab-btn text-left p-3 border-l-4 transition-all clip-slant-right flex items-center gap-3 bg-neutral-900 border-endfield-yellow text-white shadow-md">
+                    <div class="w-8 h-8 bg-endfield-yellow/20 text-endfield-yellow rounded flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-paw text-sm"></i>
+                    </div>
+                    <div class="truncate">
+                        <div class="text-xs font-bold text-neutral-400 uppercase tracking-wider">推荐活动</div>
+                        <div class="text-sm font-black truncate">我们的大森林！来袭！</div>
+                    </div>
+                </button>
+
+                <!-- Tab 2: 集成援助 · 泡泡出击 -->
+                <button onclick="selectEventTab('bubbles')" id="tab-bubbles" class="event-tab-btn text-left p-3 border-l-4 transition-all clip-slant-right flex items-center gap-3 bg-neutral-950 border-transparent text-neutral-400 hover:bg-neutral-900">
+                    <div class="w-8 h-8 bg-neutral-800 text-neutral-400 rounded flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-boxes-packing text-sm"></i>
+                    </div>
+                    <div class="truncate">
+                        <div class="text-[10px] text-red-400 font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-clock"></i> 2天23小时
+                        </div>
+                        <div class="text-sm font-black truncate">集成援助 · 泡泡出击</div>
+                    </div>
+                </button>
+
+                <!-- Tab 3: 挽弓试炼 -->
+                <button onclick="selectEventTab('bow')" id="tab-bow" class="event-tab-btn text-left p-3 border-l-4 transition-all clip-slant-right flex items-center gap-3 bg-neutral-950 border-transparent text-neutral-400 hover:bg-neutral-900">
+                    <div class="w-8 h-8 bg-neutral-800 text-neutral-400 rounded flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-crosshair text-sm"></i>
+                    </div>
+                    <div class="truncate">
+                        <div class="text-xs font-bold text-neutral-500">搜寻试炼</div>
+                        <div class="text-sm font-black truncate">挽弓试炼</div>
+                    </div>
+                </button>
+
+                <!-- Tab 4: 战争回响 -->
+                <button onclick="selectEventTab('war')" id="tab-war" class="event-tab-btn text-left p-3 border-l-4 transition-all clip-slant-right flex items-center gap-3 bg-neutral-950 border-transparent text-neutral-400 hover:bg-neutral-900">
+                    <div class="w-8 h-8 bg-neutral-800 text-neutral-400 rounded flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-person-rifle text-sm"></i>
+                    </div>
+                    <div class="truncate">
+                        <div class="text-xs font-bold text-neutral-500">战争回响</div>
+                        <div class="text-sm font-black truncate">战争回响</div>
+                    </div>
+                </button>
+
+                <!-- Additional Placeholder Tabs -->
+                <div class="p-3 bg-neutral-950/50 border-l-4 border-transparent text-neutral-600 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-[10px]"></i> 镇地寻踪 (未解锁)
+                </div>
+                <div class="p-3 bg-neutral-950/50 border-l-4 border-transparent text-neutral-600 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-[10px]"></i> 子弹停歇的刹那
+                </div>
+            </div>
+
+            <!-- RIGHT DYNAMIC PANEL -->
+            <div class="flex-1 bg-neutral-900/90 border border-neutral-800 rounded-lg p-6 relative overflow-hidden flex flex-col justify-between">
+                
+                <!-- CONTENT TAB 1: 我们的大森林！来袭！ (Mascot & Quests) -->
+                <div id="content-forest" class="event-content-panel h-full flex flex-col justify-between">
+                    <div class="relative z-10">
+                        <!-- Header Banner -->
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <span class="bg-endfield-yellow text-black text-xs font-black px-2 py-0.5 rounded tracking-widest uppercase">挑战活动</span>
+                                <h2 class="text-3xl font-black text-white mt-1">我们的大森林！来袭！</h2>
+                                <p class="text-xs text-neutral-400 mt-1">在活动“甜蜜运动会”中，完成关卡“登高峰”</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-neutral-400">活动剩余时间</div>
+                                <div class="text-endfield-yellow font-mono font-bold text-base">7天13小时</div>
+                            </div>
+                        </div>
+
+                        <!-- Mascot / Illustrative Box Simulation -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                            <div class="bg-neutral-950 border border-neutral-800 p-4 rounded-lg relative overflow-hidden group">
+                                <div class="absolute -right-10 -bottom-10 opacity-20 text-endfield-yellow text-9xl pointer-events-none">
+                                    <i class="fa-solid fa-cat"></i>
+                                </div>
+                                <div class="relative z-10">
+                                    <div class="w-16 h-16 rounded-full bg-rose-500/20 border border-rose-500 flex items-center justify-center text-rose-400 text-2xl mb-3">
+                                        <i class="fa-solid fa-paw"></i>
+                                    </div>
+                                    <div class="text-base font-bold text-white mb-1">蹼切唧唧 mascot</div>
+                                    <p class="text-xs text-neutral-400 leading-relaxed">
+                                        完成指定关卡挑战，即可解锁限量纪念摆件与大量高阶培养基质！
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Quest Checklist -->
+                            <div class="space-y-3">
+                                <div class="bg-neutral-950/80 border border-neutral-800 p-3 rounded flex justify-between items-center">
+                                    <div>
+                                        <div class="text-xs text-white font-bold">在“甜蜜运动会”中完成“登高峰”</div>
+                                        <div class="text-[11px] text-neutral-500">进度: 1/1</div>
+                                    </div>
+                                    <button class="px-3 py-1 bg-endfield-yellow text-black font-bold text-xs clip-tech-btn hover:bg-yellow-300">
+                                        领取
+                                    </button>
+                                </div>
+
+                                <div class="bg-neutral-950/80 border border-neutral-800 p-3 rounded flex justify-between items-center">
+                                    <div>
+                                        <div class="text-xs text-white font-bold">在“影子彩排”中，挑战“摄影棚”关卡1次</div>
+                                        <div class="text-[11px] text-neutral-500">进度: 0/1</div>
+                                    </div>
+                                    <button class="px-3 py-1 bg-neutral-800 text-neutral-400 font-bold text-xs clip-tech-btn cursor-not-allowed">
+                                        未完成
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Action Bar -->
+                    <div class="border-t border-neutral-800 pt-4 flex justify-between items-center mt-6">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-neutral-400">活动奖励:</span>
+                            <div class="w-8 h-8 bg-neutral-800 border border-amber-500/50 rounded flex items-center justify-center text-amber-400 font-bold text-xs">
+                                <i class="fa-solid fa-gem"></i>
+                            </div>
+                            <div class="w-8 h-8 bg-neutral-800 border border-endfield-yellow/50 rounded flex items-center justify-center text-endfield-yellow font-bold text-xs">
+                                200
+                            </div>
+                        </div>
+                        <button class="px-6 py-2 bg-endfield-yellow text-black font-black text-sm clip-tech-btn hover:bg-yellow-300 shadow-lg shadow-yellow-500/20 flex items-center gap-2">
+                            前往挑战 <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONTENT TAB 2: 集成援助 · 泡泡出击 (Isometric Production Center) -->
+                <div id="content-bubbles" class="event-content-panel hidden h-full flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase">集成援助</span>
+                                <h2 class="text-3xl font-black text-white mt-1">集成援助 · 泡泡出击</h2>
+                                <p class="text-xs text-neutral-400 mt-1">生产物资物品并提交至交易点，获取物资兑换点与限定配方</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-rose-400 font-bold">活动剩余时间仅剩</div>
+                                <div class="text-white font-mono font-bold text-lg">2天 23小时</div>
+                            </div>
+                        </div>
+
+                        <!-- Simulated Isometric Factory Blueprint / Map Preview -->
+                        <div class="relative w-full h-52 bg-neutral-950 border border-neutral-800 rounded-lg overflow-hidden flex items-center justify-center">
+                            <div class="absolute inset-0 bg-tech-grid opacity-20"></div>
+                            <div class="text-center z-10">
+                                <div class="w-16 h-16 mx-auto rounded-full bg-cyan-500/10 border-2 border-cyan-400 flex items-center justify-center text-cyan-400 text-2xl mb-2 animate-bounce">
+                                    <i class="fa-solid fa-industry"></i>
+                                </div>
+                                <div class="text-sm font-bold text-white">工业生产园区 - 泡泡站点</div>
+                                <div class="text-xs text-neutral-400">PRODUCTION LINE ACTIVE</div>
+                            </div>
+
+                            <!-- Production Material Floating Counter -->
+                            <div class="absolute bottom-3 left-3 bg-red-950/90 border border-red-600 px-3 py-1 rounded flex items-center gap-2 text-xs text-red-200">
+                                <i class="fa-solid fa-box text-red-400"></i>
+                                <span>物资兑换点: <strong class="font-mono text-white text-sm">2810</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-neutral-800 pt-4 flex justify-between items-center">
+                        <div class="text-xs text-neutral-400">已解锁生产节点: <span class="text-white font-bold">4/6</span></div>
+                        <button class="px-6 py-2 bg-endfield-yellow text-black font-black text-sm clip-tech-btn hover:bg-yellow-300">
+                            据点交易 <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONTENT TAB 3: 挽弓试炼 (Weapon Trial Showcase) -->
+                <div id="content-bow" class="event-content-panel hidden h-full flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-cyan-500 text-black text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase">搜寻试炼</span>
+                                <h2 class="text-3xl font-black text-white mt-1">挽弓试炼</h2>
+                                <p class="text-xs text-neutral-300 mt-1">高难度战术挑战，测试强力远距离武器与战术协调</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-neutral-400">活动剩余时间</div>
+                                <div class="text-endfield-yellow font-mono font-bold text-base">17天 13小时</div>
+                            </div>
+                        </div>
+
+                        <!-- Bow Showcase Artwork Box -->
+                        <div class="w-full h-56 bg-neutral-950 border border-neutral-800 rounded-lg p-6 flex flex-col justify-end relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent z-10"></div>
+                            <i class="fa-solid fa-bow-arrow absolute -right-4 -bottom-6 text-9xl text-neutral-800 opacity-30"></i>
+                            
+                            <div class="relative z-20 max-w-md">
+                                <div class="text-endfield-yellow font-bold text-xs mb-1">【试炼任务】个人操作指引</div>
+                                <p class="text-xs text-neutral-400 leading-relaxed mb-4">
+                                    推荐角色匹配高阶战术弓箭，击破核心节点可获得大量专属强化勋章。
+                                </p>
+                                <div class="flex gap-2">
+                                    <span class="bg-neutral-800 text-neutral-300 text-[10px] px-2 py-1 rounded">远程压制</span>
+                                    <span class="bg-neutral-800 text-neutral-300 text-[10px] px-2 py-1 rounded">元素破甲</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-neutral-800 pt-4 flex justify-between items-center">
+                        <div class="text-xs text-neutral-400">奖励包括: <span class="text-endfield-yellow font-bold">高级寻访凭证 x 1200</span></div>
+                        <button class="px-6 py-2 bg-endfield-yellow text-black font-black text-sm clip-tech-btn hover:bg-yellow-300">
+                            前往 <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CONTENT TAB 4: 战争回响 (Silhouette Cinematic Artwork Panel - Match 00:29-01:12) -->
+                <div id="content-war" class="event-content-panel hidden h-full flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest uppercase">活动开启</span>
+                                <h2 class="text-3xl font-black text-white mt-1">战争回响</h2>
+                                <p class="text-xs text-neutral-400 mt-1">「破晓搜寻」开放中</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-neutral-400">距离赛季结束</div>
+                                <div class="text-endfield-yellow font-mono font-bold text-base">17天 13小时</div>
+                            </div>
+                        </div>
+
+                        <!-- Dramatic Crimson Silhouette & Water Reflection Box -->
+                        <div class="w-full h-56 bg-neutral-950 border border-neutral-800 rounded-lg relative overflow-hidden flex items-center justify-center">
+                            <!-- Background gradient echo -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-red-950/40 via-neutral-950 to-black"></div>
+                            
+                            <!-- Crimson Glow Particle Effect -->
+                            <div class="w-32 h-32 bg-red-600/20 rounded-full blur-2xl animate-pulse-glow"></div>
+
+                            <!-- Silhouette Center Representation -->
+                            <div class="relative z-10 text-center">
+                                <div class="text-6xl text-red-500 mb-2">
+                                    <i class="fa-solid fa-person-rays"></i>
+                                </div>
+                                <div class="text-sm font-bold text-neutral-200">战争残响的轨迹在存在与虚无的刃口之上</div>
+                                <div class="text-xs text-neutral-500 mt-1">感受它、阅读它、面对它，让勋章与荣耀重回掌心</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-neutral-800 pt-4 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-neutral-400">赛季评级:</span>
+                            <span class="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded border border-red-500/40 font-bold">首领战特攻</span>
+                        </div>
+                        <button class="px-6 py-2 bg-endfield-yellow text-black font-black text-sm clip-tech-btn hover:bg-yellow-300">
+                            前往 <i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- GODOT 4 SCRIPT CODE MODAL -->
+    <div id="godot-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-6 flex flex-col justify-between">
+        <div class="flex justify-between items-center border-b border-neutral-800 pb-3">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-code text-cyan-400 text-xl"></i>
+                <h3 class="text-lg font-bold text-white font-orbitron">GODOT 4 UI IMPLEMENTATION GUIDE</h3>
+            </div>
+            <button onclick="toggleGodotCodeModal()" class="text-neutral-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto my-4 bg-neutral-950 p-4 rounded border border-neutral-800 font-mono text-xs text-neutral-300 space-y-4">
+            <div>
+                <span class="text-endfield-yellow font-bold">// Godot 4 Control Architecture Node Hierarchy:</span>
+                <pre class="bg-neutral-900 p-3 rounded mt-1 text-cyan-300">
+CanvasLayer (EndfieldUI)
+  ├── ViewportContainer (GameWorld)
+  ├── Control (HUD_Overlay)
+  │     ├── MarginContainer -> TopBar
+  │     └── MarginContainer -> BottomSkills
+  ├── Control (RadialMenuOverlay) - Visible/Hidden toggle
+  │     ├── TextureRect (RadarCenter)
+  │     └── Control (OrbitButtons)
+  └── Control (EventCenter) - UI Panel
+        ├── HBoxContainer
+        │     ├── VBoxContainer (TabList)
+        │     └── PanelContainer (ContentPanel)
+                </pre>
+            </div>
+
+            <div>
+                <span class="text-endfield-yellow font-bold">// GDScript: UI_Manager.gd (Handling Esc/Tab Menu Transitions & Tweening)</span>
+                <pre class="bg-neutral-900 p-3 rounded mt-1 text-green-400">
+extends Control
+
+@onready var radial_menu: Control = $RadialMenuOverlay
+@onready var event_center: Control = $EventCenter
+@onready var hud: Control = $HUD_Overlay
+
+enum UIState { GAMEPLAY, RADIAL_MENU, EVENT_CENTER }
+var current_state: UIState = UIState.GAMEPLAY
+
+func _unhandled_input(event: InputEvent) -> void:
+    if event.is_action_pressed("ui_focus_next"): # TAB key
+        if current_state == UIState.GAMEPLAY:
+            switch_state(UIState.RADIAL_MENU)
+        elif current_state == UIState.RADIAL_MENU:
+            switch_state(UIState.GAMEPLAY)
+    elif event.is_action_pressed("ui_cancel"): # ESC key
+        switch_state(UIState.GAMEPLAY)
+
+func switch_state(new_state: UIState) -> void:
+    current_state = new_state
+    
+    # Animate visibility with Godot 4 Tween
+    var tween = create_tween().set_parallel(true)
+    
+    match current_state:
+        UIState.GAMEPLAY:
+            tween.tween_property(radial_menu, "modulate:a", 0.0, 0.2)
+            tween.tween_property(event_center, "modulate:a", 0.0, 0.2)
+            tween.chain().tween_callback(func(): 
+                radial_menu.hide()
+                event_center.hide()
+            )
+        UIState.RADIAL_MENU:
+            radial_menu.show()
+            radial_menu.modulate.a = 0.0
+            tween.tween_property(radial_menu, "modulate:a", 1.0, 0.2)
+            tween.tween_property(event_center, "modulate:a", 0.0, 0.2)
+        UIState.EVENT_CENTER:
+            event_center.show()
+            event_center.modulate.a = 0.0
+            tween.tween_property(event_center, "modulate:a", 1.0, 0.25)
+            tween.tween_property(radial_menu, "modulate:a", 0.0, 0.2)
+                </pre>
+            </div>
+        </div>
+
+        <div class="text-right">
+            <button onclick="toggleGodotCodeModal()" class="px-5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold rounded">
+                关闭代码预览
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 3D World Canvas Simulation ---
+        const canvas = document.getElementById('world-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let time = 0;
+        function renderScene() {
+            time += 0.01;
+            ctx.fillStyle = '#0f141c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid perspective (sci-fi terrain mockup)
+            ctx.strokeStyle = 'rgba(255, 230, 0, 0.08)';
+            ctx.lineWidth = 1;
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            for (let i = -20; i <= 20; i++) {
+                ctx.beginPath();
+                ctx.moveTo(cx + i * 40, cy);
+                ctx.lineTo(cx + i * 180, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let j = 0; j < 15; j++) {
+                let y = cy + Math.pow(j / 15, 2) * (canvas.height - cy);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw animated floating tech particles
+            for (let p = 0; p < 30; p++) {
+                let px = (Math.sin(p * 99 + time) * 0.5 + 0.5) * canvas.width;
+                let py = (Math.cos(p * 33 + time * 0.5) * 0.5 + 0.5) * canvas.height;
+                ctx.fillStyle = p % 2 === 0 ? 'rgba(255, 230, 0, 0.4)' : 'rgba(34, 211, 238, 0.4)';
+                ctx.beginPath();
+                ctx.arc(px, py, (p % 3) + 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            requestAnimationFrame(renderScene);
+        }
+        renderScene();
+
+        // --- View Switching Logic ---
+        function switchView(viewName) {
+            const vGameplay = document.getElementById('view-gameplay');
+            const vRadial = document.getElementById('view-radial');
+            const vEvents = document.getElementById('view-events');
+            const hudQuest = document.getElementById('hud-quest');
+
+            // Reset active states
+            vGameplay.classList.add('pointer-events-none', 'opacity-0');
+            vRadial.classList.add('hidden');
+            vEvents.classList.add('hidden');
+            hudQuest.classList.add('hidden');
+
+            if (viewName === 'gameplay') {
+                vGameplay.classList.remove('pointer-events-none', 'opacity-0');
+                hudQuest.classList.remove('hidden');
+            } else if (viewName === 'radial') {
+                vRadial.classList.remove('hidden');
+            } else if (viewName === 'events') {
+                vEvents.classList.remove('hidden');
+            }
+        }
+
+        // --- Event Tab Navigation Logic ---
+        function selectEventTab(tabKey) {
+            // Hide all content panels
+            const panels = document.querySelectorAll('.event-content-panel');
+            panels.forEach(p => p.classList.add('hidden'));
+
+            // Reset all tab styling
+            const tabs = document.querySelectorAll('.event-tab-btn');
+            tabs.forEach(t => {
+                t.classList.remove('bg-neutral-900', 'border-endfield-yellow', 'text-white');
+                t.classList.add('bg-neutral-950', 'border-transparent', 'text-neutral-400');
+            });
+
+            // Activate chosen tab and panel
+            const activePanel = document.getElementById('content-' + tabKey);
+            const activeTab = document.getElementById('tab-' + tabKey);
+
+            if (activePanel) activePanel.classList.remove('hidden');
+            if (activeTab) {
+                activeTab.classList.remove('bg-neutral-950', 'border-transparent', 'text-neutral-400');
+                activeTab.classList.add('bg-neutral-900', 'border-endfield-yellow', 'text-white');
+            }
+        }
+
+        // --- Code Inspector Modal ---
+        function toggleGodotCodeModal() {
+            const modal = document.getElementById('godot-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Keyboard Shortcut Handler (TAB / ESC)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const radial = document.getElementById('view-radial');
+                if (radial.classList.contains('hidden')) {
+                    switchView('radial');
+                } else {
+                    switchView('gameplay');
+                }
+            } else if (e.key === 'Escape') {
+                switchView('gameplay');
+            }
+        });
+    </script>
+</body>
+</html>

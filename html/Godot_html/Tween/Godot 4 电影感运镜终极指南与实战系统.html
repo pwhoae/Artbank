@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 电影感运镜终极指南与实战系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#21252b',
+                            card: '#1e2227',
+                            accent: '#35719c',
+                            highlight: '#41b883'
+                        },
+                        cine: {
+                            gold: '#f59e0b',
+                            red: '#ef4444',
+                            purple: '#8b5cf6',
+                            emerald: '#10b981'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #181a1f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333842;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+        .code-glow {
+            box-shadow: 0 0 20px rgba(71, 140, 191, 0.15);
+        }
+        .viewport-border {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .active-btn {
+            background-color: #478cbf !important;
+            color: #ffffff !important;
+            border-color: #60a5fa !important;
+            box-shadow: 0 0 12px rgba(71, 140, 191, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-[#141619] text-gray-200 font-sans h-screen flex flex-col overflow-hidden select-none">
+
+    <!-- Navigation Bar -->
+    <header class="h-14 bg-[#1e2227] border-b border-gray-800 px-4 flex items-center justify-between z-10 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-godot-blue flex items-center justify-center font-bold text-white shadow-lg">
+                <i class="fa-solid font-mono text-lg">G4</i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-wide text-gray-100 flex items-center gap-2">
+                    Godot 4 电影感运镜终极指南
+                    <span class="text-xs bg-godot-blue/20 text-godot-blue px-2 py-0.5 rounded border border-godot-blue/30 font-mono">3D Camera Controller</span>
+                </h1>
+                <p class="text-[10px] text-gray-400">基于《电影感运镜全解析》· Godot 4.x Camera3D 实战套件</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3 text-xs">
+            <button id="viewModeBtn" onclick="toggleViewportMode()" class="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-camera-retro text-godot-blue"></i>
+                <span id="viewModeText">视角切换: 导演预演模式</span>
+            </button>
+            <a href="https://github.com/godotengine/godot" target="_blank" class="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 flex items-center gap-1.5 transition">
+                <i class="fa-brands fa-github"></i> Godot Docs
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Left Sidebar: Camera Moves Selector & Presets -->
+        <aside class="w-80 bg-[#1a1d21] border-r border-gray-800 flex flex-col shrink-0 overflow-hidden">
+            <div class="p-3 border-b border-gray-800 bg-[#181a1f] flex justify-between items-center">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                    <i class="fa-solid fa-clapperboard text-cine-gold"></i> 经典运镜预设库
+                </span>
+                <span class="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">14 种模式</span>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-2 space-y-1.5" id="presetsContainer">
+                <!-- Preset buttons injected by JS -->
+            </div>
+
+            <!-- Custom Controls & Noise Tweaker -->
+            <div class="p-3 border-t border-gray-800 bg-[#16181c] space-y-3">
+                <div class="text-xs font-semibold text-gray-300 flex justify-between items-center">
+                    <span>运镜参数微调 (Live Tweaks)</span>
+                    <i class="fa-solid fa-sliders text-xs text-gray-500"></i>
+                </div>
+                
+                <div class="space-y-2 text-xs">
+                    <div>
+                        <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                            <span>动画过渡时长 (Duration)</span>
+                            <span id="durationVal" class="font-mono text-godot-blue">2.5s</span>
+                        </div>
+                        <input type="range" id="durationSlider" min="0.5" max="6.0" step="0.1" value="2.5" class="w-full accent-godot-blue bg-gray-800 h-1 rounded cursor-pointer">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[11px] text-gray-400 mb-1">
+                            <span>手持抖动强度 (Noise Shake)</span>
+                            <span id="shakeVal" class="font-mono text-cine-gold">0.00</span>
+                        </div>
+                        <input type="range" id="shakeSlider" min="0.0" max="1.0" step="0.05" value="0.0" class="w-full accent-cine-gold bg-gray-800 h-1 rounded cursor-pointer">
+                    </div>
+                </div>
+
+                <button onclick="triggerCurrentCameraMove()" class="w-full py-2 bg-godot-blue hover:bg-godot-accent text-white font-bold rounded text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95">
+                    <i class="fa-solid fa-play"></i> 重新播放当前运镜
+                </button>
+            </div>
+        </aside>
+
+        <!-- Center: 3D Viewport & Visualizer -->
+        <main class="flex-1 flex flex-col bg-[#0f1012] relative overflow-hidden">
+            <!-- 3D Canvas Canvas container -->
+            <div id="canvasContainer" class="w-full h-full relative cursor-grab active:cursor-grabbing">
+                <!-- Viewport HUD Overlay -->
+                <div class="absolute top-3 left-3 pointer-events-none z-10 flex flex-col gap-2">
+                    <div class="bg-black/60 backdrop-blur border border-white/10 px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-3">
+                        <span class="flex items-center gap-1.5 text-emerald-400 font-bold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            LIVE CAMERA
+                        </span>
+                        <span id="activePresetName" class="text-gray-200 font-sans font-bold">推镜头 (Dolly In)</span>
+                        <span class="text-gray-500">|</span>
+                        <span id="fovHUD" class="text-gray-400">FOV: 60°</span>
+                        <span class="text-gray-500">|</span>
+                        <span id="distHUD" class="text-gray-400">Dist: 5.0m</span>
+                    </div>
+
+                    <!-- Directing Tip Banner -->
+                    <div id="directingTip" class="bg-gradient-to-r from-gray-900/90 to-black/80 backdrop-blur border-l-4 border-cine-gold p-3 rounded shadow-xl max-w-md text-xs">
+                        <div class="font-bold text-cine-gold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lightbulb"></i> 电影感视效解析
+                        </div>
+                        <p id="tipText" class="text-gray-300 leading-relaxed">
+                            推镜头可以引导观众视线，突出关键信息，拉近人与角色的距离并放大心理情感。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Camera Gizmo Legend -->
+                <div class="absolute bottom-3 left-3 pointer-events-none z-10 bg-black/60 backdrop-blur border border-white/10 px-3 py-2 rounded-lg text-[11px] text-gray-400 space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-0.5 bg-yellow-400 inline-block"></span>
+                        <span>摄像机视锥体 (Camera FOV Frustum)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-0.5 bg-cyan-400 inline-block"></span>
+                        <span>运动轨迹 (Motion Path / Dolly Track)</span>
+                    </div>
+                </div>
+
+                <!-- Three.js Canvas mounting point -->
+                <div id="threejsViewport" class="w-full h-full"></div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Godot 4 GDScript Code Viewer & Inspector -->
+        <aside class="w-96 bg-[#181a1f] border-l border-gray-800 flex flex-col shrink-0 overflow-hidden">
+            <div class="p-3 border-b border-gray-800 bg-[#1e2227] flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-code text-godot-blue"></i>
+                    <span class="text-xs font-bold text-gray-200 font-mono">Godot 4 GDScript 实现</span>
+                </div>
+                <button onclick="copyGDScript()" class="px-2 py-1 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 flex items-center gap-1 transition">
+                    <i class="fa-regular fa-copy"></i> 复制完整代码
+                </button>
+            </div>
+
+            <!-- Code Tabs -->
+            <div class="flex border-b border-gray-800 bg-[#141619] text-xs">
+                <button id="tabCurrentSnippet" onclick="switchCodeTab('snippet')" class="flex-1 py-2 font-mono text-center border-b-2 border-godot-blue text-godot-blue font-semibold">
+                    当前运镜 API
+                </button>
+                <button id="tabFullClass" onclick="switchCodeTab('full')" class="flex-1 py-2 font-mono text-center border-b-2 border-transparent text-gray-400 hover:text-gray-200">
+                    完整 CinematicCamera3D.gd
+                </button>
+            </div>
+
+            <!-- Code Body Container -->
+            <div class="flex-1 overflow-y-auto p-3 font-mono text-xs bg-[#111316] leading-relaxed relative">
+                <!-- Snippet View -->
+                <div id="codeSnippetContainer" class="space-y-3">
+                    <div class="text-[11px] text-gray-400 bg-gray-900/80 p-2 rounded border border-gray-800">
+                        <span class="text-cine-gold font-bold"># Godot 4 Tween & Transform 逻辑</span>
+                        <p id="codeDescription" class="text-gray-300 mt-1 font-sans">对应右侧预设在 Godot 4 中使用 Tween 与 Smooth Step 的算法逻辑：</p>
+                    </div>
+                    <pre><code id="activeGDScript" class="text-gray-300 block overflow-x-auto whitespace-pre-wrap"># 选择运镜预设以查看 Godot 4 核心逻辑...</code></pre>
+                </div>
+
+                <!-- Full Script View (Hidden by default) -->
+                <div id="fullClassContainer" class="hidden">
+                    <pre><code id="fullClassGDScript" class="text-gray-300 block overflow-x-auto whitespace-pre-wrap"></code></pre>
+                </div>
+            </div>
+
+            <!-- Code Footer Note -->
+            <div class="p-2.5 border-t border-gray-800 bg-[#181a1f] text-[11px] text-gray-400 flex items-center justify-between">
+                <span>适用版本: <strong class="text-gray-200">Godot 4.0 - 4.3+</strong></span>
+                <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> 开箱即用</span>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // Comprehensive Cinematic Preset Dictionary
+        const CAMERA_PRESETS = [
+            {
+                id: 'dolly_in',
+                name: '1. 推镜头 (Dolly In)',
+                icon: 'fa-arrow-down-long',
+                desc: '镜头沿轴线向主体推进。可以引导视角、突出细节信息，改变画面气氛并拉近观众与角色的心理距离，放大情绪。',
+                gdscript: `func dolly_in(target_position: Vector3, distance_delta: float = -2.5, duration: float = 2.5) -> void:
+	# 推镜头：保持 FOV 不变，沿 Camera 本地 Z 轴推进
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var target_transform = global_transform.translated_local(Vector3(0, 0, distance_delta))
+	
+	tween.tween_property(self, "global_position", target_transform.origin, duration)
+	# 情绪强调：微调 Pitch
+	tween.tween_property(self, "rotation_degrees:x", -5.0, duration)`,
+                animate: (cam, target, progress) => {
+                    const startPos = new THREE.Vector3(0, 2.2, 7.0);
+                    const endPos = new THREE.Vector3(0, 1.8, 2.8);
+                    cam.position.lerpVectors(startPos, endPos, easeInOutCubic(progress));
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'dolly_out',
+                name: '2. 拉镜头 (Dolly Out)',
+                icon: 'fa-arrow-up-long',
+                desc: '镜头后拉弱化主体，逐渐暴露周边环境。常用于揭示更多隐藏信息，或表现人物孤立、被环境剥离的感觉。',
+                gdscript: `func dolly_out(duration: float = 2.5) -> void:
+	# 拉镜头：沿轴线退回，暴露周围空间环境
+	var tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	var start_z = position.z
+	tween.tween_property(self, "position:z", start_z + 4.5, duration)`,
+                animate: (cam, target, progress) => {
+                    const startPos = new THREE.Vector3(0, 1.8, 2.8);
+                    const endPos = new THREE.Vector3(0, 3.2, 8.5);
+                    cam.position.lerpVectors(startPos, endPos, easeInOutCubic(progress));
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'zoom_in_out',
+                name: '3. 变焦 (Optical Zoom)',
+                icon: 'fa-magnifying-glass-plus',
+                desc: '镜头物理位置不动，纯粹通过改变焦距/FOV。快速变焦(Snap Zoom)具备极强冲击力，极慢变焦能无声渲染紧张情绪。',
+                gdscript: `func optical_zoom(target_fov: float = 22.0, duration: float = 2.0) -> void:
+	# 变焦：改变 Camera3D 的 FOV (视角)
+	var tween = create_tween().set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "fov", target_fov, duration)`,
+                animate: (cam, target, progress) => {
+                    cam.position.set(0, 2.0, 6.0);
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    // Cycle zoom in then out
+                    const p = Math.sin(progress * Math.PI);
+                    cam.fov = THREE.MathUtils.lerp(60, 22, p);
+                }
+            },
+            {
+                id: 'hitchcock_zoom',
+                name: '4. 希区柯克变焦 (Dolly Zoom)',
+                icon: 'fa-eye-slash',
+                desc: '推镜头的同时缩小FOV（或反向）。主体在画面中大小保持绝对一致，但背景产生剧烈的透视压缩或拉伸，代表顿悟或巨大震撼。',
+                gdscript: `func hitchcock_zoom(subject_distance: float, target_dist: float, duration: float = 3.0) -> void:
+	# 希区柯克变焦公式: 保持主体像素高度不变 FOV = 2 * atan(height / (2 * dist))
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
+	
+	# 1. Dolly 位置插值
+	tween.tween_property(self, "position:z", target_dist, duration)
+	
+	# 2. 动态调整 FOV 维持主体视觉占比
+	var sensor_height = 2.0 * tan(deg_to_rad(fov / 2.0)) * subject_distance
+	var calc_fov = func(d): return rad_to_deg(2.0 * atan(sensor_height / (2.0 * d)))
+	
+	# 在 _process 或 Tween step 中实时根据 distance 计算 fov`,
+                animate: (cam, target, progress) => {
+                    const startDist = 7.0;
+                    const endDist = 2.5;
+                    const currDist = THREE.MathUtils.lerp(startDist, endDist, easeInOutCubic(progress));
+                    cam.position.set(0, 1.8, currDist);
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    
+                    // Maintain height: fov = 2 * atan(const / dist)
+                    const aspectConstant = 2.0 * Math.tan(THREE.MathUtils.degToRad(55 / 2)) * startDist;
+                    const calculatedFov = THREE.MathUtils.radToDeg(2.0 * Math.atan(aspectConstant / (2.0 * currDist)));
+                    cam.fov = calculatedFov;
+                }
+            },
+            {
+                id: 'crane_up_down',
+                name: '5. 升降镜头 (Crane / Pedestal)',
+                icon: 'fa-arrows-up-down',
+                desc: '镜头垂直向上升起或下降。直观揭示复杂的三维空间关系，升起展现宏大广阔视野，下降常用于开场交待环境与人物。',
+                gdscript: `func crane_shot(height_delta: float = 4.0, duration: float = 3.0) -> void:
+	# 升降镜头：改变 Y 轴，保持 Target 锚点
+	var tween = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(self, "position:y", position.y + height_delta, duration)`,
+                animate: (cam, target, progress) => {
+                    const p = Math.sin(progress * Math.PI);
+                    const currY = THREE.MathUtils.lerp(0.8, 5.5, p);
+                    cam.position.set(0, currY, 5.5);
+                    cam.lookAt(target.position.x, target.position.y + 1.0, target.position.z);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'tilt_pan',
+                name: '6. 俯仰与摇镜头 (Tilt & Pan)',
+                icon: 'fa-camera-rotate',
+                desc: '相机原地俯仰(Tilt)或水平旋转(Pan)。建立期待感、跟随动作或引导视线。高速摇镜头即为“甩镜头(Whip Pan)”，冲击力强。',
+                gdscript: `func whip_pan(target_yaw_deg: float, duration: float = 0.4) -> void:
+	# 甩镜头 (Whip Pan)：极高加速度与 EASE_IN_OUT，配合 Dynamic Motion Blur
+	var tween = create_tween().set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(self, "rotation_degrees:y", target_yaw_deg, duration)`,
+                animate: (cam, target, progress) => {
+                    cam.position.set(0, 2.0, 5.0);
+                    // Rapid whip pan effect in middle of duration
+                    let panAngle = 0;
+                    if (progress < 0.4) {
+                        panAngle = THREE.MathUtils.lerp(-40, 0, progress / 0.4);
+                    } else if (progress > 0.6) {
+                        panAngle = THREE.MathUtils.lerp(0, 40, (progress - 0.6) / 0.4);
+                    } else {
+                        panAngle = 0;
+                    }
+                    cam.rotation.set(0, THREE.MathUtils.degToRad(panAngle), 0);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'crane_tilt_combo',
+                name: '7. 降镜头+仰抬 (Hero Entrance)',
+                icon: 'fa-up-right-and-down-left-from-center',
+                desc: '经典组合运镜：镜头下降的同时向上仰台。常用于主角高光登场、宏大建筑揭示，瞬间增强压迫感与英雄气场。',
+                gdscript: `func hero_entrance_shot(duration: float = 3.0) -> void:
+	# 降镜头 + 仰抬：垂直下降同时 Pitch 仰角抬高
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	
+	tween.tween_property(self, "position:y", 0.6, duration)
+	tween.tween_property(self, "position:z", 2.2, duration)
+	tween.tween_property(self, "rotation_degrees:x", 25.0, duration)`,
+                animate: (cam, target, progress) => {
+                    const startY = 4.0, endY = 0.6;
+                    const startZ = 5.5, endZ = 2.5;
+                    const p = easeInOutCubic(progress);
+                    cam.position.set(0, THREE.MathUtils.lerp(startY, endY, p), THREE.MathUtils.lerp(startZ, endZ, p));
+                    cam.lookAt(target.position.x, target.position.y + 1.4, target.position.z);
+                    cam.fov = 52;
+                }
+            },
+            {
+                id: 'truck_side',
+                name: '8. 移镜头 (Trucking Shot)',
+                icon: 'fa-arrows-left-right',
+                desc: '镜头与导轨横向平移。可以侧面跟随主角，当镜头速度超越人物时显得主体放慢，当人物超过镜头时能营造强烈紧迫感。',
+                gdscript: `func truck_shot(distance_x: float = 6.0, duration: float = 3.0) -> void:
+	# 横移镜头 (Truck): 沿 Camera 本地 X 轴滑轨平移
+	var tween = create_tween().set_trans(Tween.TRANS_LINEAR)
+	tween.tween_property(self, "position:x", distance_x, duration)`,
+                animate: (cam, target, progress) => {
+                    const startX = -4.5;
+                    const endX = 4.5;
+                    const currX = THREE.MathUtils.lerp(startX, endX, progress);
+                    cam.position.set(currX, 1.8, 4.5);
+                    cam.lookAt(currX, target.position.y + 1.2, 0);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'follow_front_back',
+                name: '9. 跟镜头 (Tracking / Follow)',
+                icon: 'fa-user-ninja',
+                desc: '前跟(Front Follow)展现面部细腻表情；后跟(Back Follow)增强玩家/观众代入感；侧跟(Side Follow)平衡环境与动作。',
+                gdscript: `func follow_target(target_node: Node3D, offset: Vector3, delta: float, speed: float = 5.0) -> void:
+	# Godot 3D 摄像机平滑跟随 (平滑插值)
+	var desired_position = target_node.global_position + offset
+	global_position = global_position.lerp(desired_position, speed * delta)
+	look_at(target_node.global_position + Vector3(0, 1.2, 0))`,
+                animate: (cam, target, progress) => {
+                    // Simulate moving target and following from behind
+                    const targetZ = THREE.MathUtils.lerp(2.0, -3.0, progress);
+                    target.position.z = targetZ;
+                    cam.position.set(0, 2.0, targetZ + 3.8);
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'orbit_360',
+                name: '10. 环绕镜头 (Orbit Shot)',
+                icon: 'fa-rotate',
+                desc: '镜头 360 度环绕主体旋转。全面展示三维空间关系、营造对峙紧张感或极具冲击力的英雄高光时刻。',
+                gdscript: `func orbit_around_target(pivot_center: Vector3, radius: float, angle_deg: float) -> void:
+	# 360 度极坐标环绕
+	var rad = deg_to_rad(angle_deg)
+	var offset = Vector3(cos(rad) * radius, 0, sin(rad) * radius)
+	global_position = pivot_center + offset
+	look_at(pivot_center)`,
+                animate: (cam, target, progress) => {
+                    const angle = progress * Math.PI * 2;
+                    const radius = 4.5;
+                    cam.position.x = Math.sin(angle) * radius;
+                    cam.position.z = Math.cos(angle) * radius;
+                    cam.position.y = 1.6;
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    cam.fov = 50;
+                }
+            },
+            {
+                id: 'dutch_spiral',
+                name: '11. 旋转/荷兰角 (Spiral & Roll)',
+                icon: 'fa-arrows-spin',
+                desc: '镜头沿 Z 轴滚转 (Roll) 旋转。配合上升或推进，带来眩晕、超现实梦境感或超强动感冲击。',
+                gdscript: `func spiral_roll_shot(roll_angle_deg: float = 360.0, duration: float = 3.0) -> void:
+	# Z 轴滚转镜头
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(self, "rotation_degrees:z", roll_angle_deg, duration)
+	tween.tween_property(self, "position:z", 2.5, duration)`,
+                animate: (cam, target, progress) => {
+                    cam.position.set(0, 1.8, THREE.MathUtils.lerp(6.0, 3.0, progress));
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    cam.rotation.z = THREE.MathUtils.degToRad(progress * 180);
+                    cam.fov = 55;
+                }
+            },
+            {
+                id: 'static_shot',
+                name: '12. 固定镜头 (Static Shot)',
+                icon: 'fa-stop',
+                desc: '镜头零运动。让画面内部的被摄物运动来讲故事，强调严谨构图，给观众沉静观察与思考空间。',
+                gdscript: `func setup_static_framing(target_pos: Vector3) -> void:
+	# 固定构图镜头：锁死 Transform
+	look_at(target_pos)
+	set_process(false) # 关闭动态更新`,
+                animate: (cam, target, progress) => {
+                    cam.position.set(2.5, 1.5, 4.0);
+                    cam.lookAt(target.position.x, target.position.y + 1.0, target.position.z);
+                    cam.fov = 45;
+                }
+            },
+            {
+                id: 'handheld_shake',
+                name: '13. 手持/纪录片抖动 (Handheld Noise)',
+                icon: 'fa-hand-back-fist',
+                desc: '模拟肩扛手持摄像机的有机随机抖动。带来强烈的临场感、紧张感与战地纪实感。结合随机变焦效果更佳。',
+                gdscript: `func apply_handheld_noise(noise: FastNoiseLite, time_accum: float, shake_power: float = 0.08) -> void:
+	# Godot 4 FastNoiseLite 手持抖动算法
+	var noise_x = noise.get_noise_2d(time_accum * 10.0, 0.0) * shake_power
+	var noise_y = noise.get_noise_2d(0.0, time_accum * 10.0) * shake_power
+	var noise_rot = noise.get_noise_2d(time_accum * 5.0, 50.0) * shake_power * 0.5
+	
+	h_offset = noise_x
+	v_offset = noise_y
+	rotation_degrees.z = noise_rot`,
+                animate: (cam, target, progress) => {
+                    cam.position.set(0, 1.8, 4.5);
+                    cam.lookAt(target.position.x, target.position.y + 1.2, target.position.z);
+                    
+                    // Procedural handheld noise simulation
+                    const t = Date.now() * 0.005;
+                    const noiseX = (Math.sin(t * 2.3) + Math.cos(t * 3.7)) * 0.08;
+                    const noiseY = (Math.cos(t * 1.9) + Math.sin(t * 4.1)) * 0.08;
+                    const noiseZ = Math.sin(t * 1.5) * 0.05;
+                    
+                    cam.position.x += noiseX;
+                    cam.position.y += noiseY;
+                    cam.rotation.z += noiseZ;
+                    cam.fov = 50;
+                }
+            }
+        ];
+
+        const FULL_GDSCRIPT_CLASS = `# ==============================================================================
+# Godot 4 电影感通用相机控制器 (CinematicCamera3D.gd)
+# 挂载于 Camera3D 节点，支持全套电影级运镜算法、Tween 平滑过渡与 Noise 手持抖动
+# ==============================================================================
+class_name CinematicCamera3D
+extends Camera3D
+
+# --- 运镜模式枚举 ---
+enum CameraMode {
+	STATIC,
+	DOLLY,
+	OPTICAL_ZOOM,
+	HITCHCOCK_ZOOM,
+	CRANE,
+	WHIP_PAN,
+	TRUCK,
+	ORBIT,
+	HANDHELD
+}
+
+# --- 导出属性 ---
+@export_group("Target Settings")
+@export var target_node: Node3D
+@export var target_offset: Vector3 = Vector3(0, 1.2, 0)
+
+@export_group("Handheld Shake Noise")
+@export var enable_handheld_shake: bool = false
+@export var shake_amplitude: float = 0.08
+@export var noise_speed: float = 8.0
+
+# --- 内部变量 ---
+var _noise: FastNoiseLite = FastNoiseLite.new()
+var _time_passed: float = 0.0
+var _active_tween: Tween
+var _base_fov: float = 60.0
+
+func _ready() -> void:
+	_base_fov = fov
+	# 初始化 FastNoiseLite 噪声发生器
+	_noise.seed = randi()
+	_noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	_noise.frequency = 0.05
+
+func _process(delta: float) -> void:
+	if enable_handheld_shake:
+		_apply_handheld_shake(delta)
+
+# ------------------------------------------------------------------------------
+# 1. 希区柯克变焦 (Dolly Zoom / Vertigo Effect)
+# 保持主体尺寸绝对不变，动态修改 FOV 与 Z 轴距离
+# ------------------------------------------------------------------------------
+func trigger_ditchcock_zoom(target_z_distance: float, duration: float = 3.0) -> void:
+	if _active_tween and _active_tween.is_running():
+		_active_tween.kill()
+		
+	var start_dist = global_position.distance_to(target_node.global_position)
+	var sensor_height = 2.0 * tan(deg_to_rad(fov / 2.0)) * start_dist
+	
+	_active_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE)
+	
+	# Dolly 逼近/远离
+	var target_pos = target_node.global_position + (global_transform.basis.z * target_z_distance)
+	_active_tween.tween_property(self, "global_position", target_pos, duration)
+	
+	# 自定义 FOV 实时更新
+	_active_tween.tween_method(func(curr_dist: float):
+		var calc_fov = rad_to_deg(2.0 * atan(sensor_height / (2.0 * curr_dist)))
+		fov = clamp(calc_fov, 5.0, 140.0)
+	, start_dist, target_z_distance, duration)
+
+# ------------------------------------------------------------------------------
+# 2. 英雄高光登场 (Crane Down + Tilt Up)
+# ------------------------------------------------------------------------------
+func trigger_hero_entrance(duration: float = 3.0) -> void:
+	if _active_tween and _active_tween.is_running():
+		_active_tween.kill()
+		
+	_active_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_active_tween.tween_property(self, "position:y", 0.6, duration)
+	_active_tween.tween_property(self, "position:z", 2.2, duration)
+	_active_tween.tween_property(self, "rotation_degrees:x", 22.0, duration)
+
+# ------------------------------------------------------------------------------
+# 3. 极速甩镜头 (Whip Pan)
+# ------------------------------------------------------------------------------
+func trigger_whip_pan(relative_yaw_deg: float, duration: float = 0.4) -> void:
+	if _active_tween and _active_tween.is_running():
+		_active_tween.kill()
+		
+	_active_tween = create_tween().set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_IN_OUT)
+	_active_tween.tween_property(self, "rotation_degrees:y", rotation_degrees.y + relative_yaw_deg, duration)
+
+# ------------------------------------------------------------------------------
+# 4. 360 度圆周环绕 (Orbit Shot)
+# ------------------------------------------------------------------------------
+func trigger_orbit_shot(radius: float, duration: float = 4.0) -> void:
+	if _active_tween and _active_tween.is_running():
+		_active_tween.kill()
+		
+	var center = target_node.global_position if target_node else Vector3.ZERO
+	_active_tween = create_tween().set_trans(Tween.TRANS_LINEAR)
+	
+	_active_tween.tween_method(func(angle_deg: float):
+		var rad = deg_to_rad(angle_deg)
+		global_position = center + Vector3(sin(rad) * radius, 1.5, cos(rad) * radius)
+		look_at(center + target_offset)
+	, 0.0, 360.0, duration)
+
+# ------------------------------------------------------------------------------
+# 5. 手持抖动计算
+# ------------------------------------------------------------------------------
+func _apply_handheld_shake(delta: float) -> void:
+	_time_passed += delta * noise_speed
+	var nx = _noise.get_noise_2d(_time_passed, 0.0) * shake_amplitude
+	var ny = _noise.get_noise_2d(0.0, _time_passed) * shake_amplitude
+	var nz = _noise.get_noise_2d(_time_passed, 100.0) * (shake_amplitude * 0.5)
+	
+	h_offset = nx
+	v_offset = ny
+	rotation_degrees.z = nz
+`;
+
+        let scene, mainCamera, directorCamera, activeCamera, renderer, controls;
+        let actorMesh, cameraRigModel, frustumHelper, motionPathLine;
+        let currentPresetIndex = 0;
+        let animationStartTime = 0;
+        let isPlayingAnimation = true;
+        let animationDuration = 2.5;
+        let handheldNoiseAmount = 0.0;
+        let isDirectorView = false;
+        let activeCodeTab = 'snippet';
+
+        // Easing utility
+        function easeInOutCubic(x) {
+            return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+        }
+
+        function init3DViewport() {
+            const container = document.getElementById('threejsViewport');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f1012);
+            scene.fog = new THREE.FogExp2(0x0f1012, 0.03);
+
+            // Cameras
+            mainCamera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+            directorCamera = new THREE.PerspectiveCamera(55, width / height, 0.1, 100);
+            directorCamera.position.set(7, 6, 9);
+            directorCamera.lookAt(0, 1, 0);
+
+            activeCamera = mainCamera;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls (Director mode)
+            controls = new THREE.OrbitControls(directorCamera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 1, 0);
+            controls.enabled = false;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            const keyLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
+            keyLight.position.set(5, 8, 5);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 1024;
+            keyLight.shadow.mapSize.height = 1024;
+            scene.add(keyLight);
+
+            const fillLight = new THREE.DirectionalLight(0x478cbf, 0.6);
+            fillLight.position.set(-5, 4, -3);
+            scene.add(fillLight);
+
+            // Floor Grid & Ground
+            const gridHelper = new THREE.GridHelper(20, 20, 0x478cbf, 0x22262c);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            const planeGeo = new THREE.PlaneGeometry(30, 30);
+            const planeMat = new THREE.MeshStandardMaterial({ color: 0x141619, roughness: 0.8 });
+            const floor = new THREE.Mesh(planeGeo, planeMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Create Actor Placeholder (Stylized Studio Mannequin)
+            const actorGroup = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.CylinderGeometry(0.25, 0.15, 1.1, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x478cbf, roughness: 0.3, metalness: 0.1 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.85;
+            body.castShadow = true;
+            actorGroup.add(body);
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.22, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.6;
+            head.castShadow = true;
+            actorGroup.add(head);
+
+            // Studio Spotlight Beam under actor
+            const ringGeo = new THREE.RingGeometry(0.4, 0.45, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.01;
+            actorGroup.add(ring);
+
+            actorMesh = actorGroup;
+            scene.add(actorMesh);
+
+            // Create Visual Camera Object Model (for Director View)
+            const camModelGroup = new THREE.Group();
+            const boxGeo = new THREE.BoxGeometry(0.3, 0.3, 0.5);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+            const camBox = new THREE.Mesh(boxGeo, boxMat);
+            camModelGroup.add(camBox);
+
+            const lensGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.3, 16);
+            const lensMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.8 });
+            const lens = new THREE.Mesh(lensGeo, lensMat);
+            lens.rotation.x = Math.PI / 2;
+            lens.position.z = -0.3;
+            camModelGroup.add(lens);
+
+            cameraRigModel = camModelGroup;
+            scene.add(cameraRigModel);
+
+            // FOV Frustum Helper for Main Camera
+            frustumHelper = new THREE.CameraHelper(mainCamera);
+            scene.add(frustumHelper);
+
+            // Motion Path Line
+            const pathGeo = new THREE.BufferGeometry();
+            const pathMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
+            motionPathLine = new THREE.Line(pathGeo, pathMat);
+            scene.add(motionPathLine);
+
+            // Window Resize Listener
+            window.addEventListener('resize', onWindowResize);
+
+            // Start Animation Loop
+            animationStartTime = Date.now();
+            animateLoop();
+        }
+
+        function animateLoop() {
+            requestAnimationFrame(animateLoop);
+
+            const elapsedSec = (Date.now() - animationStartTime) / 1000.0;
+            let progress = (elapsedSec % animationDuration) / animationDuration;
+
+            // Execute active camera movement function
+            const activePreset = CAMERA_PRESETS[currentPresetIndex];
+            if (activePreset && activePreset.animate) {
+                // Reset base target position before frame calculations
+                actorMesh.position.set(0, 0, 0);
+                activePreset.animate(mainCamera, actorMesh, progress);
+            }
+
+            // Apply manual shake slider if set
+            if (handheldNoiseAmount > 0) {
+                const t = Date.now() * 0.006;
+                mainCamera.position.x += Math.sin(t * 3.1) * handheldNoiseAmount * 0.15;
+                mainCamera.position.y += Math.cos(t * 2.7) * handheldNoiseAmount * 0.15;
+            }
+
+            // Update main camera frustum & model placement
+            mainCamera.updateProjectionMatrix();
+            mainCamera.updateMatrixWorld();
+
+            if (cameraRigModel) {
+                cameraRigModel.position.copy(mainCamera.position);
+                cameraRigModel.quaternion.copy(mainCamera.quaternion);
+            }
+
+            if (frustumHelper) {
+                frustumHelper.update();
+                frustumHelper.visible = isDirectorView;
+            }
+
+            if (controls && isDirectorView) {
+                controls.update();
+            }
+
+            // Update HUD text
+            document.getElementById('fovHUD').innerText = `FOV: ${Math.round(mainCamera.fov)}°`;
+            const dist = mainCamera.position.distanceTo(actorMesh.position).toFixed(1);
+            document.getElementById('distHUD').innerText = `Dist: ${dist}m`;
+
+            // Render active view
+            renderer.render(scene, isDirectorView ? directorCamera : mainCamera);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('threejsViewport');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            mainCamera.aspect = width / height;
+            mainCamera.updateProjectionMatrix();
+
+            directorCamera.aspect = width / height;
+            directorCamera.updateProjectionMatrix();
+
+            renderer.setSize(width, height);
+        }
+
+        function renderPresetButtons() {
+            const container = document.getElementById('presetsContainer');
+            container.innerHTML = '';
+
+            CAMERA_PRESETS.forEach((preset, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-2.5 rounded-lg border border-gray-800/80 hover:border-godot-blue/50 bg-[#1e2227]/60 hover:bg-[#252a30] transition flex items-center justify-between group ${idx === currentPresetIndex ? 'active-btn' : ''}`;
+                btn.onclick = () => selectPreset(idx);
+
+                btn.innerHTML = `
+                    <div class="flex items-center space-x-2.5 overflow-hidden">
+                        <div class="w-6 h-6 rounded bg-black/40 flex items-center justify-center text-xs text-godot-blue group-hover:text-white shrink-0">
+                            <i class="fa-solid ${preset.icon}"></i>
+                        </div>
+                        <span class="text-xs font-semibold truncate text-gray-200 group-hover:text-white">${preset.name}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-[10px] text-gray-600 group-hover:text-gray-300 shrink-0"></i>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectPreset(index) {
+            currentPresetIndex = index;
+            const preset = CAMERA_PRESETS[index];
+
+            // Highlight Active Preset Button
+            renderPresetButtons();
+
+            // Update HUD
+            document.getElementById('activePresetName').innerText = preset.name;
+            document.getElementById('tipText').innerText = preset.desc;
+            document.getElementById('codeDescription').innerText = `【${preset.name}】在 Godot 4 中使用 Tween 与 Engine 3D Transform 的标准实现：`;
+            document.getElementById('activeGDScript').innerText = preset.gdscript;
+
+            // Reset Animation Loop
+            triggerCurrentCameraMove();
+        }
+
+        function triggerCurrentCameraMove() {
+            animationStartTime = Date.now();
+        }
+
+        function toggleViewportMode() {
+            isDirectorView = !isDirectorView;
+            activeCamera = isDirectorView ? directorCamera : mainCamera;
+            controls.enabled = isDirectorView;
+
+            const btnText = document.getElementById('viewModeText');
+            btnText.innerText = isDirectorView ? '视角切换: 摄像机主视角' : '视角切换: 导演预演模式';
+        }
+
+        function switchCodeTab(tab) {
+            activeCodeTab = tab;
+            const snippetContainer = document.getElementById('codeSnippetContainer');
+            const fullContainer = document.getElementById('fullClassContainer');
+            const tabCurrent = document.getElementById('tabCurrentSnippet');
+            const tabFull = document.getElementById('tabFullClass');
+
+            if (tab === 'snippet') {
+                snippetContainer.classList.remove('hidden');
+                fullContainer.classList.add('hidden');
+                tabCurrent.className = 'flex-1 py-2 font-mono text-center border-b-2 border-godot-blue text-godot-blue font-semibold';
+                tabFull.className = 'flex-1 py-2 font-mono text-center border-b-2 border-transparent text-gray-400 hover:text-gray-200';
+            } else {
+                snippetContainer.classList.add('hidden');
+                fullContainer.classList.remove('hidden');
+                tabFull.className = 'flex-1 py-2 font-mono text-center border-b-2 border-godot-blue text-godot-blue font-semibold';
+                tabCurrent.className = 'flex-1 py-2 font-mono text-center border-b-2 border-transparent text-gray-400 hover:text-gray-200';
+            }
+        }
+
+        function copyGDScript() {
+            const codeToCopy = activeCodeTab === 'snippet' 
+                ? CAMERA_PRESETS[currentPresetIndex].gdscript 
+                : FULL_GDSCRIPT_CLASS;
+            
+            navigator.clipboard.writeText(codeToCopy).then(() => {
+                alert('GDScript 代码已成功复制到剪贴板！可直接粘贴至 Godot 4 项目中。');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fill full GDScript container
+            document.getElementById('fullClassGDScript').innerText = FULL_GDSCRIPT_CLASS;
+
+            // Slider Listeners
+            const durationSlider = document.getElementById('durationSlider');
+            durationSlider.oninput = (e) => {
+                animationDuration = parseFloat(e.target.value);
+                document.getElementById('durationVal').innerText = `${animationDuration.toFixed(1)}s`;
+            };
+
+            const shakeSlider = document.getElementById('shakeSlider');
+            shakeSlider.oninput = (e) => {
+                handheldNoiseAmount = parseFloat(e.target.value);
+                document.getElementById('shakeVal').innerText = handheldNoiseAmount.toFixed(2);
+            };
+
+            // Render Presets Sidebar
+            renderPresetButtons();
+
+            // Init 3D Engine Viewport
+            init3DViewport();
+
+            // Select Default Preset
+            selectPreset(0);
+        });
+    </script>
+</body>
+</html>

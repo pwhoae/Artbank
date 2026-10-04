@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 图片球体动效交互系统 - 3D Photo Sphere Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP for smooth interactive camera and element transitions -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- FontAwesome for UI icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #090d16;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
+
+        /* Glassmorphism panel styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .glass-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Canvas view container */
+        #webgl-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            cursor: grab;
+        }
+
+        #webgl-container:active {
+            cursor: grabbing;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative overflow-hidden bg-slate-950">
+
+    <div id="webgl-container"></div>
+
+    <header class="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
+        <div class="glass-panel px-5 py-3 rounded-2xl flex items-center space-x-3 pointer-events-auto shadow-2xl">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-globe text-white text-lg animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">3D 图片球体动效实验室</h1>
+                <p class="text-xs text-slate-400">Fibonacci 均匀球面排列 · 视角 Billboard 朝向 · 交互焦点聚焦</p>
+            </div>
+        </div>
+
+        <!-- Quick Toolbar -->
+        <div class="glass-panel p-1.5 rounded-2xl flex items-center space-x-2 pointer-events-auto">
+            <button id="btn-toggle-auto-rotate" title="切换自动旋转" class="glass-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:text-white">
+                <i class="fa-solid fa-rotate text-sm"></i>
+            </button>
+            <button id="btn-reset-view" title="重置视角" class="glass-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:text-white">
+                <i class="fa-solid fa-compress text-sm"></i>
+            </button>
+            <button id="btn-open-settings" title="调整参数" class="glass-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:text-white">
+                <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
+            <button id="btn-add-image" title="添加或替换图片" class="glass-btn w-10 h-10 rounded-xl flex items-center justify-center text-slate-200 hover:text-white">
+                <i class="fa-solid fa-plus text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="absolute top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+        <div class="glass-panel p-1.5 rounded-full flex items-center space-x-1 border border-white/10 shadow-xl">
+            <button class="category-btn px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 bg-indigo-600 text-white shadow-md shadow-indigo-500/20" data-cat="all">
+                <i class="fa-solid fa-layer-group mr-1.5"></i>全部精选
+            </button>
+            <button class="category-btn px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/10" data-cat="godot">
+                <i class="fa-solid fa-gamepad mr-1.5"></i>Godot & 游戏原型
+            </button>
+            <button class="category-btn px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/10" data-cat="vfx">
+                <i class="fa-solid fa-film mr-1.5"></i>特效与运镜
+            </button>
+            <button class="category-btn px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/10" data-cat="art">
+                <i class="fa-solid fa-palette mr-1.5"></i>视觉艺术
+            </button>
+        </div>
+    </div>
+
+    <div id="settings-panel" class="absolute top-20 right-4 z-30 w-80 glass-panel rounded-2xl p-5 shadow-2xl transition-all duration-300 transform translate-x-[120%] opacity-0 pointer-events-auto border border-white/10">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+            <h3 class="text-sm font-semibold text-white flex items-center">
+                <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i>球体参数调优
+            </h3>
+            <button id="btn-close-settings" class="text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+            <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                    <span>球体半径 (Sphere Radius)</span>
+                    <span id="val-radius" class="text-indigo-400 font-mono">12.0</span>
+                </div>
+                <input id="slider-radius" type="range" min="6" max="25" step="0.5" value="12" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-1.5">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                    <span>卡片尺寸 (Card Scale)</span>
+                    <span id="val-scale" class="text-indigo-400 font-mono">1.0</span>
+                </div>
+                <input id="slider-scale" type="range" min="0.5" max="2.0" step="0.1" value="1.0" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-1.5">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-slate-300 mb-1">
+                    <span>自转速度 (Rotation Speed)</span>
+                    <span id="val-speed" class="text-indigo-400 font-mono">0.002</span>
+                </div>
+                <input id="slider-speed" type="range" min="0" max="0.01" step="0.0005" value="0.002" class="w-full accent-indigo-500 bg-slate-800 rounded-lg h-1.5">
+            </div>
+
+            <div class="pt-2 border-t border-white/10 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300">始终面向屏幕 (Billboard)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input id="toggle-billboard" type="checkbox" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300">横竖卡片混排 (Mixed Aspect)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input id="toggle-mix-aspect" type="checkbox" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300">环境星空粒子 (Atmosphere)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input id="toggle-particles" type="checkbox" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-drawer" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-11/12 max-w-2xl glass-panel rounded-2xl p-5 shadow-2xl transition-all duration-500 transform translate-y-32 opacity-0 pointer-events-none border border-white/15">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div id="drawer-thumb-wrap" class="w-16 h-16 rounded-xl overflow-hidden bg-slate-800 border border-white/20 shrink-0 shadow-md">
+                    <img id="drawer-img" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span id="drawer-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/30 text-indigo-300 border border-indigo-500/30">Godot 3D</span>
+                        <span id="drawer-aspect" class="text-[10px] text-slate-400 font-mono">16:9 横版</span>
+                    </div>
+                    <h2 id="drawer-title" class="text-base font-bold text-white mt-1">项目标题名称</h2>
+                    <p id="drawer-desc" class="text-xs text-slate-300 mt-0.5 line-clamp-1">项目详细描述信息，包含动效设计思路与技术实现。</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 shrink-0">
+                <button id="btn-focus-card" class="glass-btn px-3 py-2 rounded-xl text-xs font-medium text-white flex items-center space-x-1 bg-indigo-600/80 hover:bg-indigo-600">
+                    <i class="fa-solid fa-crosshairs"></i>
+                    <span>聚焦正前</span>
+                </button>
+                <button id="btn-view-fullscreen" class="glass-btn p-2 rounded-xl text-xs font-medium text-slate-200 hover:text-white">
+                    <i class="fa-solid fa-expand text-sm"></i>
+                </button>
+                <button id="btn-close-drawer" class="glass-btn p-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <button id="btn-close-lightbox" class="absolute top-6 right-6 w-12 h-12 rounded-full glass-btn flex items-center justify-center text-white text-lg z-10">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="max-w-4xl max-h-[85vh] p-4 flex flex-col items-center">
+            <img id="lightbox-img" src="" alt="Full view" class="max-w-full max-h-[70vh] rounded-2xl shadow-2xl object-contain border border-white/10">
+            <div class="mt-4 text-center">
+                <h3 id="lightbox-title" class="text-xl font-bold text-white">图片标题</h3>
+                <p id="lightbox-desc" class="text-sm text-slate-400 mt-1 max-w-lg">详细图片描述内容。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="absolute bottom-4 left-6 z-20 pointer-events-none hidden md:block">
+        <p class="text-[11px] text-slate-400/80 flex items-center space-x-2">
+            <i class="fa-regular fa-lightbulb text-amber-400"></i>
+            <span>提示：拖拽旋转球体 · 鼠标悬停感知深度 · 点击任意卡片触发自动平滑置前交换</span>
+        </p>
+    </div>
+
+    <!-- Hidden file input for custom uploads -->
+    <input type="file" id="file-input" accept="image/*" multiple class="hidden">
+
+    <script>
+        const PROJECT_GALLERY = [
+            {
+                id: 1,
+                title: "Godot 白盒原型测试",
+                category: "godot",
+                aspectRatio: "landscape",
+                aspectVal: 1.6,
+                badge: "Godot 3D",
+                desc: "使用 3D 灰盒快速搭建游戏关卡与物理碰撞测试原型",
+                url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 2,
+                title: "文字形状轨迹移动动效",
+                category: "vfx",
+                aspectRatio: "portrait",
+                aspectVal: 0.75,
+                badge: "Typography",
+                desc: "字形路径跟随与动态排版轨迹变换计算",
+                url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 3,
+                title: "文字拉扯与弹性变形",
+                category: "vfx",
+                aspectRatio: "landscape",
+                aspectVal: 1.5,
+                badge: "VFX Effect",
+                desc: "基于质点弹簧模型的矢量字体物理拉扯动画",
+                url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 4,
+                title: "排行榜与数据趋势可视化",
+                category: "art",
+                aspectRatio: "portrait",
+                aspectVal: 0.8,
+                badge: "UI/UX",
+                desc: "三维动态数据流与竞技排行榜流向展示",
+                url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 5,
+                title: "摄影机控制器与电影镜头",
+                category: "godot",
+                aspectRatio: "landscape",
+                aspectVal: 1.77,
+                badge: "Camera Control",
+                desc: "Godot 4 运镜平滑过渡与电影级 Focal Distance 控制器",
+                url: "https://images.unsplash.com/photo-1536240478700-b869070f9279?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 6,
+                title: "Godot 3D 射击特效与交互",
+                category: "godot",
+                aspectRatio: "landscape",
+                aspectVal: 1.6,
+                badge: "3D Shooter",
+                desc: "全套枪口火焰、弹道粒子与三维射线碰撞反馈",
+                url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 7,
+                title: "Godot 4 电影感运镜终极指南",
+                category: "vfx",
+                aspectRatio: "portrait",
+                aspectVal: 0.75,
+                badge: "Cinematic",
+                desc: "景深 (DOF)、色彩校正与镜头震动实战系统",
+                url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 8,
+                title: "赛博朋克光影粒子构图",
+                category: "art",
+                aspectRatio: "landscape",
+                aspectVal: 1.6,
+                badge: "Cyber Art",
+                desc: "高对比度霓虹色彩与空间深度拟真渲染",
+                url: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 9,
+                title: "无限绽放的几何力学花朵",
+                category: "vfx",
+                aspectRatio: "portrait",
+                aspectVal: 0.8,
+                badge: "Procedural",
+                desc: "使用代码生成的参数化分形几何动画",
+                url: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 10,
+                title: "时间与空间的动态艺术",
+                category: "art",
+                aspectRatio: "landscape",
+                aspectVal: 1.6,
+                badge: "Time-Art",
+                desc: "时间轴四维展开与光影折射视觉体验",
+                url: "https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 11,
+                title: "极简抽象空间架构",
+                category: "art",
+                aspectRatio: "portrait",
+                aspectVal: 0.75,
+                badge: "Architecture",
+                desc: "光影透视与三维空间构造学",
+                url: "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 12,
+                title: "环太平洋 CG 模拟演练",
+                category: "vfx",
+                aspectRatio: "landscape",
+                aspectVal: 1.77,
+                badge: "CG Rigging",
+                desc: "硬表面机甲建模与流体粒子碰撞渲染",
+                url: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 13,
+                title: "虚幻引擎 5 实时光栅化",
+                category: "godot",
+                aspectRatio: "portrait",
+                aspectVal: 0.75,
+                badge: "Unreal/Godot",
+                desc: "次世代材质节点与实时环境光遮蔽",
+                url: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 14,
+                title: "黑洞引力透视模拟",
+                category: "vfx",
+                aspectRatio: "landscape",
+                aspectVal: 1.6,
+                badge: "Physics Simulation",
+                desc: "广义相对论时空弯曲 GLSL Shader 实现",
+                url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 15,
+                title: "流体动力学交互算法",
+                category: "art",
+                aspectRatio: "portrait",
+                aspectVal: 0.8,
+                badge: "Fluid Math",
+                desc: "Navier-Stokes 流体计算与 GPU 纹理反馈",
+                url: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=800&auto=format&fit=crop"
+            },
+            {
+                id: 16,
+                title: "三维粒子音效联动",
+                category: "vfx",
+                aspectRatio: "landscape",
+                aspectVal: 1.5,
+                badge: "Audio Reactive",
+                desc: "音频频谱采样与 3D 粒子振幅响应系统",
+                url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop"
+            }
+        ];
+
+        let scene, camera, renderer;
+        let sphereGroup;
+        let photoMeshes = [];
+        let starParticles;
+        
+        // Settings State
+        const config = {
+            radius: 12.0,
+            cardScale: 1.0,
+            autoRotateSpeed: 0.002,
+            isAutoRotating: true,
+            billboard: true,
+            mixAspect: true,
+            particles: true,
+            activeCategory: 'all'
+        };
+
+        // Interaction State
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let rotationVelocity = { x: 0, y: 0.002 };
+        let hoveredMesh = null;
+        let selectedMesh = null;
+        
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function initThree() {
+            const container = document.getElementById('webgl-container');
+            
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x090d16, 0.025);
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 32);
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 15);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x6366f1, 2, 50);
+            pointLight.position.set(0, 0, 0);
+            scene.add(pointLight);
+
+            // Main Sphere Group
+            sphereGroup = new THREE.Group();
+            scene.add(sphereGroup);
+
+            // Create Star/Particle atmosphere
+            createParticles();
+
+            // Populate Photo Sphere
+            buildPhotoSphere();
+
+            // Setup Event Listeners
+            setupEventListeners();
+
+            // Resize handling
+            window.addEventListener('resize', onWindowResize);
+
+            // Start Animation Loop
+            animate();
+        }
+
+        function createParticles() {
+            const particleCount = 600;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 80;
+                positions[i + 1] = (Math.random() - 0.5) * 80;
+                positions[i + 2] = (Math.random() - 0.5) * 80;
+
+                colors[i] = 0.5 + Math.random() * 0.5;
+                colors[i + 1] = 0.6 + Math.random() * 0.4;
+                colors[i + 2] = 1.0;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.35,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            starParticles = new THREE.Points(geometry, material);
+            scene.add(starParticles);
+        }
+
+        function buildPhotoSphere() {
+            // Clear existing photo meshes
+            while (sphereGroup.children.length > 0) {
+                const child = sphereGroup.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (child.material.map) child.material.map.dispose();
+                    child.material.dispose();
+                }
+                sphereGroup.remove(child);
+            }
+            photoMeshes = [];
+
+            // Filter items based on active category
+            const filteredData = config.activeCategory === 'all' 
+                ? PROJECT_GALLERY 
+                : PROJECT_GALLERY.filter(item => item.category === config.activeCategory);
+
+            const total = filteredData.length;
+            const phi = Math.PI * (3 - Math.sqrt(5)); // Golden ratio angle in radians
+
+            filteredData.forEach((item, index) => {
+                // Fibonacci sphere calculation
+                const y = 1 - (index / (total - 1 || 1)) * 2; // y goes from 1 to -1
+                const radiusAtY = Math.sqrt(1 - y * y); // Radius at y
+                const theta = phi * index; // Golden angle increment
+
+                const x = Math.cos(theta) * radiusAtY;
+                const z = Math.sin(theta) * radiusAtY;
+
+                // Position on sphere with radius
+                const position = new THREE.Vector3(x, y, z).multiplyScalar(config.radius);
+
+                // Aspect ratio calculation
+                let width = 2.4 * config.cardScale;
+                let height = 1.6 * config.cardScale;
+
+                if (config.mixAspect && item.aspectRatio === 'portrait') {
+                    width = 1.6 * config.cardScale;
+                    height = 2.4 * config.cardScale;
+                }
+
+                // Create Plane Geometry
+                const geometry = new THREE.PlaneGeometry(width, height, 1, 1);
+
+                // Create texture from canvas or image URL
+                const textureLoader = new THREE.TextureLoader();
+                const texture = textureLoader.load(item.url, (loadedTex) => {
+                    loadedTex.minFilter = THREE.LinearFilter;
+                    loadedTex.generateMipmaps = true;
+                });
+
+                // Create Material with rounded border effect simulation
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    side: THREE.DoubleSide,
+                    roughness: 0.2,
+                    metalness: 0.1,
+                    transparent: true,
+                    opacity: 0.95
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(position);
+
+                // Initial orientation: point normal away from origin (spherical normal)
+                mesh.lookAt(position.clone().multiplyScalar(2));
+
+                // Save custom data
+                mesh.userData = {
+                    data: item,
+                    originalPosition: position.clone(),
+                    normal: position.clone().normalize(),
+                    aspectWidth: width,
+                    aspectHeight: height,
+                    baseScale: 1.0
+                };
+
+                sphereGroup.add(mesh);
+                photoMeshes.push(mesh);
+            });
+        }
+
+        function setupEventListeners() {
+            const container = document.getElementById('webgl-container');
+
+            // Drag to rotate sphere logic
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                // Raycasting hover check
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+
+                    rotationVelocity.x = deltaY * 0.00015;
+                    rotationVelocity.y = deltaX * 0.00015;
+
+                    sphereGroup.rotation.y += deltaX * 0.005;
+                    sphereGroup.rotation.x += deltaY * 0.005;
+
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                } else {
+                    checkRaycastHover();
+                }
+            });
+
+            // Touch events support for mobile devices
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (isDragging && e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                    const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                    sphereGroup.rotation.y += deltaX * 0.005;
+                    sphereGroup.rotation.x += deltaY * 0.005;
+
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+
+            // Click interaction to select and zoom to card
+            container.addEventListener('click', (e) => {
+                if (Math.abs(e.clientX - previousMousePosition.x) > 5) return; // Ignore drag clicks
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(photoMeshes);
+
+                if (intersects.length > 0) {
+                    const targetMesh = intersects[0].object;
+                    selectCard(targetMesh);
+                } else {
+                    deselectCard();
+                }
+            });
+
+            // Controls UI Binding
+            document.getElementById('btn-toggle-auto-rotate').addEventListener('click', () => {
+                config.isAutoRotating = !config.isAutoRotating;
+                const btn = document.getElementById('btn-toggle-auto-rotate');
+                btn.classList.toggle('text-indigo-400', config.isAutoRotating);
+            });
+
+            document.getElementById('btn-reset-view').addEventListener('click', () => {
+                gsap.to(sphereGroup.rotation, { x: 0, y: 0, z: 0, duration: 1.2, ease: "power2.out" });
+                gsap.to(camera.position, { x: 0, y: 0, z: 32, duration: 1.2, ease: "power2.out" });
+                deselectCard();
+            });
+
+            // Settings panel toggle
+            const settingsPanel = document.getElementById('settings-panel');
+            document.getElementById('btn-open-settings').addEventListener('click', () => {
+                settingsPanel.classList.toggle('translate-x-[120%]');
+                settingsPanel.classList.toggle('opacity-0');
+            });
+            document.getElementById('btn-close-settings').addEventListener('click', () => {
+                settingsPanel.classList.add('translate-x-[120%]', 'opacity-0');
+            });
+
+            // Sliders binding
+            document.getElementById('slider-radius').addEventListener('input', (e) => {
+                config.radius = parseFloat(e.target.value);
+                document.getElementById('val-radius').textContent = config.radius.toFixed(1);
+                buildPhotoSphere();
+            });
+
+            document.getElementById('slider-scale').addEventListener('input', (e) => {
+                config.cardScale = parseFloat(e.target.value);
+                document.getElementById('val-scale').textContent = config.cardScale.toFixed(1);
+                buildPhotoSphere();
+            });
+
+            document.getElementById('slider-speed').addEventListener('input', (e) => {
+                config.autoRotateSpeed = parseFloat(e.target.value);
+                document.getElementById('val-speed').textContent = config.autoRotateSpeed.toFixed(4);
+            });
+
+            // Checkbox toggles
+            document.getElementById('toggle-billboard').addEventListener('change', (e) => {
+                config.billboard = e.target.checked;
+            });
+
+            document.getElementById('toggle-mix-aspect').addEventListener('change', (e) => {
+                config.mixAspect = e.target.checked;
+                buildPhotoSphere();
+            });
+
+            document.getElementById('toggle-particles').addEventListener('change', (e) => {
+                config.particles = e.target.checked;
+                starParticles.visible = config.particles;
+            });
+
+            // Category buttons
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.category-btn').forEach(b => {
+                        b.className = "category-btn px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/10";
+                    });
+                    const target = e.currentTarget;
+                    target.className = "category-btn px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 bg-indigo-600 text-white shadow-md shadow-indigo-500/20";
+
+                    config.activeCategory = target.getAttribute('data-cat');
+                    buildPhotoSphere();
+                });
+            });
+
+            // Drawer controls
+            document.getElementById('btn-close-drawer').addEventListener('click', deselectCard);
+
+            document.getElementById('btn-focus-card').addEventListener('click', () => {
+                if (selectedMesh) {
+                    rotateMeshToFront(selectedMesh);
+                }
+            });
+
+            document.getElementById('btn-view-fullscreen').addEventListener('click', () => {
+                if (selectedMesh) {
+                    openLightbox(selectedMesh.userData.data);
+                }
+            });
+
+            document.getElementById('btn-close-lightbox').addEventListener('click', closeLightbox);
+
+            // Add custom image
+            document.getElementById('btn-add-image').addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+
+            document.getElementById('file-input').addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                    Array.from(files).forEach((file, idx) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            PROJECT_GALLERY.unshift({
+                                id: Date.now() + idx,
+                                title: file.name.split('.')[0] || "自定义用户上传图片",
+                                category: "art",
+                                aspectRatio: "landscape",
+                                aspectVal: 1.5,
+                                badge: "Custom Upload",
+                                desc: "用户本地上传的示例 3D 动态交互球体图片",
+                                url: event.target.result
+                            });
+                            buildPhotoSphere();
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            });
+        }
+
+        function checkRaycastHover() {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(photoMeshes);
+
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                if (hoveredMesh !== mesh && mesh !== selectedMesh) {
+                    if (hoveredMesh && hoveredMesh !== selectedMesh) {
+                        gsap.to(hoveredMesh.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.3 });
+                        hoveredMesh.material.emissive.setHex(0x000000);
+                    }
+                    hoveredMesh = mesh;
+                    gsap.to(hoveredMesh.scale, { x: 1.18, y: 1.18, z: 1.18, duration: 0.3 });
+                    hoveredMesh.material.emissive.setHex(0x312e81);
+                }
+                document.body.style.cursor = 'pointer';
+            } else {
+                if (hoveredMesh && hoveredMesh !== selectedMesh) {
+                    gsap.to(hoveredMesh.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.3 });
+                    hoveredMesh.material.emissive.setHex(0x000000);
+                    hoveredMesh = null;
+                }
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        function selectCard(mesh) {
+            if (selectedMesh && selectedMesh !== mesh) {
+                gsap.to(selectedMesh.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.4 });
+                selectedMesh.material.emissive.setHex(0x000000);
+            }
+
+            selectedMesh = mesh;
+            gsap.to(selectedMesh.scale, { x: 1.35, y: 1.35, z: 1.35, duration: 0.5, ease: "back.out(1.7)" });
+            selectedMesh.material.emissive.setHex(0x4338ca);
+
+            // Update Drawer content
+            const data = mesh.userData.data;
+            document.getElementById('drawer-img').src = data.url;
+            document.getElementById('drawer-title').textContent = data.title;
+            document.getElementById('drawer-desc').textContent = data.desc;
+            document.getElementById('drawer-badge').textContent = data.badge;
+            document.getElementById('drawer-aspect').textContent = data.aspectRatio === 'landscape' ? '16:9 横版' : '3:4 竖版';
+
+            // Show drawer
+            const drawer = document.getElementById('detail-drawer');
+            drawer.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
+
+            // Rotate card smoothly to front position
+            rotateMeshToFront(mesh);
+        }
+
+        function rotateMeshToFront(mesh) {
+            // Get current world position of the mesh
+            const worldPos = new THREE.Vector3();
+            mesh.getWorldPosition(worldPos);
+
+            // Calculate rotation required to bring worldPos to (0, 0, radius)
+            const targetVec = mesh.position.clone().normalize();
+            
+            // Calculate target Euler angles for sphereGroup
+            const targetY = -Math.atan2(targetVec.x, targetVec.z);
+            const targetX = Math.atan2(targetVec.y, Math.sqrt(targetVec.x * targetVec.x + targetVec.z * targetVec.z));
+
+            gsap.to(sphereGroup.rotation, {
+                x: targetX,
+                y: targetY,
+                z: 0,
+                duration: 1.2,
+                ease: "power3.inOut"
+            });
+        }
+
+        function deselectCard() {
+            if (selectedMesh) {
+                gsap.to(selectedMesh.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.4 });
+                selectedMesh.material.emissive.setHex(0x000000);
+                selectedMesh = null;
+            }
+            const drawer = document.getElementById('detail-drawer');
+            drawer.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
+        }
+
+        function openLightbox(data) {
+            const modal = document.getElementById('lightbox-modal');
+            document.getElementById('lightbox-img').src = data.url;
+            document.getElementById('lightbox-title').textContent = data.title;
+            document.getElementById('lightbox-desc').textContent = data.desc;
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('lightbox-modal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Auto rotation with inertia decay when idle
+            if (config.isAutoRotating && !isDragging) {
+                sphereGroup.rotation.y += config.autoRotateSpeed;
+                sphereGroup.rotation.x += config.autoRotateSpeed * 0.2;
+            } else if (!isDragging) {
+                // Apply slight momentum decay
+                sphereGroup.rotation.y += rotationVelocity.y;
+                sphereGroup.rotation.x += rotationVelocity.x;
+                rotationVelocity.x *= 0.95;
+                rotationVelocity.y *= 0.95;
+            }
+
+            // Atmosphere particles rotation
+            if (starParticles && config.particles) {
+                starParticles.rotation.y += 0.0003;
+                starParticles.rotation.x += 0.0001;
+            }
+
+            // Billboard effect: Keep all card planes facing directly towards camera screen
+            if (config.billboard) {
+                photoMeshes.forEach(mesh => {
+                    mesh.lookAt(camera.position);
+                });
+            } else {
+                // Tangential sphere normal orientation
+                photoMeshes.forEach(mesh => {
+                    const worldPos = new THREE.Vector3();
+                    mesh.getWorldPosition(worldPos);
+                    const lookTarget = worldPos.clone().add(mesh.userData.normal);
+                    mesh.lookAt(lookTarget);
+                });
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function () {
+            initThree();
+        };
+    </script>
+</body>
+</html>

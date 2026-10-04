@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 2D 描邊 Shader & 鼠標懸停位移 Demo</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#1e222b',
+                            card: '#262c36',
+                            accent: '#41b883',
+                            hover: '#5ca3d6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e222b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b4252;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+    </style>
+</head>
+<body class="bg-godot-dark text-slate-200 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-godot-card border-b border-slate-700 px-6 py-4 shadow-lg flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-godot-blue flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-shapes text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-wide">Godot 2D 描邊 Shader & 懸停位移</h1>
+                <p class="text-xs text-slate-400">Interactive Godot 4.x CanvasItem Shader Demo</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>适配 Godot Engine 4.x / 3.x</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Interactive Simulation & Controls (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            <!-- Canvas Preview Card -->
+            <div class="bg-godot-card border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
+                <div class="bg-slate-800/80 px-4 py-3 border-b border-slate-700/60 flex justify-between items-center">
+                    <span class="text-sm font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-godot-blue"></i> 实时效果预览 (Hover Interactive)
+                    </span>
+                    <span class="text-xs bg-godot-blue/20 text-godot-blue px-2 py-0.5 rounded border border-godot-blue/30">
+                        将鼠标移入下方精灵
+                    </span>
+                </div>
+                
+                <div class="relative bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 h-72 flex items-center justify-center p-4 overflow-hidden select-none cursor-pointer group" id="canvas-container">
+                    <!-- Background Grid Pattern -->
+                    <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#478cbf_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                    
+                    <!-- HTML Canvas element simulating shader -->
+                    <canvas id="shaderCanvas" class="relative z-10 transition-transform duration-75"></canvas>
+
+                    <!-- Overlay Hint -->
+                    <div id="hoverHint" class="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-700/50 backdrop-blur pointer-events-none transition-opacity duration-300">
+                        <i class="fa-solid fa-hand-pointer mr-1 text-godot-blue"></i> 移动鼠标进入精灵区域
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="p-4 space-y-4 bg-godot-card">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700 pb-2 flex items-center justify-between">
+                        <span><i class="fa-solid fa-sliders text-godot-blue mr-1"></i> Shader & 动画参数调节</span>
+                        <button id="resetBtn" class="text-xs text-slate-400 hover:text-white transition-colors">重置默认</button>
+                    </h3>
+
+                    <!-- Color Picker & Thickness -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-slate-300 block mb-1">描边颜色 (Color)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="outlineColor" value="#00e5ff" class="w-8 h-8 rounded bg-slate-800 border border-slate-600 cursor-pointer p-0.5">
+                                <span id="colorHex" class="text-xs font-mono text-slate-400">#00E5FF</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-300 block mb-1">描边宽度: <span id="thicknessVal" class="text-godot-blue font-mono">3.0</span>px</label>
+                            <input type="range" id="outlineThickness" min="0" max="10" step="0.5" value="3.0" class="w-full accent-godot-blue cursor-pointer bg-slate-700 h-1.5 rounded-lg">
+                        </div>
+                    </div>
+
+                    <!-- Movement Effect Options -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-slate-300 block mb-1">悬停位移模式</label>
+                            <select id="moveType" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 focus:outline-none focus:border-godot-blue">
+                                <option value="float">向上浮动 (Float Up)</option>
+                                <option value="bounce">弹性跳跃 (Bounce)</option>
+                                <option value="shake">微幅抖动 (Shake)</option>
+                                <option value="scale">微幅放大 (Scale Up)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-300 block mb-1">描边显示触发</label>
+                            <select id="triggerMode" class="w-full text-xs bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 focus:outline-none focus:border-godot-blue">
+                                <option value="hover">仅在鼠标悬停时 (Hover Only)</option>
+                                <option value="always">常亮 (Always On)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Additional Toggles -->
+                    <div class="flex items-center justify-between pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                            <input type="checkbox" id="pulseGlow" checked class="rounded border-slate-700 text-godot-blue focus:ring-0 accent-godot-blue">
+                            <span>开启描边呼吸灯效果 (Glow Pulse)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                            <input type="checkbox" id="rainbowMode" class="rounded border-slate-700 text-godot-blue focus:ring-0 accent-godot-blue">
+                            <span>彩虹渐变 (Rainbow Color)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Godot Shader & GDScript Code Export (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            <div class="bg-godot-card border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col flex-1">
+                <!-- Tab Navigation Header -->
+                <div class="bg-slate-800/90 border-b border-slate-700 px-4 flex justify-between items-center">
+                    <div class="flex gap-1 pt-2">
+                        <button id="tabShaderBtn" onclick="switchTab('shader')" class="px-4 py-2.5 text-xs font-semibold rounded-t-lg bg-godot-card text-godot-blue border-t-2 border-godot-blue flex items-center gap-2">
+                            <i class="fa-solid fa-code"></i> 2D 描边 Shader (`.gdshader`)
+                        </button>
+                        <button id="tabScriptBtn" onclick="switchTab('script')" class="px-4 py-2.5 text-xs font-semibold rounded-t-lg bg-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-scroll"></i> 节点控制代码 (`.gd`)
+                        </button>
+                        <button id="tabGuideBtn" onclick="switchTab('guide')" class="px-4 py-2.5 text-xs font-semibold rounded-t-lg bg-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-book-open"></i> 配置教程与防裁剪
+                        </button>
+                    </div>
+                    <button id="copyBtn" onclick="copyActiveCode()" class="text-xs bg-slate-700 hover:bg-godot-blue text-white px-3 py-1.5 rounded transition-all flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i> 复制代码
+                    </button>
+                </div>
+
+                <!-- Code Container -->
+                <div class="p-4 flex-1 flex flex-col bg-slate-950 font-mono text-xs overflow-auto relative">
+                    
+                    <!-- Shader Tab Content -->
+                    <div id="tabShader" class="space-y-2">
+                        <div class="text-slate-500 text-[11px] mb-2">// 高性能 Godot 4 2D CanvasItem 描边 Shader (8方向采样)</div>
+                        <pre class="text-emerald-400 leading-relaxed whitespace-pre-wrap"><code id="codeShader"></code></pre>
+                    </div>
+
+                    <!-- GDScript Tab Content -->
+                    <div id="tabScript" class="hidden space-y-2">
+                        <div class="text-slate-500 text-[11px] mb-2"># 挂载到 Sprite2D 或 TextureRect 上的 GDScript 控制脚本 (平滑Tween过度)</div>
+                        <pre class="text-sky-300 leading-relaxed whitespace-pre-wrap"><code id="codeScript"></code></pre>
+                    </div>
+
+                    <!-- Guide Tab Content -->
+                    <div id="tabGuide" class="hidden space-y-4 text-slate-300 font-sans leading-relaxed text-sm">
+                        <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg text-amber-200 text-xs flex gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base mt-0.5"></i>
+                            <div>
+                                <strong class="font-semibold block text-amber-300 mb-0.5">关键提醒：解决 Sprite 描边边缘被裁剪 (Clipping) 边缘丢失问题</strong>
+                                在 2D Shader 中，描边如果超出纹理的原始尺寸，外侧描边会被切平。Godot 中常见解决方案：
+                            </div>
+                        </div>
+
+                        <ol class="list-decimal list-inside space-y-3 text-xs text-slate-300">
+                            <li class="pl-2">
+                                <strong class="text-white">增加纹理外边距 (Padding/Margin)：</strong>
+                                在导出 PNG 图像资源时，在图片四周预留 <span class="text-godot-blue font-mono">10px~20px</span> 的透明像素空间。
+                            </li>
+                            <li class="pl-2">
+                                <strong class="text-white">使用 TextureRect / NinePatchRect：</strong>
+                                若使用 <code class="text-sky-300">TextureRect</code> 节点，将 <code class="text-slate-200">Expand Mode</code> 设为 Ignore Size 或 Keep Aspect，稍微调大 Rect 尺寸即可。
+                            </li>
+                            <li class="pl-2">
+                                <strong class="text-white">节点信号绑订说明：</strong>
+                                如果节点是 <code class="text-sky-300">Area2D</code>，连接 <code class="text-emerald-400">mouse_entered</code> 和 <code class="text-emerald-400">mouse_exited</code> 信号到脚本；如果节点继承自 <code class="text-sky-300">Control</code>，原生自带悬停信号。
+                            </li>
+                        </ol>
+
+                        <div class="border-t border-slate-800 pt-3">
+                            <h4 class="text-xs font-bold text-white mb-2">节点结构建议 (Node Hierarchy)：</h4>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800 font-mono text-xs text-slate-400">
+                                <div>📁 Character / ItemNode (Node2D or Area2D)</div>
+                                <div class="pl-4">└── 🖼️ Sprite2D (挂载本 Shader Material & GDScript)</div>
+                                <div class="pl-8">└── 🔲 CollisionShape2D (若使用 Area2D 检测鼠标)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-godot-card border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+        Godot Shader Generator Tool &bull; Powered by Canvas WebGL Emulation &bull; Ready for Godot 4.0+
+    </footer>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('shaderCanvas');
+        const ctx = canvas.getContext('2d');
+        const outlineColorInput = document.getElementById('outlineColor');
+        const colorHexText = document.getElementById('colorHex');
+        const thicknessInput = document.getElementById('outlineThickness');
+        const thicknessValText = document.getElementById('thicknessVal');
+        const moveTypeSelect = document.getElementById('moveType');
+        const triggerModeSelect = document.getElementById('triggerMode');
+        const pulseGlowCheckbox = document.getElementById('pulseGlow');
+        const rainbowCheckbox = document.getElementById('rainbowMode');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // State variables for interactive simulation
+        let isHovered = false;
+        let animationFrameId;
+        let time = 0;
+
+        // Sprite offset physics interpolation
+        let currentOffsetY = 0;
+        let targetOffsetY = 0;
+        let currentScale = 1.0;
+        let targetScale = 1.0;
+        let currentRotation = 0;
+        let targetRotation = 0;
+
+        // Custom Godot Icon Vector Drawing on Offscreen Canvas for crisp outline
+        const offCanvas = document.createElement('canvas');
+        const offCtx = offCanvas.getContext('2d');
+        const SPRITE_SIZE = 140;
+        offCanvas.width = SPRITE_SIZE;
+        offCanvas.height = SPRITE_SIZE;
+
+        // Canvas Setup
+        canvas.width = 300;
+        canvas.height = 240;
+
+        // Draw Godot-style Robot Icon onto Offscreen Canvas
+        function drawSpriteAsset() {
+            offCtx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+            const cx = SPRITE_SIZE / 2;
+            const cy = SPRITE_SIZE / 2;
+
+            offCtx.save();
+            
+            // Robot Head Base
+            offCtx.fillStyle = '#478cbf';
+            offCtx.beginPath();
+            offCtx.roundRect(cx - 45, cy - 35, 90, 70, 16);
+            offCtx.fill();
+
+            // Ears/Antennas
+            offCtx.fillStyle = '#478cbf';
+            // Left ear
+            offCtx.beginPath();
+            offCtx.roundRect(cx - 55, cy - 15, 15, 30, 4);
+            offCtx.fill();
+            // Right ear
+            offCtx.beginPath();
+            offCtx.roundRect(cx + 40, cy - 15, 15, 30, 4);
+            offCtx.fill();
+
+            // Top Antenna
+            offCtx.fillRect(cx - 5, cy - 50, 10, 18);
+            offCtx.beginPath();
+            offCtx.arc(cx, cy - 52, 7, 0, Math.PI * 2);
+            offCtx.fillStyle = '#41b883';
+            offCtx.fill();
+
+            // Eyes Group
+            offCtx.fillStyle = '#ffffff';
+            // Left Eye
+            offCtx.beginPath();
+            offCtx.arc(cx - 20, cy - 5, 12, 0, Math.PI * 2);
+            offCtx.fill();
+            // Right Eye
+            offCtx.beginPath();
+            offCtx.arc(cx + 20, cy - 5, 12, 0, Math.PI * 2);
+            offCtx.fill();
+
+            // Pupils
+            offCtx.fillStyle = '#1e222b';
+            offCtx.beginPath();
+            offCtx.arc(cx - 18, cy - 5, 6, 0, Math.PI * 2);
+            offCtx.arc(cx + 22, cy - 5, 6, 0, Math.PI * 2);
+            offCtx.fill();
+
+            // Mouth / Teeth
+            offCtx.fillStyle = '#1e222b';
+            offCtx.beginPath();
+            offCtx.roundRect(cx - 22, cy + 16, 44, 10, 4);
+            offCtx.fill();
+
+            // Teeth grid
+            offCtx.fillStyle = '#ffffff';
+            offCtx.fillRect(cx - 14, cy + 18, 6, 6);
+            offCtx.fillRect(cx - 3, cy + 18, 6, 6);
+            offCtx.fillRect(cx + 8, cy + 18, 6, 6);
+
+            offCtx.restore();
+        }
+
+        drawSpriteAsset();
+
+        // Mouse Interactivity Check inside Sprite bounding box
+        const canvasContainer = document.getElementById('canvas-container');
+
+        canvasContainer.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Simple hit test inside sprite region
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2 + currentOffsetY;
+            const dist = Math.hypot(x - centerX, y - centerY);
+
+            if (dist < 60) {
+                if (!isHovered) {
+                    isHovered = true;
+                    onMouseEnter();
+                }
+            } else {
+                if (isHovered) {
+                    isHovered = false;
+                    onMouseLeave();
+                }
+            }
+        });
+
+        canvasContainer.addEventListener('mouseleave', () => {
+            if (isHovered) {
+                isHovered = false;
+                onMouseLeave();
+            }
+        });
+
+        function onMouseEnter() {
+            const moveType = moveTypeSelect.value;
+            if (moveType === 'float') {
+                targetOffsetY = -16;
+                targetScale = 1.05;
+            } else if (moveType === 'bounce') {
+                targetOffsetY = -22;
+                targetScale = 1.1;
+            } else if (moveType === 'shake') {
+                targetOffsetY = -4;
+            } else if (moveType === 'scale') {
+                targetScale = 1.15;
+            }
+        }
+
+        function onMouseLeave() {
+            targetOffsetY = 0;
+            targetScale = 1.0;
+            targetRotation = 0;
+        }
+
+        // Main Render Animation Loop (Simulating Godot CanvasItem Shader)
+        function render() {
+            time += 0.04;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Smooth Interpolation (Lerp for positions)
+            currentOffsetY += (targetOffsetY - currentOffsetY) * 0.15;
+            currentScale += (targetScale - currentScale) * 0.15;
+
+            if (isHovered && moveTypeSelect.value === 'shake') {
+                currentRotation = Math.sin(time * 25) * 0.08;
+            } else {
+                currentRotation += (targetRotation - currentRotation) * 0.15;
+            }
+
+            const drawX = canvas.width / 2;
+            const drawY = canvas.height / 2 + currentOffsetY;
+
+            // Determine Outline Parameters
+            const thickness = parseFloat(thicknessInput.value);
+            const triggerMode = triggerModeSelect.value;
+            const showOutline = (triggerMode === 'always') || (triggerMode === 'hover' && isHovered);
+
+            // Compute Outline Color & Alpha Pulsing
+            let activeColor = outlineColorInput.value;
+            if (rainbowCheckbox.checked) {
+                const hue = (time * 60) % 360;
+                activeColor = `hsl(${hue}, 100%, 60%)`;
+            }
+
+            let alphaMult = 1.0;
+            if (pulseGlowCheckbox.checked && showOutline) {
+                alphaMult = 0.65 + Math.sin(time * 6) * 0.35;
+            }
+
+            // Draw Outline Shader Effect if active
+            if (showOutline && thickness > 0) {
+                ctx.save();
+                ctx.translate(drawX, drawY);
+                ctx.rotate(currentRotation);
+                ctx.scale(currentScale, currentScale);
+
+                // Multi-directional stroke sampling technique (8-Direction Pixel Offset Simulation)
+                const samples = 12;
+                ctx.globalAlpha = alphaMult;
+
+                // Create silhouette mask for solid colored outline
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = SPRITE_SIZE;
+                tempCanvas.height = SPRITE_SIZE;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                tempCtx.drawImage(offCanvas, 0, 0);
+                tempCtx.globalCompositeOperation = 'source-in';
+                tempCtx.fillStyle = activeColor;
+                tempCtx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+
+                // Draw outline around sprite with thickness radius
+                for (let i = 0; i < samples; i++) {
+                    const angle = (i / samples) * Math.PI * 2;
+                    const ox = Math.cos(angle) * thickness;
+                    const oy = Math.sin(angle) * thickness;
+                    ctx.drawImage(tempCanvas, -SPRITE_SIZE / 2 + ox, -SPRITE_SIZE / 2 + oy);
+                }
+
+                ctx.restore();
+            }
+
+            // Draw Original Texture Sprite
+            ctx.save();
+            ctx.translate(drawX, drawY);
+            ctx.rotate(currentRotation);
+            ctx.scale(currentScale, currentScale);
+            ctx.drawImage(offCanvas, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2);
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(render);
+        }
+
+        render();
+
+        // Controls Event Listeners
+        outlineColorInput.addEventListener('input', (e) => {
+            colorHexText.textContent = e.target.value.toUpperCase();
+            updateGeneratedGodotCode();
+        });
+
+        thicknessInput.addEventListener('input', (e) => {
+            thicknessValText.textContent = parseFloat(e.target.value).toFixed(1);
+            updateGeneratedGodotCode();
+        });
+
+        triggerModeSelect.addEventListener('change', updateGeneratedGodotCode);
+        pulseGlowCheckbox.addEventListener('change', updateGeneratedGodotCode);
+        rainbowCheckbox.addEventListener('change', updateGeneratedGodotCode);
+
+        resetBtn.addEventListener('click', () => {
+            outlineColorInput.value = "#00e5ff";
+            colorHexText.textContent = "#00E5FF";
+            thicknessInput.value = "3.0";
+            thicknessValText.textContent = "3.0";
+            moveTypeSelect.value = "float";
+            triggerModeSelect.value = "hover";
+            pulseGlowCheckbox.checked = true;
+            rainbowCheckbox.checked = false;
+            updateGeneratedGodotCode();
+        });
+
+        // Dynamic Code Generator for Godot 4
+        function updateGeneratedGodotCode() {
+            const hexColor = outlineColorInput.value;
+            // Convert Hex to Vec4 RGBA normalized
+            const r = (parseInt(hexColor.slice(1, 3), 16) / 255).toFixed(2);
+            const g = (parseInt(hexColor.slice(3, 5), 16) / 255).toFixed(2);
+            const b = (parseInt(hexColor.slice(5, 7), 16) / 255).toFixed(2);
+            const thick = parseFloat(thicknessInput.value).toFixed(1);
+            const isPulse = pulseGlowCheckbox.checked;
+
+            const shaderCode = `shader_type canvas_item;
+
+// Godot 2D Outline Shader
+uniform vec4 outline_color : source_color = vec4(${r}, ${g}, ${b}, 1.0);
+uniform float outline_thickness : hint_range(0.0, 10.0) = ${thick};
+uniform bool is_hovered = false;
+uniform bool pulse_glow = ${isPulse};
+
+void fragment() {
+    vec4 col = texture(TEXTURE, UV);
+    
+    // 如果启用纯悬停模式且未悬停，直接渲染原始纹理
+    if (!is_hovered && "${triggerModeSelect.value}" == "hover") {
+        COLOR = col;
+    } else if (col.a > 0.05) {
+        // 原图非透明区域保持不动
+        COLOR = col;
+    } else {
+        // 计算像素偏移量
+        vec2 size = TEXTURE_PIXEL_SIZE * outline_thickness;
+        float alpha = 0.0;
+        
+        // 8方向周围像素 Alpha 采样
+        alpha += texture(TEXTURE, UV + vec2(0.0, -size.y)).a;
+        alpha += texture(TEXTURE, UV + vec2(0.0, size.y)).a;
+        alpha += texture(TEXTURE, UV + vec2(-size.x, 0.0)).a;
+        alpha += texture(TEXTURE, UV + vec2(size.x, 0.0)).a;
+        alpha += texture(TEXTURE, UV + vec2(-size.x, -size.y)).a;
+        alpha += texture(TEXTURE, UV + vec2(size.x, -size.y)).a;
+        alpha += texture(TEXTURE, UV + vec2(-size.x, size.y)).a;
+        alpha += texture(TEXTURE, UV + vec2(size.x, size.y)).a;
+
+        if (alpha > 0.0) {
+            vec4 final_color = outline_color;
+            if (pulse_glow) {
+                // 动态呼吸发光效果
+                float glow = 0.6 + 0.4 * sin(TIME * 6.0);
+                final_color.a *= glow;
+            }
+            COLOR = final_color;
+        } else {
+            COLOR = vec4(0.0);
+        }
+    }
+}`;
+
+            const scriptCode = `extends Sprite2D
+
+# 悬停物理位移与 Shader Uniform 参数控制脚本
+@export var float_offset_y: float = -12.0
+@export var tween_duration: float = 0.2
+
+var default_position: Vector2
+var shader_material: ShaderMaterial
+
+func _ready() -> void:
+	default_position = position
+	shader_material = material as ShaderMaterial
+	
+	# 如果当前节点或者父级有 Mouse 检测，可绑定 Area2D / Control 信号
+	# 确保 Sprite2D 的 Input / Area 检测开启
+
+func _on_mouse_entered() -> void:
+	# 1. 设置 Shader Uniform 变量激活描边
+	if shader_material:
+		shader_material.set_shader_parameter("is_hovered", true)
+	
+	# 2. 使用 Tween 实现平滑弹性位移 (Bounce / Float)
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position:y", default_position.y + float_offset_y, tween_duration)
+	tween.tween_property(self, "scale", Vector2(1.08, 1.08), tween_duration)
+
+func _on_mouse_exited() -> void:
+	# 1. 关闭描边 Shader
+	if shader_material:
+		shader_material.set_shader_parameter("is_hovered", false)
+	
+	# 2. 恢复原始位置与缩放
+	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "position:y", default_position.y, tween_duration)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), tween_duration)
+`;
+
+            document.getElementById('codeShader').textContent = shaderCode;
+            document.getElementById('codeScript').textContent = scriptCode;
+        }
+
+        // Tab Switching Logic
+        let activeTab = 'shader';
+        function switchTab(tab) {
+            activeTab = tab;
+            ['shader', 'script', 'guide'].forEach(t => {
+                const tabEl = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+                const btnEl = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
+                
+                if (t === tab) {
+                    tabEl.classList.remove('hidden');
+                    btnEl.classList.add('bg-godot-card', 'text-godot-blue', 'border-t-2', 'border-godot-blue');
+                    btnEl.classList.remove('bg-transparent', 'text-slate-400');
+                } else {
+                    tabEl.classList.add('hidden');
+                    btnEl.classList.remove('bg-godot-card', 'text-godot-blue', 'border-t-2', 'border-godot-blue');
+                    btnEl.classList.add('bg-transparent', 'text-slate-400');
+                }
+            });
+        }
+
+        // Copy Code Functionality
+        function copyActiveCode() {
+            let textToCopy = '';
+            if (activeTab === 'shader') {
+                textToCopy = document.getElementById('codeShader').textContent;
+            } else if (activeTab === 'script') {
+                textToCopy = document.getElementById('codeScript').textContent;
+            } else {
+                textToCopy = "Please select Shader or Script tab to copy code.";
+            }
+
+            // ExecCommand Fallback for iframe safety
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = textToCopy;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+
+            const copyBtn = document.getElementById('copyBtn');
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> 已复制!`;
+            copyBtn.classList.add('bg-emerald-600');
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.classList.remove('bg-emerald-600');
+            }, 1800);
+        }
+
+        // Initialize default code display
+        updateGeneratedGodotCode();
+    </script>
+</body>
+</html>
