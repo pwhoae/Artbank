@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 2D 動作打擊感與音效演示 (Wooden Dummy Hit-Feel Demo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #12151a;
+            color: #e0e6ed;
+            user-select: none;
+            overflow: hidden;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* Custom scrollbar for panel */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1e24;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333b48;
+            border-radius: 3px;
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between p-2 md:p-4 bg-[#12151a]">
+
+    <!-- Top Bar / Header -->
+    <header class="flex items-center justify-between bg-[#1e232d] border border-[#2d3545] rounded-xl px-4 py-2 mb-2 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-[#478cbf] flex items-center justify-center text-white font-bold text-lg shadow-md">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div>
+                <h1 class="text-sm md:text-base font-bold text-gray-100 flex items-center gap-2">
+                    Godot 2D 動作打擊感與音效系統演示
+                    <span class="text-xs px-2 py-0.5 bg-[#478cbf]/20 text-[#478cbf] border border-[#478cbf]/40 rounded-full font-mono">v4.2 Simulation</span>
+                </h1>
+                <p class="text-xs text-gray-400 hidden md:block">打擊凍結 (Hit Stop) • 螢幕震動 • 擊退物理 • 原生WebAudio音效合成器</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button id="toggleJuiceBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span id="juiceBtnText">極致打擊感: 開啟</span>
+            </button>
+            <button id="resetDemoBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#2b3240] hover:bg-[#384254] text-gray-300 transition flex items-center gap-1.5 border border-gray-700">
+                <i class="fa-solid fa-rotate-right"></i> 重置木人樁
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
+        
+        <!-- Game Viewport Canvas Box (8 Cols) -->
+        <div class="lg:col-span-8 flex flex-col bg-[#181c24] border border-[#2d3545] rounded-xl overflow-hidden shadow-2xl relative">
+            
+            <!-- Viewport Bar -->
+            <div class="bg-[#1e232d] px-3 py-1.5 border-b border-[#2d3545] flex items-center justify-between text-xs text-gray-400">
+                <div class="flex items-center space-x-2 font-mono">
+                    <span class="text-emerald-400"><i class="fa-solid fa-play text-[10px]"></i> 2D Viewport</span>
+                    <span class="text-gray-600">|</span>
+                    <span id="fpsCounter">FPS: 60</span>
+                    <span class="text-gray-600">|</span>
+                    <span id="timeScaleDisplay">TimeScale: 1.0x</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded bg-[#12151a] text-gray-400 font-mono text-[11px]" id="comboDisplay">COMBO: 0</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative flex-1 bg-[#15181f] overflow-hidden flex items-center justify-center cursor-crosshair" id="canvasContainer">
+                <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+                
+                <!-- Hit Overlay Effects (Screen Flash) -->
+                <div id="flashOverlay" class="absolute inset-0 bg-white pointer-events-none opacity-0 transition-opacity duration-75"></div>
+                
+                <!-- On-Screen Controls Hint Overlay -->
+                <div class="absolute bottom-3 left-3 bg-[#181c24]/90 backdrop-blur border border-[#2d3545] p-2.5 rounded-lg text-xs text-gray-300 space-y-1 shadow-xl pointer-events-none">
+                    <div class="font-semibold text-[#478cbf] mb-1 border-b border-gray-700 pb-1 flex items-center justify-between gap-4">
+                        <span><i class="fa-solid fa-keyboard mr-1"></i> 操作指引 (Controls)</span>
+                        <span class="text-[10px] text-gray-400">點擊畫面可啟動音效</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <span>普通砍擊 (Light Attack):</span>
+                        <kbd class="px-1.5 py-0.5 bg-[#2a313d] border border-gray-600 rounded text-[11px] font-mono text-emerald-400">J</kbd> 或 <kbd class="px-1.5 py-0.5 bg-[#2a313d] border border-gray-600 rounded text-[11px] font-mono text-emerald-400">左鍵</kbd>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <span>強重砍擊 (Heavy Finisher):</span>
+                        <kbd class="px-1.5 py-0.5 bg-[#2a313d] border border-gray-600 rounded text-[11px] font-mono text-amber-400">K</kbd> 或 <kbd class="px-1.5 py-0.5 bg-[#2a313d] border border-gray-600 rounded text-[11px] font-mono text-amber-400">右鍵</kbd>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <span>突進閃擊 (Dash Slash):</span>
+                        <kbd class="px-1.5 py-0.5 bg-[#2a313d] border border-gray-600 rounded text-[11px] font-mono text-cyan-400">L</kbd> 或 <kbd class="px-1.5 py-0.5 bg-[#2a313d] border border-gray-600 rounded text-[11px] font-mono text-cyan-400">Shift</kbd>
+                    </div>
+                </div>
+
+                <!-- Touch Action Floating Buttons for Mobile -->
+                <div class="absolute bottom-3 right-3 flex gap-2 md:hidden">
+                    <button id="mobileBtnLight" class="w-12 h-12 rounded-full bg-emerald-600/80 active:bg-emerald-500 text-white font-bold flex items-center justify-center shadow-lg border border-emerald-400">
+                        J
+                    </button>
+                    <button id="mobileBtnHeavy" class="w-12 h-12 rounded-full bg-amber-600/80 active:bg-amber-500 text-white font-bold flex items-center justify-center shadow-lg border border-amber-400">
+                        K
+                    </button>
+                    <button id="mobileBtnDash" class="w-12 h-12 rounded-full bg-cyan-600/80 active:bg-cyan-500 text-white font-bold flex items-center justify-center shadow-lg border border-cyan-400">
+                        L
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Godot Inspector & Juice Tuning Control Panel (4 Cols) -->
+        <div class="lg:col-span-4 flex flex-col bg-[#181c24] border border-[#2d3545] rounded-xl overflow-hidden shadow-2xl">
+            <div class="bg-[#1e232d] px-3 py-2 border-b border-[#2d3545] flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-[#478cbf] fa-sliders text-[#478cbf]"></i> Hit-Feel Inspector (打擊感參數)
+                </span>
+                <span class="text-[10px] text-gray-400 font-mono">Node2D/JuiceSystem</span>
+            </div>
+
+            <div class="flex-1 p-3 overflow-y-auto space-y-4 text-xs">
+                
+                <!-- Preset Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="presetRaw" class="p-2 bg-[#222834] hover:bg-[#2c3444] border border-gray-700 rounded-lg text-left transition">
+                        <div class="font-semibold text-gray-300">完全無打擊感</div>
+                        <div class="text-[10px] text-gray-500">無卡頓/震動/音效</div>
+                    </button>
+                    <button id="presetJuicy" class="p-2 bg-[#1e2f27] hover:bg-[#253e33] border border-emerald-700/50 rounded-lg text-left transition">
+                        <div class="font-semibold text-emerald-400">極致爆裂打擊感</div>
+                        <div class="text-[10px] text-emerald-600">打擊凍結/震動/木屑粒子</div>
+                    </button>
+                </div>
+
+                <!-- Slider Group 1: Hit Stop -->
+                <div class="bg-[#1e232d] p-3 rounded-lg border border-[#2a3242] space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="font-semibold text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-pause text-amber-400"></i> 打擊凍結 (Hit Freeze)
+                        </label>
+                        <span id="hitStopValue" class="font-mono text-amber-400 text-xs">80 ms</span>
+                    </div>
+                    <input type="range" id="sliderHitStop" min="0" max="200" value="80" class="w-full accent-amber-500 bg-gray-700 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    <p class="text-[10px] text-gray-400">砍中木人樁時瞬間停頓時間 (Frame Freeze)，強化刀刃卡入材質的厚重感。</p>
+                </div>
+
+                <!-- Slider Group 2: Screen Shake -->
+                <div class="bg-[#1e232d] p-3 rounded-lg border border-[#2a3242] space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="font-semibold text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-vector-square text-cyan-400"></i> 螢幕震動 (Screen Shake)
+                        </label>
+                        <span id="shakeValue" class="font-mono text-cyan-400 text-xs">12 px</span>
+                    </div>
+                    <input type="range" id="sliderShake" min="0" max="30" value="12" class="w-full accent-cyan-500 bg-gray-700 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    <p class="text-[10px] text-gray-400">衝擊力道引發的視角震幅，終結技帶有高頻位移與方向衝擊。</p>
+                </div>
+
+                <!-- Slider Group 3: Particle Burst -->
+                <div class="bg-[#1e232d] p-3 rounded-lg border border-[#2a3242] space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="font-semibold text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-burst text-orange-400"></i> 木屑與光軌粒子 (Particles)
+                        </label>
+                        <span id="particleValue" class="font-mono text-orange-400 text-xs">25 個</span>
+                    </div>
+                    <input type="range" id="sliderParticles" min="0" max="60" value="25" class="w-full accent-orange-500 bg-gray-700 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    <p class="text-[10px] text-gray-400">受擊噴發的飛濺木塊粒子、火花與揮刀軌跡殘影。</p>
+                </div>
+
+                <!-- Slider Group 4: Audio pitch escalation & Audio Controls -->
+                <div class="bg-[#1e232d] p-3 rounded-lg border border-[#2a3242] space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="font-semibold text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-volume-high text-emerald-400"></i> 音效合成 (Sound Synth)
+                        </label>
+                        <input type="checkbox" id="checkAudio" checked class="w-4 h-4 accent-emerald-500 rounded cursor-pointer">
+                    </div>
+                    <p class="text-[10px] text-gray-400">原生 Web Audio API 合成音效：動態破空聲、木材重擊聲 (Wood Crack) 與連擊音調遞升。</p>
+                </div>
+
+                <!-- Visual Toggles -->
+                <div class="bg-[#1e232d] p-3 rounded-lg border border-[#2a3242] space-y-2">
+                    <div class="font-semibold text-gray-300 mb-1">進階視覺效果</div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">受擊瞬間全螢幕閃白 (Flash)</span>
+                        <input type="checkbox" id="checkFlash" checked class="w-4 h-4 accent-blue-500 rounded cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">終結技鏡頭特寫拉近 (Cam Zoom)</span>
+                        <input type="checkbox" id="checkZoom" checked class="w-4 h-4 accent-blue-500 rounded cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">彈簧反彈物理 (Dummy Spring)</span>
+                        <input type="checkbox" id="checkSpring" checked class="w-4 h-4 accent-blue-500 rounded cursor-pointer">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Modern Web Audio Engine Synthesizer for Rich Hit SFX */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            /* Sword Swing / Swoosh sound */
+            playSwoosh(comboStep = 1) {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // White noise burst filtered for swoosh
+                const bufferSize = this.ctx.sampleRate * 0.15;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                
+                // Higher combo = higher pitched swoosh
+                const baseFreq = comboStep === 3 ? 1200 : (comboStep === 2 ? 900 : 700);
+                filter.frequency.setValueAtTime(300, now);
+                filter.frequency.exponentialRampToValueAtTime(baseFreq, now + 0.05);
+                filter.frequency.exponentialRampToValueAtTime(200, now + 0.12);
+                filter.Q.value = 3.0;
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.4, now + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start(now);
+                noise.stop(now + 0.15);
+            }
+
+            /* Heavy Wooden Hit Impact sound */
+            playWoodImpact(isFinisher = false, comboCount = 1) {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // 1. Deep Thud (sine wave drop)
+                const osc = this.ctx.createOscillator();
+                const oscGain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                const startFreq = isFinisher ? 180 : 130 + Math.min(comboCount * 3, 60);
+                osc.frequency.setValueAtTime(startFreq, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + (isFinisher ? 0.25 : 0.12));
+
+                oscGain.gain.setValueAtTime(isFinisher ? 0.8 : 0.5, now);
+                oscGain.gain.exponentialRampToValueAtTime(0.001, now + (isFinisher ? 0.28 : 0.14));
+
+                osc.connect(oscGain);
+                oscGain.connect(this.ctx.destination);
+
+                // 2. Crisp Wood Crack (Filtered noise)
+                const crackBufSize = this.ctx.sampleRate * (isFinisher ? 0.2 : 0.08);
+                const crackBuf = this.ctx.createBuffer(1, crackBufSize, this.ctx.sampleRate);
+                const crackData = crackBuf.getChannelData(0);
+                for (let i = 0; i < crackBufSize; i++) {
+                    crackData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (crackBufSize * 0.2));
+                }
+
+                const crackSrc = this.ctx.createBufferSource();
+                crackSrc.buffer = crackBuf;
+
+                const crackFilter = this.ctx.createBiquadFilter();
+                crackFilter.type = 'highpass';
+                crackFilter.frequency.value = isFinisher ? 800 : 1200;
+
+                const crackGain = this.ctx.createGain();
+                crackGain.gain.setValueAtTime(isFinisher ? 0.7 : 0.4, now);
+                crackGain.gain.exponentialRampToValueAtTime(0.001, now + (isFinisher ? 0.18 : 0.07));
+
+                crackSrc.connect(crackFilter);
+                crackFilter.connect(crackGain);
+                crackGain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+                crackSrc.start(now);
+                crackSrc.stop(now + 0.2);
+
+                // 3. Finisher Extra Resonance Sub Boom
+                if (isFinisher) {
+                    const subOsc = this.ctx.createOscillator();
+                    const subGain = this.ctx.createGain();
+                    subOsc.type = 'triangle';
+                    subOsc.frequency.setValueAtTime(80, now);
+                    subOsc.frequency.exponentialRampToValueAtTime(20, now + 0.35);
+
+                    subGain.gain.setValueAtTime(0.7, now);
+                    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                    subOsc.connect(subGain);
+                    subGain.connect(this.ctx.destination);
+
+                    subOsc.start(now);
+                    subOsc.stop(now + 0.38);
+                }
+            }
+
+            /* Dash Swoosh */
+            playDash() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        }
+
+        const soundEngine = new SoundEngine();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvasContainer');
+
+        // Parameter Sliders & Toggles
+        const sliderHitStop = document.getElementById('sliderHitStop');
+        const sliderShake = document.getElementById('sliderShake');
+        const sliderParticles = document.getElementById('sliderParticles');
+        const checkAudio = document.getElementById('checkAudio');
+        const checkFlash = document.getElementById('checkFlash');
+        const checkZoom = document.getElementById('checkZoom');
+        const checkSpring = document.getElementById('checkSpring');
+
+        const hitStopValueDisplay = document.getElementById('hitStopValue');
+        const shakeValueDisplay = document.getElementById('shakeValue');
+        const particleValueDisplay = document.getElementById('particleValue');
+        const fpsCounter = document.getElementById('fpsCounter');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const timeScaleDisplay = document.getElementById('timeScaleDisplay');
+        const flashOverlay = document.getElementById('flashOverlay');
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game State Engine Variables
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fpsTimer = performance.now();
+        let currentFps = 60;
+
+        let hitStopTimer = 0; // Milliseconds to freeze frame execution
+        let screenShakeTrauma = 0;
+        let cameraZoom = 1.0;
+        let targetCameraZoom = 1.0;
+
+        let comboCount = 0;
+        let comboResetTimer = 0;
+
+        // Player Data & State Machine
+        const player = {
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            state: 'IDLE', // IDLE, ATTACK_1, ATTACK_2, ATTACK_3, DASH
+            attackFrame: 0,
+            attackMaxFrame: 20,
+            facingRight: true,
+            width: 40,
+            height: 70,
+            comboStep: 1,
+            slashTrails: []
+        };
+
+        // Wooden Dummy (木人樁) Entity
+        const dummy = {
+            x: 0,
+            y: 0,
+            baseX: 0,
+            baseY: 0,
+            angle: 0,
+            angularVelocity: 0,
+            displacementX: 0,
+            width: 32,
+            height: 110,
+            hitFlashTimer: 0,
+            health: 9999,
+            totalHitsReceived: 0
+        };
+
+        // Particle Lists
+        let particles = [];
+        let floatingTexts = [];
+
+        // Initialize Positions centered
+        function initEntities() {
+            const groundY = canvas.height * 0.72;
+            player.x = canvas.width * 0.35;
+            player.y = groundY;
+            
+            dummy.baseX = canvas.width * 0.65;
+            dummy.baseY = groundY;
+            dummy.x = dummy.baseX;
+            dummy.y = dummy.baseY;
+        }
+        initEntities();
+
+        function createWoodSplinters(x, y, count, intensity = 1.0) {
+            const baseAmount = parseInt(sliderParticles.value);
+            const total = Math.floor(baseAmount * count);
+
+            for (let i = 0; i < total; i++) {
+                const angle = (Math.random() - 0.5) * Math.PI * 0.8 - (Math.PI * 0.1);
+                const speed = (Math.random() * 8 + 3) * intensity;
+                particles.push({
+                    type: 'SPLINTER',
+                    x: x + (Math.random() - 0.5) * 15,
+                    y: y + (Math.random() - 0.5) * 40,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - (Math.random() * 3),
+                    size: Math.random() * 5 + 3,
+                    rotation: Math.random() * Math.PI * 2,
+                    vRot: (Math.random() - 0.5) * 0.4,
+                    color: Math.random() > 0.3 ? '#8B5A2B' : '#CD853F',
+                    life: 1.0,
+                    decay: Math.random() * 0.03 + 0.015
+                });
+            }
+
+            // High brightness slash spark particles
+            for (let i = 0; i < Math.floor(total * 0.5); i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 12 + 4;
+                particles.push({
+                    type: 'SPARK',
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: Math.random() * 3 + 1.5,
+                    color: '#FFF5C0',
+                    life: 1.0,
+                    decay: Math.random() * 0.08 + 0.04
+                });
+            }
+        }
+
+        function createFloatingText(x, y, text, isCrit = false) {
+            floatingTexts.push({
+                x: x + (Math.random() - 0.5) * 20,
+                y: y - 20,
+                vx: (Math.random() - 0.5) * 2,
+                vy: - (Math.random() * 3 + 4),
+                text: text,
+                isCrit: isCrit,
+                scale: isCrit ? 1.8 : 1.0,
+                life: 1.0,
+                decay: 0.02
+            });
+        }
+
+        function createSlashArc(x, y, type) {
+            player.slashTrails.push({
+                type: type,
+                x: x,
+                y: y,
+                frame: 0,
+                maxFrame: 10,
+                facingRight: player.facingRight
+            });
+        }
+
+        function triggerAttack(type) {
+            if (player.state === 'DASH') return; // Cannot cancel dash prematurely
+
+            soundEngine.enabled = checkAudio.checked;
+
+            if (type === 'LIGHT') {
+                // Determine Combo Phase
+                if (player.state === 'ATTACK_1' && player.attackFrame > 4) {
+                    player.comboStep = 2;
+                    player.state = 'ATTACK_2';
+                    player.attackFrame = 0;
+                    player.attackMaxFrame = 16;
+                    soundEngine.playSwoosh(2);
+                    checkHitConnection(2);
+                } else if (player.state === 'ATTACK_2' && player.attackFrame > 4) {
+                    player.comboStep = 3;
+                    player.state = 'ATTACK_3'; // Finisher
+                    player.attackFrame = 0;
+                    player.attackMaxFrame = 24;
+                    soundEngine.playSwoosh(3);
+                    checkHitConnection(3);
+                } else if (player.state === 'IDLE' || player.attackFrame > 12) {
+                    player.comboStep = 1;
+                    player.state = 'ATTACK_1';
+                    player.attackFrame = 0;
+                    player.attackMaxFrame = 16;
+                    soundEngine.playSwoosh(1);
+                    checkHitConnection(1);
+                }
+            } else if (type === 'HEAVY') {
+                // Immediate Finisher Slash
+                player.comboStep = 3;
+                player.state = 'ATTACK_3';
+                player.attackFrame = 0;
+                player.attackMaxFrame = 26;
+                soundEngine.playSwoosh(3);
+                checkHitConnection(3);
+            } else if (type === 'DASH') {
+                player.state = 'DASH';
+                player.attackFrame = 0;
+                player.attackMaxFrame = 14;
+                player.vx = player.facingRight ? 18 : -18;
+                soundEngine.playDash();
+            }
+        }
+
+        /* Hit Detection & Hit-Feel (Juice Trigger) */
+        function checkHitConnection(comboStep) {
+            const attackReach = 110;
+            const distance = Math.abs(player.x - dummy.baseX);
+
+            // Check if player is facing dummy and within attack reach
+            const facingDummy = (player.x < dummy.baseX && player.facingRight) || (player.x > dummy.baseX && !player.facingRight);
+
+            if (facingDummy && distance < attackReach) {
+                
+                // Increase combo
+                comboCount++;
+                comboResetTimer = 120; // 2 seconds at 60fps
+                
+                const isFinisher = comboStep === 3;
+                const damage = isFinisher ? Math.floor(Math.random() * 80 + 220) : Math.floor(Math.random() * 25 + 45);
+
+                // 1. Play Sound Engine Impact
+                soundEngine.playWoodImpact(isFinisher, comboCount);
+
+                // 2. Apply Hit Stop (Frame Freeze)
+                const hitStopMs = parseInt(sliderHitStop.value);
+                if (hitStopMs > 0) {
+                    hitStopTimer = isFinisher ? hitStopMs * 1.6 : hitStopMs;
+                }
+
+                // 3. Screen Shake Trauma
+                const baseShake = parseInt(sliderShake.value);
+                if (baseShake > 0) {
+                    screenShakeTrauma = isFinisher ? baseShake * 1.8 : baseShake;
+                }
+
+                // 4. White Flash Effect
+                if (checkFlash.checked) {
+                    flashOverlay.style.opacity = isFinisher ? '0.7' : '0.35';
+                    setTimeout(() => { flashOverlay.style.opacity = '0'; }, 50);
+                }
+
+                // 5. Camera Zoom Effect
+                if (checkZoom.checked && isFinisher) {
+                    targetCameraZoom = 1.15;
+                    setTimeout(() => { targetCameraZoom = 1.0; }, 180);
+                }
+
+                // 6. Dummy Reaction Physics
+                if (checkSpring.checked) {
+                    dummy.angularVelocity = isFinisher ? 0.35 : 0.18;
+                    dummy.displacementX = isFinisher ? 25 : 12;
+                }
+                dummy.hitFlashTimer = isFinisher ? 8 : 4;
+                dummy.totalHitsReceived++;
+
+                // 7. Wood Splinter Particle Explosion
+                const hitY = dummy.baseY - 50 + (Math.random() - 0.5) * 30;
+                createWoodSplinters(dummy.baseX, hitY, isFinisher ? 2.2 : 1.0, isFinisher ? 1.8 : 1.0);
+
+                // 8. Floating Damage Text
+                createFloatingText(dummy.baseX, hitY - 20, `${damage}`, isFinisher);
+
+                // 9. Slash Arc Effect
+                createSlashArc(dummy.baseX - 10, hitY, comboStep);
+            }
+        }
+
+        function updateGamePhysics(dt) {
+            // Update Combo Timer
+            if (comboResetTimer > 0) {
+                comboResetTimer--;
+                if (comboResetTimer <= 0) {
+                    comboCount = 0;
+                }
+            }
+            comboDisplay.innerText = `COMBO: ${comboCount}`;
+
+            // Update Camera Zoom Lerp
+            cameraZoom += (targetCameraZoom - cameraZoom) * 0.1;
+
+            // Player State Animation
+            if (player.state !== 'IDLE') {
+                player.attackFrame++;
+                if (player.state === 'DASH') {
+                    player.x += player.vx;
+                    player.vx *= 0.85;
+                }
+                if (player.attackFrame >= player.attackMaxFrame) {
+                    player.state = 'IDLE';
+                    player.attackFrame = 0;
+                }
+            }
+
+            // Dummy Spring Physics (Damped Harmonic Oscillator)
+            if (checkSpring.checked) {
+                const springK = 0.08;  // Stiffness
+                const damping = 0.82;  // Resistance
+                
+                const forceAngle = -springK * dummy.angle;
+                dummy.angularVelocity += forceAngle;
+                dummy.angularVelocity *= damping;
+                dummy.angle += dummy.angularVelocity;
+
+                dummy.displacementX *= 0.82;
+            } else {
+                dummy.angle = 0;
+                dummy.displacementX = 0;
+            }
+
+            if (dummy.hitFlashTimer > 0) dummy.hitFlashTimer--;
+
+            // Particles Update
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+
+                if (p.type === 'SPLINTER') {
+                    p.vy += 0.45; // Gravity
+                    p.rotation += p.vRot;
+                }
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Floating Text Update
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.x += ft.vx;
+                ft.y += ft.vy;
+                ft.vy += 0.1; // Gentle Float deceleration
+                ft.life -= ft.decay;
+
+                if (ft.life <= 0) {
+                    floatingTexts.splice(i, 1);
+                }
+            }
+
+            // Slash Arc Trails Update
+            for (let i = player.slashTrails.length - 1; i >= 0; i--) {
+                const st = player.slashTrails[i];
+                st.frame++;
+                if (st.frame >= st.maxFrame) {
+                    player.slashTrails.splice(i, 1);
+                }
+            }
+
+            // Screen Shake Decay
+            if (screenShakeTrauma > 0) {
+                screenShakeTrauma *= 0.88;
+                if (screenShakeTrauma < 0.2) screenShakeTrauma = 0;
+            }
+        }
+
+        function renderScene() {
+            ctx.save();
+
+            // Clear Screen with Godot dark theme color
+            ctx.fillStyle = '#15181f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Apply Screen Shake Offsets
+            let shakeX = 0;
+            let shakeY = 0;
+            if (screenShakeTrauma > 0) {
+                shakeX = (Math.random() - 0.5) * screenShakeTrauma * 2;
+                shakeY = (Math.random() - 0.5) * screenShakeTrauma * 2;
+            }
+
+            // Center Camera with Zoom & Shake
+            ctx.translate(canvas.width / 2 + shakeX, canvas.height / 2 + shakeY);
+            ctx.scale(cameraZoom, cameraZoom);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+            // Draw Dojo Background Grid & Ground
+            const groundY = canvas.height * 0.72;
+            
+            // Background Dojo Wall Grid
+            ctx.strokeStyle = '#1e2430';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, groundY);
+                ctx.stroke();
+            }
+
+            // Ground Floor
+            ctx.fillStyle = '#1f2533';
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            // Ground Line Accent
+            ctx.strokeStyle = '#478cbf';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+
+            // Draw Ground Shadow under Wooden Dummy
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(dummy.baseX + dummy.displacementX * 0.5, groundY + 5, 45, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.save();
+            ctx.translate(dummy.baseX + dummy.displacementX, groundY);
+            ctx.rotate(dummy.angle);
+
+            // White Hit Flash Shader effect toggle
+            const isFlashing = dummy.hitFlashTimer > 0;
+            const woodColor = isFlashing ? '#FFFFFF' : '#8B5A2B';
+            const woodDark = isFlashing ? '#FFFFFF' : '#5c3a1b';
+            const armColor = isFlashing ? '#FFFFFF' : '#A0522D';
+
+            // Base Pole Anchor
+            ctx.fillStyle = woodDark;
+            ctx.fillRect(-12, -120, 24, 120);
+
+            // Dummy Center Trunk Ring Highlights
+            ctx.fillStyle = woodColor;
+            ctx.fillRect(-15, -115, 30, 110);
+
+            // Wooden Arms (Cross Arms)
+            ctx.fillStyle = armColor;
+            // Top Left Arm
+            ctx.fillRect(-55, -85, 45, 12);
+            // Middle Right Arm
+            ctx.fillRect(10, -70, 45, 12);
+            // Lower Leg Arm
+            ctx.fillRect(-45, -40, 40, 14);
+
+            // Dummy Head / Top Cap
+            ctx.fillStyle = woodDark;
+            ctx.beginPath();
+            ctx.arc(0, -115, 15, Math.PI, 0);
+            ctx.fill();
+
+            ctx.restore(); // Restore Dummy Transform
+
+            ctx.save();
+            ctx.translate(player.x, player.y);
+
+            // Player Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.beginPath();
+            ctx.ellipse(0, 2, 25, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Player Silhouette Sprite (Ninja Archetype)
+            const isAttacking = player.state.startsWith('ATTACK');
+            ctx.fillStyle = isAttacking ? '#38bdf8' : '#e2e8f0'; // Glows cyan when attacking
+
+            // Body Trunk
+            ctx.fillRect(-14, -60, 28, 50);
+
+            // Head & Headband Ribbon
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-12, -78, 24, 20);
+            // Headband Cloth Physics
+            ctx.fillStyle = '#ef4444'; // Red headband
+            ctx.fillRect(-18, -75, 8, 5);
+            ctx.fillRect(-24, -72, 8, 5);
+
+            // Sword Draw / Pose Vectors
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+
+            if (player.state === 'ATTACK_1') {
+                // Horizontal Slash Stance
+                ctx.moveTo(10, -40);
+                ctx.lineTo(55, -35);
+            } else if (player.state === 'ATTACK_2') {
+                // Upward Slice Stance
+                ctx.moveTo(10, -20);
+                ctx.lineTo(45, -75);
+            } else if (player.state === 'ATTACK_3') {
+                // Overhead Slam Finisher Stance
+                ctx.moveTo(5, -60);
+                ctx.lineTo(50, -10);
+            } else {
+                // Idle Sword Rest Pose
+                ctx.moveTo(10, -35);
+                ctx.lineTo(35, -55);
+            }
+            ctx.stroke();
+
+            ctx.restore(); // Restore Player Transform
+
+            // Draw Dynamic Glowing Slash Arc Trails
+            for (const st of player.slashTrails) {
+                ctx.save();
+                ctx.translate(st.x, st.y);
+                const progress = st.frame / st.maxFrame;
+                const alpha = 1.0 - progress;
+
+                ctx.strokeStyle = st.type === 3 ? `rgba(251, 191, 36, ${alpha})` : `rgba(56, 189, 248, ${alpha})`;
+                ctx.lineWidth = st.type === 3 ? 12 : 6;
+                ctx.shadowColor = st.type === 3 ? '#f59e0b' : '#38bdf8';
+                ctx.shadowBlur = 15;
+
+                ctx.beginPath();
+                if (st.type === 1) {
+                    ctx.arc(-20, -10, 60, -Math.PI * 0.3, Math.PI * 0.3);
+                } else if (st.type === 2) {
+                    ctx.arc(-10, 10, 70, -Math.PI * 0.6, 0);
+                } else { // Finisher Spin Slam Arc
+                    ctx.arc(0, -20, 85, -Math.PI * 0.8, Math.PI * 0.5);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Draw Splinter and Spark Particles
+            for (const p of particles) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life);
+                if (p.type === 'SPLINTER') {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.8);
+                } else if (p.type === 'SPARK') {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // Draw Floating Damage Numbers (Font Spring Physics)
+            for (const ft of floatingTexts) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, ft.life);
+                ctx.font = ft.isCrit ? '900 28px "Fira Code", monospace' : '700 18px "Fira Code", monospace';
+                ctx.fillStyle = ft.isCrit ? '#f59e0b' : '#ffffff';
+                ctx.shadowColor = ft.isCrit ? '#b45309' : '#000000';
+                ctx.shadowBlur = ft.isCrit ? 10 : 4;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            ctx.restore(); // Restore Master Camera Viewport Matrix
+        }
+
+        function gameLoop(now) {
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+
+            // Calculate FPS Counter
+            frameCount++;
+            if (now - fpsTimer >= 1000) {
+                currentFps = frameCount;
+                frameCount = 0;
+                fpsTimer = now;
+                fpsCounter.innerText = `FPS: ${currentFps}`;
+            }
+
+            // Hit Freeze / Hit Stop logic clock
+            if (hitStopTimer > 0) {
+                hitStopTimer -= dt * 1000;
+                timeScaleDisplay.innerText = `TimeScale: 0.0x (HIT STOP)`;
+                timeScaleDisplay.className = 'text-amber-400 font-bold';
+            } else {
+                hitStopTimer = 0;
+                timeScaleDisplay.innerText = `TimeScale: 1.0x`;
+                timeScaleDisplay.className = 'text-gray-400';
+                // Only update physical world when not in Hit Freeze!
+                updateGamePhysics(dt);
+            }
+
+            renderScene();
+            requestAnimationFrame(gameLoop);
+        }
+        requestAnimationFrame(gameLoop);
+
+        // Control Parameter Slider Sync
+        sliderHitStop.addEventListener('input', (e) => hitStopValueDisplay.innerText = `${e.target.value} ms`);
+        sliderShake.addEventListener('input', (e) => shakeValueDisplay.innerText = `${e.target.value} px`);
+        sliderParticles.addEventListener('input', (e) => particleValueDisplay.innerText = `${e.target.value} 個`);
+
+        // Preset Toggles
+        document.getElementById('presetRaw').addEventListener('click', () => {
+            sliderHitStop.value = 0;
+            sliderShake.value = 0;
+            sliderParticles.value = 0;
+            checkAudio.checked = false;
+            checkFlash.checked = false;
+            checkZoom.checked = false;
+            checkSpring.checked = false;
+
+            hitStopValueDisplay.innerText = '0 ms';
+            shakeValueDisplay.innerText = '0 px';
+            particleValueDisplay.innerText = '0 個';
+        });
+
+        document.getElementById('presetJuicy').addEventListener('click', () => {
+            sliderHitStop.value = 90;
+            sliderShake.value = 15;
+            sliderParticles.value = 35;
+            checkAudio.checked = true;
+            checkFlash.checked = true;
+            checkZoom.checked = true;
+            checkSpring.checked = true;
+
+            hitStopValueDisplay.innerText = '90 ms';
+            shakeValueDisplay.innerText = '15 px';
+            particleValueDisplay.innerText = '35 個';
+        });
+
+        let juiceEnabled = true;
+        document.getElementById('toggleJuiceBtn').addEventListener('click', () => {
+            juiceEnabled = !juiceEnabled;
+            const btnText = document.getElementById('juiceBtnText');
+            if (juiceEnabled) {
+                document.getElementById('presetJuicy').click();
+                btnText.innerText = '極致打擊感: 開啟';
+            } else {
+                document.getElementById('presetRaw').click();
+                btnText.innerText = '極致打擊感: 關閉';
+            }
+        });
+
+        document.getElementById('resetDemoBtn').addEventListener('click', () => {
+            dummy.angle = 0;
+            dummy.angularVelocity = 0;
+            dummy.displacementX = 0;
+            comboCount = 0;
+            particles = [];
+            floatingTexts = [];
+        });
+
+        // Keyboard Controls
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            const key = e.key.toLowerCase();
+            if (key === 'j') triggerAttack('LIGHT');
+            if (key === 'k') triggerAttack('HEAVY');
+            if (key === 'l' || e.key === 'Shift') triggerAttack('DASH');
+        });
+
+        // Mouse Controls on Canvas
+        canvas.addEventListener('mousedown', (e) => {
+            soundEngine.init();
+            if (e.button === 0) triggerAttack('LIGHT');
+            if (e.button === 2) triggerAttack('HEAVY');
+        });
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Mobile On-Screen Buttons
+        document.getElementById('mobileBtnLight').addEventListener('click', () => triggerAttack('LIGHT'));
+        document.getElementById('mobileBtnHeavy').addEventListener('click', () => triggerAttack('HEAVY'));
+        document.getElementById('mobileBtnDash').addEventListener('click', () => triggerAttack('DASH'));
+    </script>
+</body>
+</html>
