@@ -54,7 +54,7 @@
 設計應用：透過漏斗形設計或灰顯輸入框，天然地引導使用者做出預期動作。  
 拚豆加深粗線條
 跑酷:奔跑/翻滾/滑鏟/爬牆
-
+【涩之炼金术～エロ文本写作指南】 https://www.bilibili.com/video/BV1PDez63E9F/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 <hr>
 
 ### 參考項目
