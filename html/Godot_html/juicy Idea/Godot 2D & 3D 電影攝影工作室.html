@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 2D & 3D Cinematic Camera Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Camera Simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#1e222b',
+                            panel: '#282c37',
+                            border: '#3a3f4d',
+                            accent: '#41b883',
+                            highlight: '#e0e0e0'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e222b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a3f4d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .code-syntax-kw { color: #ff79c6; font-weight: 600; }
+        .code-syntax-type { color: #8be9fd; }
+        .code-syntax-fn { color: #50fa7b; }
+        .code-syntax-str { color: #f1fa8c; }
+        .code-syntax-cm { color: #6272a4; font-style: italic; }
+        .code-syntax-num { color: #bd93f9; }
+        .code-syntax-var { color: #f8f8f2; }
+    </style>
+</head>
+<body class="bg-godot-dark text-slate-200 h-screen flex flex-col font-sans overflow-hidden select-none">
+
+    <header class="h-14 bg-godot-panel border-b border-godot-border flex items-center justify-between px-4 shrink-0 shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-godot-blue flex items-center justify-center font-bold text-white shadow-lg">
+                <i data-lucide="video" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold text-white tracking-wide flex items-center gap-2">
+                    Godot 運鏡大師 (Cinematic Camera Lab)
+                    <span class="text-xs font-normal px-2 py-0.5 rounded bg-godot-blue/20 text-godot-blue border border-godot-blue/30">Godot 4.x 2D & 3D</span>
+                </h1>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <!-- Mode Switcher -->
+            <div class="bg-godot-dark p-1 rounded-lg border border-godot-border flex text-xs">
+                <button id="btn-mode-3d" onclick="switchDimension('3d')" class="px-3 py-1.5 rounded-md font-medium transition-all bg-godot-blue text-white shadow">
+                    <i data-lucide="box" class="w-3.5 h-3.5 inline mr-1"></i> 3D Camera
+                </button>
+                <button id="btn-mode-2d" onclick="switchDimension('2d')" class="px-3 py-1.5 rounded-md font-medium transition-all text-slate-400 hover:text-white">
+                    <i data-lucide="square" class="w-3.5 h-3.5 inline mr-1"></i> 2D Camera
+                </button>
+            </div>
+
+            <button onclick="resetCameraView()" class="px-3 py-1.5 text-xs bg-godot-panel hover:bg-slate-700 border border-godot-border rounded-md text-slate-300 flex items-center gap-1">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 重置視角
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- LEFT PANEL: Technique Selector (Categories) -->
+        <aside class="w-80 bg-godot-panel border-r border-godot-border flex flex-col shrink-0">
+            <div class="p-3 border-b border-godot-border bg-godot-dark/40">
+                <div class="relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <input type="text" id="technique-search" placeholder="搜尋運鏡技巧 (例如: 希區考克, 甩鏡)..." 
+                           oninput="filterTechniques()"
+                           class="w-full bg-godot-dark border border-godot-border rounded-md pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-godot-blue">
+                </div>
+            </div>
+
+            <!-- Categories Accordion List -->
+            <div id="technique-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                <!-- Dynamically Populated -->
+            </div>
+        </aside>
+
+        <!-- CENTER PANEL: Interactive Canvas & Visualizer -->
+        <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+            <!-- Canvas Overlay Controls -->
+            <div class="absolute top-3 left-3 z-10 flex items-center space-x-2 bg-godot-panel/80 backdrop-blur border border-godot-border px-3 py-1.5 rounded-lg text-xs shadow-lg">
+                <span id="current-technique-title" class="font-semibold text-godot-blue flex items-center gap-1.5">
+                    <i data-lucide="clapperboard" class="w-4 h-4"></i> 1. 推拉運鏡 - 慢速推進
+                </span>
+                <span class="text-slate-500">|</span>
+                <span id="view-mode-badge" class="text-slate-300">視角: 3D Perspective</span>
+            </div>
+
+            <div class="absolute top-3 right-3 z-10 flex items-center space-x-2">
+                <button onclick="triggerAnimation()" class="px-4 py-1.5 bg-godot-blue hover:bg-blue-600 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-1.5">
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i> 播放運鏡 (Play)
+                </button>
+            </div>
+
+            <!-- 3D Viewport container -->
+            <div id="viewport-3d" class="canvas-container flex-1"></div>
+            <!-- 2D Viewport container -->
+            <div id="viewport-2d" class="canvas-container flex-1 hidden bg-slate-900 flex items-center justify-center">
+                <canvas id="canvas2d" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Parameter Tweaker Toolbar -->
+            <div class="h-20 bg-godot-panel border-t border-godot-border px-4 py-2 flex items-center justify-between shrink-0 text-xs">
+                <div class="grid grid-cols-4 gap-4 flex-1 mr-4">
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>動畫時間 (Duration)</span>
+                            <span id="val-duration" class="text-godot-blue">2.0s</span>
+                        </div>
+                        <input type="range" id="param-duration" min="0.5" max="8.0" step="0.1" value="2.0" oninput="updateParams()" class="w-full accent-godot-blue">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>運鏡強度/距離 (Distance/Strength)</span>
+                            <span id="val-distance" class="text-godot-blue">1.0x</span>
+                        </div>
+                        <input type="range" id="param-distance" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateParams()" class="w-full accent-godot-blue">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>視野/焦距 (FOV / Zoom)</span>
+                            <span id="val-fov" class="text-godot-blue">70°</span>
+                        </div>
+                        <input type="range" id="param-fov" min="15" max="120" step="1" value="70" oninput="updateParams()" class="w-full accent-godot-blue">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>緩動曲線 (Easing)</span>
+                            <span id="val-ease" class="text-godot-blue">EaseInOut</span>
+                        </div>
+                        <select id="param-ease" onchange="updateParams()" class="w-full bg-godot-dark border border-godot-border rounded px-2 py-1 text-slate-200 focus:outline-none">
+                            <option value="SINE">SINE (平滑自然)</option>
+                            <option value="CUBIC">CUBIC (經典加速)</option>
+                            <option value="EXPO">EXPO (高速衝擊)</option>
+                            <option value="BACK">BACK (回彈超越)</option>
+                            <option value="BOUNCE">BOUNCE (彈跳質感)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT PANEL: GDScript Inspector & Implementation Code -->
+        <aside class="w-96 bg-godot-panel border-l border-godot-border flex flex-col shrink-0">
+            <!-- Tab switcher for 3D/2D Code -->
+            <div class="flex border-b border-godot-border bg-godot-dark/60 text-xs">
+                <button id="tab-code-3d" onclick="switchCodeTab('3d')" class="flex-1 py-2.5 font-semibold text-center text-godot-blue border-b-2 border-godot-blue">
+                    <i data-lucide="file-code" class="w-3.5 h-3.5 inline mr-1"></i> Godot 4 (3D GDScript)
+                </button>
+                <button id="tab-code-2d" onclick="switchCodeTab('2d')" class="flex-1 py-2.5 font-semibold text-center text-slate-400 hover:text-white">
+                    <i data-lucide="file-code-2" class="w-3.5 h-3.5 inline mr-1"></i> Godot 4 (2D GDScript)
+                </button>
+            </div>
+
+            <!-- Description Box -->
+            <div class="p-3 bg-godot-dark/30 border-b border-godot-border text-xs">
+                <div class="font-bold text-slate-200 mb-1 flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-4 h-4 text-godot-blue"></i>
+                    運鏡原理與鏡頭語言
+                </div>
+                <p id="technique-desc" class="text-slate-400 leading-relaxed">
+                    攝影機緩慢向前靠近主體，將焦點逐漸引導至角色的表情細節或場景關鍵特寫。
+                </p>
+            </div>
+
+            <!-- Code Display Box -->
+            <div class="flex-1 relative bg-godot-dark overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between px-3 py-1.5 bg-godot-panel/50 text-slate-400 border-b border-godot-border text-[11px] font-mono">
+                    <span id="code-file-label">Camera3D_Technique.gd</span>
+                    <button onclick="copyCode()" class="hover:text-white flex items-center gap-1 text-godot-blue">
+                        <i data-lucide="copy" class="w-3 h-3"></i> 複製代碼
+                    </button>
+                </div>
+                <pre class="flex-1 p-3 overflow-y-auto font-mono text-[11px] leading-5 text-slate-300" id="code-container"><code id="code-block"></code></pre>
+            </div>
+
+            <!-- Tips & Usage -->
+            <div class="p-3 border-t border-godot-border bg-godot-dark/40 text-[11px] text-slate-400">
+                <div class="font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-yellow-400"></i> Godot 實戰小貼士
+                </div>
+                <p id="godot-tip-text">在 Godot 4 中，推薦使用 <code class="text-godot-blue font-mono">create_tween()</code> 鏈式呼叫處理 Smooth Camera Movements，避免直接在 <code class="text-godot-blue font-mono">_process</code> 中編寫複雜的插值，效能更佳且維護方便。</p>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // Data containing all 13 categories and detailed techniques
+        const cameraCategories = [
+            {
+                id: 1,
+                title: "1. 推拉運鏡 (Dolly)",
+                icon: "arrow-up-down",
+                items: [
+                    { id: "dolly_slow_in", name: "慢速推進 (Slow Dolly In)", mode: "both", desc: "攝影機緩慢向前靠近主體，提升情緒張力與專註感。", fov: 70 },
+                    { id: "dolly_slow_out", name: "慢速拉出 (Slow Dolly Out)", mode: "both", desc: "攝影機緩慢向後遠離主體，展現主體的孤獨感或交代周遭環境。", fov: 70 },
+                    { id: "dolly_fast_in", name: "快速推進 (Fast Dolly In)", mode: "both", desc: "攝影機急速向前逼近主體面部，營造強烈的緊迫與驚悚感。", fov: 70 },
+                    { id: "dolly_zoom", name: "希區考克滑動變焦 (Dolly Zoom)", mode: "3d", desc: "攝影機後移同時變焦放大，保持主體大小不變，背景產生空間擠壓或擴展的眩暈感。", fov: 90 }
+                ]
+            },
+            {
+                id: 2,
+                title: "2. 無限尺度連續鏡頭 (Scale & Zoom)",
+                icon: "maximize-2",
+                items: [
+                    { id: "macro_zoom", name: "極致微距變焦 (Micro Zoom)", mode: "both", desc: "從面部到眼部極近距離的微觀視角變焦過渡，呈現細節刻畫。", fov: 30 },
+                    { id: "cosmic_zoom", name: "宇宙級超速變焦 (Cosmic Zoom)", mode: "both", desc: "從太空/高空迅速穿梭至街道的極端尺度變焦轉換。", fov: 110 }
+                ]
+            },
+            {
+                id: 3,
+                title: "3. 角色定位構圖 (Character Framing)",
+                icon: "user",
+                items: [
+                    { id: "ots_shot", name: "過肩鏡頭 (Over-the-Shoulder)", mode: "3d", desc: "攝影機置於角色 A 肩後框取角色 B，建立對話與空間關係。", fov: 50 },
+                    { id: "fisheye_shot", name: "魚眼/窺視鏡 (Fisheye / Peephole)", mode: "both", desc: "極端廣角畸變，呈現圓形或扭曲透視視角，營造不安或監視感。", fov: 120 }
+                ]
+            },
+            {
+                id: 4,
+                title: "4. 障礙物與環境互動 (Environment)",
+                icon: "eye-off",
+                items: [
+                    { id: "wipe_reveal", name: "遮蔽物後揭示 (Wipe Reveal)", mode: "both", desc: "攝影機橫向滑過牆體、柱子或遮蔽物，自然過渡展現後方景象。", fov: 65 },
+                    { id: "hole_flythrough", name: "穿行鏡頭 (Fly Through Hole)", mode: "3d", desc: "攝影機穿過窗戶、牆洞或狹縫進入室內空間。", fov: 75 }
+                ]
+            },
+            {
+                id: 5,
+                title: "5. 焦點與鏡頭操控 (Focus Control)",
+                icon: "aperture",
+                items: [
+                    { id: "blur_to_clear", name: "虛焦至清晰 (Blur to Clear)", mode: "both", desc: "畫面從完全模糊失焦開始，緩慢聚焦至景物清晰，常用於醒來或回神場景。", fov: 60 },
+                    { id: "rack_focus", name: "焦點轉移 (Rack Focus)", mode: "3d", desc: "景深焦點從前景物件（如咖啡杯/手槍）快速轉移至背景主體人物。", fov: 45 }
+                ]
+            },
+            {
+                id: 6,
+                title: "6. 三腳架與滑軌運鏡 (Tilt & Pan / Tracking)",
+                icon: "move",
+                items: [
+                    { id: "tilt_up", name: "上搖鏡頭 (Tilt Up)", mode: "both", desc: "攝影機仰角由下至上垂直向上搖動，展現建築宏偉或角色高大。", fov: 70 },
+                    { id: "tilt_down", name: "下搖鏡頭 (Tilt Down)", mode: "both", desc: "攝影機俯角由上至下垂直向下搖動。", fov: 70 },
+                    { id: "truck_left", name: "左橫移 (Truck Left)", mode: "both", desc: "沿平移軌道向左橫向平滑移動。", fov: 70 },
+                    { id: "truck_right", name: "右橫移 (Truck Right)", mode: "both", desc: "沿平移軌道向右橫向平滑移動。", fov: 70 }
+                ]
+            },
+            {
+                id: 7,
+                title: "7. 環繞運鏡 (Orbit / Arc)",
+                icon: "rotate-cw",
+                items: [
+                    { id: "orbit_180", name: "180度半周環繞 (180 Orbit)", mode: "3d", desc: "攝影機繞主體旋轉 180 度，展現主體正面至背面的環境。", fov: 65 },
+                    { id: "orbit_360_fast", name: "快速 360 度旋轉 (Fast 360 Orbit)", mode: "3d", desc: "繞主體急速旋轉一周，強化英雄時刻或混亂時刻。", fov: 75 },
+                    { id: "cinematic_arc", name: "慢速電影弧線 (Cinematic Arc)", mode: "3d", desc: "沿優雅寬曲線移動，展現主體側面輪廓與豐富空間層次。", fov: 55 }
+                ]
+            },
+            {
+                id: 8,
+                title: "8. 垂直運動與升降台 (Pedestal & Crane)",
+                icon: "arrow-up",
+                items: [
+                    { id: "pedestal_up", name: "台座升降 (Pedestal Up)", mode: "both", desc: "攝影機平行高度垂直升起，視角保持水平。", fov: 65 },
+                    { id: "crane_up_reveal", name: "吊臂上升俯瞰 (Crane Up Reveal)", mode: "3d", desc: "升向高空同時向下俯視，揭示巨幅全景與壯闊場面。", fov: 80 },
+                    { id: "crane_down_land", name: "吊臂下降著陸 (Crane Down)", mode: "3d", desc: "從高空俯視緩降靠近主體，進入聚焦狀態。", fov: 70 }
+                ]
+            },
+            {
+                id: 9,
+                title: "9. 光學鏡頭特效 (Optical Zoom)",
+                icon: "zoom-in",
+                items: [
+                    { id: "optical_zoom_in", name: "平滑光學變焦推進 (Optical Zoom In)", mode: "both", desc: "機身靜止，僅透過變焦焦段放大主體，產生背景視角壓縮效果。", fov: 25 },
+                    { id: "crash_zoom", name: "衝擊驟拉變焦 (Crash Zoom)", mode: "both", desc: "極速變焦直推至細節特寫，具備強烈的港片或動漫戲劇效果。", fov: 20 }
+                ]
+            },
+            {
+                id: 10,
+                title: "10. 無人機與航拍視角 (Drone / Aerial)",
+                icon: "plane",
+                items: [
+                    { id: "drone_flyover", name: "無人機飛越 (Drone Flyover)", mode: "3d", desc: "高空向前飛越景觀，視野遼闊流暢。", fov: 85 },
+                    { id: "drone_topdown", name: "垂直俯拍上帝視角 (Top-Down God View)", mode: "both", desc: "鏡頭垂直90度向下並伴隨緩慢旋轉，呈現幾何美感。", fov: 90 },
+                    { id: "fpv_dive", name: "FPV 穿梭俯沖 (FPV Drone Dive)", mode: "3d", desc: "沿高空或建築表面進行極限、激進的俯沖滾轉移動。", fov: 100 }
+                ]
+            },
+            {
+                id: 11,
+                title: "11. 風格化動態運鏡 (Stylized Motion)",
+                icon: "activity",
+                items: [
+                    { id: "handheld_shake", name: "手持紀實手搖 (Handheld Camera)", mode: "both", desc: "模擬手持攝影機的自然輕微抖動與紀實臨場感。", fov: 65 },
+                    { id: "whip_pan", name: "快速甩鏡 (Whip Pan)", mode: "both", desc: "迅猛橫向轉向搖動，產生極端動態模糊與流暢轉場。", fov: 75 },
+                    { id: "dutch_angle", name: "荷蘭角傾斜 (Dutch Angle)", mode: "both", desc: "攝影機沿 Z 軸傾斜角度，營造心理不穩定、危險或混亂感。", fov: 65 }
+                ]
+            },
+            {
+                id: 12,
+                title: "12. 主體追蹤 (Subject Tracking)",
+                icon: "crosshair",
+                items: [
+                    { id: "lead_shot", name: "引領鏡頭/反向追蹤 (Lead Shot)", mode: "both", desc: "攝影機後移並匹配主體前進速度，始終保持在主體前方拍攝。", fov: 65 },
+                    { id: "follow_shot", name: "跟隨鏡頭/正向追蹤 (Follow Shot)", mode: "both", desc: "攝影機跟隨主體後方，保持恆定距離同步移動。", fov: 65 },
+                    { id: "pov_walk", name: "第一人稱步行 (POV Walk)", mode: "both", desc: "模擬第一人稱步行前進時的上下起伏與視野晃動。", fov: 75 }
+                ]
+            },
+            {
+                id: 13,
+                title: "13. 時間與極端透視 (Extreme Moves)",
+                icon: "zap",
+                items: [
+                    { id: "bullet_time", name: "子彈時間 (Bullet Time)", mode: "3d", desc: "時間接近凍結，攝影機圍繞動態動作主體進行高速 360 環繞。", fov: 70 },
+                    { id: "barrel_roll", name: "漩 vortex 桶滾旋轉 (Barrel Roll)", mode: "3d", desc: "前進時鏡頭進行 360 度自轉翻滾，製造盜夢空間般眩暈感。", fov: 80 },
+                    { id: "worms_eye", name: "貼地蟲眼仰視 (Worm's Eye View)", mode: "both", desc: "極低角度緊貼地面仰視主體，呈現宏大壓迫感。", fov: 85 }
+                ]
+            }
+        ];
+
+        let currentDimension = '3d'; // '3d' or '2d'
+        let currentTechnique = cameraCategories[0].items[0];
+        let animDuration = 2.0;
+        let animDistance = 1.0;
+        let animFov = 70;
+        let animEase = 'SINE';
+
+        let scene, camera, renderer, targetMesh, envGroup, cameraGizmo;
+        let isAnimating = false;
+        let animProgress = 0;
+        let initialCamPos = new THREE.Vector3(0, 2, 5);
+        let initialTargetPos = new THREE.Vector3(0, 1, 0);
+
+        function init3D() {
+            const container = document.getElementById('viewport-3d');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x12151c);
+            scene.fog = new THREE.FogExp2(0x12151c, 0.03);
+
+            camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 2, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x478cbf, 1.2);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0xff7700, 1.5, 10);
+            pointLight.position.set(-2, 1, 2);
+            scene.add(pointLight);
+
+            // Ground Grid
+            const gridHelper = new THREE.GridHelper(30, 30, 0x478cbf, 0x282c37);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            // Environment Objects Group
+            envGroup = new THREE.Group();
+            scene.add(envGroup);
+
+            // Populate some background/foreground props for depth
+            for(let i=0; i<15; i++) {
+                const boxGeo = new THREE.BoxGeometry(0.8, Math.random() * 3 + 1, 0.8);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x2e3440, roughness: 0.4 });
+                const mesh = new THREE.Mesh(boxGeo, mat);
+                mesh.position.set((Math.random() - 0.5) * 16, mesh.geometry.parameters.height / 2, (Math.random() - 0.5) * 16);
+                if (mesh.position.distanceTo(new THREE.Vector3(0,0,0)) > 2) {
+                    envGroup.add(mesh);
+                }
+            }
+
+            // Target Character Model (Stylized Robot/Humanoid placeholder)
+            const charGroup = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.3, 1.2, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x478cbf, metalness: 0.5, roughness: 0.2 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1;
+            charGroup.add(body);
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xe5e9f0, roughness: 0.1 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.9;
+            charGroup.add(head);
+
+            // Eyes / Visor
+            const visorGeo = new THREE.BoxGeometry(0.4, 0.12, 0.25);
+            const visorMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 1.95, 0.2);
+            charGroup.add(visor);
+
+            targetMesh = charGroup;
+            scene.add(targetMesh);
+
+            // Window resize handle
+            window.addEventListener('resize', () => {
+                if(!renderer) return;
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+                renderer.setSize(w, h);
+            });
+
+            animate3D();
+        }
+
+        let animStartTime = 0;
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            if (isAnimating) {
+                const elapsed = (performance.now() - animStartTime) / 1000;
+                animProgress = Math.min(elapsed / animDuration, 1.0);
+
+                let t = applyEasing(animProgress, animEase);
+                apply3DCameraTechnique(t);
+
+                if (animProgress >= 1.0) {
+                    isAnimating = false;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function applyEasing(t, easeType) {
+            switch(easeType) {
+                case 'SINE': return 0.5 - Math.cos(t * Math.PI) / 2;
+                case 'CUBIC': return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                case 'EXPO': return t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+                case 'BACK': const c1 = 1.70158; const c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+                case 'BOUNCE': 
+                    const n1 = 7.5625, d1 = 2.75;
+                    if (t < 1 / d1) return n1 * t * t;
+                    else if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+                    else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+                    else return n1 * (t -= 2.625 / d1) * t + 0.984375;
+                default: return t;
+            }
+        }
+
+        // Apply specific 3D camera trajectory transformations based on selected ID
+        function apply3DCameraTechnique(t) {
+            const distScale = animDistance;
+            camera.fov = animFov;
+
+            switch(currentTechnique.id) {
+                case "dolly_slow_in":
+                    camera.position.set(0, 1.8, 6.0 - t * 3.5 * distScale);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "dolly_slow_out":
+                    camera.position.set(0, 1.8, 2.0 + t * 4.5 * distScale);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "dolly_fast_in":
+                    camera.position.set(0, 1.9, 5.5 - t * 4.2 * distScale);
+                    camera.lookAt(0, 1.9, 0);
+                    break;
+                case "dolly_zoom":
+                    // Vertigo effect: Move back while decreasing FOV (zooming in)
+                    const startDist = 2.5, endDist = 7.0 * distScale;
+                    const curDist = startDist + (endDist - startDist) * t;
+                    camera.position.set(0, 1.8, curDist);
+                    // Maintain constant height of subject
+                    camera.fov = 2 * Math.atan(1.2 / curDist) * (180 / Math.PI);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "macro_zoom":
+                    camera.position.set(0, 1.95, 2.5 - t * 2.0 * distScale);
+                    camera.lookAt(0, 1.95, 0.2);
+                    camera.fov = 40 - t * 25;
+                    break;
+                case "cosmic_zoom":
+                    camera.position.set(0, 20 - t * 18 * distScale, 15 - t * 13 * distScale);
+                    camera.lookAt(0, 1, 0);
+                    camera.fov = 100 - t * 45;
+                    break;
+                case "ots_shot":
+                    camera.position.set(0.6, 1.8, 1.2);
+                    camera.rotation.set(0, 0.3 + Math.sin(t * Math.PI) * 0.05, 0);
+                    break;
+                case "fisheye_shot":
+                    camera.position.set(0, 1.8, 1.8);
+                    camera.fov = 120 + Math.sin(t * Math.PI) * 15;
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "wipe_reveal":
+                    camera.position.set(-4.0 + t * 8.0 * distScale, 1.8, 4.0);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "hole_flythrough":
+                    camera.position.set(0, 1.8, 8.0 - t * 9.0 * distScale);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "blur_to_clear":
+                    camera.position.set(0, 1.8, 4.0);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "rack_focus":
+                    camera.position.set(0.8, 1.5, 2.5);
+                    camera.lookAt(t < 0.5 ? 0.8 : 0, 1.5, t < 0.5 ? 2.0 : 0);
+                    break;
+                case "tilt_up":
+                    camera.position.set(0, 0.5, 3.5);
+                    camera.rotation.x = -0.5 + t * 0.9 * distScale;
+                    break;
+                case "tilt_down":
+                    camera.position.set(0, 4.0, 3.5);
+                    camera.rotation.x = 0.4 - t * 0.8 * distScale;
+                    break;
+                case "truck_left":
+                    camera.position.set(3.0 - t * 6.0 * distScale, 1.8, 4.0);
+                    camera.lookAt(3.0 - t * 6.0 * distScale, 1.5, 0);
+                    break;
+                case "truck_right":
+                    camera.position.set(-3.0 + t * 6.0 * distScale, 1.8, 4.0);
+                    camera.lookAt(-3.0 + t * 6.0 * distScale, 1.5, 0);
+                    break;
+                case "orbit_180":
+                    const angle180 = t * Math.PI * distScale;
+                    camera.position.x = Math.sin(angle180) * 4.5;
+                    camera.position.z = Math.cos(angle180) * 4.5;
+                    camera.position.y = 1.8;
+                    camera.lookAt(0, 1.2, 0);
+                    break;
+                case "orbit_360_fast":
+                    const angle360 = t * Math.PI * 2 * distScale;
+                    camera.position.x = Math.sin(angle360) * 4.0;
+                    camera.position.z = Math.cos(angle360) * 4.0;
+                    camera.position.y = 1.8;
+                    camera.lookAt(0, 1.2, 0);
+                    break;
+                case "cinematic_arc":
+                    const arcAngle = -0.8 + t * 1.6 * distScale;
+                    camera.position.x = Math.sin(arcAngle) * 5.0;
+                    camera.position.z = Math.cos(arcAngle) * 5.0;
+                    camera.position.y = 1.2 + Math.sin(t * Math.PI) * 0.8;
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "pedestal_up":
+                    camera.position.set(0, 0.6 + t * 2.5 * distScale, 4.0);
+                    camera.lookAt(0, 0.6 + t * 2.5 * distScale, 0);
+                    break;
+                case "crane_up_reveal":
+                    camera.position.set(0, 1.5 + t * 6.0 * distScale, 4.0 + t * 3.0);
+                    camera.lookAt(0, 0, 0);
+                    break;
+                case "crane_down_land":
+                    camera.position.set(0, 7.0 - t * 5.5 * distScale, 6.0 - t * 2.5);
+                    camera.lookAt(0, 1.2, 0);
+                    break;
+                case "optical_zoom_in":
+                    camera.position.set(0, 1.8, 6.0);
+                    camera.fov = 75 - t * 50 * distScale;
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "crash_zoom":
+                    camera.position.set(0, 1.8, 5.0);
+                    camera.fov = 70 - (t > 0.7 ? (t - 0.7) / 0.3 : 0) * 55 * distScale;
+                    camera.lookAt(0, 1.95, 0);
+                    break;
+                case "drone_flyover":
+                    camera.position.set(0, 6.0, 12.0 - t * 20.0 * distScale);
+                    camera.lookAt(0, 0, camera.position.z - 5);
+                    break;
+                case "drone_topdown":
+                    camera.position.set(0, 10.0, 0.1);
+                    camera.rotation.set(-Math.PI / 2, 0, t * Math.PI * 0.5);
+                    break;
+                case "fpv_dive":
+                    camera.position.set(0, 12.0 - t * 10.0 * distScale, 10.0 - t * 12.0);
+                    camera.rotation.z = Math.sin(t * Math.PI * 2) * 0.8;
+                    camera.lookAt(0, 0, 0);
+                    break;
+                case "handheld_shake":
+                    const shakeX = (Math.sin(t * 30) * 0.08 + Math.cos(t * 45) * 0.05) * distScale;
+                    const shakeY = (Math.cos(t * 25) * 0.08 + Math.sin(t * 50) * 0.04) * distScale;
+                    camera.position.set(shakeX, 1.8 + shakeY, 4.0);
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "whip_pan":
+                    const panAngle = (t < 0.2 || t > 0.8) ? (t < 0.2 ? t * 0.5 : 0.1 + (t - 0.8) * 0.5) : (t - 0.2) * 10;
+                    camera.rotation.y = panAngle * distScale;
+                    break;
+                case "dutch_angle":
+                    camera.position.set(0, 1.8, 4.0);
+                    camera.rotation.z = Math.sin(t * Math.PI) * 0.4 * distScale;
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "lead_shot":
+                    const leadZ = 5.0 - t * 8.0 * distScale;
+                    targetMesh.position.z = leadZ - 3.0;
+                    camera.position.set(0, 1.8, leadZ);
+                    camera.lookAt(0, 1.5, targetMesh.position.z);
+                    break;
+                case "follow_shot":
+                    const followZ = 5.0 - t * 8.0 * distScale;
+                    targetMesh.position.z = followZ;
+                    camera.position.set(0, 1.8, followZ + 3.5);
+                    camera.lookAt(0, 1.5, targetMesh.position.z);
+                    break;
+                case "pov_walk":
+                    const walkZ = 6.0 - t * 8.0 * distScale;
+                    const bobY = Math.abs(Math.sin(t * 20)) * 0.15;
+                    const bobX = Math.sin(t * 10) * 0.08;
+                    camera.position.set(bobX, 1.8 + bobY, walkZ);
+                    camera.lookAt(0, 1.8, walkZ - 5);
+                    break;
+                case "bullet_time":
+                    const btAngle = t * Math.PI * 2 * distScale;
+                    camera.position.x = Math.sin(btAngle) * 3.5;
+                    camera.position.z = Math.cos(btAngle) * 3.5;
+                    camera.position.y = 1.8 + Math.sin(t * Math.PI * 4) * 0.3;
+                    camera.lookAt(0, 1.5, 0);
+                    break;
+                case "barrel_roll":
+                    camera.position.set(0, 1.8, 6.0 - t * 5.0 * distScale);
+                    camera.rotation.z = t * Math.PI * 2 * distScale;
+                    break;
+                case "worms_eye":
+                    camera.position.set(0, 0.2, 2.5 - t * 0.5 * distScale);
+                    camera.rotation.x = 0.6;
+                    break;
+                default:
+                    camera.position.set(0, 2, 5);
+                    camera.lookAt(0, 1, 0);
+            }
+            camera.updateProjectionMatrix();
+        }
+
+        let ctx2d;
+        function init2D() {
+            const canvas = document.getElementById('canvas2d');
+            const container = document.getElementById('viewport-2d');
+            canvas.width = container.clientWidth || 600;
+            canvas.height = container.clientHeight || 400;
+            ctx2d = canvas.getContext('2d');
+            render2DFrame(0);
+        }
+
+        function render2DFrame(tProgress) {
+            if (!ctx2d) return;
+            const canvas = ctx2d.canvas;
+            ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+
+            const t = applyEasing(tProgress, animEase);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            ctx2d.save();
+
+            // Simulate Camera 2D Zoom & Offset
+            let zoom = 1.0;
+            let offsetX = 0;
+            let offsetY = 0;
+            let rotation = 0;
+
+            // Apply 2D transforms according to technique
+            if (currentTechnique.id.includes('dolly_slow_in') || currentTechnique.id.includes('zoom_in')) {
+                zoom = 1.0 + t * 0.8 * animDistance;
+            } else if (currentTechnique.id.includes('dolly_slow_out')) {
+                zoom = 1.8 - t * 0.8 * animDistance;
+            } else if (currentTechnique.id === 'truck_left') {
+                offsetX = -t * 150 * animDistance;
+            } else if (currentTechnique.id === 'truck_right') {
+                offsetX = t * 150 * animDistance;
+            } else if (currentTechnique.id === 'tilt_up') {
+                offsetY = -t * 120 * animDistance;
+            } else if (currentTechnique.id === 'tilt_down') {
+                offsetY = t * 120 * animDistance;
+            } else if (currentTechnique.id === 'handheld_shake') {
+                offsetX = Math.sin(t * 40) * 12 * animDistance;
+                offsetY = Math.cos(t * 35) * 12 * animDistance;
+            } else if (currentTechnique.id === 'dutch_angle') {
+                rotation = Math.sin(t * Math.PI) * 0.25 * animDistance;
+            } else if (currentTechnique.id === 'crash_zoom') {
+                zoom = 1.0 + (t > 0.7 ? (t - 0.7) / 0.3 : 0) * 1.5 * animDistance;
+            }
+
+            // Apply viewport transform
+            ctx2d.translate(cx + offsetX, cy + offsetY);
+            ctx2d.rotate(rotation);
+            ctx2d.scale(zoom, zoom);
+
+            // Draw Grid Background
+            ctx2d.strokeStyle = '#282c37';
+            ctx2d.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = -600; x < 600; x += gridSize) {
+                ctx2d.beginPath();
+                ctx2d.moveTo(x, -600);
+                ctx2d.lineTo(x, 600);
+                ctx2d.stroke();
+            }
+            for (let y = -600; y < 600; y += gridSize) {
+                ctx2d.beginPath();
+                ctx2d.moveTo(-600, y);
+                ctx2d.lineTo(600, y);
+                ctx2d.stroke();
+            }
+
+            // Draw 2D Character Sprite Placeholder
+            ctx2d.fillStyle = '#478cbf';
+            ctx2d.beginPath();
+            ctx2d.arc(0, -20, 25, 0, Math.PI * 2); // Head
+            ctx2d.fill();
+
+            ctx2d.fillStyle = '#3a3f4d';
+            ctx2d.fillRect(-20, 10, 40, 50); // Body
+
+            // Visor
+            ctx2d.fillStyle = '#00ffcc';
+            ctx2d.fillRect(-10, -25, 20, 8);
+
+            // 2D Camera Frame Indicator
+            ctx2d.strokeStyle = '#41b883';
+            ctx2d.lineWidth = 2 / zoom;
+            ctx2d.strokeRect(-160, -100, 320, 200);
+
+            ctx2d.restore();
+        }
+
+        function generateGDScript(techId, dim) {
+            const easeName = animEase;
+            const dur = animDuration.toFixed(1);
+            const dist = animDistance.toFixed(1);
+
+            if (dim === '3d') {
+                switch(techId) {
+                    case "dolly_slow_in":
+                        return `extends Camera3D
+# 1. 慢速推進 (Slow Dolly In)
+@export var target: Node3D
+@export var duration: float = ${dur}
+
+func execute_dolly_in():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName}).set_ease(Tween.EASE_OUT)
+    var target_pos = global_position - global_transform.basis.z * (3.0 * ${dist})
+    tween.tween_property(self, "global_position", target_pos, duration)`;
+
+                    case "dolly_zoom":
+                        return `extends Camera3D
+# 希區考克滑動變焦 (Dolly Zoom / Vertigo)
+@export var target: Node3D
+@export var duration: float = ${dur}
+var initial_fov: float
+
+func execute_dolly_zoom():
+    initial_fov = fov
+    var subject_distance = global_position.distance_to(target.global_position)
+    var target_distance = subject_distance + (4.0 * ${dist})
+    
+    var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_${easeName})
+    # 後移攝影機
+    var back_pos = global_position + global_transform.basis.z * (4.0 * ${dist})
+    tween.tween_property(self, "global_position", back_pos, duration)
+    # 計算並縮小 FOV 保持主體尺寸一致
+    var new_fov = 2.0 * rad_to_deg(atan(tan(deg_to_rad(initial_fov / 2.0)) * (subject_distance / target_distance)))
+    tween.tween_property(self, "fov", new_fov, duration)`;
+
+                    case "crash_zoom":
+                        return `extends Camera3D
+# 衝擊變焦 (Crash Zoom)
+@export var duration: float = 0.3
+
+func trigger_crash_zoom():
+    var tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+    tween.tween_property(self, "fov", 20.0, duration)`;
+
+                    case "handheld_shake":
+                        return `extends Camera3D
+# 手持紀實風格抖動 (Handheld Shake)
+@export var shake_strength: float = 0.1 * ${dist}
+var noise = FastNoiseLite.new()
+var noise_speed: float = 15.0
+var time_passed: float = 0.0
+
+func _ready():
+    noise.seed = randi()
+
+func _process(delta):
+    time_passed += delta * noise_speed
+    h_offset = noise.get_noise_2d(time_passed, 0) * shake_strength
+    v_offset = noise.get_noise_2d(0, time_passed) * shake_strength`;
+
+                    case "orbit_180":
+                        return `extends Camera3D
+# 180度半周環繞 (180 Orbit)
+@export var target: Node3D
+@export var radius: float = 4.5
+@export var duration: float = ${dur}
+
+func execute_orbit_180():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName})
+    tween.tween_method(func(angle: float):
+        var offset = Vector3(sin(angle), 0.3, cos(angle)) * radius
+        global_position = target.global_position + offset
+        look_at(target.global_position)
+    , 0.0, PI * ${dist}, duration)`;
+
+                    case "whip_pan":
+                        return `extends Camera3D
+# 快速甩鏡 (Whip Pan)
+@export var pan_angle_deg: float = 90.0 * ${dist}
+@export var duration: float = 0.25
+
+func trigger_whip_pan():
+    var tween = create_tween().set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN_OUT)
+    var target_rot = rotation_degrees + Vector3(0, pan_angle_deg, 0)
+    tween.tween_property(self, "rotation_degrees", target_rot, duration)`;
+
+                    case "drone_topdown":
+                        return `extends Camera3D
+# 上帝視角垂直俯瞰 (Top-Down God View)
+@export var target: Node3D
+
+func align_topdown():
+    global_position = target.global_position + Vector3(0, 10, 0)
+    rotation_degrees = Vector3(-90, 0, 0)`;
+
+                    default:
+                        return `extends Camera3D
+# Godot 4.x Generic Camera Technique: ${techId}
+@export var duration: float = ${dur}
+
+func execute_camera_move():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName}).set_ease(Tween.EASE_IN_OUT)
+    tween.tween_property(self, "fov", ${animFov}.0, duration)`;
+                }
+            } else {
+                // 2D GDScript
+                switch(techId) {
+                    case "dolly_slow_in":
+                    case "optical_zoom_in":
+                        return `extends Camera2D
+# 2D 推進與鏡頭放大 (Camera2D Zoom In)
+@export var duration: float = ${dur}
+@export var target_zoom: Vector2 = Vector2(1.8, 1.8) * ${dist}
+
+func execute_zoom_in():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName}).set_ease(Tween.EASE_OUT)
+    tween.tween_property(self, "zoom", target_zoom, duration)`;
+
+                    case "truck_left":
+                        return `extends Camera2D
+# 2D 左橫移 (Truck Left)
+@export var distance: float = 200.0 * ${dist}
+@export var duration: float = ${dur}
+
+func execute_truck_left():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName})
+    tween.tween_property(self, "position:x", position.x - distance, duration)`;
+
+                    case "handheld_shake":
+                        return `extends Camera2D
+# 2D 畫面震動/手搖 (Camera2D Shake)
+@export var random_strength: float = 10.0 * ${dist}
+var rng = RandomNumberGenerator.new()
+
+func apply_shake(duration: float = ${dur}):
+    var tween = create_tween()
+    for i in range(int(duration * 20)):
+        var offset_vec = Vector2(rng.randf_range(-random_strength, random_strength), rng.randf_range(-random_strength, random_strength))
+        tween.tween_property(self, "offset", offset_vec, 0.05)
+    tween.tween_property(self, "offset", Vector2.ZERO, 0.1)`;
+
+                    case "dutch_angle":
+                        return `extends Camera2D
+# 2D 畫面傾斜 (Dutch Angle Roll)
+@export var duration: float = ${dur}
+@export var target_rotation_degrees: float = 15.0 * ${dist}
+
+func apply_dutch_angle():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName})
+    tween.tween_property(self, "rotation_degrees", target_rotation_degrees, duration)`;
+
+                    default:
+                        return `extends Camera2D
+# 2D 鏡頭控制: ${techId}
+@export var duration: float = ${dur}
+
+func animate_camera():
+    var tween = create_tween().set_trans(Tween.TRANS_${easeName})
+    tween.tween_property(self, "offset", Vector2(50, 0), duration)`;
+                }
+            }
+        }
+
+        function buildTechniqueMenu() {
+            const container = document.getElementById('technique-list');
+            container.innerHTML = '';
+
+            cameraCategories.forEach(cat => {
+                const catEl = document.createElement('div');
+                catEl.className = 'mb-2';
+                
+                let itemsHtml = '';
+                cat.items.forEach(item => {
+                    itemsHtml += `
+                        <button onclick="selectTechnique('${item.id}')" id="btn-tech-${item.id}"
+                                class="tech-item-btn w-full text-left px-3 py-1.5 my-0.5 rounded text-xs text-slate-300 hover:bg-godot-border/50 hover:text-white transition flex items-center justify-between">
+                            <span class="truncate">${item.name}</span>
+                            ${item.mode === '3d' ? '<span class="text-[9px] px-1 bg-blue-900/40 text-blue-300 border border-blue-700/30 rounded">3D</span>' : ''}
+                        </button>
+                    `;
+                });
+
+                catEl.innerHTML = `
+                    <div class="font-semibold text-xs text-slate-400 px-2 py-1 flex items-center gap-1.5 border-b border-godot-border/40 mb-1">
+                        <i data-lucide="${cat.icon}" class="w-3.5 h-3.5 text-godot-blue"></i>
+                        ${cat.title}
+                    </div>
+                    <div class="pl-2">
+                        ${itemsHtml}
+                    </div>
+                `;
+                container.appendChild(catEl);
+            });
+            lucide.createIcons();
+        }
+
+        function selectTechnique(techId) {
+            // Find item
+            let found = null;
+            cameraCategories.forEach(cat => {
+                cat.items.forEach(i => {
+                    if (i.id === techId) found = i;
+                });
+            });
+
+            if (!found) return;
+            currentTechnique = found;
+
+            // Highlight in menu
+            document.querySelectorAll('.tech-item-btn').forEach(btn => btn.classList.remove('bg-godot-blue', 'text-white', 'font-semibold'));
+            const activeBtn = document.getElementById(`btn-tech-${techId}`);
+            if (activeBtn) activeBtn.classList.add('bg-godot-blue', 'text-white', 'font-semibold');
+
+            // Update Header & Description
+            document.getElementById('current-technique-title').innerHTML = `<i data-lucide="clapperboard" class="w-4 h-4"></i> ${currentTechnique.name}`;
+            document.getElementById('technique-desc').innerText = currentTechnique.desc;
+
+            if (currentTechnique.fov) {
+                document.getElementById('param-fov').value = currentTechnique.fov;
+                animFov = currentTechnique.fov;
+                document.getElementById('val-fov').innerText = `${animFov}°`;
+            }
+
+            // Update Code Inspector
+            updateCodeInspector();
+
+            // Auto Trigger Animation
+            triggerAnimation();
+            lucide.createIcons();
+        }
+
+        function triggerAnimation() {
+            isAnimating = true;
+            animStartTime = performance.now();
+            if (currentDimension === '2d') {
+                let start2D = performance.now();
+                function anim2DStep() {
+                    const elapsed = (performance.now() - start2D) / 1000;
+                    const progress = Math.min(elapsed / animDuration, 1.0);
+                    render2DFrame(progress);
+                    if (progress < 1.0) requestAnimationFrame(anim2DStep);
+                }
+                requestAnimationFrame(anim2DStep);
+            }
+        }
+
+        function switchDimension(dim) {
+            currentDimension = dim;
+            document.getElementById('btn-mode-3d').className = dim === '3d' 
+                ? 'px-3 py-1.5 rounded-md font-medium transition-all bg-godot-blue text-white shadow'
+                : 'px-3 py-1.5 rounded-md font-medium transition-all text-slate-400 hover:text-white';
+            
+            document.getElementById('btn-mode-2d').className = dim === '2d' 
+                ? 'px-3 py-1.5 rounded-md font-medium transition-all bg-godot-blue text-white shadow'
+                : 'px-3 py-1.5 rounded-md font-medium transition-all text-slate-400 hover:text-white';
+
+            document.getElementById('viewport-3d').classList.toggle('hidden', dim !== '3d');
+            document.getElementById('viewport-2d').classList.toggle('hidden', dim !== '2d');
+
+            document.getElementById('view-mode-badge').innerText = dim === '3d' ? '視角: 3D Perspective' : '視角: 2D Viewport';
+
+            switchCodeTab(dim);
+            if (dim === '2d') init2D();
+            triggerAnimation();
+        }
+
+        function switchCodeTab(tabDim) {
+            document.getElementById('tab-code-3d').className = tabDim === '3d'
+                ? 'flex-1 py-2.5 font-semibold text-center text-godot-blue border-b-2 border-godot-blue'
+                : 'flex-1 py-2.5 font-semibold text-center text-slate-400 hover:text-white';
+
+            document.getElementById('tab-code-2d').className = tabDim === '2d'
+                ? 'flex-1 py-2.5 font-semibold text-center text-godot-blue border-b-2 border-godot-blue'
+                : 'flex-1 py-2.5 font-semibold text-center text-slate-400 hover:text-white';
+
+            document.getElementById('code-file-label').innerText = tabDim === '3d' ? 'Camera3D_Technique.gd' : 'Camera2D_Technique.gd';
+            
+            const rawScript = generateGDScript(currentTechnique.id, tabDim);
+            document.getElementById('code-block').innerHTML = highlightGDScript(rawScript);
+        }
+
+        function updateParams() {
+            animDuration = parseFloat(document.getElementById('param-duration').value);
+            animDistance = parseFloat(document.getElementById('param-distance').value);
+            animFov = parseInt(document.getElementById('param-fov').value);
+            animEase = document.getElementById('param-ease').value;
+
+            document.getElementById('val-duration').innerText = `${animDuration.toFixed(1)}s`;
+            document.getElementById('val-distance').innerText = `${animDistance.toFixed(1)}x`;
+            document.getElementById('val-fov').innerText = `${animFov}°`;
+            document.getElementById('val-ease').innerText = animEase;
+
+            updateCodeInspector();
+        }
+
+        function updateCodeInspector() {
+            const activeTab = document.getElementById('tab-code-3d').classList.contains('text-godot-blue') ? '3d' : '2d';
+            const rawScript = generateGDScript(currentTechnique.id, activeTab);
+            document.getElementById('code-block').innerHTML = highlightGDScript(rawScript);
+        }
+
+        // Simple syntax highlighter for GDScript display
+        function highlightGDScript(code) {
+            return code
+                .replace(/(extends|var|func|export|const|return|if|else|for|in|while)/g, '<span class="code-syntax-kw">$1</span>')
+                .replace(/(Camera3D|Camera2D|Vector3|Vector2|Tween|FastNoiseLite|Node3D|Node2D|float|int)/g, '<span class="code-syntax-type">$1</span>')
+                .replace(/(create_tween|tween_property|tween_method|set_trans|set_ease|set_parallel|deg_to_rad|rad_to_deg|atan|tan|sin|cos|look_at)/g, '<span class="code-syntax-fn">$1</span>')
+                .replace(/(#.*)/g, '<span class="code-syntax-cm">$1</span>')
+                .replace(/(\".*?\")/g, '<span class="code-syntax-str">$1</span>')
+                .replace(/\b(\d+\.?\d*)\b/g, '<span class="code-syntax-num">$1</span>');
+        }
+
+        function copyCode() {
+            const codeText = document.getElementById('code-block').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                alert('GDScript 代碼已成功複製至剪貼簿！');
+            });
+        }
+
+        function filterTechniques() {
+            const query = document.getElementById('technique-search').value.toLowerCase();
+            document.querySelectorAll('.tech-item-btn').forEach(btn => {
+                const text = btn.innerText.toLowerCase();
+                btn.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        function resetCameraView() {
+            if (camera) {
+                camera.position.set(0, 2, 5);
+                camera.lookAt(0, 1, 0);
+                camera.fov = 70;
+                camera.updateProjectionMatrix();
+            }
+        }
+
+        window.onload = function() {
+            buildTechniqueMenu();
+            init3D();
+            selectTechnique('dolly_slow_in');
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
