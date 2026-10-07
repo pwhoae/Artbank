@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader 管理器 | Shader Vault & Library</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        },
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js CDN for WebGL 2D/3D Shader Previews -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-emerald-500 selection:text-white">
+
+    <!-- Top Header Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <!-- Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-cubes text-slate-950 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                        Shader 庫管理器
+                    </h1>
+                    <p class="text-xs text-slate-400 mt-1">ShaderVault Pro v2.5</p>
+                </div>
+            </div>
+
+            <!-- Global Search & Sorting Bar -->
+            <div class="flex-1 max-w-md mx-4">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" placeholder="搜尋名稱、標籤或編號 (如 0001)..." 
+                        class="w-full pl-9 pr-20 py-1.5 bg-slate-950/80 border border-slate-700/80 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+                        <span id="shaderCountBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">0項</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-2">
+                <button id="btnNewShader" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition shadow-lg shadow-emerald-900/30">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>新增 Shader</span>
+                </button>
+                <button id="btnImportJson" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center space-x-1.5 border border-slate-700 transition">
+                    <i class="fa-solid fa-file-import text-cyan-400"></i>
+                    <span>匯入 JSON</span>
+                </button>
+                <button id="btnExportJson" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center space-x-1.5 border border-slate-700 transition">
+                    <i class="fa-solid fa-file-export text-emerald-400"></i>
+                    <span>匯出 JSON</span>
+                </button>
+                <!-- Cart Trigger Button -->
+                <button id="btnOpenCart" class="relative px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-cart-shopping text-amber-400"></i>
+                    <span>購物車</span>
+                    <span id="cartBadge" class="ml-1 bg-amber-500 text-slate-950 font-bold px-1.5 py-0.2 rounded-full text-[10px]">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col md:flex-row gap-6">
+
+        <!-- Sidebar Navigation & Filters -->
+        <aside class="w-full md:w-64 space-y-6 shrink-0">
+            <!-- View Category Tabs -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-1">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-2 mb-2">分類選單</div>
+                <button data-tab="all" class="tab-btn active w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-between text-slate-200 bg-slate-800/80 hover:bg-slate-800 transition">
+                    <span class="flex items-center space-x-2"><i class="fa-solid fa-layer-group text-slate-400"></i><span>全部庫存</span></span>
+                    <span id="countAll" class="text-xs bg-slate-900 px-2 py-0.5 rounded text-slate-400">0</span>
+                </button>
+                <button data-tab="favorite" class="tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+                    <span class="flex items-center space-x-2"><i class="fa-solid fa-star text-amber-400"></i><span>常用項目</span></span>
+                    <span id="countFav" class="text-xs bg-slate-900 px-2 py-0.5 rounded text-slate-400">0</span>
+                </button>
+                <button data-tab="template" class="tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition">
+                    <span class="flex items-center space-x-2"><i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i><span>基礎範本</span></span>
+                    <span id="countTpl" class="text-xs bg-slate-900 px-2 py-0.5 rounded text-slate-400">0</span>
+                </button>
+            </div>
+
+            <!-- Dimension Filter -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">渲染模式 Filter</div>
+                <div class="grid grid-cols-3 gap-1">
+                    <button data-dim="all" class="dim-filter-btn active py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-800 text-emerald-400 text-center">全部</button>
+                    <button data-dim="2d" class="dim-filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-950 text-slate-400 hover:text-slate-200 text-center">2D 效果</button>
+                    <button data-dim="3d" class="dim-filter-btn py-1.5 px-2 rounded-lg text-xs font-medium bg-slate-950 text-slate-400 hover:text-slate-200 text-center">3D 模型</button>
+                </div>
+            </div>
+
+            <!-- Performance Tier Filter -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">效能分級 (Performance)</div>
+                <div class="space-y-1">
+                    <label class="flex items-center space-x-2 px-2 py-1 rounded hover:bg-slate-800/50 cursor-pointer text-xs text-slate-300">
+                        <input type="checkbox" value="Low" class="perf-checkbox rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span>Low 🟢 (低開銷/Mobile)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 px-2 py-1 rounded hover:bg-slate-800/50 cursor-pointer text-xs text-slate-300">
+                        <input type="checkbox" value="Medium" class="perf-checkbox rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-0" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                        <span>Medium 🟡 (中等/一般)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 px-2 py-1 rounded hover:bg-slate-800/50 cursor-pointer text-xs text-slate-300">
+                        <input type="checkbox" value="High" class="perf-checkbox rounded border-slate-700 bg-slate-950 text-rose-500 focus:ring-0" checked>
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                        <span>High 🔴 (高算力/Raymarch)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Auto-Numbering Info Card -->
+            <div class="bg-slate-900/50 border border-slate-800/80 rounded-xl p-3 text-xs text-slate-400 space-y-1">
+                <div class="font-semibold text-slate-300 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrow-down-1-9 text-emerald-400"></i>
+                    <span>編號規範 (`0000`)</span>
+                </div>
+                <p>所有 Shader 皆依 `0001` - `9999` 自動順序補零，匯入新資料時會自動重排排序。</p>
+            </div>
+        </aside>
+
+        <!-- Main Card Grid Area -->
+        <main class="flex-1 space-y-4">
+            <!-- Grid Header Controls -->
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div class="text-sm font-semibold text-slate-300 flex items-center space-x-2">
+                    <span id="currentViewTitle">全部庫存</span>
+                    <span class="text-xs font-normal text-slate-500">（實時 WebGL 畫布動態加載）</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs text-slate-400">排序方式：</label>
+                    <select id="sortSelect" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-1 focus:outline-none focus:border-emerald-500">
+                        <option value="id-asc">編號小至大 (0001 ➔ ...)</option>
+                        <option value="id-desc">編號大至小</option>
+                        <option value="title">名稱</option>
+                        <option value="perf">效能等級</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Shader Cards Grid -->
+            <div id="shaderGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Cards injected dynamically -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center space-y-3 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800">
+                <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <div class="text-slate-300 font-medium text-sm">找不到符合條件的 Shader</div>
+                <p class="text-xs text-slate-500 max-w-sm">嘗試調整搜尋關鍵字或勾選不同的分類/效能篩選器。</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Shader Detail & Interactive Preview Drawer -->
+    <div id="modalDetail" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+                <div class="flex items-center space-x-3">
+                    <span id="detailId" class="font-mono text-xs px-2 py-0.5 rounded bg-slate-800 text-emerald-400 font-bold">0001</span>
+                    <h3 id="detailTitle" class="text-base font-bold text-slate-100">Shader 名稱</h3>
+                    <span id="detailDimBadge" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 font-semibold border border-cyan-800">2D</span>
+                </div>
+                <button class="btnCloseModal text-slate-400 hover:text-slate-100 text-xl px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Grid: Preview & Code) -->
+            <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Big WebGL Interactive Preview & Performance Info -->
+                <div class="space-y-4 flex flex-col">
+                    <div class="relative w-full aspect-square bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center group">
+                        <canvas id="detailCanvas" class="w-full h-full object-cover"></canvas>
+                        <div class="absolute bottom-3 right-3 text-[10px] bg-slate-900/80 px-2 py-1 rounded text-slate-400 pointer-events-none backdrop-blur">
+                            <i class="fa-solid fa-arrows-spin mr-1"></i>實時 WebGL 預覽
+                        </div>
+                    </div>
+
+                    <!-- Performance Stats -->
+                    <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-4 space-y-2">
+                        <div class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-gauge-high text-amber-400 mr-1.5"></i>效能分析指標</span>
+                            <span id="detailPerfBadge" class="text-xs px-2 py-0.5 rounded font-bold">Low</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 pt-1">
+                            <div>指令估算：<span id="detailInstructions" class="text-slate-200 font-mono">~35 ops</span></div>
+                            <div>貼圖採樣：<span id="detailTextures" class="text-slate-200 font-mono">0 - 1</span></div>
+                        </div>
+                        <p id="detailPerfNote" class="text-xs text-slate-400 pt-1 border-t border-slate-800/60 leading-relaxed">
+                            適用於多數行動裝置與一般 UI 特效。
+                        </p>
+                    </div>
+
+                    <!-- YouTube Demo Embed Container -->
+                    <div id="ytDemoContainer" class="hidden space-y-2">
+                        <div class="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
+                            <i class="fa-brands fa-youtube text-rose-500 text-sm"></i>
+                            <span>實機展示 (YouTube Demo)</span>
+                        </div>
+                        <div class="aspect-video w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+                            <iframe id="ytIframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Description & Code Viewer -->
+                <div class="space-y-4 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div>
+                            <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Shader 說明</div>
+                            <p id="detailDescription" class="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                                詳細敘述內容...
+                            </p>
+                        </div>
+
+                        <!-- Code Header -->
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-code text-cyan-400"></i>
+                                <span>GLSL Fragment Shader 代碼</span>
+                            </div>
+                            <button id="btnCopyDetailCode" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded border border-slate-700 flex items-center space-x-1 transition">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>複製代碼</span>
+                            </button>
+                        </div>
+
+                        <!-- Code Block -->
+                        <div class="relative bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+                            <pre class="p-4 text-xs text-emerald-400 font-mono overflow-x-auto max-h-[320px] leading-relaxed" id="detailCodeText"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Modal Bottom Actions -->
+                    <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+                        <button id="btnToggleFavModal" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center space-x-1.5">
+                            <i class="fa-regular fa-star text-amber-400"></i>
+                            <span id="txtFavModal">加入常用</span>
+                        </button>
+                        <button id="btnToggleCartModal" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold flex items-center space-x-1.5">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span id="txtCartModal">加入購物車</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Shader Cart Panel -->
+    <div id="modalCart" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-cart-shopping text-amber-400 text-lg"></i>
+                    <h3 class="text-base font-bold text-slate-100">Shader 暫存購物車</h3>
+                </div>
+                <button class="btnCloseModal text-slate-400 hover:text-slate-100 text-xl px-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Cart Items List -->
+            <div id="cartItemsList" class="flex-1 overflow-y-auto p-6 space-y-3">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Cart Footer Actions -->
+            <div class="px-6 py-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between">
+                <button id="btnClearCart" class="text-xs text-rose-400 hover:text-rose-300 flex items-center space-x-1">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>清空購物車</span>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <button id="btnBatchCopy" class="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700">
+                        <i class="fa-solid fa-copy mr-1 text-cyan-400"></i>批次複製 Shader 代碼
+                    </button>
+                    <button id="btnBatchExportCart" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-900/30">
+                        <i class="fa-solid fa-download mr-1"></i>打包匯出 JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: JSON Import / Upload Modal -->
+    <div id="modalImport" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-slate-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-file-import text-cyan-400"></i>
+                    <span>匯入 JSON 設定檔</span>
+                </h3>
+                <button class="btnCloseModal text-slate-400 hover:text-slate-100 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- File Upload Zone -->
+            <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-6 text-center cursor-pointer bg-slate-950/50 transition">
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-500 mb-2"></i>
+                <div class="text-xs font-medium text-slate-300">點擊選擇 `.json` 檔案或拖拽至此區域</div>
+                <div class="text-[10px] text-slate-500 mt-1">匯入後將自動執行 `0000` 數字順序編號校正與合併</div>
+                <input type="file" id="fileJsonInput" accept=".json" class="hidden">
+            </div>
+
+            <!-- Raw JSON Paste Area -->
+            <div class="space-y-1">
+                <label class="text-xs font-medium text-slate-400">或貼上 JSON 文本數據：</label>
+                <textarea id="txtJsonPaste" rows="5" placeholder='{"shaders": [...] }' class="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button class="btnCloseModal px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium">取消</button>
+                <button id="btnSubmitImport" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">確認匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add New / Edit Shader -->
+    <div id="modalAddShader" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-square-plus text-emerald-400"></i>
+                    <span>新增 Shader 至庫存</span>
+                </h3>
+                <button class="btnCloseModal text-slate-400 hover:text-slate-100 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="formAddShader" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Shader 名稱</label>
+                        <input type="text" id="newTitle" required placeholder="例如：2D 火焰溶解效果" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">分類標籤 (用逗號隔開)</label>
+                        <input type="text" id="newTags" placeholder="Dissolve, Noise, UI" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">預覽維度</label>
+                        <select id="newDim" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                            <option value="2d">2D 特效</option>
+                            <option value="3d">3D 模型</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">效能分級</label>
+                        <select id="newPerf" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                            <option value="Low">Low 🟢 (輕量)</option>
+                            <option value="Medium">Medium 🟡 (中等)</option>
+                            <option value="High">High 🔴 (高開銷)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">類型選項</label>
+                        <label class="flex items-center space-x-2 pt-2 text-xs text-slate-300">
+                            <input type="checkbox" id="newIsTemplate" class="rounded border-slate-700 bg-slate-950 text-emerald-500 focus:ring-0">
+                            <span>作為範本 (Template)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">YouTube Demo 連結 (可選)</label>
+                    <input type="url" id="newYtUrl" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">簡短描述</label>
+                    <textarea id="newDesc" rows="2" placeholder="說明此 Shader 的計算邏輯與適用場景..." class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">GLSL Fragment Shader 代碼</label>
+                    <textarea id="newCode" required rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500" placeholder="uniform float u_time;&#nuniform vec2 u_resolution;&#nvoid main() { ... }"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" class="btnCloseModal px-4 py-2 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium">取消</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">儲存 Shader</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Overlay -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // Default Shader Library dataset
+        const DEFAULT_SHADERS = [
+            {
+                id: "0001",
+                title: "2D 霓虹動態光波 (Neon Wave)",
+                category: "2D/UI",
+                tags: ["Wave", "Neon", "UI"],
+                isFavorite: true,
+                isTemplate: true,
+                previewType: "2d",
+                performance: {
+                    level: "Low",
+                    instructionCount: 28,
+                    textures: 0,
+                    notes: "開銷極低，適合行動端 UI 或選單背景。"
+                },
+                youtubeDemo: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                description: "純數學正弦波計算出的動態霓虹光束流，支援時間驅動與顏色漸變。",
+                code: `// 2D 霓虹波紋 Shader
+uniform float u_time;
+uniform vec2 u_resolution;
+
+void main() {
+    vec2 st = gl_FragCoord.xy / u_resolution.xy;
+    st.x *= u_resolution.x / u_resolution.y;
+
+    vec3 color = vec3(0.0);
+    float wave = sin(st.x * 6.0 + u_time * 2.0) * 0.15 + 0.5;
+    float dist = abs(st.y - wave);
+
+    // 光芒強烈衰減
+    float glow = 0.015 / (dist + 0.001);
+    color += vec3(0.1, 0.8, 0.9) * glow;
+
+    gl_FragColor = vec4(color, 1.0);
+}`
+            },
+            {
+                id: "0002",
+                title: "3D 全息科幻防護罩 (Holo Shield)",
+                category: "3D/Effect",
+                tags: ["Holographic", "Shield", "Fresnel"],
+                isFavorite: false,
+                isTemplate: false,
+                previewType: "3d",
+                performance: {
+                    level: "Medium",
+                    instructionCount: 64,
+                    textures: 1,
+                    notes: "包含菲涅爾反射 (Fresnel) 與菲涅爾環計算。"
+                },
+                youtubeDemo: "",
+                description: "適用於 3D 護盾或全息防衛網，邊緣高亮並帶有時間掃描紋理。",
+                code: `// 3D 全息防護罩 Shader
+uniform float u_time;
+varying vec3 vNormal;
+varying vec3 vPosition;
+
+void main() {
+    vec3 normal = normalize(vNormal);
+    // 菲涅爾效應 (Fresnel Effect)
+    float fresnel = pow(1.0 - abs(dot(normal, vec3(0.0, 0.0, 1.0))), 2.5);
+    
+    // 網格掃描線
+    float scanline = sin(vPosition.y * 30.0 - u_time * 4.0) * 0.5 + 0.5;
+    
+    vec3 baseColor = vec3(0.0, 0.9, 0.7);
+    vec3 finalColor = baseColor * (fresnel + scanline * 0.3);
+    
+    gl_FragColor = vec4(finalColor, fresnel * 0.8 + 0.2);
+}`
+            },
+            {
+                id: "0003",
+                title: "2D 像素火焰溶解 (Fire Dissolve)",
+                category: "2D/FX",
+                tags: ["Dissolve", "Noise", "Fire"],
+                isFavorite: true,
+                isTemplate: true,
+                previewType: "2d",
+                performance: {
+                    level: "Medium",
+                    instructionCount: 82,
+                    textures: 1,
+                    notes: "使用偽隨機 Noise 計算燃燒邊緣與顏色插值。"
+                },
+                youtubeDemo: "",
+                description: "常見於角色死亡、物件消失特效，邊緣具有高溫熾熱火焰效果。",
+                code: `// 2D 像素火焰溶解 Shader
+uniform float u_time;
+uniform vec2 u_resolution;
+
+float random (vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+void main() {
+    vec2 st = gl_FragCoord.xy / u_resolution.xy;
+    float threshold = sin(u_time * 1.5) * 0.5 + 0.5; // 0.0 到 1.0 動態變更
+    
+    float noise = random(floor(st * 40.0)); // 像素化 Noise
+    
+    if (noise < threshold) {
+        discard; // 溶解消失
+    }
+    
+    // 燃燒邊緣
+    float edge = smoothstep(threshold, threshold + 0.1, noise);
+    vec3 col = mix(vec3(1.0, 0.3, 0.0), vec3(0.1, 0.1, 0.1), edge);
+    
+    gl_FragColor = vec4(col, 1.0);
+}`
+            },
+            {
+                id: "0004",
+                title: "3D 光滑熔岩金屬球 (Raymarching Lava)",
+                category: "3D/PBR",
+                tags: ["Raymarch", "Noise", "Metal"],
+                isFavorite: false,
+                isTemplate: false,
+                previewType: "3d",
+                performance: {
+                    level: "High",
+                    instructionCount: 240,
+                    textures: 0,
+                    notes: "計算量較高，包含多重雜訊疊加與高階光照。"
+                },
+                youtubeDemo: "",
+                description: "高級 3D 液體熔岩質感，表面隨時間進行有機流體形變與光澤反射。",
+                code: `// 3D 熔岩質感 Shader
+uniform float u_time;
+varying vec3 vNormal;
+varying vec2 vUv;
+
+void main() {
+    vec3 norm = normalize(vNormal);
+    float noise = sin(norm.x * 10.0 + u_time) * cos(norm.y * 10.0 + u_time) * 0.5 + 0.5;
+    
+    vec3 lavaColor = mix(vec3(0.9, 0.1, 0.0), vec3(1.0, 0.7, 0.0), noise);
+    vec3 darkRock = vec3(0.05, 0.05, 0.08);
+    
+    vec3 finalCol = mix(darkRock, lavaColor, pow(noise, 2.0));
+    gl_FragColor = vec4(finalCol, 1.0);
+}`
+            }
+        ];
+
+        // Application State
+        let state = {
+            shaders: [],
+            cart: new Set(),
+            favorites: new Set(),
+            activeTab: 'all', // 'all', 'favorite', 'template'
+            activeDim: 'all', // 'all', '2d', '3d'
+            selectedPerfTiers: new Set(['Low', 'Medium', 'High']),
+            searchQuery: '',
+            sortBy: 'id-asc',
+            activeModalShaderId: null
+        };
+
+        // Initialize App State
+        function initStore() {
+            const saved = localStorage.getItem('shader_vault_data');
+            if (saved) {
+                try {
+                    state.shaders = JSON.parse(saved);
+                } catch (e) {
+                    state.shaders = [...DEFAULT_SHADERS];
+                }
+            } else {
+                state.shaders = [...DEFAULT_SHADERS];
+            }
+
+            // Sync favorites set
+            state.favorites = new Set(state.shaders.filter(s => s.isFavorite).map(s => s.id));
+            autoEnsureIds();
+            saveStore();
+        }
+
+        function saveStore() {
+            localStorage.setItem('shader_vault_data', JSON.stringify(state.shaders));
+        }
+
+        // Auto-padding 0000 sorting
+        function autoEnsureIds() {
+            state.shaders.sort((a, b) => parseInt(a.id || 0) - parseInt(b.id || 0));
+            state.shaders.forEach((s, idx) => {
+                s.id = String(idx + 1).padStart(4, '0');
+            });
+        }
+
+        // Three.js Render Cache Manager
+        const activeRenderers = new Map();
+
+        // IntersectionObserver for canvas rendering optimization
+        const canvasObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const canvas = entry.target;
+                const shaderId = canvas.dataset.shaderId;
+                const rendererObj = activeRenderers.get(shaderId);
+                if (rendererObj) {
+                    rendererObj.isViewing = entry.isIntersecting;
+                }
+            });
+        }, { threshold: 0.1 });
+
+        // Filter and Sort Shaders
+        function getFilteredShaders() {
+            return state.shaders.filter(s => {
+                // Tab filter
+                if (state.activeTab === 'favorite' && !state.favorites.has(s.id)) return false;
+                if (state.activeTab === 'template' && !s.isTemplate) return false;
+
+                // Dimension filter
+                if (state.activeDim !== 'all' && s.previewType !== state.activeDim) return false;
+
+                // Performance Filter
+                if (!state.selectedPerfTiers.has(s.performance.level)) return false;
+
+                // Search Query
+                if (state.searchQuery) {
+                    const q = state.searchQuery.toLowerCase();
+                    const matchId = s.id.toLowerCase().includes(q);
+                    const matchTitle = s.title.toLowerCase().includes(q);
+                    const matchTag = s.tags && s.tags.some(t => t.toLowerCase().includes(q));
+                    if (!matchId && !matchTitle && !matchTag) return false;
+                }
+
+                return true;
+            }).sort((a, b) => {
+                if (state.sortBy === 'id-asc') return parseInt(a.id) - parseInt(b.id);
+                if (state.sortBy === 'id-desc') return parseInt(b.id) - parseInt(a.id);
+                if (state.sortBy === 'title') return a.title.localeCompare(b.title, 'zh-TW');
+                if (state.sortBy === 'perf') {
+                    const rank = { 'Low': 1, 'Medium': 2, 'High': 3 };
+                    return rank[a.performance.level] - rank[b.performance.level];
+                }
+                return 0;
+            });
+        }
+
+        // Render Cards Grid
+        function renderGrid() {
+            const grid = document.getElementById('shaderGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            // Cleanup existing renderers
+            activeRenderers.forEach(obj => {
+                if (obj.animId) cancelAnimationFrame(obj.animId);
+                if (obj.renderer) obj.renderer.dispose();
+            });
+            activeRenderers.clear();
+
+            const items = getFilteredShaders();
+            updateCounts();
+
+            if (items.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+
+            grid.innerHTML = items.map(s => {
+                const isFav = state.favorites.has(s.id);
+                const inCart = state.cart.has(s.id);
+                const perfColor = s.performance.level === 'Low' ? 'text-emerald-400 bg-emerald-950/80 border-emerald-800' :
+                                  s.performance.level === 'Medium' ? 'text-amber-400 bg-amber-950/80 border-amber-800' :
+                                  'text-rose-400 bg-rose-950/80 border-rose-800';
+
+                return `
+                <div class="group bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl overflow-hidden flex flex-col transition duration-200 shadow-lg hover:shadow-2xl">
+                    <!-- Preview Canvas Wrapper -->
+                    <div class="relative w-full aspect-video bg-slate-950 overflow-hidden cursor-pointer btnOpenDetail" data-id="${s.id}">
+                        <canvas id="canvas_${s.id}" data-shader-id="${s.id}" class="w-full h-full object-cover"></canvas>
+                        
+                        <!-- Badges Overlay -->
+                        <div class="absolute top-2.5 left-2.5 flex items-center space-x-1.5 z-10">
+                            <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-slate-900/90 text-emerald-400 border border-slate-700 shadow">${s.id}</span>
+                            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${s.previewType === '2d' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800' : 'bg-purple-950 text-purple-400 border border-purple-800'}">${s.previewType}</span>
+                        </div>
+
+                        <!-- Top Right Actions -->
+                        <div class="absolute top-2.5 right-2.5 flex items-center space-x-1 z-10">
+                            <button class="btnFavCard p-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 transition" data-id="${s.id}">
+                                <i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star text-xs"></i>
+                            </button>
+                        </div>
+
+                        <div class="absolute bottom-2 right-2 text-[10px] bg-slate-950/80 px-2 py-0.5 rounded text-slate-400 opacity-0 group-hover:opacity-100 transition">
+                            點擊開啟細節 / 編輯
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <h4 class="font-bold text-sm text-slate-100 group-hover:text-emerald-400 transition line-clamp-1">${s.title}</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${perfColor}">${s.performance.level}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">${s.description || '無描述'}</p>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="flex flex-wrap gap-1">
+                            ${(s.tags || []).map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">#${t}</span>`).join('')}
+                        </div>
+
+                        <!-- Card Footer Controls -->
+                        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                            <button class="btnCopyCode text-xs text-slate-400 hover:text-emerald-400 flex items-center space-x-1 transition" data-id="${s.id}">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>複製 GLSL</span>
+                            </button>
+                            <button class="btnToggleCart text-xs font-medium px-2.5 py-1 rounded-lg border transition ${inCart ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'}" data-id="${s.id}">
+                                <i class="fa-solid ${inCart ? 'fa-check' : 'fa-cart-plus'} mr-1"></i>
+                                <span>${inCart ? '已在購物車' : '加入購物車'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            // Setup WebGL previews for rendered cards
+            items.forEach(s => {
+                setupCardCanvas(s);
+            });
+        }
+
+        function setupCardCanvas(shader) {
+            const canvas = document.getElementById(`canvas_${shader.id}`);
+            if (!canvas) return;
+
+            canvasObserver.observe(canvas);
+
+            const width = canvas.clientWidth || 300;
+            const height = canvas.clientHeight || 180;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.z = 2.5;
+
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(width, height, false);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const uniforms = {
+                u_time: { value: 0 },
+                u_resolution: { value: new THREE.Vector2(width, height) }
+            };
+
+            let mesh;
+            if (shader.previewType === '2d') {
+                const geometry = new THREE.PlaneGeometry(2.5, 1.5);
+                const material = new THREE.ShaderMaterial({
+                    vertexShader: `
+                        uniform vec2 u_resolution;
+                        void main() {
+                            gl_Position = vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: shader.code,
+                    uniforms: uniforms
+                });
+                mesh = new THREE.Mesh(geometry, material);
+            } else {
+                // 3D Sphere geometry
+                const geometry = new THREE.SphereGeometry(0.8, 32, 32);
+                const material = new THREE.ShaderMaterial({
+                    vertexShader: `
+                        varying vec3 vNormal;
+                        varying vec3 vPosition;
+                        varying vec2 vUv;
+                        void main() {
+                            vNormal = normalize(normalMatrix * normal);
+                            vPosition = position;
+                            vUv = uv;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: shader.code,
+                    uniforms: uniforms,
+                    transparent: true
+                });
+                mesh = new THREE.Mesh(geometry, material);
+            }
+
+            scene.add(mesh);
+
+            const renderObj = {
+                renderer,
+                isViewing: false,
+                animId: null
+            };
+            activeRenderers.set(shader.id, renderObj);
+
+            let startTime = performance.now();
+            function animate() {
+                renderObj.animId = requestAnimationFrame(animate);
+                if (!renderObj.isViewing) return; // Skip rendering if card is offscreen
+
+                const elapsed = (performance.now() - startTime) * 0.001;
+                uniforms.u_time.value = elapsed;
+
+                if (shader.previewType === '3d' && mesh) {
+                    mesh.rotation.y = elapsed * 0.5;
+                    mesh.rotation.x = elapsed * 0.2;
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        let detailRendererObj = null;
+
+        function openDetailModal(shaderId) {
+            const shader = state.shaders.find(s => s.id === shaderId);
+            if (!shader) return;
+
+            state.activeModalShaderId = shaderId;
+
+            document.getElementById('detailId').innerText = shader.id;
+            document.getElementById('detailTitle').innerText = shader.title;
+            document.getElementById('detailDimBadge').innerText = shader.previewType.toUpperCase();
+            document.getElementById('detailDescription').innerText = shader.description || '無詳細描述';
+            document.getElementById('detailCodeText').innerText = shader.code;
+
+            // Perf info
+            const perfBadge = document.getElementById('detailPerfBadge');
+            perfBadge.innerText = shader.performance.level;
+            perfBadge.className = `text-xs px-2 py-0.5 rounded font-bold ${
+                shader.performance.level === 'Low' ? 'bg-emerald-950 text-emerald-400' :
+                shader.performance.level === 'Medium' ? 'bg-amber-950 text-amber-400' : 'bg-rose-950 text-rose-400'
+            }`;
+            document.getElementById('detailInstructions').innerText = `~${shader.performance.instructionCount || 40} ops`;
+            document.getElementById('detailTextures').innerText = shader.performance.textures || 0;
+            document.getElementById('detailPerfNote').innerText = shader.performance.notes || '適合標準繪圖管線使用。';
+
+            // YouTube iframe
+            const ytContainer = document.getElementById('ytDemoContainer');
+            const ytIframe = document.getElementById('ytIframe');
+            if (shader.youtubeDemo) {
+                ytIframe.src = shader.youtubeDemo;
+                ytContainer.classList.remove('hidden');
+            } else {
+                ytIframe.src = '';
+                ytContainer.classList.add('hidden');
+            }
+
+            // Buttons State
+            updateModalButtonStates(shaderId);
+
+            // Open Modal
+            const modal = document.getElementById('modalDetail');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+
+            // Setup Detail Canvas
+            setupDetailCanvas(shader);
+        }
+
+        function updateModalButtonStates(shaderId) {
+            const isFav = state.favorites.has(shaderId);
+            const inCart = state.cart.has(shaderId);
+
+            document.getElementById('txtFavModal').innerText = isFav ? '已在常用' : '加入常用';
+            document.getElementById('txtCartModal').innerText = inCart ? '已在購物車' : '加入購物車';
+        }
+
+        function setupDetailCanvas(shader) {
+            const canvas = document.getElementById('detailCanvas');
+            if (detailRendererObj) {
+                cancelAnimationFrame(detailRendererObj.animId);
+                detailRendererObj.renderer.dispose();
+            }
+
+            const width = canvas.clientWidth || 400;
+            const height = canvas.clientHeight || 400;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.z = 2.5;
+
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(width, height, false);
+
+            const uniforms = {
+                u_time: { value: 0 },
+                u_resolution: { value: new THREE.Vector2(width, height) }
+            };
+
+            let mesh;
+            if (shader.previewType === '2d') {
+                const geometry = new THREE.PlaneGeometry(2, 2);
+                const material = new THREE.ShaderMaterial({
+                    vertexShader: `void main() { gl_Position = vec4(position, 1.0); }`,
+                    fragmentShader: shader.code,
+                    uniforms: uniforms
+                });
+                mesh = new THREE.Mesh(geometry, material);
+            } else {
+                const geometry = new THREE.SphereGeometry(0.9, 64, 64);
+                const material = new THREE.ShaderMaterial({
+                    vertexShader: `
+                        varying vec3 vNormal;
+                        varying vec3 vPosition;
+                        void main() {
+                            vNormal = normalize(normalMatrix * normal);
+                            vPosition = position;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: shader.code,
+                    uniforms: uniforms,
+                    transparent: true
+                });
+                mesh = new THREE.Mesh(geometry, material);
+            }
+
+            scene.add(mesh);
+
+            let startTime = performance.now();
+            function animate() {
+                const animId = requestAnimationFrame(animate);
+                detailRendererObj.animId = animId;
+
+                const elapsed = (performance.now() - startTime) * 0.001;
+                uniforms.u_time.value = elapsed;
+
+                if (shader.previewType === '3d' && mesh) {
+                    mesh.rotation.y = elapsed * 0.4;
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            detailRendererObj = { renderer, animId: null };
+            animate();
+        }
+
+        function renderCartItems() {
+            const list = document.getElementById('cartItemsList');
+            const cartBadge = document.getElementById('cartBadge');
+            cartBadge.innerText = state.cart.size;
+
+            if (state.cart.size === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-12 text-slate-500 text-xs">
+                        <i class="fa-solid fa-cart-flatbed text-3xl mb-2"></i>
+                        <p>購物車暫無選取的 Shader，可點擊卡片上的「加入購物車」進行暫存。</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const cartShaders = state.shaders.filter(s => state.cart.has(s.id));
+            list.innerHTML = cartShaders.map(s => `
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-400">${s.id}</span>
+                        <div>
+                            <h5 class="text-xs font-bold text-slate-200">${s.title}</h5>
+                            <span class="text-[10px] text-slate-500">${s.previewType.toUpperCase()} • ${s.performance.level}</span>
+                        </div>
+                    </div>
+                    <button class="btnRemoveCartItem text-xs text-rose-400 hover:text-rose-300 p-1" data-id="${s.id}">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Copy Text using execCommand clipboard fallback for iframe stability
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('已複製 GLSL Shader 代碼至剪貼簿！', 'success');
+        }
+
+        // Custom Toast System
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2.5 rounded-xl text-xs font-medium text-white flex items-center space-x-2 shadow-2xl transition duration-300 pointer-events-auto ${
+                type === 'success' ? 'bg-emerald-600' : 'bg-slate-800 border border-slate-700'
+            }`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // Update counts badges
+        function updateCounts() {
+            document.getElementById('shaderCountBadge').innerText = `${state.shaders.length} 項`;
+            document.getElementById('countAll').innerText = state.shaders.length;
+            document.getElementById('countFav').innerText = state.favorites.size;
+            document.getElementById('countTpl').innerText = state.shaders.filter(s => s.isTemplate).length;
+            document.getElementById('cartBadge').innerText = state.cart.size;
+        }
+
+        function setupEventListeners() {
+            // Category Tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('bg-slate-800/80', 'text-slate-200');
+                        b.classList.add('text-slate-400');
+                    });
+                    const target = e.currentTarget;
+                    target.classList.add('bg-slate-800/80', 'text-slate-200');
+                    state.activeTab = target.dataset.tab;
+                    document.getElementById('currentViewTitle').innerText = 
+                        state.activeTab === 'all' ? '全部庫存' : state.activeTab === 'favorite' ? '常用項目' : '基礎範本';
+                    renderGrid();
+                });
+            });
+
+            // Dimension Filters
+            document.querySelectorAll('.dim-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.dim-filter-btn').forEach(b => {
+                        b.classList.remove('bg-slate-800', 'text-emerald-400');
+                        b.classList.add('bg-slate-950', 'text-slate-400');
+                    });
+                    const target = e.currentTarget;
+                    target.classList.add('bg-slate-800', 'text-emerald-400');
+                    state.activeDim = target.dataset.dim;
+                    renderGrid();
+                });
+            });
+
+            // Performance Checkboxes
+            document.querySelectorAll('.perf-checkbox').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    state.selectedPerfTiers.clear();
+                    document.querySelectorAll('.perf-checkbox:checked').forEach(c => {
+                        state.selectedPerfTiers.add(c.value);
+                    });
+                    renderGrid();
+                });
+            });
+
+            // Search Input
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                state.searchQuery = e.target.value.trim();
+                renderGrid();
+            });
+
+            // Sorting Select
+            document.getElementById('sortSelect').addEventListener('change', (e) => {
+                state.sortBy = e.target.value;
+                renderGrid();
+            });
+
+            // Card Delegated Click Events
+            document.getElementById('shaderGrid').addEventListener('click', (e) => {
+                const btnCopy = e.target.closest('.btnCopyCode');
+                if (btnCopy) {
+                    const id = btnCopy.dataset.id;
+                    const shader = state.shaders.find(s => s.id === id);
+                    if (shader) copyToClipboard(shader.code);
+                    return;
+                }
+
+                const btnFav = e.target.closest('.btnFavCard');
+                if (btnFav) {
+                    const id = btnFav.dataset.id;
+                    if (state.favorites.has(id)) {
+                        state.favorites.delete(id);
+                    } else {
+                        state.favorites.add(id);
+                    }
+                    const shader = state.shaders.find(s => s.id === id);
+                    if (shader) shader.isFavorite = state.favorites.has(id);
+                    saveStore();
+                    renderGrid();
+                    return;
+                }
+
+                const btnCart = e.target.closest('.btnToggleCart');
+                if (btnCart) {
+                    const id = btnCart.dataset.id;
+                    if (state.cart.has(id)) {
+                        state.cart.delete(id);
+                        showToast('已自購物車移出');
+                    } else {
+                        state.cart.add(id);
+                        showToast('已加入購物車', 'success');
+                    }
+                    renderGrid();
+                    return;
+                }
+
+                const btnDetail = e.target.closest('.btnOpenDetail');
+                if (btnDetail) {
+                    openDetailModal(btnDetail.dataset.id);
+                    return;
+                }
+            });
+
+            // Close Modals
+            document.querySelectorAll('.btnCloseModal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#modalDetail, #modalCart, #modalImport, #modalAddShader').forEach(m => {
+                        m.classList.add('opacity-0', 'pointer-events-none');
+                    });
+                    if (detailRendererObj) {
+                        cancelAnimationFrame(detailRendererObj.animId);
+                    }
+                });
+            });
+
+            // Open Cart Modal
+            document.getElementById('btnOpenCart').addEventListener('click', () => {
+                renderCartItems();
+                document.getElementById('modalCart').classList.remove('opacity-0', 'pointer-events-none');
+            });
+
+            // Cart Items Click Delegate
+            document.getElementById('cartItemsList').addEventListener('click', (e) => {
+                const btnRemove = e.target.closest('.btnRemoveCartItem');
+                if (btnRemove) {
+                    state.cart.delete(btnRemove.dataset.id);
+                    renderCartItems();
+                    renderGrid();
+                }
+            });
+
+            // Clear Cart
+            document.getElementById('btnClearCart').addEventListener('click', () => {
+                state.cart.clear();
+                renderCartItems();
+                renderGrid();
+                showToast('購物車已清空');
+            });
+
+            // Batch Copy Code
+            document.getElementById('btnBatchCopy').addEventListener('click', () => {
+                if (state.cart.size === 0) return;
+                const codes = state.shaders.filter(s => state.cart.has(s.id)).map(s => `// --- [${s.id}] ${s.title} ---\n${s.code}\n`).join('\n\n');
+                copyToClipboard(codes);
+            });
+
+            // Batch Export Cart
+            document.getElementById('btnBatchExportCart').addEventListener('click', () => {
+                if (state.cart.size === 0) return;
+                const exportData = state.shaders.filter(s => state.cart.has(s.id));
+                downloadJsonFile(exportData, `shader_cart_export_${Date.now()}.json`);
+            });
+
+            // Export All JSON
+            document.getElementById('btnExportJson').addEventListener('click', () => {
+                downloadJsonFile(state.shaders, `shader_vault_all_${Date.now()}.json`);
+            });
+
+            // Open Import Modal
+            document.getElementById('btnImportJson').addEventListener('click', () => {
+                document.getElementById('modalImport').classList.remove('opacity-0', 'pointer-events-none');
+            });
+
+            // Submit Import
+            document.getElementById('btnSubmitImport').addEventListener('click', () => {
+                const rawText = document.getElementById('txtJsonPaste').value.trim();
+                if (rawText) {
+                    try {
+                        const parsed = JSON.parse(rawText);
+                        const items = Array.isArray(parsed) ? parsed : parsed.shaders || [];
+                        mergeImportedShaders(items);
+                        document.getElementById('modalImport').classList.add('opacity-0', 'pointer-events-none');
+                        document.getElementById('txtJsonPaste').value = '';
+                    } catch (err) {
+                        showToast('JSON 格式不正確，請檢查語法');
+                    }
+                }
+            });
+
+            // File Upload Drag & Drop
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileJsonInput');
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        try {
+                            const parsed = JSON.parse(evt.target.result);
+                            const items = Array.isArray(parsed) ? parsed : parsed.shaders || [];
+                            mergeImportedShaders(items);
+                            document.getElementById('modalImport').classList.add('opacity-0', 'pointer-events-none');
+                        } catch (err) {
+                            showToast('解析 JSON 檔案失敗');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Open Add Shader Modal
+            document.getElementById('btnNewShader').addEventListener('click', () => {
+                document.getElementById('modalAddShader').classList.remove('opacity-0', 'pointer-events-none');
+            });
+
+            // Add Shader Form Submit
+            document.getElementById('formAddShader').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const title = document.getElementById('newTitle').value.trim();
+                const tags = document.getElementById('newTags').value.split(',').map(t => t.trim()).filter(Boolean);
+                const dim = document.getElementById('newDim').value;
+                const perf = document.getElementById('newPerf').value;
+                const isTpl = document.getElementById('newIsTemplate').checked;
+                const ytUrl = document.getElementById('newYtUrl').value.trim();
+                const desc = document.getElementById('newDesc').value.trim();
+                const code = document.getElementById('newCode').value.trim();
+
+                const newShader = {
+                    id: String(state.shaders.length + 1).padStart(4, '0'),
+                    title,
+                    category: dim === '2d' ? '2D/Custom' : '3D/Custom',
+                    tags,
+                    isFavorite: false,
+                    isTemplate: isTpl,
+                    previewType: dim,
+                    performance: {
+                        level: perf,
+                        instructionCount: perf === 'Low' ? 30 : perf === 'Medium' ? 70 : 150,
+                        textures: 0,
+                        notes: '使用者自定義 Shader'
+                    },
+                    youtubeDemo: ytUrl,
+                    description: desc,
+                    code
+                };
+
+                state.shaders.push(newShader);
+                autoEnsureIds();
+                saveStore();
+                renderGrid();
+
+                document.getElementById('modalAddShader').classList.add('opacity-0', 'pointer-events-none');
+                document.getElementById('formAddShader').reset();
+                showToast('Shader 已成功建立並順序補零編號！', 'success');
+            });
+
+            // Detail Modal Controls
+            document.getElementById('btnCopyDetailCode').addEventListener('click', () => {
+                const code = document.getElementById('detailCodeText').innerText;
+                copyToClipboard(code);
+            });
+
+            document.getElementById('btnToggleFavModal').addEventListener('click', () => {
+                const id = state.activeModalShaderId;
+                if (!id) return;
+                if (state.favorites.has(id)) {
+                    state.favorites.delete(id);
+                } else {
+                    state.favorites.add(id);
+                }
+                saveStore();
+                updateModalButtonStates(id);
+                renderGrid();
+            });
+
+            document.getElementById('btnToggleCartModal').addEventListener('click', () => {
+                const id = state.activeModalShaderId;
+                if (!id) return;
+                if (state.cart.has(id)) {
+                    state.cart.delete(id);
+                } else {
+                    state.cart.add(id);
+                }
+                updateModalButtonStates(id);
+                renderGrid();
+            });
+        }
+
+        function mergeImportedShaders(items) {
+            if (!items || items.length === 0) return;
+
+            items.forEach(item => {
+                state.shaders.push({
+                    id: '0000',
+                    title: item.title || '未命名 Shader',
+                    category: item.category || '2D/Custom',
+                    tags: item.tags || [],
+                    isFavorite: false,
+                    isTemplate: !!item.isTemplate,
+                    previewType: item.previewType || '2d',
+                    performance: item.performance || { level: 'Low', instructionCount: 30, textures: 0 },
+                    youtubeDemo: item.youtubeDemo || '',
+                    description: item.description || '',
+                    code: item.code || '// Void main Shader'
+                });
+            });
+
+            autoEnsureIds();
+            saveStore();
+            renderGrid();
+            showToast(`已匯入 ${items.length} 項 Shader 並自動校正 0000 編號`, 'success');
+        }
+
+        function downloadJsonFile(data, filename) {
+            const blob = new Blob([JSON.stringify({ shaders: data }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('JSON 設定檔已順利匯出下載！', 'success');
+        }
+
+        window.addEventListener('load', () => {
+            initStore();
+            setupEventListeners();
+            renderGrid();
+        });
+    </script>
+</body>
+</html>
