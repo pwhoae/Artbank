@@ -55,6 +55,8 @@
 拚豆加深粗線條
 跑酷:奔跑/翻滾/滑鏟/爬牆
 【涩之炼金术～エロ文本写作指南】 https://www.bilibili.com/video/BV1PDez63E9F/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+完美閃避動作 生成角色｛idle，walk，jump，light attack，heavy attack，skill，閃避｝state miximao 
+
 <hr>
 
 ### 參考項目
