@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 2D & 3D 角色高級運動機制沙盒與代碼庫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#21252b',
+                            panel: '#1e2227',
+                            accent: '#41b883',
+                            highlight: '#20252c',
+                            border: '#333b47'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e2227;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333b47;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+        .code-font {
+            font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+        }
+        canvas {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="bg-godot-dark text-gray-200 h-screen flex flex-col overflow-hidden select-none font-sans">
+
+    <!-- Top Header Navigation -->
+    <header class="h-14 bg-godot-panel border-b border-godot-border flex items-center justify-between px-4 z-20 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-godot-blue flex items-center justify-center font-bold text-white shadow-lg shadow-godot-blue/30">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm sm:text-base text-white tracking-wide flex items-center gap-2">
+                    Godot 4.x 角色高級運動系統 (2D & 3D)
+                    <span class="text-xs bg-godot-blue/20 text-godot-blue px-2 py-0.5 rounded border border-godot-blue/40">Demo & Code Studio</span>
+                </h1>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="viewModeToggle" class="px-3 py-1.5 text-xs font-medium rounded bg-godot-border hover:bg-godot-blue hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-cube text-godot-accent"></i>
+                <span id="viewModeText">切換 Perspective 3D / 2D Ortho</span>
+            </button>
+            <button id="toggleRaycasts" class="px-3 py-1.5 text-xs font-medium rounded bg-emerald-900/40 text-emerald-300 border border-emerald-600/50 hover:bg-emerald-800/50 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-eye"></i> 射線偵測/軌跡 (ON)
+            </button>
+            <button id="resetPositionBtn" class="px-3 py-1.5 text-xs font-medium rounded bg-godot-border hover:bg-red-600 text-gray-200 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i> 重置位置
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- Left: Interactive 3D/2D Viewport & On-screen Controls -->
+        <div class="lg:w-7/12 xl:w-2/3 h-1/2 lg:h-full relative flex flex-col bg-black/40 border-r border-godot-border">
+            
+            <!-- Viewport Overlay HUD -->
+            <div class="absolute top-3 left-3 z-10 bg-godot-panel/80 backdrop-blur-md border border-godot-border p-3 rounded-xl shadow-xl text-xs space-y-1 max-w-xs pointer-events-none">
+                <div class="flex justify-between items-center border-b border-godot-border/60 pb-1 mb-1">
+                    <span class="text-gray-400 font-semibold">目前狀態 (State):</span>
+                    <span id="hudState" class="font-bold text-godot-accent px-1.5 py-0.5 bg-godot-accent/10 rounded">IDLE</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span>速度 (Velocity):</span>
+                    <span id="hudSpeed" class="code-font text-godot-blue">0.00 m/s</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span>接地/貼牆:</span>
+                    <span id="hudGround" class="text-green-400 font-medium">Grounded</span>
+                </div>
+                <div class="flex justify-between text-gray-300">
+                    <span>觸發機制:</span>
+                    <span id="hudMechanic" class="text-amber-400 font-medium">None</span>
+                </div>
+            </div>
+
+            <!-- Controls Overlay HUD -->
+            <div class="absolute top-3 right-3 z-10 bg-godot-panel/80 backdrop-blur-md border border-godot-border p-3 rounded-xl shadow-xl text-xs hidden md:block">
+                <div class="font-semibold text-gray-300 mb-1.5 border-b border-godot-border pb-1">鍵盤操作指南 (Keyboard Controls)</div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-gray-400">
+                    <span><kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-gray-200">WASD</kbd> 移動</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-gray-200">Shift</kbd> 加速 / 衝刺</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-gray-200">Space</kbd> 跳躍 / 翻越 / 牆跳</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-gray-200">C</kbd> 滑鏟 / 蹲下</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-gray-200">E</kbd> 掩體 / 攀爬 / 爬牆</span>
+                    <span><kbd class="px-1.5 py-0.5 bg-gray-700 rounded text-gray-200">Alt</kbd> 閃避 (Dash)</span>
+                </div>
+            </div>
+
+            <!-- 3D Canvas Context -->
+            <div id="canvasContainer" class="w-full flex-1 relative cursor-grab active:cursor-grabbing">
+                <!-- Three.js renders here -->
+            </div>
+
+            <!-- Mobile/Onscreen Action Bar -->
+            <div class="bg-godot-panel/90 backdrop-blur border-t border-godot-border p-2.5 flex flex-wrap gap-2 justify-center items-center shrink-0 z-10">
+                <button data-action="slide" class="btn-act bg-blue-600/30 hover:bg-blue-600/60 border border-blue-500/50 text-blue-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-person-sliding"></i> 滑鏟 (Slide)
+                </button>
+                <button data-action="vault" class="btn-act bg-emerald-600/30 hover:bg-emerald-600/60 border border-emerald-500/50 text-emerald-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-person-running"></i> 翻越 (Vault)
+                </button>
+                <button data-action="cover" class="btn-act bg-amber-600/30 hover:bg-amber-600/60 border border-amber-500/50 text-amber-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved"></i> 掩體 (Cover)
+                </button>
+                <button data-action="climb" class="btn-act bg-purple-600/30 hover:bg-purple-600/60 border border-purple-500/50 text-purple-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-bars-staggered"></i> 攀爬 (Climb)
+                </button>
+                <button data-action="wallclimb" class="btn-act bg-cyan-600/30 hover:bg-cyan-600/60 border border-cyan-500/50 text-cyan-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-up-long"></i> 爬牆/攀岩 (Wall Pull)
+                </button>
+                <button data-action="narrow" class="btn-act bg-orange-600/30 hover:bg-orange-600/60 border border-orange-500/50 text-orange-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-bridge"></i> 獨木橋 (Balance)
+                </button>
+                <button data-action="walljump" class="btn-act bg-indigo-600/30 hover:bg-indigo-600/60 border border-indigo-500/50 text-indigo-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrows-left-right-to-line"></i> 蹬牆跳/滑牆
+                </button>
+                <button data-action="dash" class="btn-act bg-rose-600/30 hover:bg-rose-600/60 border border-rose-500/50 text-rose-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt"></i> 閃避 (Dodge)
+                </button>
+            </div>
+        </div>
+
+        <!-- Right: Mechanics Inspector & GDScript Source Code Hub -->
+        <div class="lg:w-5/12 xl:w-1/3 h-1/2 lg:h-full flex flex-col bg-godot-panel overflow-hidden">
+            
+            <!-- Mechanics Selector Header Tabs -->
+            <div class="p-3 bg-godot-dark border-b border-godot-border flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-code text-godot-blue"></i> 機制選單與 GDScript 實現
+                </span>
+                <!-- Godot Version / Mode Selector -->
+                <div class="flex items-center space-x-1 bg-godot-panel p-0.5 rounded border border-godot-border">
+                    <button id="btnGodot3D" class="px-2 py-0.5 text-xs rounded font-medium bg-godot-blue text-white transition-all">Godot 3D</button>
+                    <button id="btnGodot2D" class="px-2 py-0.5 text-xs rounded font-medium text-gray-400 hover:text-white transition-all">Godot 2D</button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs for 9 Movement Mechanics -->
+            <div id="mechanicTabs" class="flex overflow-x-auto border-b border-godot-border bg-godot-panel text-xs shrink-0 scrollbar-none">
+                <!-- Generated dynamically or listed -->
+            </div>
+
+            <!-- Mechanic Details & Code Output Section -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                
+                <!-- Mechanic Info Summary Card -->
+                <div class="bg-godot-dark/70 border border-godot-border rounded-xl p-3.5 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h2 id="mechTitle" class="text-base font-bold text-godot-accent flex items-center gap-2">
+                            1. 基礎運動與滑鏟 (Basic Movement & Slide)
+                        </h2>
+                        <span id="mechCategory" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-900/50 text-blue-300 border border-blue-700/50">Kinematic</span>
+                    </div>
+                    <p id="mechDesc" class="text-xs text-gray-300 leading-relaxed">
+                        包含靈敏的平地移動、加速度/減速度摩擦曲線、衝刺狀態切換，以及在高速移動下觸發的『滑鏟 (Slide)』機制。滑鏟期間動量衰減，碰撞體高度自動縮減。
+                    </p>
+                    <div class="flex flex-wrap gap-2 pt-1 text-[11px]">
+                        <span class="bg-godot-panel px-2 py-0.5 rounded border border-godot-border text-gray-400">關鍵 API: <code id="mechApi" class="text-godot-blue">CharacterBody3D.move_and_slide()</code></span>
+                        <span class="bg-godot-panel px-2 py-0.5 rounded border border-godot-border text-gray-400">核心節點: <code id="mechNode" class="text-amber-300">RayCast3D / ShapeCast3D</code></span>
+                    </div>
+                </div>
+
+                <!-- Code Container with Copy Button -->
+                <div class="relative bg-[#16191d] border border-godot-border rounded-xl overflow-hidden shadow-2xl flex flex-col">
+                    <div class="bg-[#1e2227] px-3 py-2 flex justify-between items-center border-b border-godot-border text-xs">
+                        <span class="text-gray-400 font-mono flex items-center gap-1.5">
+                            <i class="fa-regular fa-file-code text-godot-blue"></i> <span id="codeFileName">PlayerController.gd</span>
+                        </span>
+                        <button id="copyCodeBtn" class="px-2.5 py-1 rounded bg-godot-border hover:bg-godot-blue text-gray-300 hover:text-white transition-all text-xs flex items-center gap-1">
+                            <i class="fa-regular fa-copy"></i> 複製代碼
+                        </button>
+                    </div>
+                    <pre class="p-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed code-font" id="codeDisplay">
+                        <!-- GDScript Code dynamically loaded -->
+                    </pre>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Global State & Mechanics Database
+        let currentDimension = '3D'; // '3D' or '2D'
+        let currentMechanicId = 'basic_slide';
+        let raycastsVisible = true;
+
+        const MECHANICS_DATA = {
+            'basic_slide': {
+                title: '1. 基礎運動與滑鏟 (Basic Movement & Slide)',
+                category: 'Locomotion',
+                desc: '包含靈敏的平地加速度、衝刺、地面摩擦力和下滑動量計算。按下滑鏟鍵時縮減 CapsuleCollider 高度並施加方向衝量。',
+                api: 'move_and_slide(), lerp_angle()',
+                node: 'CharacterBody3D / CollisionShape3D',
+                file: 'PlayerLocomotion.gd',
+                code3D: `extends CharacterBody3D
+
+@export var WALK_SPEED := 5.0
+@export var SPRINT_SPEED := 8.0
+@export var SLIDE_IMPULSE := 12.0
+@export var SLIDE_FRICTION := 4.0
+@export var JUMP_VELOCITY := 4.5
+
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var is_sliding := false
+var slide_vector := Vector3.ZERO
+
+@onready var collision_shape: CollisionShape3D = $CollisionShape3D
+
+func _physics_process(delta: float) -> void:
+    # 應用重力
+    if not is_on_floor():
+        velocity.y -= gravity * delta
+
+    # 處理滑鏟邏輯
+    if Input.is_action_just_pressed("slide") and is_on_floor() and velocity.length() > 3.0:
+        start_slide()
+
+    if is_sliding:
+        velocity.x = slide_vector.x * SLIDE_IMPULSE
+        velocity.z = slide_vector.z * SLIDE_IMPULSE
+        SLIDE_IMPULSE = move_toward(SLIDE_IMPULSE, 0.0, SLIDE_FRICTION * delta)
+        if SLIDE_IMPULSE <= 0.5:
+            stop_slide()
+    else:
+        # 常規移動
+        var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+        var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+        var current_speed = SPRINT_SPEED if Input.is_action_pressed("sprint") else WALK_SPEED
+        
+        if direction:
+            velocity.x = direction.x * current_speed
+            velocity.z = direction.z * current_speed
+        else:
+            velocity.x = move_toward(velocity.x, 0, current_speed)
+            velocity.z = move_toward(velocity.z, 0, current_speed)
+
+    move_and_slide()
+
+func start_slide() -> void:
+    is_sliding = true
+    slide_vector = velocity.normalized()
+    # 縮小碰撞體高度 (蹲下滑鏟)
+    collision_shape.shape.height = 1.0
+
+func stop_slide() -> void:
+    is_sliding = false
+    collision_shape.shape.height = 2.0`,
+                code2D: `extends CharacterBody2D
+
+@export var SPEED := 300.0
+@export var SLIDE_SPEED := 500.0
+@export var FRICTION := 800.0
+var is_sliding := false
+
+func _physics_process(delta: float) -> void:
+    if not is_on_floor():
+        velocity.y += 980.0 * delta
+
+    if Input.is_action_just_pressed("slide") and is_on_floor() and abs(velocity.x) > 100:
+        is_sliding = true
+        velocity.x = sign(velocity.x) * SLIDE_SPEED
+
+    if is_sliding:
+        velocity.x = move_toward(velocity.x, 0, FRICTION * delta)
+        if abs(velocity.x) < 50:
+            is_sliding = false
+    else:
+        var dir := Input.get_axis("ui_left", "ui_right")
+        velocity.x = dir * SPEED
+
+    move_and_slide()`
+            },
+            'vaulting': {
+                title: '2. 翻越系統 (Vaulting System)',
+                category: 'Parkour',
+                desc: '使用高低雙重 RayCast 檢測腰部障礙物與頭部空間。若前方有低矮物體且頂部有足夠站立空間，自動播放/Interpolate 翻越動畫。',
+                api: 'RayCast3D.is_colliding(), Tween.tween_property()',
+                node: 'RayCast3D (Lower & Upper)',
+                file: 'VaultingController.gd',
+                code3D: `extends CharacterBody3D
+
+@onready var ray_knee: RayCast3D = $RayKnee
+@onready var ray_head: RayCast3D = $RayHead
+@onready var ray_height: RayCast3D = $RayHeightCheck
+
+var is_vaulting := false
+
+func _physics_process(delta: float) -> void:
+    if not is_vaulting and Input.is_action_just_pressed("jump"):
+        if check_vault_possible():
+            perform_vault()
+
+func check_vault_possible() -> bool:
+    # 膝蓋射線碰觸障礙物，但頭部射線未碰撞，代表是低矮掩體/障礙物
+    if ray_knee.is_colliding() and not ray_head.is_colliding():
+        var hit_pt = ray_knee.get_collision_point()
+        ray_height.global_position = hit_pt + Vector3(0, 2.0, 0) + transform.basis.z * -0.5
+        ray_height.force_raycast_update()
+        if ray_height.is_colliding():
+            return true
+    return false
+
+func perform_vault() -> void:
+    is_vaulting = true
+    var target_pos = ray_height.get_collision_point() + Vector3(0, 1.0, 0)
+    
+    # 使用 Tween 平滑移至障礙物上方
+    var tween = create_tween().set_parallel(false)
+    tween.tween_property(self, "global_position", target_pos, 0.3).set_trans(Tween.TRANS_QUAD)
+    tween.tween_callback(func(): is_vaulting = false)`,
+                code2D: `extends CharacterBody2D
+
+@onready var ray_foot = $RayFoot
+@onready var ray_head = $RayHead
+
+func try_vault() -> void:
+    if ray_foot.is_colliding() and not ray_head.is_colliding():
+        # 2D 翻越：向上向前平滑補間移動
+        var tween = create_tween()
+        var vault_target = global_position + Vector2(sign(transform.x.x) * 32, -48)
+        tween.tween_property(self, "global_position", vault_target, 0.25)
+        velocity = Vector2.ZERO`
+            },
+            'cover_system': {
+                title: '3. 掩體系統 (Cover System)',
+                category: 'Tactical',
+                desc: '按住/按下掩體鍵向牆面發射 RayCast，吸附至牆面法線方向，並將移動限制在牆面的切線軸（Cross product）上，實現蹲下/站立掩體側移。',
+                api: 'get_collision_normal(), Vector3.cross()',
+                node: 'RayCast3D / ShapeCast3D',
+                file: 'CoverSystem.gd',
+                code3D: `extends CharacterBody3D
+
+@onready var ray_cover: RayCast3D = $RayCover
+var in_cover := false
+var cover_normal := Vector3.ZERO
+var cover_tangent := Vector3.ZERO
+
+func toggle_cover() -> void:
+    if in_cover:
+        exit_cover()
+    else:
+        if ray_cover.is_colliding():
+            enter_cover(ray_cover.get_collision_normal())
+
+func enter_cover(normal: Vector3) -> void:
+    in_cover = true
+    cover_normal = normal
+    # 計算牆面的切線向量，用於沿牆移動
+    cover_tangent = normal.cross(Vector3.UP).normalized()
+    # 旋轉玩家面向牆壁法線
+    look_at(global_position - normal, Vector3.UP)
+
+func exit_cover() -> void:
+    in_cover = false
+
+func _physics_process(delta: float) -> void:
+    if in_cover:
+        var input_h = Input.get_axis("move_left", "move_right")
+        velocity = cover_tangent * input_h * 3.0
+        move_and_slide()`
+            },
+            'climbing': {
+                title: '4. 攀爬系統 (Climbing / Ladder)',
+                category: 'Navigation',
+                desc: '進入梯子或繩索 Area3D 區域後切換至攀爬狀態，關閉重力影響，將前後/上下輸入映射至垂直與水平爬行速度。',
+                api: 'Area3D.body_entered, velocity.y = input',
+                node: 'Area3D (Ladder) + CharacterBody',
+                file: 'Climber.gd',
+                code3D: `extends CharacterBody3D
+
+var is_climbing := false
+@export var CLIMB_SPEED := 4.0
+
+func _physics_process(delta: float) -> void:
+    if is_climbing:
+        # 關閉重力，將垂直輸入直接作為 Y 軸速度
+        var input_v := Input.get_axis("crouch", "jump") # Shift / Space
+        var input_h := Input.get_axis("move_forward", "move_back")
+        velocity.y = input_v * CLIMB_SPEED
+        velocity.z = input_h * CLIMB_SPEED
+        move_and_slide()
+
+func _on_ladder_area_entered(area: Area3D) -> void:
+    if area.is_in_group("Ladder"):
+        is_climbing = true
+
+func _on_ladder_area_exited(area: Area3D) -> void:
+    if area.is_in_group("Ladder"):
+        is_climbing = false`
+            },
+            'wall_climbing': {
+                title: '5. 爬牆與懸崖抓握 (Ledge Grab / Parkour Pull)',
+                category: 'Parkour',
+                desc: '當角色在空中靠近高牆時，利用 RayCast 判斷懸崖邊緣點。將角色懸掛於邊緣，按下跳躍時觸發抓握爬上 (Ledge Pull-Up) 動畫。',
+                api: 'global_position.distance_to(), Tween',
+                node: 'RayCast3D (Ledge Detector)',
+                file: 'LedgeGrab.gd',
+                code3D: `extends CharacterBody3D
+
+@onready var ray_wall = $RayWall
+@onready var ray_ledge = $RayLedge
+var is_hanging := false
+
+func _physics_process(delta: float) -> void:
+    if not is_on_floor() and not is_hanging:
+        if ray_wall.is_colliding() and not ray_ledge.is_colliding():
+            start_ledge_hang()
+
+    if is_hanging:
+        velocity = Vector3.ZERO
+        if Input.is_action_just_pressed("jump"):
+            climb_up_ledge()
+
+func start_ledge_hang() -> void:
+    is_hanging = true
+
+func climb_up_ledge() -> void:
+    var climb_target = global_position + Vector3(0, 2.2, 0) + transform.basis.z * -1.0
+    var tween = create_tween()
+    tween.tween_property(self, "global_position", climb_target, 0.4)
+    tween.tween_callback(func(): is_hanging = false)`
+            },
+            'balance': {
+                title: '6. 平衡與走獨木橋 (Balance / Narrow Walk)',
+                category: 'Physics & Balance',
+                desc: '偵測玩家下方是否為 NarrowBeam 區域，自動限制移動速度，並根據偏離中心線距離計算身體傾斜角 (Tilt Angle)。',
+                api: 'basis.rotated(), clamp()',
+                node: 'RayCast3D (Floor Inspector)',
+                file: 'BalanceWalk.gd',
+                code3D: `extends CharacterBody3D
+
+@export var BALANCE_SPEED := 1.8
+var balance_offset := 0.0
+var is_on_narrow_beam := false
+
+func _physics_process(delta: float) -> void:
+    if is_on_narrow_beam:
+        # 平衡木上限制速度並計算身體傾斜感
+        balance_offset += randf_range(-0.5, 0.5) * delta
+        rotation_degrees.z = clamp(balance_offset * 15.0, -30.0, 30.0)
+        
+        if abs(balance_offset) > 1.2:
+            fall_off_beam()
+            
+func fall_off_beam() -> void:
+    is_on_narrow_beam = false
+    rotation_degrees.z = 0`
+            },
+            'wall_jump': {
+                title: '7. 蹬牆跳與滑牆 (Wall Jump & Wall Slide)',
+                category: 'Acrobatic',
+                desc: '靠牆下落時啟用 `is_on_wall()` 檢測，降低重力加速度實現「滑牆」。在滑牆狀態下跳躍，會施加法線方向的推力與垂直彈跳力。',
+                api: 'get_wall_normal(), is_on_wall()',
+                node: 'CharacterBody3D / 2D',
+                file: 'WallJump.gd',
+                code3D: `extends CharacterBody3D
+
+@export var WALL_SLIDE_SPEED := -2.0
+@export var WALL_JUMP_FORCE := Vector3(8.0, 10.0, 0.0)
+
+func _physics_process(delta: float) -> void:
+    var on_wall = is_on_wall() and not is_on_floor()
+    
+    if on_wall and velocity.y < 0:
+        # 滑牆限制最大下落速度
+        velocity.y = max(velocity.y, WALL_SLIDE_SPEED)
+        
+        if Input.is_action_just_pressed("jump"):
+            var wall_normal = get_wall_normal()
+            velocity = wall_normal * WALL_JUMP_FORCE.x + Vector3.UP * WALL_JUMP_FORCE.y
+            
+    move_and_slide()`
+            },
+            'evasion': {
+                title: '8. 閃避與通用動作 (Evasion System / Dash)',
+                category: 'Combat & Mobility',
+                desc: '觸發無敵時間 (i-Frames) 與爆發性位移。冷卻計時器 (Cooldown Timer) 與狀態鎖定，防範連續濫用。',
+                api: 'Timer, create_tween(), i-frames',
+                node: 'Timer (DashCooldown)',
+                file: 'EvasionDash.gd',
+                code3D: `extends CharacterBody3D
+
+@export var DASH_SPEED := 25.0
+@export var DASH_DURATION := 0.2
+var is_dashing := false
+var can_dash := true
+
+func trigger_dash(direction: Vector3) -> void:
+    if not can_dash or is_dashing: return
+    
+    is_dashing = true
+    can_dash = false
+    
+    var dash_dir = direction.normalized() if direction != Vector3.ZERO else -transform.basis.z
+    velocity = dash_dir * DASH_SPEED
+    
+    # Dash 期間鎖定與無敵
+    get_tree().create_timer(DASH_DURATION).timeout.connect(func():
+        is_dashing = false
+    )
+    get_tree().create_timer(1.0).timeout.connect(func():
+        can_dash = true
+    )`
+            },
+            'prediction': {
+                title: '9. 預測運動系統 (Motion Prediction)',
+                category: 'Trajectory & Math',
+                desc: '利用物理學拋體公式 $P(t) = P_0 + V_0 t + \\frac{1}{2}g t^2$ 或逐步模擬步進 (Step Simulation)，繪製彈道拋物線與落點預測圈。',
+                api: 'ImmediateMesh / Line2D',
+                node: 'MeshInstance3D / Line2D',
+                file: 'MotionPredictor.gd',
+                code3D: `extends Node3D
+
+@export var max_points := 30
+@export var time_step := 0.1
+
+func predict_trajectory(start_pos: Vector3, launch_velocity: Vector3, gravity: float) -> Array[Vector3]:
+    var points: Array[Vector3] = []
+    var current_pos = start_pos
+    var current_vel = launch_velocity
+    
+    for i in range(max_points):
+        points.append(current_pos)
+        current_vel.y -= gravity * time_step
+        current_pos += current_vel * time_step
+        
+        # 可添加 Raycast 離散測試是否擊中障礙物並提早結束
+    return points`
+            }
+        };
+
+        // Three.js Simulation Variables
+        let scene, camera, renderer, playerMesh, playerBody;
+        let obstacles = [];
+        let rayLines = [];
+        let trajectoryLine;
+        
+        // Sim Player State
+        const playerState = {
+            pos: new THREE.Vector3(0, 1, 0),
+            vel: new THREE.Vector3(0, 0, 0),
+            rotationY: 0,
+            state: 'IDLE', // IDLE, RUN, SLIDE, VAULT, COVER, CLIMB, BALANCE, WALL_SLIDE, DASH
+            isGrounded: true,
+            height: 2.0,
+            mechanicText: 'None'
+        };
+
+        // Key Press Tracking
+        const keys = {};
+
+        // DOM Ready Initializer
+        window.addEventListener('DOMContentLoaded', () => {
+            initMechanicsTabs();
+            initThreeJS();
+            setupEventListeners();
+            selectMechanic('basic_slide');
+            animate();
+        });
+
+        function initMechanicsTabs() {
+            const tabsContainer = document.getElementById('mechanicTabs');
+            tabsContainer.innerHTML = '';
+            
+            Object.keys(MECHANICS_DATA).forEach((key, idx) => {
+                const item = MECHANICS_DATA[key];
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-2 border-b-2 whitespace-nowrap font-medium transition-all flex items-center gap-1.5 ${
+                    key === currentMechanicId 
+                    ? 'border-godot-blue text-godot-blue bg-godot-dark/40' 
+                    : 'border-transparent text-gray-400 hover:text-gray-200'
+                }`;
+                btn.innerHTML = `<span class="text-[10px] opacity-60">0${idx+1}.</span> ${item.title.split(' ')[0]}`;
+                btn.onclick = () => selectMechanic(key);
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function selectMechanic(key) {
+            currentMechanicId = key;
+            const data = MECHANICS_DATA[key];
+            
+            // Update Tab Highlight
+            initMechanicsTabs();
+
+            // Update Info Section
+            document.getElementById('mechTitle').innerText = data.title;
+            document.getElementById('mechCategory').innerText = data.category;
+            document.getElementById('mechDesc').innerText = data.desc;
+            document.getElementById('mechApi').innerText = data.api;
+            document.getElementById('mechNode').innerText = data.node;
+            document.getElementById('codeFileName').innerText = data.file;
+
+            // Update Code View
+            const code = currentDimension === '3D' ? data.code3D : data.code2D;
+            document.getElementById('codeDisplay').textContent = code;
+
+            // Trigger Sim Action if Applicable
+            triggerSimulationMechanic(key);
+        }
+
+        function initThreeJS() {
+            const container = document.getElementById('canvasContainer');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x16191d);
+            scene.fog = new THREE.FogExp2(0x16191d, 0.02);
+
+            // Camera (Perspective default)
+            camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            camera.position.set(0, 6, 12);
+            camera.lookAt(0, 1, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // Grid Floor
+            const grid = new THREE.GridHelper(50, 50, 0x478cbf, 0x333b47);
+            grid.position.y = 0;
+            scene.add(grid);
+
+            // Floor Plane
+            const floorGeo = new THREE.PlaneGeometry(50, 50);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e2227, roughness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Create Player Capsule Mesh
+            const pGroup = new THREE.Group();
+            const pGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.8, 16);
+            const pMat = new THREE.MeshStandardMaterial({ color: 0x478cbf, roughness: 0.3, metalness: 0.2 });
+            playerMesh = new THREE.Mesh(pGeo, pMat);
+            playerMesh.castShadow = true;
+            playerMesh.position.y = 0.9;
+            pGroup.add(playerMesh);
+
+            // Direction pointer visor
+            const visorGeo = new THREE.BoxGeometry(0.4, 0.2, 0.4);
+            const visorMat = new THREE.MeshBasicMaterial({ color: 0x41b883 });
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 1.3, -0.4);
+            pGroup.add(visor);
+
+            playerBody = pGroup;
+            scene.add(playerBody);
+
+            // Build Sandbox Obstacles
+            buildSandboxObstacles();
+
+            // Build Trajectory Line for Prediction
+            const trajMat = new THREE.LineBasicMaterial({ color: 0x41b883, linewidth: 3 });
+            const trajGeo = new THREE.BufferGeometry();
+            trajectoryLine = new THREE.Line(trajGeo, trajMat);
+            scene.add(trajectoryLine);
+
+            // Resize handle
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildSandboxObstacles() {
+            const matObstacle = new THREE.MeshStandardMaterial({ color: 0x333b47, roughness: 0.5 });
+            const matCover = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 }); // Amber for Cover
+            const matLadder = new THREE.MeshStandardMaterial({ color: 0x9333ea, roughness: 0.5 }); // Purple Ladder
+            const matNarrow = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.5 }); // Orange Beam
+
+            // 1. Vault Barrier (Low obstacle)
+            const vaultBar = new THREE.Mesh(new THREE.BoxGeometry(4, 1.0, 0.8), matObstacle);
+            vaultBar.position.set(-6, 0.5, -2);
+            vaultBar.castShadow = true;
+            scene.add(vaultBar);
+
+            // 2. High Cover Wall
+            const coverWall = new THREE.Mesh(new THREE.BoxGeometry(5, 3.0, 0.6), matCover);
+            coverWall.position.set(0, 1.5, -6);
+            coverWall.castShadow = true;
+            scene.add(coverWall);
+
+            // 3. Ladder Wall
+            const ladder = new THREE.Mesh(new THREE.BoxGeometry(2, 6.0, 0.3), matLadder);
+            ladder.position.set(7, 3.0, -3);
+            scene.add(ladder);
+
+            // 4. Narrow Balance Beam
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 8), matNarrow);
+            beam.position.set(-7, 1.5, 4);
+            scene.add(beam);
+
+            // 5. High Ledge Wall (Wall Climb)
+            const ledgeWall = new THREE.Mesh(new THREE.BoxGeometry(4, 3.5, 2.0), matObstacle);
+            ledgeWall.position.set(5, 1.75, 4);
+            scene.add(ledgeWall);
+
+            // 6. Wall Jump Parallel Vertical Walls
+            const w1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 8, 4), matObstacle);
+            w1.position.set(0, 4, 6);
+            const w2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 8, 4), matObstacle);
+            w2.position.set(3, 4, 6);
+            scene.add(w1);
+            scene.add(w2);
+        }
+
+        function setupEventListeners() {
+            // Dimension Toggle (3D / 2D Code view)
+            document.getElementById('btnGodot3D').onclick = () => {
+                currentDimension = '3D';
+                document.getElementById('btnGodot3D').className = 'px-2 py-0.5 text-xs rounded font-medium bg-godot-blue text-white transition-all';
+                document.getElementById('btnGodot2D').className = 'px-2 py-0.5 text-xs rounded font-medium text-gray-400 hover:text-white transition-all';
+                selectMechanic(currentMechanicId);
+            };
+            document.getElementById('btnGodot2D').onclick = () => {
+                currentDimension = '2D';
+                document.getElementById('btnGodot2D').className = 'px-2 py-0.5 text-xs rounded font-medium bg-godot-blue text-white transition-all';
+                document.getElementById('btnGodot3D').className = 'px-2 py-0.5 text-xs rounded font-medium text-gray-400 hover:text-white transition-all';
+                selectMechanic(currentMechanicId);
+            };
+
+            // Perspective / Ortho Viewport Switcher
+            let isOrtho = false;
+            document.getElementById('viewModeToggle').onclick = () => {
+                isOrtho = !isOrtho;
+                document.getElementById('viewModeText').innerText = isOrtho ? 'Orthographic 2D' : 'Perspective 3D';
+                if(isOrtho) {
+                    camera.position.set(0, 2, 18);
+                    camera.lookAt(0, 2, 0);
+                } else {
+                    camera.position.set(0, 6, 12);
+                    camera.lookAt(0, 1, 0);
+                }
+            };
+
+            // Copy Code Button
+            document.getElementById('copyCodeBtn').onclick = () => {
+                const codeText = document.getElementById('codeDisplay').textContent;
+                navigator.clipboard.writeText(codeText).then(() => {
+                    const btn = document.getElementById('copyCodeBtn');
+                    btn.innerHTML = `<i class="fa-solid fa-check text-green-400"></i> 已複製!`;
+                    setTimeout(() => {
+                        btn.innerHTML = `<i class="fa-regular fa-copy"></i> 複製代碼`;
+                    }, 2000);
+                });
+            };
+
+            // Reset Player Position
+            document.getElementById('resetPositionBtn').onclick = () => {
+                playerState.pos.set(0, 0, 0);
+                playerState.vel.set(0, 0, 0);
+                playerState.state = 'IDLE';
+            };
+
+            // Action Buttons listener
+            document.querySelectorAll('.btn-act').forEach(btn => {
+                btn.onclick = () => {
+                    const act = btn.getAttribute('data-action');
+                    handleActionTrigger(act);
+                };
+            });
+
+            // Keyboard Listeners
+            window.addEventListener('keydown', (e) => keys[e.code] = true);
+            window.addEventListener('keyup', (e) => keys[e.code] = false);
+        }
+
+        function handleActionTrigger(act) {
+            if (act === 'slide') {
+                playerState.pos.set(0, 0, 0);
+                playerState.vel.set(0, 0, -12);
+                playerState.state = 'SLIDE';
+                playerState.mechanicText = 'Slide Impulse Active';
+            } else if (act === 'vault') {
+                playerState.pos.set(-6, 0, 0);
+                playerState.vel.set(0, 4, -4);
+                playerState.state = 'VAULT';
+                playerState.mechanicText = 'Vaulting Barrier';
+            } else if (act === 'cover') {
+                playerState.pos.set(0, 0, -5.2);
+                playerState.state = 'COVER';
+                playerState.mechanicText = 'Cover Snapped (Normal Ray)';
+            } else if (act === 'climb') {
+                playerState.pos.set(7, 1, -2.5);
+                playerState.vel.set(0, 3, 0);
+                playerState.state = 'CLIMB';
+                playerState.mechanicText = 'Ladder Climb State';
+            } else if (act === 'wallclimb') {
+                playerState.pos.set(5, 1, 2.8);
+                playerState.vel.set(0, 5, 0);
+                playerState.state = 'WALL_PULL';
+                playerState.mechanicText = 'Ledge Hang & Pull';
+            } else if (act === 'narrow') {
+                playerState.pos.set(-7, 1.6, 7);
+                playerState.vel.set(0, 0, -2);
+                playerState.state = 'BALANCE';
+                playerState.mechanicText = 'Narrow Beam Balance';
+            } else if (act === 'walljump') {
+                playerState.pos.set(0.3, 3, 6);
+                playerState.vel.set(5, 6, 0);
+                playerState.state = 'WALL_JUMP';
+                playerState.mechanicText = 'Wall Push Impulse';
+            } else if (act === 'dash') {
+                playerState.vel.set(0, 0, -18);
+                playerState.state = 'DASH';
+                playerState.mechanicText = 'Evasion Dash (i-Frames)';
+            }
+        }
+
+        function triggerSimulationMechanic(key) {
+            const actMap = {
+                'basic_slide': 'slide',
+                'vaulting': 'vault',
+                'cover_system': 'cover',
+                'climbing': 'climb',
+                'wall_climbing': 'wallclimb',
+                'balance': 'narrow',
+                'wall_jump': 'walljump',
+                'evasion': 'dash',
+                'prediction': 'slide'
+            };
+            if (actMap[key]) {
+                handleActionTrigger(actMap[key]);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = 0.016; // fixed time step
+
+            // Process Movements & State Dynamics
+            if (playerState.state === 'SLIDE') {
+                playerState.vel.z *= 0.95; // Slide friction decay
+                if (Math.abs(playerState.vel.z) < 0.5) playerState.state = 'IDLE';
+                playerMesh.scale.set(1, 0.5, 1);
+            } else if (playerState.state === 'DASH') {
+                playerState.vel.z *= 0.88;
+                if (Math.abs(playerState.vel.z) < 0.5) playerState.state = 'IDLE';
+                playerMesh.scale.set(1, 1, 1);
+            } else {
+                playerMesh.scale.set(1, 1, 1);
+                // WASD Manual Controls
+                const inputX = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
+                const inputZ = (keys['KeyS'] ? 1 : 0) - (keys['KeyW'] ? 1 : 0);
+
+                if (inputX !== 0 || inputZ !== 0) {
+                    const speed = keys['ShiftLeft'] ? 8 : 4;
+                    playerState.vel.x = inputX * speed;
+                    playerState.vel.z = inputZ * speed;
+                    playerState.state = keys['ShiftLeft'] ? 'SPRINT' : 'RUN';
+                } else if (playerState.state !== 'VAULT' && playerState.state !== 'CLIMB' && playerState.state !== 'BALANCE') {
+                    playerState.vel.x *= 0.8;
+                    playerState.vel.z *= 0.8;
+                    if (playerState.vel.length() < 0.1) playerState.state = 'IDLE';
+                }
+            }
+
+            // Simple Gravity Integration
+            if (playerState.pos.y > 0 || playerState.vel.y > 0) {
+                if (playerState.state !== 'CLIMB' && playerState.state !== 'COVER') {
+                    playerState.vel.y -= 9.8 * dt;
+                }
+            } else {
+                playerState.pos.y = 0;
+                playerState.vel.y = Math.max(0, playerState.vel.y);
+                playerState.isGrounded = true;
+            }
+
+            // Apply Velocity
+            playerState.pos.addScaledVector(playerState.vel, dt);
+            playerBody.position.copy(playerState.pos);
+
+            // Update Trajectory Line Prediction Rendering
+            updateTrajectoryPrediction();
+
+            // Update Overlay HUD
+            document.getElementById('hudState').innerText = playerState.state;
+            document.getElementById('hudSpeed').innerText = `${playerState.vel.length().toFixed(2)} m/s`;
+            document.getElementById('hudGround').innerText = playerState.isGrounded ? 'Grounded' : 'In Air';
+            document.getElementById('hudMechanic').innerText = playerState.mechanicText;
+
+            renderer.render(scene, camera);
+        }
+
+        function updateTrajectoryPrediction() {
+            const points = [];
+            const start = playerState.pos.clone().add(new THREE.Vector3(0, 1, 0));
+            const vel = playerState.vel.clone();
+            if (vel.length() < 0.5) vel.set(0, 5, -8); // fallback trajectory visualization
+
+            let curr = start.clone();
+            let cVel = vel.clone();
+
+            for (let i = 0; i < 25; i++) {
+                points.push(curr.clone());
+                cVel.y -= 9.8 * 0.05;
+                curr.addScaledVector(cVel, 0.05);
+                if (curr.y < 0) {
+                    points.push(curr.clone());
+                    break;
+                }
+            }
+
+            trajectoryLine.geometry.dispose();
+            trajectoryLine.geometry = new THREE.BufferGeometry().setFromPoints(points);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvasContainer');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+    </script>
+</body>
+</html>
+```
+
+### 系統架構與 9 大動作機制設計總覽
+
+1. **基礎運動與滑鏟 (Basic Movement & Slide)**
+   - **核心原理**：基於 Godot 4 的 `CharacterBody3D` / `CharacterBody2D`。平滑處理加速度與減速度，並在速度高於閾值時切換至 `SLIDE` 狀態。
+   - **碰撞體處理**：動態調降 `CollisionShape3D` 的 `height` (例如從 2.0m 縮至 1.0m)，並施加上滑動量 (Impulse) 與衰減阻力。
+
+2. **翻越系統 (Vaulting System)**
+   - **雙射線偵測**：上方頭部射線 (`RayHead`) 與下方腿部射線 (`RayKnee`)。
+   - **觸發條件**：當膝蓋射線撞擊低矮障礙物但頭部射線未碰撞時，代表前方為低掩體。利用 `Tween` 將玩家位置補間移至障礙物頂端。
+
+3. **掩體系統 (Cover System)**
+   - **牆面吸附**：發射 RayCast 取得障礙物法線 (`get_collision_normal()`)。
+   - **向量切線**：利用 `normal.cross(Vector3.UP)` 計算沿牆切線，鎖定玩家移動軸向。
+
+4. **攀爬系統 (Climbing System)**
+   - **區域接合**：使用 `Area3D` 偵測梯子或攀爬網。進入區域後將重力感應係數降為 `0`，將前後/上下輸入直接映射至垂直 $Y$ 軸速度。
+
+5. **爬牆與懸崖抓握 (Wall Climbing / Ledge Grab)**
+   - **懸崖檢測**：當玩家處於空中靠近牆面時，牆面射線命中但頂部懸崖射線穿透，觸發抓持 (Hang) 狀態。按下跳躍鍵觸發翻上動畫。
+
+6. **平衡與走獨木橋 (Balance / Narrow Walk)**
+   - **狹窄區域檢測**：下方射線檢測到 `NarrowBeam` 標籤，啟用速度上限並根據身體離心率計算 `rotation_degrees.z` 傾斜角度。
+
+7. **蹬牆跳與滑牆 (Wall Jump & Wall Slide)**
+   - **滑牆**：下落時 `is_on_wall()` 成立，限制最快下落速度 $V_y$。
+   - **蹬牆**：觸發跳躍時取得 `get_wall_normal()`，給予法線方向反彈力與垂直向上彈力。
+
+8. **閃避與通用動作 (Evasion / Dash)**
+   - **爆發位移**：提供短期高倍率速度補貼，配合 Timer 鎖定狀態並啟用無敵時間 (i-Frames)。
+
+9. **預測運動系統 (Motion Prediction)**
+   - **物理拋物線繪製**：利用 $P(t) = P_0 + V_0 t + \frac{1}{2}g t^2$ 生成預測點陣列，透過 `ImmediateMesh` 或 `Line2D` 實時繪製軌跡。
