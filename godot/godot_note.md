@@ -1,5 +1,8 @@
 利他 出乎想像的事 做了再想怎麼打磨 ,合理但能這樣玩的創意 令人眼前一亮
 
+生成shader管理器的規劃:
+購物車/範本/常用
+參考 shaderlib ：shader管理器：preview image，2d/3d，click copy，shader要考慮性能，中文，yt demo，json type store+upload 0000 按輸入排字
 ### 流程
 |A|B|
 |--|--|
