@@ -3,6 +3,18 @@
 生成shader管理器的規劃:
 購物車/範本/常用
 參考 shaderlib ：shader管理器：preview image，2d/3d，click copy，shader要考慮性能，中文，yt demo，json type store+upload 0000 按輸入排字
+
+生成圖中角色版本的動作
+
+基礎運動與滑鏟（Slide）：
+翻越系統（Vaulting）：
+掩體系統（Cover System）：
+攀爬系統（Climbing System）：
+爬牆系統（Wall Climbing）：
+平衡與走獨木橋（Balance / Narrow Walk）：
+蹬牆跳與滑牆（Wall Jump / Wall Slide）：
+閃避與通用動作（Evasion System）：
+預測運動系統（Motion Prediction）：
 ### 流程
 |A|B|
 |--|--|
