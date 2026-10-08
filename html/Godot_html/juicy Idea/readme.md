@@ -1,3 +1,5 @@
+分析shader 寫成md手冊
+
 生成shader管理器的規劃:
 購物車/範本/常用
 參考 shaderlib/shadertoy ：shader管理器：preview image，2d/3d，click copy，shader要考慮性能，中文，yt demo，json type store+upload 0000 按輸入排字
