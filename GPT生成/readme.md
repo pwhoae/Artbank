@@ -4,6 +4,11 @@
 |<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md"> GLB/GLTF</a>|
 |寫故事用九宮圖|生動表情包|
 
+留出餘裕：
+簡單規則代替複雜計算
+自動觸發的具體小事
+允許自己犯錯+反思
+模糊時間段
 <hr>
 <a href="https://search.bilibili.com/all?vt=27811681&keyword=%E7%8C%AB%E5%92%8C%E8%80%81%E9%BC%A0&from_source=web_search&search_source=5
 ">猫和老鼠</a>
