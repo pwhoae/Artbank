@@ -94,3 +94,11 @@ FPV 無人機俯沖：沿瀑布或建築進行極限激進的俯沖運動。  
 設計應用：將相關元素放在一起或使用相似視覺風格，讓使用者自然歸類（如擺放在一起的輸入圖示）。  
 約束與引導（簡化選擇與流程）
 設計應用：透過漏斗形設計或灰顯輸入框，天然地引導使用者做出預期動作。  
+<HR>
+shader管理器：GitHub+素材管理器+ 畫風管理器：muse/星引擎+html動效管理器：3D圖片球體動效+ 動作庫+提示詞管理器
+ <hr>
+購物車/範本/常用
+參考 shaderlib ：shader管理器：preview image，2d/3d，click copy，shader要考慮性能，中文，yt demo，json type store+upload 0000 按輸入排字
+<hr>
+素材管理器：preview image，size，download，name，search box，folder，sortbydate，label，have character，what 作品
+<hr>
