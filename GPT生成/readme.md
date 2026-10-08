@@ -1,3 +1,5 @@
+「技術不再是壁壘，商業才是」——如何將產品成功銷售出去
+
 |死守筆記容易讓思維停留在當初的淺層水平|真正掌握技術的人更多是純興趣驅動與手動實作|
 |--|--|
 |[回到底部](#readme) <a id="readme_begin"></a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|
