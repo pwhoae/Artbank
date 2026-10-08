@@ -12,9 +12,20 @@
 告訴 AI：**「你是一位專業的前端工程師，請用可長期維護的標準建立項目。」 **
 如何驗證「真需求」？小紅書內容自動化與人設拆解,營運專家設定 SOP<br>
 
+
 <hr>
 差異化+要減法<br>
 奧拉星復刻<br> 體驗老板,陪伴類,戰鬥力系統,每周期更新,打卡,互動,桌宠agent,3d打印
+suno怎麼做到原曲但換歌詞:方法三：搭配其他 AI 工具實現「原曲換詞」（工作流推薦）
+如果你的目標是100% 精確還原某首歌曲的旋律與歌聲，僅替換歌詞，建議結合以下專業音訊 AI 工具：
+
+SVR / RVC 聲線模型：使用 UVR5 將原曲的人聲與伴奏分離（Vocal / Instrumental）。
+
+ACE-Studio / Vocaloid / Synthesizer V：將原曲人聲轉成 MIDI 旋律，填入新歌詞重新合成人聲。
+
+RVC（Retrieval-based Voice Conversion）：將合成的新人聲替換成原唱者的聲線。
+
+混音對齊：將新生成的人聲軌與原本分離出來的伴奏軌（Instrumental）重新混音。
 
 <a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>
 <br>
