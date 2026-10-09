@@ -81,7 +81,8 @@ FPV 無人機俯沖：沿瀑布或建築進行極限激進的俯沖運動。  
 |--|--|
 |認證玩法->確立美術>均衡性能+美術|需要策劃案 vs. Demo 策劃案決定上限|
 
-<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(1).JPG" width="300" height="300"></img><img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(2).JPG" width="300" height="300"></img>
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(1).JPG" width="300" height="300"></img>
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(2).JPG" width="300" height="300"></img>
 
 <hr>
 
@@ -91,17 +92,22 @@ FPV 無人機俯沖：沿瀑布或建築進行極限激進的俯沖運動。  
 推拉摇移
 1. wennie:會讓人不知不覺地被吸引到某個地方
 2. 信息量=完成度|中間插入漫畫演出|武器立繪要立體
-3. skilltree+連線 只要互動就加音效
-4. 連段+斬殺boss 擊破 動畫+處決動畫 攻击音+受击音+攻击vector+粒子特效+相机震动|BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。弹反和拼刀 (signal)
-5. 粒子特效
-6. camera delay
-7. 创意的定义与三大前提 **玩家能理解, 新的东西,新的体验**|设定清晰体验目标|对默认规则动手|行为系统的有机融合|打破知识断层与多元积累
-8. 分段坠落血条/滴體/分段/緩沖血量
-9. In加速：先慢后快，拉满期待感。 Out减速：先快后慢，营造爆发式出场的冲击感。
-10. 走路+彈刀 震屏 鏡頭抖動 後退elastic 佩+大怪 弱點+血條  連續砍的動,妖鬼2d場景
-11. 遊戲運鏡
 
-12. 灯光：玩家判断空间“正常”与“异常”的第一信息源。 
+<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%BC%AB%E7%95%AB%E6%BC%94%E5%87%BA.jpeg" width="300" height="300"></img>
+
+
+3. 
+4. skilltree+連線 只要互動就加音效
+5. 連段+斬殺boss 擊破 動畫+處決動畫 攻击音+受击音+攻击vector+粒子特效+相机震动|BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。弹反和拼刀 (signal)
+6. 粒子特效
+7. camera delay
+8. 创意的定义与三大前提 **玩家能理解, 新的东西,新的体验**|设定清晰体验目标|对默认规则动手|行为系统的有机融合|打破知识断层与多元积累
+9. 分段坠落血条/滴體/分段/緩沖血量
+10. In加速：先慢后快，拉满期待感。 Out减速：先快后慢，营造爆发式出场的冲击感。
+11. 走路+彈刀 震屏 鏡頭抖動 後退elastic 佩+大怪 弱點+血條  連續砍的動,妖鬼2d場景
+12. 遊戲運鏡
+
+13. 灯光：玩家判断空间“正常”与“异常”的第一信息源。 
 烟雾体量与实际比例：大体量烟雾实体感强、轮廓清晰，适合表现重击/砸落； 小比例烟雾呈薄纱状、飘忽不定。 
 逆光与救世主氛围：改变整体光源位置，采用逆光塑造“救世主”降临的史诗感。
 射擊遊戲
