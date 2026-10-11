@@ -6,6 +6,9 @@ BlenderKit:https://www.blendkit.com
 Camera Shakify：用於為攝影機添加自然的手持鏡頭晃動效果。 
 ui:https://bencho.dev/
 https://genvizu.com/zh
+ 
+靈感：svg/樂魔、魔法盒
+表現性動效：可透過截圖、簡單摳圖/補圖方式，將市面上喜歡的遊戲 UI 轉為可編輯素材進行臨摹或再創作。  
 # 🎨 Artbank & GameDev Resource Hub
 
 
