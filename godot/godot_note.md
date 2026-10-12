@@ -103,6 +103,7 @@ FPV 無人機俯沖：沿瀑布或建築進行極限激進的俯沖運動。  
 
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%BC%AB%E7%95%AB%E6%BC%94%E5%87%BA.jpeg" width="300" height="300"></img>
 
+液化/拖影/漸出漸入
 
 3. 
 4. skilltree+連線 只要互動就加音效
