@@ -1,0 +1,64 @@
+---
+title: "烧了800刀 Token，我把\"榨干Codex的方法\"做成了App"
+source: "https://www.bilibili.com/video/BV1QmHy6eE76/?spm_id_from=333.1387.favlist.content.click&vd_source=c5356ec482436267ffff4778b99f4003"
+author:
+  - "[[骰子xCosmology]]"
+published: 2026-10-07
+created: 2026-10-13
+description: "Codex 的额度怎么用才不浪费，又不把自己累坏？上期骰子用蒙特卡洛模拟研究了额度重置与疲劳曲线。这次，我把那套方法做成了一个开源app：Codex 驾驶舱，支持 Mac 和 Windows。它会安静地待在桌面角落，帮你查看剩余额度、记录自己的疲劳状态，并结合重置风险，估算每天适合用多少。你也可以随时调整计划，不必一边写代码一边心算。除此之外，还能按任务、模型和日期统计 Token 用量，查"
+tags:
+  - "clippings"
+---
+<iframe width="560" height="315" src="https://player.bilibili.com/player.html?bvid=BV1QmHy6eE76&amp;page=1&amp;high_quality=1&amp;danmaku=0" title="Bilibili video player" frameborder="0" allowfullscreen=""></iframe>
+
+Codex 的额度怎么用才不浪费，又不把自己累坏？  
+上期骰子用蒙特卡洛模拟研究了额度重置与疲劳曲线。这次，我把那套方法做成了一个开源app：Codex 驾驶舱，支持 Mac 和 Windows。  
+它会安静地待在桌面角落，帮你查看剩余额度、记录自己的疲劳状态，并结合重置风险，估算每天适合用多少。你也可以随时调整计划，不必一边写代码一边心算。  
+除此之外，还能按任务、模型和日期统计 Token 用量，查看成本、生成账单图片，以及汇总多人使用情况。这期就带大家看看这些功能，以及具体怎么用。  
+从方法论到真正能用的 App，希望它能帮你少一点额度焦虑，多一点有效产出。欢迎去 GitHub 下载、提建议，觉得有帮助也可以点个 Star！
+
+## Transcript
+
+**0:00** · 在之前的视频里骰子跑了上千次 In my previous video, I ran thousands of 蒙特卡洛模拟摸清了Codex的额度 Monte Carlo simulations to understand Codex's quota 重置规律什么时候该猛用什么时候该省 reset patterns: when to use more and when to save 疲劳曲线长什么样每天大概能用多少的 What does the fatigue curve look like? How much 额度都能用一个数学公式来提前预测出来 quota can you use each day? A formula can predict it 评论区有很多小伙伴说这套方法 Many viewers said this method 很有用骰子收到夸奖了谢谢大家 was useful. Thank you for the kind feedback! 但被问到最多的个问题就是这些数学的 But the most common question was about these
+
+**0:25** · 曲线我是给大家讲明白了但是实际上在我们 mathematical curves. I explained them, but in practice 使用代码用使用Codex来写代码的时候 when you use Codex to write code 你不可能一边敲键盘一边心算疲劳曲线吧 you can't calculate fatigue curves while typing, right? 所以为了回答这个问题 So, to answer that question 还记得骰子上次视频说骰子烧了两百亿Token吗 remember the 20 billion tokens I mentioned last time? 那距离上次之后骰子已经又多烧了三百 Since then, I've used another 30 亿Token已经达到了总共五百亿 billion tokens, bringing the total to 50 billion 的Token然后有一天的峰值达到了 tokens. And the peak for a single day reached
+
+**0:52** · 四十五亿个Token所以骰子相比上次 4.5 billion tokens. Compared with last time 可以说是更懂Codex了那就把上 I understand Codex better now. So I took 一次给大家介绍那个方法论做了一个 the approach I introduced previously and built 新的App叫这个Codex驾驶舱 a new app called Codex Cockpit 这样方便大家去更好的使用骰子上期视频介绍的 It helps you put the method from my last video 那个方法论我想这也是AI时代一个非常 into practice. I think this is a great 好的个点子就是以前方法论我只能写成 opportunity in the AI era. Previously, I could only 文章或者是拍成视频给大家讲但是每个 write an article or explain it in a video, but everyone 人可能实际操作起来会不太一样但是到了 might apply it differently. Now, in the
+
+**1:22** · AI时代可以很轻松的用AI做一个App AI era, it's easy to build an app with AI 让大家快速的直接利用起这一个方法论 so people can use the method directly 希望对大家有帮助当然当然这个App是 I hope it helps. This app is 完全开源的Mac和Windows都能使用 fully open source and works on Mac and Windows 骰子做这个app烧了将近七百美刀的额度 Building it used almost $700 worth of quota 所以求求啦要是对你有帮助的话欢迎大家在 So please, if it helps you, consider GitHub上给骰子点个Star以及一键三连 starring it on GitHub and liking, saving, and supporting the video 或者给骰子投喂杯咖啡 Or buying me a coffee 谢谢你啦那么接下来我们就来看一下这个 Thank you! Now let's look at
+
+**1:50** · App的一些功能以及具体的使用方法吧 the app's features and how to use them 首先最有用的当然是骰子之前介绍这个 The most useful feature is, of course, the 疲劳曲线每个人的疲劳曲线都不尽相同 fatigue curve. Everyone's curve is different 那么骰子选择的方式是在每一天过完的时候 My approach is to ask you at the end of each day 它会告诉你这天用了百分之多少的Codex how much of your Codex quota you used 额度然后你选一下你目前的一个状态比如说 Then you choose how you felt. For example 你觉得用这么多额度很痛苦几乎检查不 if that amount feels overwhelming and you can barely 完Codex的个结果就选这个有点撑 review the results, choose "A bit too much" 然后如果觉得刚刚好的话就差不多选中间 If it feels about right, choose the middle option
+
+**2:19** · 的这个如果非常轻松就是完全不疲劳然后也 If it feels very easy, with no fatigue, and you can 能检查完Codex的结果就选这个很轻松 review all the results, choose "Very easy" 一般骰子设置的这个比例是刚刚好的 Generally, I define "About right" as the point 比例是疲劳曲线差不多效率在百分之八十 where the fatigue curve indicates about 80% efficiency 的时候很轻松的时候当然就百分之一百 And "Very easy" corresponds to 100% 然后你通过积累个一周差不多你就有得到 After about a week, you'll have collected 一大堆这样的数据点然后骰子利用自己 a set of data points. I use my 总结的一个这种数经验公式把你的这些 empirical formula to fit these 数据给点拟合出来就能精准的估计出来 points and estimate accurately
+
+**2:46** · 你的疲劳曲线到哪里会感到非常疲劳 where your fatigue curve starts to feel exhausting 就是这个k值骰子的疲劳曲线 That's this k value. My fatigue curve 差不多在百分之六十三的时候 reaches that point at around 63% 然后有了疲劳曲线之后每个人都是 Once you have a fatigue curve, everyone's is 独一无二通过这个独一无二的疲劳曲线 unique. Using your personal curve 我们可以计算出一张重置风险和这个你的 we can calculate a chart relating reset risk to 目前的剩的这个余额的一个这样的关系图 your current remaining quota 然后这里的颜色就代表你每天建议的使用 The colors indicate your recommended daily 额度你按照这个热力图给出的这个数据 usage. Follow the values given by this heatmap 点值来使用今天的Codex额度就是你 to decide how much Codex quota to use today
+
+**3:15** · 非常舒适的一个区间也是产出最大的一个 That is a comfortable range and also maximizes output 建议值横轴的这个是余额除重置天数也就说 The suggested value. The x-axis is balance divided by days until reset 如果你在还有两天就重置的时候还百分之一百 So if you have two days left and still have 100% 时候那这一条线就是在这个百分之五十的时候 remaining, that puts you on the 50% line 然后当然越往上就是Tibo有 Higher up means Tibo may 可能在明天重置的话那就到重置风险 announce a reset tomorrow, raising the reset risk 到百分之一百然后它就会在这一条 to 100%. Then it marks map上标出一个当日的这个建议值非常的实用 today's suggested value on the map. Very useful!
+
+**3:42** · 当然这个重置风险是根据之前骰子推荐的这个网站 This reset risk comes from the website I recommended earlier 就是这个网站你可以知道当天有多少的重置风险 This website shows the reset risk for the day 如果Tibo没有说那基本上 If Tibo hasn't announced anything 默认就是百分之十到百分之二十 the default is roughly 10% to 20% 如果说了那你可以人为的把这个重置的 If he has, you can manually increase 风险调高它这个app也会自动帮你计算 the reset risk, and the app recalculates for you 说完了最方便的两个功能那Codex驾驶舱 Those are the two most useful features. Codex Cockpit 在平时的时候就是长这样的这个样子的 normally looks like this 就安静的待在你的桌角不会引起你的关注 It sits quietly in a corner of your desktop
+
+**4:13** · 那这里有一个双环最外圈的这个环是你 There are two rings here. The outer ring shows Codex当周剩的总额度到达百分之 your total remaining weekly Codex quota. Below 五十以下会变成黄色然后到百分之二十以下会变成红色 50%, it turns yellow; below 20%, it turns red 然后外头的这一个数就看这边这个是 And this number outside the ring: here's 我们的Codex驾驶舱展开之后的结果 what Codex Cockpit looks like when expanded 这边是你当周剩余的总额度然后 This shows your remaining weekly quota 以及什么时候会重置什下次重置的 and when it resets, the next reset 时间以及可能的重置卡的这个机会 time, and the chance of an extra reset
+
+**4:39** · 然后这边是我们当周建议的额度使用的百分比 This shows the recommended quota usage percentage 比如说我通过刚才这张热力图 For example, using the heatmap 算出今天建议使用百分之十八的话 we might recommend spending 18% today 那这个圈的百分之八就意思你目前用了 An 8% reading on this ring means you've used 这百分之十八的百分之八然后当这个圈儿 8% of that 18%. When this ring 大于百分之八十之后它就会变成黄色然后 exceeds 80%, it turns yellow, and 到百分之一百的时候就会变成红色也就是说 at 100%, it turns red. That means 你已经花出超过了今天建议的总额度然后 you've exceeded today's recommended total quota
+
+**5:08** · 这边滑动条是你可以手动改今天的计划如果 This slider lets you change today's plan manually 你不想按照刚才那个张热力图给你的建议 If you don't want to follow the heatmap's recommendation 你想今天就加个班努努力然后那你可以手动 and want to work a little harder today, you can manually 的把这个计划调高那这个环也会跟着变化 raise your plan. The ring changes with it 然后下边就展示今天总建议及今天总共 Below that are today's recommendation and the total 已经用了百分之多少额度然后重置风险 quota percentage already used, plus the reset risk 当然这个重置风险也有滑动条你可以手动调你 Reset risk also has a slider you can adjust manually 觉得今天可能Tibo会重置了你就也可以调调 If you think Tibo may announce a reset today, you can change it 当然如果你不调的话它就是根据那个网站自动计算的 If you leave it alone, it's calculated from the website
+
+**5:36** · 然后当然说到Tibo重置这个网站 Speaking of the Tibo reset website 它非常好开源了API所以骰子就给 it provides an open API, so I connected 驾驶舱也接入当这个网站出现了对应 the cockpit to it. When the site reports 的这个可能重置的这个信号的时候 a signal that a reset may be coming 我们的驾驶舱就会收到它就会打开 our cockpit receives it and displays 一个这种类似铃铛一样的这个图像 an icon resembling a bell 所以说你在瞥瞥见我们的驾驶舱 So when you glance at the cockpit 的图标发现有这个黄铃铛的话就说明 and see this yellow bell 是Tibo马上就要重置了的信号 it signals that Tibo may announce a reset soon
+
+**6:05** · 然后当然在这个刚才展开的那个的顶部也会有 There's also a small yellow bell at the top of 这个黄色的小铃铛方便你观测Tibo的账号 the expanded view, making it easier to follow Tibo's account 如果你常驻的把我们的驾驶舱挂在前台的话 if you keep the cockpit visible on your desktop 除了刚才说的一些最基本的功能还有一些 Besides those basic features, there are also 统计的功能是评论区的小伙伴告诉这样可能 statistics features suggested by viewers, so you can 会了解到自己的工作到底是哪部分花了多少的Token see which parts of your work used how many tokens 骰子设置了两种界面一种是Token显示的 I added two views. One displays tokens 这一个界面就是可以显示你一段时间内使用的 and shows how many you've used over a selected period
+
+**6:34** · Token数量你可以选今天昨天以及任意的 You can choose today, yesterday, or any 日期还可以选呃持续一段范围的比如说一周用的 date, or a range such as a week's Token总量还有一个月用的Token总量 total tokens or a month's total tokens 然后这边会根据你的任务量就是你的 It also groups usage by your tasks Codex的那个窗口比如说你设了一个 or Codex chats. For example, you might have 做地图的窗口然后搞了一个做页的窗口 one chat for making maps and another for making a webpage 那它就会分别统计这些Token分别花 It tracks how those tokens were spent 在哪个窗口上然后画成这样的一个饼状图 across chats and draws a pie chart like this
+
+**7:03** · 然后当然也会你也可切换成模型显示比如说 You can also switch to the model view. For example gpt-6-astra花的Token数 the number of tokens used by gpt-6-astra 是最多的然后gpt-5.6-sol花的是 is highest, followed by gpt-5.6-sol 第二多的这样之之类的然后当然也除此之外 and so on. I also considered 骰子还考虑到一个账户可能有多人使用 the situation where multiple people use one account 的这种情况这种情况的话需要外接一个 For that, you need to connect 免费的服务器Cloudflare a free Cloudflare server 呃等配置完成之后你就可以看每个同事 Once configured, you can see each colleague's usage 比如说你一个账户想要分给多个人用 For example, if you share one account with several people
+
+**7:31** · 但是不知道怎么算钱的话就可用这个来 and don't know how to split the cost, this can help 比如说小林小夏和小周他们几个各花了百分之 For instance, Xiaolin, Xiaoxia, and Xiaozhou: their respective 多少的Token都可以从这个饼状图一键 token percentages are all visible in this pie chart 看到然后当然骰子也设置了可以把它转化成 at a glance. I also added a way to convert 这个Token的成本的这一个按钮刚才 these token totals into cost using this button 的这一些都可以支持转化成美元的这样 All these figures can be converted into US dollars 的个单位因为我们知道Codex的额度 because, as we understand it, Codex's quota 应该是按照每个账户订阅的美元数来 is allocated based on each account's subscription cost
+
+**7:59** · 分配每周的这个可以用的 to determine the weekly available Token的美元的总量的所以说 dollar value of tokens. So 按这个来计算多人使用量的话会更加公平点 using this to split shared usage is a little fairer 然后当然骰子也准备了丰富的曲线图 I also prepared a range of charts 可以看到你使用的一个Token总量 showing your total token usage 然后当然也可选日周月然后这一个呃日期都是可滑动的 You can choose day, week, or month, and move the date range 刚才骰子展示的Codex驾驶舱所花费的 The token bill I showed earlier for Codex Cockpit Token总量的账单就是用这个界面来产生的 was generated using this interface 这边你可以选择你对应的这个项目 Here, you can choose the relevant project
+
+**8:29** · 也可选择多个合并在一起然后这个 or combine several projects. Then this 打印机就会打印出当前这个窗口所使用 printer button generates the total bill 的这个账单总量然后可以一键复制成图片 for the current chat, which you can copy as an image 比如说骰子的Codex驾驶舱就已经目前 For example, my Codex Cockpit project has already 使用了七百零六美刀的Token量大部分都是 used $706 worth of tokens, mostly gpt-6-astra花的 spent on gpt-6-astra 然后刚才说的日历功能就在这日历 And the calendar feature mentioned earlier: its 功能的全局视角就是按Token量 overview uses token usage 或者是成本来画的这个热力图颜色越深 or cost to draw this heatmap. Darker colors
+
+**8:57** · 代表当天花的Token量是越多的 mean more tokens were used that day 然后点击到对应的天刚才的一个饼状图就会跳转 Click a day, and the pie chart jumps 到对应的天的那一天然后你就可以进行快速的跳转 to that date, letting you navigate quickly 可以看到骰子大家考虑的非常周到大家 As you can see, I've considered a lot of your needs 想要功能基本上使用这一个软件就可以 Most of the features you want are available in this app 很好的把骰子之前的方法论用运用到 It helps put my earlier method 自己的Codex驾驶里了那骰子这个 into practice with Codex. This app 软件已经完全直接开源到了GitHub is already fully open source on GitHub 大家欢迎大家去下载以及点个免费的 Please download it and consider giving it a free
+
+**9:26** · Star然后如果实在不想装的话你把这个 star. If you'd rather not install it yourself 提示词复制给你的Codex它就能帮你把它 copy this prompt into Codex, and it can 装好然后以及自己想要什么个性化的功能骰子 install it for you. And for any custom features you want 已经贴心的为大家准备了整个代码框代码仓的一个 I've prepared a map of the entire code repository 地图方便你的Codex去定位到需要改哪里 so Codex can find where changes are needed 如果你想添加功能的话也可以快速的添加上去 and quickly add new features 那以上就是骰子的最新的作品 That's my latest creation
+
+**9:56** · Codex驾驶舱的全部内容啦希望你喜欢 Codex Cockpit. I hope you like it! 如果有什么意见也欢迎在GitHub上的 If you have suggestions, you're welcome to submit them issue界面进行提交那下期再见啦拜拜 through GitHub issues. See you next time! Bye!
