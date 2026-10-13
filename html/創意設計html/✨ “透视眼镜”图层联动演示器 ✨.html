@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>“透视眼镜”图层遮罩交互演示工具</title>
+    <!-- Tailwind CSS for modern responsive UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Light mode enforcement with clean high-contrast palette */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        
+        /* Grid background pattern to emphasize transparent/cutout regions */
+        .checkerboard {
+            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+                              linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+                              linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Custom scrollbar styling for control sidepanel */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-6 bg-slate-50 text-slate-900">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-5xl text-center mb-4">
+        <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            ✨ “透视眼镜”图层联动演示器 ✨
+        </h1>
+        <p class="text-xs md:text-sm text-slate-600 mt-1 font-medium">
+            原理：表图与镜片重叠部分透出底图 | 支持自定义上传素材 & 拖拽交互
+        </p>
+    </header>
+
+    <main class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow items-start">
+        
+        <!-- Left Side: Control & Layer Management Panel -->
+        <div class="lg:col-span-5 bg-white border border-slate-200 p-5 rounded-2xl shadow-xl flex flex-col gap-4 custom-scrollbar max-h-[85vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold tracking-wider text-indigo-600 uppercase flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    图层结构与素材配置 (从上到下)
+                </h2>
+            </div>
+
+            <!-- Layer 4: Surface Image -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-pink-300 transition-colors">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded font-mono">层 4</span>
+                        <span class="text-xs font-bold text-slate-800">表图 (Surface Image)</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleSurface" checked class="sr-only peer">
+                        <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-pink-500"></div>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="file" id="uploadSurface" accept="image/*" class="hidden">
+                    <button onclick="document.getElementById('uploadSurface').click()" class="flex-1 py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 shadow-sm">
+                        📁 更换表图
+                    </button>
+                    <button onclick="resetLayer('surface')" class="py-1.5 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg text-xs font-medium transition" title="恢复默认表图">重置</button>
+                </div>
+            </div>
+
+            <!-- Layer 3: Lens Mask -->
+            <div class="p-3 bg-indigo-50/70 rounded-xl border border-indigo-200 hover:border-indigo-400 transition-colors">
+                <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-mono">层 3</span>
+                        <span class="text-xs font-bold text-indigo-950">镜片色块层 (Lens Mask)</span>
+                    </div>
+                    <span class="text-[10px] text-indigo-600 font-semibold bg-indigo-100 px-1.5 py-0.5 rounded">剪切基底</span>
+                </div>
+                <p class="text-[11px] text-indigo-800/80 leading-relaxed">
+                    仅在镜片内有颜色，用于挖空表图并显示透视底图。
+                </p>
+            </div>
+
+            <!-- Layer 2: Hidden Base Image -->
+            <div class="p-3 bg-purple-50/70 rounded-xl border border-purple-200 hover:border-purple-400 transition-colors">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-mono">层 2</span>
+                        <span class="text-xs font-bold text-purple-950">透视底图 (Portal Base)</span>
+                    </div>
+                    <span class="text-[10px] text-purple-600 font-semibold bg-purple-100 px-1.5 py-0.5 rounded">剪切蒙版内容</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="file" id="uploadBase" accept="image/*" class="hidden">
+                    <button onclick="document.getElementById('uploadBase').click()" class="flex-1 py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 shadow-sm">
+                        📁 更换透视底图
+                    </button>
+                    <button onclick="resetLayer('base')" class="py-1.5 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg text-xs font-medium transition" title="恢复默认底图">重置</button>
+                </div>
+            </div>
+
+            <!-- Layer 1: Glasses Frame Material -->
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-300 transition-colors">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-mono">层 1</span>
+                        <span class="text-xs font-bold text-slate-800">无镜片眼镜框 (Glasses Frame)</span>
+                    </div>
+                    <span class="text-[10px] text-blue-600 font-semibold bg-blue-100 px-1.5 py-0.5 rounded">最底端/独立框体</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="file" id="uploadGlasses" accept="image/*" class="hidden">
+                    <button onclick="document.getElementById('uploadGlasses').click()" class="flex-1 py-1.5 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1 shadow-sm">
+                        📁 上传眼镜框 PNG
+                    </button>
+                    <button onclick="resetLayer('glasses')" class="py-1.5 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg text-xs font-medium transition" title="重置为默认眼镜框">默认框</button>
+                </div>
+            </div>
+
+            <hr class="border-slate-200 my-0.5">
+
+            <!-- Lens Radius & Size Adjuster -->
+            <div class="flex flex-col gap-2 bg-slate-100/80 p-3 rounded-xl border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-bold text-slate-700">镜片透视区域尺寸微调:</label>
+                    <span id="lensSizeValue" class="text-xs font-mono text-indigo-600 font-bold">100%</span>
+                </div>
+                <input type="range" id="lensScale" min="40" max="220" value="100" class="w-full accent-indigo-600 cursor-pointer">
+                <p class="text-[11px] text-slate-500">上传自定义眼镜图片时，可通过调整尺寸使透视挖空区域与眼镜框适配。</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 mt-1">
+                <button onclick="resetGlassesPosition()" class="py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold rounded-xl transition shadow-sm">
+                    📍 重置眼镜位置
+                </button>
+                <button onclick="toggleVisualMode()" id="modeToggleBtn" class="py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold rounded-xl transition shadow-sm">
+                    👁️ 切换镜片高亮模式
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Side: Interactive Canvas Preview Container -->
+        <div class="lg:col-span-7 flex flex-col items-center justify-center w-full">
+            <div class="relative w-full aspect-[4/3] max-w-xl rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-300 checkerboard cursor-move select-none bg-white" id="viewportContainer">
+                
+                <!-- Main Composite Canvas -->
+                <canvas id="renderCanvas" class="absolute inset-0 w-full h-full block"></canvas>
+
+                <!-- Floating Helper Hint -->
+                <div id="dragHint" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-semibold text-slate-700 shadow-lg border border-slate-200 pointer-events-none transition-opacity duration-300 flex items-center gap-1.5">
+                    <span>💡</span> 按住鼠标或手指移动眼镜框查看透视效果
+                </div>
+            </div>
+            
+            <!-- Realtime Status Footer -->
+            <div class="flex items-center justify-between w-full max-w-xl mt-3 px-2 text-xs text-slate-500">
+                <span>坐标: <strong id="coordsText" class="text-slate-800 font-mono">X: 200, Y: 150</strong></span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <strong class="text-slate-700 font-medium">剪切蒙版与表图切片实时联动中</strong>
+                </span>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full max-w-5xl text-center text-xs text-slate-400 mt-6 py-2 border-t border-slate-200">
+        HTML5 Canvas Masking & Layer Compositing Simulator (Light Theme)
+    </footer>
+
+    <script>
+        // DOM Element References
+        const canvas = document.getElementById('renderCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('viewportContainer');
+        const toggleSurface = document.getElementById('toggleSurface');
+        const coordsText = document.getElementById('coordsText');
+        const dragHint = document.getElementById('dragHint');
+        const lensScaleInput = document.getElementById('lensScale');
+        const lensSizeValue = document.getElementById('lensSizeValue');
+        const modeToggleBtn = document.getElementById('modeToggleBtn');
+
+        // Interactive State
+        let glassesX = 200;
+        let glassesY = 150;
+        let isDragging = false;
+        let lensScaleMultiplier = 1.0;
+        let showMaskHighlight = false;
+
+        // Custom uploaded image memory
+        const customImages = {
+            surface: null,
+            base: null,
+            glasses: null
+        };
+
+        // Window resize adapter with high-DPI canvas handling
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            drawScene();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Reset individual image layer
+        function resetLayer(type) {
+            customImages[type] = null;
+            if (type === 'glasses') {
+                lensScaleInput.value = 100;
+                lensScaleMultiplier = 1.0;
+                lensSizeValue.innerText = '100%';
+            }
+            drawScene();
+        }
+
+        function resetGlassesPosition() {
+            glassesX = container.clientWidth / 2;
+            glassesY = container.clientHeight / 2;
+            drawScene();
+        }
+
+        function toggleVisualMode() {
+            showMaskHighlight = !showMaskHighlight;
+            modeToggleBtn.classList.toggle('bg-purple-200', showMaskHighlight);
+            drawScene();
+        }
+
+        // Image file reading engine
+        function handleImageUpload(type, fileInput) {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    customImages[type] = img;
+                    drawScene();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            fileInput.value = '';
+        }
+
+        document.getElementById('uploadSurface').addEventListener('change', function() { handleImageUpload('surface', this); });
+        document.getElementById('uploadBase').addEventListener('change', function() { handleImageUpload('base', this); });
+        document.getElementById('uploadGlasses').addEventListener('change', function() { handleImageUpload('glasses', this); });
+
+        lensScaleInput.addEventListener('input', (e) => {
+            lensScaleMultiplier = parseFloat(e.target.value) / 100;
+            lensSizeValue.innerText = `${e.target.value}%`;
+            drawScene();
+        });
+
+        // Helper path function for lens clipping mask
+        function defineLensPath(ctx, lx, ly, baseLensW, baseLensH, lensRadius) {
+            const leftLensX = lx - (55 * lensScaleMultiplier);
+            const rightLensX = lx + (55 * lensScaleMultiplier);
+
+            ctx.beginPath();
+            if (customImages.glasses) {
+                // Dual elliptical portals for uploaded custom glasses frame
+                ctx.ellipse(leftLensX, ly, baseLensW / 2, baseLensH / 2, 0, 0, Math.PI * 2);
+                ctx.ellipse(rightLensX, ly, baseLensW / 2, baseLensH / 2, 0, 0, Math.PI * 2);
+            } else {
+                // Rounded rectangle lens portals for default frame
+                ctx.roundRect(leftLensX - baseLensW / 2, ly - baseLensH / 2, baseLensW, baseLensH, lensRadius);
+                ctx.roundRect(rightLensX - baseLensW / 2, ly - baseLensH / 2, baseLensW, baseLensH, lensRadius);
+            }
+        }
+
+        // Main Rendering Compositing Loop
+        function drawScene() {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Lens Geometry Parameters
+            const baseLensW = 95 * lensScaleMultiplier;
+            const baseLensH = 65 * lensScaleMultiplier;
+            const lensRadius = 14 * lensScaleMultiplier;
+
+            // =========================================================================
+            // STEP 1: Render Full Hidden Base Layer (层 2: 透视底图) Across Background
+            // =========================================================================
+            ctx.save();
+            if (customImages.base) {
+                drawCoverImage(customImages.base, width, height);
+            } else {
+                // Default Cosmic Cyberpunk Base Design
+                const grad = ctx.createRadialGradient(glassesX, glassesY, 10, glassesX, glassesY, 260);
+                grad.addColorStop(0, '#a855f7');
+                grad.addColorStop(0.5, '#6366f1');
+                grad.addColorStop(1, '#1e1b4b');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, width, height);
+
+                // Grid detail overlay
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < width; x += 30) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+                }
+                for (let y = 0; y < height; y += 30) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+                }
+
+                // Secret revealed content text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('✨ 隐藏的透视底图已显示 ✨', width / 2, height / 2 + 75);
+                ctx.font = '12px sans-serif';
+                ctx.fillText('SECRET BASE LAYER REVEALED', width / 2, height / 2 + 95);
+            }
+            ctx.restore();
+
+            // =========================================================================
+            // STEP 2: Render Surface Layer (层 4: 表图) WITH Lens Mask Holes Cut Out
+            // (Where Surface & Lens overlap -> Surface is erased to reveal Base)
+            // =========================================================================
+            if (toggleSurface.checked) {
+                ctx.save();
+                
+                // Define outer bounds and punch out lens apertures
+                ctx.beginPath();
+                ctx.rect(0, 0, width, height); // Outer canvas path
+                
+                // Subtractive Lens Path via counter-clockwise or clipping inverse
+                defineLensPath(ctx, glassesX, glassesY, baseLensW, baseLensH, lensRadius);
+                
+                // Use evenodd fill rule to punch holes inside the surface layer where lenses are located
+                ctx.clip('evenodd');
+
+                // Draw Surface Image
+                if (customImages.surface) {
+                    drawCoverImage(customImages.surface, width, height);
+                } else {
+                    // Default Light Surface Illustration
+                    ctx.fillStyle = '#f1f5f9';
+                    ctx.fillRect(0, 0, width, height);
+
+                    // Surface striped pattern
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 1.5;
+                    for (let x = -height; x < width + height; x += 40) {
+                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + height, height); ctx.stroke();
+                    }
+
+                    // Surface Character Silhouette
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.beginPath();
+                    ctx.arc(width / 2, height / 2 + 30, 85, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Character Eyes
+                    ctx.fillStyle = '#475569';
+                    ctx.beginPath();
+                    ctx.arc(width / 2 - 30, height / 2 + 10, 8, 0, Math.PI * 2);
+                    ctx.arc(width / 2 + 30, height / 2 + 10, 8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Label watermark
+                    ctx.fillStyle = '#475569';
+                    ctx.font = 'bold 13px sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText('【表图层 / 正常视图】', width - 20, 30);
+                }
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // STEP 3: Optional Lens Color Fill (层 3: 镜片色块层 调试/高亮)
+            // =========================================================================
+            if (showMaskHighlight) {
+                ctx.save();
+                defineLensPath(ctx, glassesX, glassesY, baseLensW, baseLensH, lensRadius);
+                ctx.fillStyle = 'rgba(99, 102, 241, 0.25)'; // Semi-transparent tint tint
+                ctx.fill();
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // =========================================================================
+            // STEP 4: Render Frame Layer (层 1: 无镜片眼镜框)
+            // =========================================================================
+            ctx.save();
+            const leftLensX = glassesX - (55 * lensScaleMultiplier);
+            const rightLensX = glassesX + (55 * lensScaleMultiplier);
+
+            if (customImages.glasses) {
+                // Uploaded custom PNG frame centered over glassesX, glassesY
+                const aspect = customImages.glasses.width / customImages.glasses.height;
+                const drawW = 250 * lensScaleMultiplier;
+                const drawH = drawW / aspect;
+                ctx.drawImage(customImages.glasses, glassesX - drawW / 2, glassesY - drawH / 2, drawW, drawH);
+            } else {
+                // Vector Glasses Frame
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 6 * lensScaleMultiplier;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+
+                // Left Frame Outer
+                ctx.strokeRect(leftLensX - baseLensW / 2, glassesY - baseLensH / 2, baseLensW, baseLensH);
+                // Right Frame Outer
+                ctx.strokeRect(rightLensX - baseLensW / 2, glassesY - baseLensH / 2, baseLensW, baseLensH);
+
+                // Glasses Bridge
+                ctx.beginPath();
+                ctx.moveTo(leftLensX + baseLensW / 2, glassesY - 8 * lensScaleMultiplier);
+                ctx.quadraticCurveTo(glassesX, glassesY - 18 * lensScaleMultiplier, rightLensX - baseLensW / 2, glassesY - 8 * lensScaleMultiplier);
+                ctx.stroke();
+
+                // Earpieces / Temples
+                ctx.beginPath();
+                ctx.moveTo(leftLensX - baseLensW / 2, glassesY - baseLensH / 2);
+                ctx.lineTo(leftLensX - baseLensW / 2 - (35 * lensScaleMultiplier), glassesY - baseLensH / 2 - (18 * lensScaleMultiplier));
+                ctx.moveTo(rightLensX + baseLensW / 2, glassesY - baseLensH / 2);
+                ctx.lineTo(rightLensX + baseLensW / 2 + (35 * lensScaleMultiplier), glassesY - baseLensH / 2 - (18 * lensScaleMultiplier));
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Update realtime coordinates display
+            coordsText.innerText = `X: ${Math.round(glassesX)}, Y: ${Math.round(glassesY)}`;
+        }
+
+        // Helper: Image Cover Aspect Fitting
+        function drawCoverImage(img, targetWidth, targetHeight) {
+            const imgRatio = img.width / img.height;
+            const targetRatio = targetWidth / targetHeight;
+            let renderW, renderH, offsetX, offsetY;
+
+            if (imgRatio > targetRatio) {
+                renderH = targetHeight;
+                renderW = targetHeight * imgRatio;
+                offsetX = (targetWidth - renderW) / 2;
+                offsetY = 0;
+            } else {
+                renderW = targetWidth;
+                renderH = targetWidth / imgRatio;
+                offsetX = 0;
+                offsetY = (targetHeight - renderH) / 2;
+            }
+
+            ctx.drawImage(img, offsetX, offsetY, renderW, renderH);
+        }
+
+        // Pointer Event Handlers for Mouse & Touch
+        function getEventPos(e) {
+            const rect = container.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const pos = getEventPos(e);
+            glassesX = pos.x;
+            glassesY = pos.y;
+            drawScene();
+            hideHint();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const pos = getEventPos(e);
+            glassesX = Math.max(20, Math.min(container.clientWidth - 20, pos.x));
+            glassesY = Math.max(20, Math.min(container.clientHeight - 20, pos.y));
+            drawScene();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Touch event handlers for mobile devices
+        container.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            const pos = getEventPos(e);
+            glassesX = pos.x;
+            glassesY = pos.y;
+            drawScene();
+            hideHint();
+            e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const pos = getEventPos(e);
+            glassesX = Math.max(20, Math.min(container.clientWidth - 20, pos.x));
+            glassesY = Math.max(20, Math.min(container.clientHeight - 20, pos.y));
+            drawScene();
+            e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        toggleSurface.addEventListener('change', drawScene);
+
+        function hideHint() {
+            if (dragHint) {
+                dragHint.style.opacity = '0';
+            }
+        }
+
+        // Initialize scene on window load
+        window.onload = () => {
+            const rect = container.getBoundingClientRect();
+            glassesX = rect.width / 2;
+            glassesY = rect.height / 2;
+            resizeCanvas();
+        };
+    </script>
+</body>
+</html>
