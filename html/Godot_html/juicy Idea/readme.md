@@ -104,3 +104,9 @@ shader管理器：GitHub+素材管理器+ 畫風管理器：muse/星引擎+html�
 <hr>
 素材管理器：preview image，size，download，name，search box，folder，sortbydate，label，have character，what 作品
 <hr>
+-没有镜片的眼镜层
+-要透视的底图，创建剪切蒙版
+-只给镜片区域涂个色的层
+-表图
+这样眼镜和镜片层一起移动就能实现镜框外表图，镜片内底图了
+<hr>
