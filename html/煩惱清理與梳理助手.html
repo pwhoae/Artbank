@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>煩惱清理與梳理助手 | Worry Management Tool</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Noto Sans TC & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans TC"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            soothe: {
+              50: '#f8fafb',
+              100: '#f0f4f8',
+              200: '#e2e8f0',
+              500: '#64748b',
+              800: '#1e293b',
+            },
+            address: {
+              light: '#f0f9ff',
+              border: '#bae6fd',
+              header: '#0284c7',
+              badge: '#e0f2fe',
+              text: '#0369a1'
+            },
+            letgo: {
+              light: '#f0fdf4',
+              border: '#bbf7d0',
+              header: '#16a34a',
+              badge: '#dcfce7',
+              text: '#15803d'
+            },
+            tbc: {
+              light: '#fffbeb',
+              border: '#fde68a',
+              header: '#d97706',
+              badge: '#fef3c7',
+              text: '#b45309'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar for column body */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Dragging Visual Effects */
+    .dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+    .drag-over {
+      background-color: rgba(226, 232, 240, 0.6) !important;
+      border-style: dashed !important;
+    }
+
+    /* Smooth Transitions */
+    .card-item {
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      touch-action: none; /* Prevents scroll interference on touch drag */
+    }
+    .card-item:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Floating action glow */
+    .soothe-shadow {
+      box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.15), 0 8px 10px -6px rgba(148, 163, 184, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-700 min-h-screen flex flex-col font-sans antialiased selection:bg-sky-100 selection:text-sky-800">
+
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-400 to-teal-400 flex items-center justify-center text-white shadow-sm">
+          <i class="fa-solid me-0 fa-feather-pointed text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-800 tracking-tight">心靈整理空間 <span class="text-xs font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full ml-1">靜心‧梳理</span></h1>
+          <p class="text-xs text-slate-500">將心中的不安傾倒出來，分類處理、放下或觀察</p>
+        </div>
+      </div>
+
+      <!-- Search Bar & Reset -->
+      <div class="flex items-center space-x-3 w-full md:w-auto">
+        <div class="relative flex-1 md:w-64">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="searchInput" oninput="handleSearch()" placeholder="搜尋煩惱與思緒..."
+            class="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:border-sky-300 focus:ring-2 focus:ring-sky-100 outline-none transition-all placeholder-slate-400">
+        </div>
+        
+        <button onclick="clearAllItems()" title="清空所有項目" class="px-3 py-2 text-xs font-medium text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-slate-200 flex items-center gap-1.5 shrink-0">
+          <i class="fa-regular fa-trash-can"></i>
+          <span class="hidden sm:inline">清空全部</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+    <!-- Input Box Card -->
+    <section class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 soothe-shadow">
+      <form id="addWorryForm" onsubmit="handleAddWorry(event)" class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <i class="fa-regular fa-pen-to-square absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="worryInput" required placeholder="在此寫下懸在心頭的煩惱或念頭..." 
+            class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-sky-400 focus:ring-4 focus:ring-sky-50 transition-all text-sm sm:text-base">
+        </div>
+        
+        <div class="flex gap-2">
+          <select id="targetPanelSelect" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-3 focus:outline-none focus:border-sky-400 focus:bg-white transition-all cursor-pointer">
+            <option value="address">放入：處理煩惱</option>
+            <option value="letgo">放入：放下煩惱</option>
+            <option value="tbc" selected>放入：待辦 / 觀察</option>
+          </select>
+
+          <button type="submit" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-white font-medium text-sm rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 shrink-0">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>傾倒進來</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 3 Panels Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 flex-1 min-h-[500px]">
+
+      <!-- Panel 1: 處理煩惱 (Addressing Worries) -->
+      <section class="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-4 flex flex-col h-full">
+        <!-- Panel Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+          <div class="flex items-center gap-2.5">
+            <div class="w-3 h-3 rounded-full bg-sky-500"></div>
+            <h2 class="font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-sky-600 text-sm"></i>
+              處理煩惱
+            </h2>
+          </div>
+          <span id="count-address" class="px-2.5 py-0.5 text-xs font-semibold text-sky-700 bg-sky-100 rounded-full border border-sky-200">0</span>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">可以制定行動計劃、採取措施來解決的事情</p>
+
+        <!-- Drop Zone Container -->
+        <div id="panel-address" data-panel="address" 
+          class="panel-dropzone flex-1 overflow-y-auto space-y-3 p-1 rounded-xl custom-scrollbar min-h-[150px] transition-colors"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <!-- Dynamic Items inserted here -->
+        </div>
+      </section>
+
+      <!-- Panel 2: 放下煩惱 (Letting Go) -->
+      <section class="bg-emerald-50/50 border border-emerald-100/80 rounded-2xl p-4 flex flex-col h-full">
+        <!-- Panel Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-emerald-200/60">
+          <div class="flex items-center gap-2.5">
+            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+            <h2 class="font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-wind text-emerald-600 text-sm"></i>
+              放下煩惱
+            </h2>
+          </div>
+          <span id="count-letgo" class="px-2.5 py-0.5 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">0</span>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">無法掌控、已成過去，或釋懷後不再困擾的事</p>
+
+        <!-- Drop Zone Container -->
+        <div id="panel-letgo" data-panel="letgo" 
+          class="panel-dropzone flex-1 overflow-y-auto space-y-3 p-1 rounded-xl custom-scrollbar min-h-[150px] transition-colors"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <!-- Dynamic Items inserted here -->
+        </div>
+      </section>
+
+      <!-- Panel 3: 待辦 / 觀察 (TBC) -->
+      <section class="bg-amber-50/50 border border-amber-100/80 rounded-2xl p-4 flex flex-col h-full">
+        <!-- Panel Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-amber-200/60">
+          <div class="flex items-center gap-2.5">
+            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+            <h2 class="font-bold text-slate-800 flex items-center gap-2">
+              <i class="fa-regular fa-clock text-amber-600 text-sm"></i>
+              待辦 / 觀察
+            </h2>
+          </div>
+          <span id="count-tbc" class="px-2.5 py-0.5 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full border border-amber-200">0</span>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">暫時無法決定、情報不足，或先沉澱觀望的事</p>
+
+        <!-- Drop Zone Container -->
+        <div id="panel-tbc" data-panel="tbc" 
+          class="panel-dropzone flex-1 overflow-y-auto space-y-3 p-1 rounded-xl custom-scrollbar min-h-[150px] transition-colors"
+          ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <!-- Dynamic Items inserted here -->
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fa-regular fa-pen-to-square text-sky-500"></i> 修改煩惱與思緒
+      </h3>
+      <textarea id="editInput" rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:bg-white focus:border-sky-400 focus:ring-2 focus:ring-sky-100 transition-all resize-none mb-4"></textarea>
+      
+      <div class="flex justify-end gap-2">
+        <button onclick="closeEditModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">取消</button>
+        <button onclick="saveEditItem()" class="px-4 py-2 text-xs font-medium bg-sky-600 hover:bg-sky-500 text-white rounded-xl shadow-sm transition-colors">儲存更新</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white text-xs px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 transition-all transform translate-y-20 opacity-0 pointer-events-none">
+    <i class="fa-solid fa-circle-info text-sky-400"></i>
+    <span id="toastMsg">提示訊息</span>
+  </div>
+
+  <!-- Application Logic Script -->
+  <script>
+    // State Management
+    let items = [];
+    let draggedItemId = null;
+    let editingItemId = null;
+    let searchQuery = '';
+
+    // Initial Data Template
+    const defaultItems = [
+      { id: '1', text: '整理明天的專案工作報告與資料', panel: 'address', createdAt: Date.now() - 10000 },
+      { id: '2', text: '擔心下週天氣不好影響戶外活動（無法控制）', panel: 'letgo', createdAt: Date.now() - 8000 },
+      { id: '3', text: '考慮是否要在下個月參加線上課程', panel: 'tbc', createdAt: Date.now() - 5000 }
+    ];
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFromLocalStorage();
+      renderPanels();
+    });
+
+    // LocalStorage Functions
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('mindful_worries_items', JSON.stringify(items));
+      } catch (e) {
+        console.error('Save failed:', e);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const stored = localStorage.getItem('mindful_worries_items');
+        if (stored) {
+          items = JSON.parse(stored);
+        } else {
+          items = [...defaultItems];
+          saveToLocalStorage();
+        }
+      } catch (e) {
+        console.error('Load failed:', e);
+        items = [...defaultItems];
+      }
+    }
+
+    // Add New Item
+    function handleAddWorry(e) {
+      e.preventDefault();
+      const input = document.getElementById('worryInput');
+      const text = input.value.trim();
+      const panel = document.getElementById('targetPanelSelect').value;
+
+      if (!text) return;
+
+      const newItem = {
+        id: Date.now().toString(),
+        text: text,
+        panel: panel,
+        createdAt: Date.now()
+      };
+
+      items.unshift(newItem);
+      saveToLocalStorage();
+      renderPanels();
+
+      input.value = '';
+      showToast('已將項目記錄並整理入對應面板');
+    }
+
+    // Delete Item
+    function deleteItem(id) {
+      items = items.filter(item => item.id !== id);
+      saveToLocalStorage();
+      renderPanels();
+      showToast('已移除該項目');
+    }
+
+    // Edit Item Modal Handlers
+    function openEditModal(id) {
+      editingItemId = id;
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('editInput').value = item.text;
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      editingItemId = null;
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function saveEditItem() {
+      if (!editingItemId) return;
+      const text = document.getElementById('editInput').value.trim();
+      if (!text) return;
+
+      const item = items.find(i => i.id === editingItemId);
+      if (item) {
+        item.text = text;
+        saveToLocalStorage();
+        renderPanels();
+        showToast('項目內容已更新');
+      }
+      closeEditModal();
+    }
+
+    // Search Logic
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+      renderPanels();
+    }
+
+    // Clear All Items
+    function clearAllItems() {
+      if (items.length === 0) return;
+      if (confirm('確定要清空所有面板上的煩惱與紀錄嗎？此動作無法復原。')) {
+        items = [];
+        saveToLocalStorage();
+        renderPanels();
+        showToast('已清空所有項目');
+      }
+    }
+
+    // Render HTML Cards into Panels
+    function renderPanels() {
+      const panels = {
+        address: document.getElementById('panel-address'),
+        letgo: document.getElementById('panel-letgo'),
+        tbc: document.getElementById('panel-tbc')
+      };
+
+      const counts = { address: 0, letgo: 0, tbc: 0 };
+
+      // Clear containers
+      Object.keys(panels).forEach(p => panels[p].innerHTML = '');
+
+      // Filter and append items
+      items.forEach(item => {
+        // Increment count based on total items per panel
+        if (counts.hasOwnProperty(item.panel)) {
+          counts[item.panel]++;
+        }
+
+        // Apply search filter
+        if (searchQuery && !item.text.toLowerCase().includes(searchQuery)) {
+          return;
+        }
+
+        const card = createCardElement(item);
+        if (panels[item.panel]) {
+          panels[item.panel].appendChild(card);
+        }
+      });
+
+      // Update counters in UI
+      document.getElementById('count-address').textContent = counts.address;
+      document.getElementById('count-letgo').textContent = counts.letgo;
+      document.getElementById('count-tbc').textContent = counts.tbc;
+
+      // Render Empty State if no items matched
+      Object.keys(panels).forEach(key => {
+        if (panels[key].children.length === 0) {
+          panels[key].appendChild(createEmptyStateElement(key));
+        }
+      });
+    }
+
+    // Helper: Create HTML Element for Item Card
+    function createCardElement(item) {
+      const div = document.createElement('div');
+      div.className = `card-item bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-sm hover:shadow transition-all group flex flex-col justify-between gap-2 cursor-grab active:cursor-grabbing`;
+      div.setAttribute('draggable', 'true');
+      div.setAttribute('data-id', item.id);
+
+      // Mouse drag events
+      div.addEventListener('dragstart', (e) => handleDragStart(e, item.id));
+      div.addEventListener('dragend', handleDragEnd);
+
+      // Touch drag events setup
+      div.addEventListener('touchstart', (e) => handleTouchStart(e, item.id), { passive: false });
+      div.addEventListener('touchmove', handleTouchMove, { passive: false });
+      div.addEventListener('touchend', handleTouchEnd);
+
+      // Styling variations based on panel type
+      let borderAccent = 'border-l-4 border-l-sky-400';
+      if (item.panel === 'letgo') borderAccent = 'border-l-4 border-l-emerald-400';
+      if (item.panel === 'tbc') borderAccent = 'border-l-4 border-l-amber-400';
+
+      div.classList.add(...borderAccent.split(' '));
+
+      div.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-sm text-slate-700 font-normal leading-relaxed break-words flex-1">${escapeHtml(item.text)}</p>
+          <div class="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
+            <button onclick="openEditModal('${item.id}')" title="編輯" class="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-slate-100 rounded-lg transition-colors">
+              <i class="fa-regular fa-pen-to-square text-xs"></i>
+            </button>
+            <button onclick="deleteItem('${item.id}')" title="刪除" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+              <i class="fa-regular fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+          <span class="flex items-center gap-1">
+            <i class="fa-solid fa-grip-vertical text-slate-300"></i>
+            拖曳移動
+          </span>
+          <span>${formatTime(item.createdAt)}</span>
+        </div>
+      `;
+
+      return div;
+    }
+
+    // Helper: Empty State HTML
+    function createEmptyStateElement(panelKey) {
+      const div = document.createElement('div');
+      div.className = 'h-32 flex flex-col items-center justify-center text-slate-400 border border-dashed border-slate-200/80 rounded-xl p-4 text-center';
+      
+      let msg = '尚無內容';
+      if (panelKey === 'address') msg = '沒有需要處理的煩惱';
+      if (panelKey === 'letgo') msg = '釋懷並放下的事會出現在這裡';
+      if (panelKey === 'tbc') msg = '暫時靜置觀察的思緒';
+
+      div.innerHTML = `
+        <i class="fa-regular fa-folder-open text-slate-300 text-xl mb-1.5"></i>
+        <p class="text-xs">${msg}</p>
+      `;
+      return div;
+    }
+
+    // Native Drag and Drop API Handlers
+    function handleDragStart(e, id) {
+      draggedItemId = id;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      document.querySelectorAll('.panel-dropzone').forEach(dz => {
+        dz.classList.remove('drag-over');
+      });
+      draggedItemId = null;
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const dropzone = e.currentTarget;
+      dropzone.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      const dropzone = e.currentTarget;
+      dropzone.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const dropzone = e.currentTarget;
+      dropzone.classList.remove('drag-over');
+
+      const targetPanel = dropzone.getAttribute('data-panel');
+      if (draggedItemId && targetPanel) {
+        moveItemToPanel(draggedItemId, targetPanel);
+      }
+    }
+
+    // Move Item Logic
+    function moveItemToPanel(id, targetPanel) {
+      const item = items.find(i => i.id === id);
+      if (item && item.panel !== targetPanel) {
+        item.panel = targetPanel;
+        saveToLocalStorage();
+        renderPanels();
+
+        const panelNames = { address: '處理煩惱', letgo: '放下煩惱', tbc: '待辦 / 觀察' };
+        showToast(`已移動至「${panelNames[targetPanel]}」`);
+      }
+    }
+
+    // Touch Drag & Drop Polyfill Support
+    let touchElem = null;
+    let touchClone = null;
+    let touchOffsetX = 0;
+    let touchOffsetY = 0;
+
+    function handleTouchStart(e, id) {
+      // Don't trigger drag on button clicks inside card
+      if (e.target.closest('button')) return;
+
+      draggedItemId = id;
+      touchElem = e.currentTarget;
+      
+      const touch = e.touches[0];
+      const rect = touchElem.getBoundingClientRect();
+      touchOffsetX = touch.clientX - rect.left;
+      touchOffsetY = touch.clientY - rect.top;
+
+      // Create visual clone
+      touchClone = touchElem.cloneNode(true);
+      touchClone.style.position = 'fixed';
+      touchClone.style.left = `${rect.left}px`;
+      touchClone.style.top = `${rect.top}px`;
+      touchClone.style.width = `${rect.width}px`;
+      touchClone.style.zIndex = '1000';
+      touchClone.style.opacity = '0.85';
+      touchClone.style.pointerEvents = 'none';
+      touchClone.classList.add('shadow-xl');
+
+      document.body.appendChild(touchClone);
+      touchElem.classList.add('dragging');
+    }
+
+    function handleTouchMove(e) {
+      if (!touchClone) return;
+      e.preventDefault(); // Prevent page scrolling while dragging item
+
+      const touch = e.touches[0];
+      touchClone.style.left = `${touch.clientX - touchOffsetX}px`;
+      touchClone.style.top = `${touch.clientY - touchOffsetY}px`;
+
+      // Highlight dropzone under touch position
+      const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      const dropzone = elementUnder ? elementUnder.closest('.panel-dropzone') : null;
+
+      document.querySelectorAll('.panel-dropzone').forEach(dz => dz.classList.remove('drag-over'));
+      if (dropzone) {
+        dropzone.classList.add('drag-over');
+      }
+    }
+
+    function handleTouchEnd(e) {
+      if (!touchClone) return;
+
+      const touch = e.changedTouches[0];
+      const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+      const dropzone = elementUnder ? elementUnder.closest('.panel-dropzone') : null;
+
+      if (dropzone && draggedItemId) {
+        const targetPanel = dropzone.getAttribute('data-panel');
+        moveItemToPanel(draggedItemId, targetPanel);
+      }
+
+      // Cleanup
+      if (touchClone && touchClone.parentNode) {
+        touchClone.parentNode.removeChild(touchClone);
+      }
+      if (touchElem) {
+        touchElem.classList.remove('dragging');
+      }
+      document.querySelectorAll('.panel-dropzone').forEach(dz => dz.classList.remove('drag-over'));
+
+      touchElem = null;
+      touchClone = null;
+      draggedItemId = null;
+    }
+
+    // Toast Notification helper
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    // Utility: Format Timestamp
+    function formatTime(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+
+    // Utility: Sanitize HTML strings
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
