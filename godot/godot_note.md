@@ -28,8 +28,11 @@ In加速：先慢后快，拉满期待感。 Out减速：先快后慢，营造�
 3d插畫
 
 射擊遊戲  https://github.com/pwhoae/Artbank/blob/main/html/Godot_html/juicy%20Idea/Godot%203D%20%E5%B0%84%E5%87%BB%E6%B8%B8%E6%88%8F%E5%85%A8%E5%A5%97%E7%89%B9%E6%95%88%203D%20%E4%BA%A4%E4%BA%92%E6%BC%94%E7%A4%BA.html 
-
+過3關下棋
+戰鬥
+技能：33-》44/先手+2步/分身召喚物
 <hr>
+
 
 ###  游戏规则改造与迭代指南（三坐标八象限博弈系改造法）
 中国象棋
