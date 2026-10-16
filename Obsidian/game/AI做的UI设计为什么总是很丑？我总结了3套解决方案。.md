@@ -4,7 +4,7 @@ source: "https://www.bilibili.com/video/BV1GpEs6gEgL/?"
 author:
   - "[[设计师包涵]]"
 published: 2026-06-07
-created: 2026-10-09
+created: 2026-10-16
 description: "最近一段时间，随着 Claude Code、Codex、Cursor、OpenCode 这些工具越来越成熟，很多人开始用 AI 开发产品。代码能力确实进步很快。但我发现另一个问题越来越明显：AI 写代码越来越强，但做出来的 UI 却不一定越来越好。很多时候，你给 AI 一个需求，它确实能把页面做出来。但是做出来的效果往往是：- 信息层级混乱- 颜色过度使用- 组件风格不"
 tags:
   - "clippings"
