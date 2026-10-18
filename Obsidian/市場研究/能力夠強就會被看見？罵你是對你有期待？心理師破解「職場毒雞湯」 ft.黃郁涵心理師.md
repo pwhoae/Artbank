@@ -1,10 +1,10 @@
 ---
 title: "能力夠強就會被看見？罵你是對你有期待？心理師破解「職場毒雞湯」 ft.黃郁涵心理師"
-source: "https://www.youtube.com/watch?v=uV1wCep5Yr8"
+source: "https://www.youtube.com/watch?v=uV1wCep5Yr8&list=WL&index=2"
 author:
   - "[[FarHugs 遠距抱抱]]"
 published: 2026-10-01
-created: 2026-10-14
+created: 2026-10-17
 description: "Podcast《抱緊處理》「職場沒有義務教你」「不要把情緒帶進工作」「能力夠強，別人自然會看見你」這些話，你是不是也曾相信過？它們聽起來都很有道理，甚至像是職場生存的必修課。但如果這些話只說對了一半呢？這一集，我們一起拆解那些看似正確的職場道理，重新思考：我們究竟是在成長，還是在學著忍耐？｜重點段落｜ 00:00｜預告 00:23｜正集開始03:39｜第一句「職場不是學校，沒有人有義"
 tags:
   - "clippings"
