@@ -1,10 +1,10 @@
 ---
 title: "对话孙宇晨：AI黄金时代，普通人如何下注？"
-source: "https://www.bilibili.com/video/BV1X6JX6sEYJ/?"
+source: "https://www.bilibili.com/video/BV1X6JX6sEYJ/?spm_id_from=333.1387.favlist.content.click"
 author:
   - "[[金明WilliamJoy]]"
 published: 2026-10-16
-created: 2026-10-17
+created: 2026-10-18
 description: "孙宇晨近3年来首次线下3.5小时无保留对谈。距离上一次他们在新加坡长聊，刚好过去两年。·一个是以85亿美金身价登上福布斯封面的全球90后首富，Tron、孙学创始人，从456万美元拍下巴菲特午餐、1亿美元买入Trump、600万美元买入香蕉🍌——他可能是这个时代最会赚钱也最会“招骂”的华人创业者。·一个是中国企业家投资人里唯一现役的国家队世界冠军运动员金明，全国憋气第一人9分08秒、59"
 tags:
   - "clippings"
