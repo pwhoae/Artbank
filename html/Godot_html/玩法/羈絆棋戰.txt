@@ -1,0 +1,711 @@
+# 《羈絆棋戰》Demo 策劃書 + AI 美術素材 Prompt
+
+Game Design Document · Prototype Plan · AI Art Asset Guide
+
+我會將你的構想整理成一款 「3×3 井字棋 × 角色貼紙收集 × 戰棋佔位 × 回合制戰鬥」 的小型遊戲 Demo，暫定名稱為《羈絆棋戰》（Bond Tactics）。
+
+核心特色是：先在棋盤上佔位，再透過相鄰戰鬥、角色技能與羈絆效果爭奪勝利。佔領位置後，角色不能任意逃跑，必須承擔自己的戰術選擇。
+
+美術方向採用日系 Q 版角色、收藏貼紙、桌遊棋盤與明亮的動漫遊戲 UI，適合先製作一個可玩的 2D Demo，之後再擴充角色、技能與關卡。
+
+## 1. 遊戲核心設計
+
+3×3 井字棋棋盤
+
+共 9 個位置，以三子連線為基礎勝利條件。
+
+5×2 角色貼紙陣容
+
+10 張角色貼紙，雙方各 5 名。每個角色擁有定位、技能及羈絆。
+
+佔位即交戰
+
+角色佔領棋格後進入交戰狀態，不能任意移動或逃離，必須依規則戰鬥。
+
+每回合一步行動
+
+下棋、攻擊或施放技能；部分技能可以突破一般行動限制。
+
+### 遊戲定位
+
+- 類型：2D 回合制策略、輕量戰棋、角色收集。
+- 單局時間：3–8 分鐘。
+- 玩家人數：1 人對 AI，後續可加入雙人本地對戰。
+- Demo 範圍：一張棋盤、10 名角色、數種技能、一個 AI 對手。
+- 建議製作方式：先以 Godot 2D 或 Unity 2D 製作，採用資料驅動角色與技能系統。
+
+## 2. 核心玩法規則
+
+### 2.1 棋盤與角色
+
+棋盤為 3×3，總共 9 格。雙方各持有 5 名角色，初始角色位於棋盤外的備戰區。
+
+# 01
+
+棋格
+
+# 02
+
+棋格
+
+# 03
+
+棋格
+
+# 04
+
+棋格
+
+# 05
+
+棋格
+
+# 06
+
+棋格
+
+# 07
+
+棋格
+
+# 08
+
+棋格
+
+# 09
+
+棋格
+
+示意棋盤：每格可以被佔領、攻擊或成為技能目標。
+
+### 2.2 每回合的行動
+
+建議採用「一回合一個主要行動」的規則，讓玩家容易理解，也能保留技能的策略性。
+
+| 行動    | 效果             | 限制           |
+| ----- | -------------- | ------------ |
+| 下棋／佔位 | 從備戰區派出角色到空格    | 每次佔領一格       |
+| 攻擊    | 攻擊範圍內的敵人       | 消耗本回合行動      |
+| 施放技能  | 執行角色的特殊效果      | 依技能規則消耗行動或能量 |
+| 羈絆召喚  | 召喚符合條件的角色或建立標記 | 需要觸發條件       |
+
+佔位後的限制：
+
+1. 角色進入棋格後，不能主動離開該格。
+2. 角色可以攻擊相鄰敵人，或使用技能攻擊其他格子的敵人。
+3. 角色被擊敗後移出棋盤，該格重新成為空格。
+4. 不能直接交換己方角色的位置，也不能透過一般移動逃避戰鬥。
+5. 如果技能會改變位置，必須明確標記為特殊規則；第一版 Demo 建議先不加入位移技能。
+
+這樣能讓每一次佔位都具有風險：玩家不只是在連線，也是在決定哪些角色要承受敵人的壓力。
+
+### 2.3 勝利條件：過三關
+
+建議設計三種勝利方式，讓遊戲不只是單純比拼連線。
+
+[Kids Land | Free Online Games for Kids - No Ads, No Download, Safe Play](https://images.openai.com/static-rsc-4/0jETHVQy8eF6uNSPfoGR0E-xBubZM1hpCDDazrD9ALzo-V8MKcTvFtzNZHpVOp86D9JJNZHyaT1XnObkzkDHDuK1eGUP6WnJYQr0InGtI--1ixvQKcCNGEBE4Tk_XLG9wih4vkGg3dTWheEsgyODU9dIrqLd5pGBrA2Kd6vrNnc?purpose=inline)
+
+勝利方式 A：三子連線
+
+任意橫向、直向或斜向連續佔領三格即可獲勝，但若其中角色已被擊敗，該格不再計入連線。
+
+[Magic Chess: Go Go Rilis Hari Ini, Season 2 Dimulai! | GGWP](https://images.openai.com/static-rsc-4/oMxj7chlGn-bEgXQH2FmgvtHvx6eo3m11UerICv2mcXBgyNxIxSRquzTZwA_Osdz0D6scEcJmVi90832Rq4yveW4i68ulGuZdyl7m-lkQD3jTdcWXD525sdSzqzIdpouQN3DEuZuzgbIrZbiMcdsx16YJxGRdl4oOYFOhBWLlaQ?purpose=inline)
+
+勝利方式 B：全員擊敗
+
+對手的 5 名角色全部被擊敗，立即獲勝。
+
+[What is Genopets (GENE) Crypto Coin Explained for 2026 Investors](https://images.openai.com/static-rsc-4/WEvc4t2nlS2GCx70wGnRn2IisOPtyEhYeUtG7f6-tT6TaBKOMuYPIGOmOAm_UM8jVVPC9wtHIAHoUqcC5w0ZJSH8qJhJWiWMYh5ehRaN-MD3XlyGS1I8J28PfBr76yZXHLSi3oo9g7pi46rpqnKN2uuqm3kkm5jOmWT5en1QLy0?purpose=inline)
+
+勝利方式 C：戰術得分
+
+如果限定回合結束仍未分出勝負，依連線、存活角色及棋盤控制狀況計分。
+
+第一版 Demo 建議優先完成 A、B 兩種勝利方式；C 可以留到後續版本。
+
+### 2.4 攻擊與戰鬥
+
+建議使用容易平衡的簡化數值：
+
+| 屬性       | 建議範圍  | 用途        |
+| -------- | ----- | --------- |
+| HP 生命    | 2–5   | 歸零後角色退場   |
+| ATK 攻擊   | 1–2   | 每次命中造成的傷害 |
+| Range 射程 | 1–2 格 | 決定可攻擊的位置  |
+| Skill 技能 | 1 個   | 形成角色差異    |
+| Bond 羈絆  | 0–3 層 | 觸發強化效果    |
+
+距離計算建議使用曼哈頓距離：
+
+\\[ d=|x_1-x_2|+|y_1-y_2| \\]
+
+例如，位於棋盤中心的角色與四個正交方向的棋格距離為 1，與四個角落的距離為 2。
+
+- 近戰角色：只能攻擊距離 1 的敵人。
+- 遠程角色：可以攻擊距離 1–2 的敵人。
+- 範圍攻擊：對指定棋格及其鄰格造成傷害。
+- 攻擊被擊敗的角色：不允許。
+- 攻擊空格：不允許，除非技能明確支援。
+
+這套規則可以讓玩家透過站位、角色選擇和技能組合改變局勢。
+
+## 3. 羈絆系統：先佔位符
+
+你提到的「羈絆先佔位符」，我建議設計成遊戲的招牌機制：羈絆標記（Bond Marker）。
+
+[Holographic Heart App Icon PNG](https://images.openai.com/static-rsc-4/enHRmo74q5oPiA_1QTeNRy_9ytHr-u1LkjpQTWqb4tZwpavoGU9xnmf0-qV4D-O6SvoizdoTCO7kx39-lWwaDOk4cwo4Btyq9PULw8pZ11cL_XHMPconUhJJDzTNekEYVrY-FKZpbNnBNMgj8X_AMkNrZDVpJ68f2InXJZzGe7Y?purpose=inline)
+
+[imgbin.com](https://imgbin.com/png/WKV1W2F7/holographic-heart-app-icon-png?utm_source=chatgpt.com)
+
+### 羈絆標記的規則
+
+1. 每個角色都有一個羈絆標記。
+2. 當角色佔領棋格時，可以消耗標記，在相鄰的空格放置羈絆符號。
+3. 羈絆符號不是角色，不能直接構成三子連線。
+4. 角色站在羈絆符號旁邊時，可以觸發被動效果。
+5. 符號可被敵人破壞，避免玩家無限建立安全區。
+
+### 羈絆效果範例
+
+| 羈絆   | 觸發條件      | 效果                |
+| ---- | --------- | ----------------- |
+| 守護羈絆 | 相鄰己方角色    | 首次受到傷害時減少 1 點     |
+| 共鳴羈絆 | 兩名同陣營角色相鄰 | 攻擊力 +1，持續一回合      |
+| 先鋒羈絆 | 首次佔領棋盤中心  | 獲得一次額外佔位行動        |
+| 追擊羈絆 | 擊敗敵人後     | 下一次攻擊傷害 +1        |
+| 連線羈絆 | 己方已有兩格連線  | 下一次攻擊可以無視 1 格距離限制 |
+
+為避免開局過強，先鋒羈絆的額外行動應設定為每局一次，且不能再觸發其他額外行動。
+
+## 4. 技能設計
+
+技能的目的不是單純增加傷害，而是改變棋盤的戰術選擇。
+
+[Soul Strike पुराने संस्करण | Aptoide](https://images.openai.com/static-rsc-4/OX3UEvoyQYG7vKIO2aWIw080PPUVXrR2TXDuZ4vLkOf711W9jH2H5HrqSjbfAvdtNd79tUJgG0q_mNvHrwgdWuoYNR6Rer4Tylk-qXcNF0PUkXLLxwuV5Yclc-JyF3Qn59u2O0NeK77IaOSzRy9k25KHM27MdMycNvmdGLBeU7g?purpose=inline)
+
+01｜先手疾行
+
+佔位技能
+
+本回合可以連續進行兩次佔位，但第二次不能觸發其他額外行動。每局限用一次。
+
+[RO守愛Q板頭像 - david90079的創作 - 巴哈姆特](https://images.openai.com/static-rsc-4/wPXjvwdQ6oYFNYl_AIDhoglaTxJKhogVUtpRzEODcUB1cNvJSrhWNTVI2_akxzo-JB0zc0eQCEkuonsvXVb9WMGHyqf1_Vk2vXwXSmnAPhUSXKs10pBb8z6aUY5H9alP9Z80xs87BYUXRkZoDbznMqsI9fO43rCQcj_MSZfSYb8?purpose=inline)
+
+02｜範圍擴張
+
+攻擊技能
+
+本次攻擊的有效範圍擴大至距離 2 格，可以攻擊原本無法觸及的敵人。
+
+[Charlotta - Granblue Fantasy Relink Wiki](https://images.openai.com/static-rsc-4/DghWULQj_VsV-Ivv0oNN09uW0vXcb8Bj5ryxBNj7UA6MRFSz9e9x4B-lFT6tK7AqWi2vJJXt84kC0LNkYRJTBjn4bGBXWn8xDIZStAdAl5PaSBNP60SsODSP0GjIvIHHlgjGxFXE3rv-qzbqq4abqj1MTs1or5SdtUAaRmH2qic?purpose=inline)
+
+03｜羈絆護盾
+
+防禦技能
+
+為自身或相鄰的友軍抵擋下一次 1 點傷害。不能移動目標角色。
+
+[已开奖【福利活动】表情包共创丨定制你的妲己表情包 - 传说中的合合岛-国色天香活动-小米游戏中心](https://images.openai.com/static-rsc-4/u95p8wFTIhMT10R4kgrwnH23B8rYhWpGh4AGEJ8eEll1-jklGYp78mkSIrQY3vRkoB3o6mEoNOrFWAOH4f6_EDoapr22fnxWLIiVTn3PPuwVFUbxLHVb0idH6VdCnnuZa0jc7ghYqikqNbMpmmAyA9efeajCIFjOOPJ5wSBaaXU?purpose=inline)
+
+04｜封鎖棋格
+
+控制技能
+
+將一個空格封鎖至下一回合結束，期間雙方均不能佔領該格。
+
+平衡原則： 一般角色每回合只有一次主要行動。先手技能是有限次數的例外；不能因為連續佔位而無限觸發技能或羈絆。
+
+## 5. Demo 角色陣容：10 張貼紙
+
+建議先製作兩個陣營、各 5 名角色。這 10 名角色也能直接成為美術素材的第一批產出目標。
+
+[Amphoreus Chibi Sticker Set | Honkai Star Rail Stickers | Decals | Laptop Sticker Set | Phainon, Mydei, Castorice, Aglaea, Tribbie, Cipher - Etsy Australia](https://images.openai.com/static-rsc-4/R3ASVuh7TXhUhe3zCAYhhM73hd-DiTBH955QKaye_Rqc3MBCX3sD6MzMkFebERpJpuiuGkUed0ku0hIobfChRwOf_5ZMwu9AtlAqhZKerWMselmpZyEWzjDSmKA8E2cwIIX88eli8HCbMa_21zVxMg9yuT7NLZQ2_MYoyjxF1II?purpose=inline)
+
+光之羈絆隊
+
+- 星芽：先手佔位，速度型。
+- 鈴盾：護盾與守護。
+- 焰羽：近戰輸出。
+- 月兔：遠程攻擊。
+- 花靈：羈絆標記與治療。
+
+[LoL (chibis/stickers) - Mizah's Ko-fi Shop](https://images.openai.com/static-rsc-4/uzNX7PsaIXsClqS8PECoEDsmezwsl9hGl5dJ9Q_nB71z_-PDSFPVpAlbaSUr-r9VivDRY8s68tw0ONDkpho-xMSJL4h1MMN4FQa3m0BbFsZci8nPExgd6_7Nevw-F6yejmZptEhpViS1_l_AKexx3R8QUhz0KAzFkfUW7ODJc4Q?purpose=inline)
+
+影之羈絆隊
+
+- 夜刃：近戰爆發。
+- 霜狐：遠程控制。
+- 暗翼：範圍攻擊。
+- 鐵偶：高生命防禦。
+- 幻貓：封鎖棋格與戰術干擾。
+
+上述名稱和技能均為 Demo 的初步設計，可先用簡單數值實作，等核心玩法穩定後再調整角色個性與平衡。
+
+## 6. AI 美術素材製作清單
+
+建議美術採用統一規格：日系 Q 版、收藏貼紙、白色刀模外框、柔和立體陰影、清晰剪影、透明背景。所有角色共用相同的頭身比例與描線規則。
+
+以下 Prompt 可直接複製至支援參考圖的 AI 繪圖工具。英文 Prompt 通常比較方便控制素材細節。
+
+### 素材 A｜10 張角色貼紙總表
+
+[Kawaii Stickers Sheet Digital Printable, Kawaii Girl Clipart, Sketchbook Stickers Anime 20 PNG, Stickers Cute Girl, Cute Stickers Kawaii - Etsy Canada](https://images.openai.com/static-rsc-4/S5ZEOYqmRoMny7EwH_3vDWqTh2JgvAquO2UuR815-YFrqyeLVEU-BgO1FhClJ95xH8KxdZycX5Y_1j8ySYtKCqtftosowsPq6VepvaeWQBTltDhEtSpWslBmIRoIswOq_ar1oI2Gand2TYc7BaFgYFsrpelFTkGa0ihDwcRtJlU?purpose=inline)
+
+[etsy.com](https://www.etsy.com/listing/1447791834/kawaii-stickers-sheet-digital-printable?utm_source=chatgpt.com)
+
+# AI Prompt A — 10 Character Sticker Sheet
+
+Create a premium collectible character sticker sheet for a cute anime tactical board game called "Bond Tactics".
+
+**Layout**
+
+- Exactly 10 unique chibi characters arranged in a precise 5 columns × 2 rows grid.
+- Equal spacing, consistent scale, consistent head-to-body ratio.
+- Each character is a separate die-cut sticker with a thick, clean white border and subtle soft shadow.
+- No overlapping characters, no cropped bodies, no extra characters.
+
+**Character style**
+
+- Japanese anime mobile game illustration.
+- Super-deformed chibi proportions, approximately 2 to 2.5 heads tall.
+- Oversized expressive eyes, cute facial expressions, compact limbs.
+- Clean lineart, polished cel shading, refined highlights.
+- Distinct silhouettes, readable costumes and recognizable weapon shapes.
+
+**Character roster**
+
+1. Star Sprout — pink and white speed scout.
+2. Bell Shield — pastel blue guardian with a shield.
+3. Flame Feather — red and gold melee fighter.
+4. Moon Rabbit — lavender ranged attacker with a crescent motif.
+5. Bloom Spirit — mint green support mage.
+6. Night Blade — purple and black rogue.
+7. Frost Fox — icy blue fox mage.
+8. Dark Wing — charcoal and violet area attacker.
+9. Iron Doll — silver and navy armored defender.
+10. Phantom Cat — teal and indigo tactical trickster.
+
+**Output requirements**
+
+- Clean white or transparent background.
+- Each character visually independent and easy to cut out.
+- No text, no labels, no watermark, no logos.
+- Consistent anatomy, lighting, rendering quality and overall art direction.
+- High-quality game merchandise illustration, production-ready reference sheet.
+
+The exact count, grid alignment and character consistency are critical.
+
+> 製作建議：總表適合用於初期定風格；真正放進遊戲前，最好再逐個角色單獨生成，確保手部、武器、輪廓和透明背景品質。
+
+### 素材 B｜單角色獨立貼紙模板
+
+["Pink Paladin Girl Chibi with Sword and Shield" Sticker for Sale by RaineDDesigns | Redbubble](https://images.openai.com/static-rsc-4/SZ5Gf0NhHNh8HTwjrxMNKSgQOPwYe7qpx7xg-_VlXusqJQ63vz0HcljYI4mQuKUtq1C6dYXVaNK2tlXHgAUQq4F7scadRIm58qMlqTu3ofJtHuuFJ8qp89Pv9awF25DC-7t8_zekT469b_OKzXDdPF3mlG-SXk-IaG5peEYCKBA?purpose=inline)
+
+# AI Prompt B — Individual Character Sticker
+
+Use the provided character reference image as the ONLY source for the character's identity and design.
+
+Create one full-body collectible character sticker for a cute anime tactical board game.
+
+**Preserve**
+
+- Original hairstyle, hair color, eye color and facial identity.
+- Original costume design, palette, accessories and signature equipment.
+- Recognizable silhouette and personality.
+
+**Art direction**
+
+- Japanese anime game merchandise illustration.
+- Super-deformed chibi proportions, 2–2.5 heads tall.
+- Large expressive eyes, cute compact body, short rounded limbs.
+- Clean lineart, soft cel shading, subtle glossy highlights.
+- Thick white die-cut sticker border surrounding the entire silhouette.
+- Subtle contact shadow outside the sticker edge.
+- Charming, premium collectible merchandise appearance.
+
+**Composition**
+
+- One character only, centered, full body visible.
+- Neutral standing pose with a readable silhouette.
+- Hands and feet completely visible.
+- No cropping, no extra limbs, no duplicated accessories.
+- Transparent background, isolated subject.
+
+**Output**
+
+- Square canvas, 1024 × 1024.
+- No text, no watermark, no background decorations.
+- Consistent rendering suitable for a game character roster.
+
+Do not redesign the character or introduce unrelated costume elements.
+
+### 素材 C｜3×3 棋盤與格子
+
+[九宮格圖案素材 | PNG和向量圖 | 透明背景圖片 | 免費下载 - Pngtree](https://images.openai.com/static-rsc-4/pz69ZEIvZz7yqmJvZqjJeOyYEHkeVJ2v3HOSgUhEXBCCzZUH8SvI2XtKYMIUmJM6aMPv2pbyXw8RwRgWCNUo4orFUXA7rYVL3X_m0QTKLlG2Zhk0CqETDpOQY8RBEmf0VcBpx0ZtnWAs-NiIEouSVzjy8QuQ4H5hKZD7pwiztdE?purpose=inline)
+
+棋盤底圖
+
+固定 3×3 格線，棋盤中心對齊。
+
+[ShinyFrame-101](https://images.openai.com/static-rsc-4/SMfSzdTwP2NOo48ZGpwosqL8r1NuBHnMT6LwlB0Y2S756QGvDXRld4IzFHYI_nXGLrqn1Zp19bIbXrIK49oCW3jO0TlY1a1HhYmDgFQaiF97z_lFJh1i0C3Ukt0y3c6DmXlVzOvPEla4PHmo944eOcczcslRM-jAKIjSSTXXFTLWzhvWlFq8k5Z9b1tB_zbZ?purpose=inline)
+
+單格素材
+
+可重複使用的空格與選取框。
+
+# AI Prompt C — Tactical Tic-Tac-Toe Board
+
+Design a clean, top-down 2D tactical board for a cute Japanese anime strategy game.
+
+**Board**
+
+- Exactly 3 columns × 3 rows, 9 equal square cells.
+- Perfectly aligned orthogonal grid.
+- Symmetrical composition and consistent cell spacing.
+- Soft rounded corners, pastel ivory base, subtle gold trim.
+- Delicate magical motifs inspired by collectible character stickers.
+- High contrast between occupied tiles and empty tiles.
+- Clear visual space for character sprites and combat effects.
+
+**Game readability**
+
+- Each cell must comfortably fit one chibi character.
+- Grid boundaries must remain visible during combat.
+- No perspective distortion.
+- No tilted board.
+- No characters, no text, no numbers, no UI labels.
+
+**Rendering**
+
+- Clean 2D game UI illustration.
+- Top-down orthographic view.
+- Soft shadows and subtle material depth.
+- Transparent background outside the board where possible.
+
+**Output**
+
+- Square 1024 × 1024 canvas.
+- The board must be precisely divided into 9 equal cells.
+- Suitable for a functional turn-based strategy game.
+
+Avoid decorative elements that obscure grid boundaries.
+
+### 素材 D｜羈絆標記與佔位特效
+
+[PNG Crystal heart shaped gemstone | Free PNG  - rawpixel](https://images.openai.com/static-rsc-4/e0tfcXdRBhxJraaqzE-FFgkJ7rqiUgP9ATU5hhsOZXDM8X7GApBCnS8QDXk70ZzWy26QBb1MXxfoA3srTxG58717nBBCY2uaXBshDWRalvHMcDrIS6VLe3Jt0TjGZO1ahBcRCdUPnPC-6KqbEjFQBfV4BwOn_2VCFMUtdUJwAu0?purpose=inline)
+
+羈絆標記 Token
+
+用於空格預留、羈絆觸發與陣營識別。
+
+[Summoning Circle PNG Images - CleanPNG](https://images.openai.com/static-rsc-4/FOZZaKwciDrPFI9XJ-cSk45vifiJggBAZlAG_xikZA2EiZlImaY-6qTT3aSMzoclf8uGWip1HFOnEqbyZOqeS5Un5fjqzgBxRUTLTJo3JvXoW78g5pFX85Y-zt3eeXK8kkb9hsCLbWJJnlOCOxXkNgAUxcBfsyBBk-vHIpyyej0?purpose=inline)
+
+佔位法陣
+
+角色落在棋格時播放的召喚效果。
+
+[剑斩效果 - Sword Slash VFX -Vol2 | 2D 材质与材料 | Unity 中国资源商店](https://images.openai.com/static-rsc-4/ihujJ5odlnhIQBiC4fezso2Oa2qvctvE76CFqCNOO1AUTykSBCVrjbMv5BRkhvI49xkwVShsZyYpAHi4N1bBWuR0hrR-VF85J-a_Hoq_P5NeO89K-yqC665afM4GLKiWjWzN3cifI2V1Pmd2119-Q5o2hFYtXwG6hEtn3dfySDY?purpose=inline)
+
+攻擊特效
+
+短促、清晰的打擊閃光，不遮擋棋盤和角色。
+
+# AI Prompt D — Bond Tokens and Tactical VFX Sprite Sheet
+
+Create a consistent 2D game asset sheet for a cute anime tactical board game.
+
+Include these independent visual effects:
+
+1. A small glowing heart-shaped bond token.
+2. A circular placement rune.
+3. A defensive shield burst.
+4. A short directional slash impact.
+5. A magical ranged attack impact.
+6. A broken bond token with fading particles.
+7. A highlighted target tile.
+8. A disabled or sealed tile effect.
+
+**Visual style**
+
+- Japanese anime game VFX.
+- Pastel pink, lavender, cyan, ivory and gold.
+- Crisp shapes, readable silhouettes, restrained bloom.
+- Consistent outline thickness and lighting direction.
+- Each effect visually distinct at small display sizes.
+
+**Technical layout**
+
+- Eight separate effects in a clean 4 × 2 grid.
+- Equal-sized cells with generous padding.
+- Transparent background.
+- No overlapping effects.
+- No text, no watermark, no labels.
+
+The sheet is a visual reference for recreating individual effects as separate transparent PNG assets. Do not add decorative elements outside the specified cells.
+
+注意：如果要直接製作遊戲素材，應把每個特效拆成獨立圖片，並在遊戲引擎中調整位置、播放時間與透明度。整張素材表不能直接當作單一特效使用。
+
+### 素材 E｜技能圖示套組
+
+[UnsolvedIQ - Fun 1v1 Multiplayer Brain Games & Logic Puzzles](https://images.openai.com/static-rsc-4/hy0s0lHOEveKvO3QY43tEZn9CKuNdqj6l7kIujGRiSAY6lHucndK3nOjUInTivhQldrUqZAZv3B-EeuY1-ay3cWZ5E9bl98o50TUi5NX5MDZogC9A0FSTmPTFae5IxwlSU_2TKgiW4oQB8rLYyw4Eq5U7aonACwuU0XBu03JJYQ?purpose=inline)
+
+[Universal Skill Icon - Game-LoRA-IPVision-Shakker](https://images.openai.com/static-rsc-4/VvuxSUDnlofaJuaeehrejvpDEfUMFMf5X6IZ5VS2iXjhMH_dvug_qYaP-2KtRzpjJd-Tlg0O_7wD6htba1uxH3LnwT3uKFzGFjCoRcGOObQAenaiLNGAXQeNhhW_dcf_5dJJz9u5xXwBZCIObdfFsxpA7hSMRvozvvgK08Xrb9k?purpose=inline)
+
+[Colossal Runner | Astrocade](https://images.openai.com/static-rsc-4/F-xBeRnOFvldB_IQD5uwYop2pG1cJsD-euRnxko37FI3l4tfJecP2IOpPZpDr8zWG0nsuvKSyEURwlBesmELFdApnIEOpLZSfOAGwTyuz9GR5w4r6xlWsb_wXawHCqIZe9Qg69x7UaEKDnJqLiL6rPOgSNzE_IyJuEmKZm-vZcc?purpose=inline)
+
+8
+
+# AI Prompt E — Tactical Skill Icon Set
+
+Create a unified set of 12 skill icons for a cute anime tactical board game.
+
+**Icon categories**
+
+- Initiative and extra placement.
+- Melee attack.
+- Ranged attack.
+- Area attack.
+- Protective shield.
+- Healing.
+- Bond marker creation.
+- Bond resonance.
+- Tile sealing.
+- Counterattack.
+- Attack range expansion.
+- Victory finisher.
+
+**Style**
+
+- Cute Japanese anime mobile game iconography.
+- Bold central symbol, simplified readable shapes.
+- Soft 3D enamel appearance combined with polished 2D illustration.
+- Pastel color palette with gold accents.
+- Consistent lighting, framing, border thickness and visual scale.
+- Strong contrast at small sizes.
+
+**Layout**
+
+- 4 columns × 3 rows.
+- Exactly 12 independent square icons.
+- Uniform spacing and consistent dimensions.
+- No text, letters, numbers or watermarks.
+- Plain contrasting background for easy separation.
+
+Each icon must communicate its gameplay function through its visual symbol alone.
+
+## 7. 遊戲 UI 美術 Prompt
+
+Demo 最少需要以下畫面：
+
+- 主選單：開始遊戲、角色收藏、設定。
+- 戰鬥畫面：3×3 棋盤、雙方角色、回合指示。
+- 角色資訊：HP、攻擊範圍、技能與羈絆。
+- 技能選取：可用技能與目標格高亮。
+- 勝負結算：勝利、失敗、重新開始。
+
+[イリュージョンコネクトの配信日とゲームアプリ情報 | 予約トップ10](https://images.openai.com/static-rsc-4/jtlYoDwqXqKINXkpAag4N3tqmvvXKZm62-QkJRwlbBoMz7OGqLldz6ph9WXbGAWmR5muHoailWJqm3A3FjW1sbY6yugOp9kHXnJAfY-7XFkTTxL4B_CuqWXEwNvO6WOcFTJ1j7x2JjyS9HcmzWagQtAFdbD7rSfrQfQtQpjGYkE?purpose=inline)
+
+[yoyaku-top10.jp](https://yoyaku-top10.jp/apps/MjM0NzI?utm_source=chatgpt.com)
+
+# AI Prompt F — Tactical Battle UI Mockup
+
+Design a polished 2D mobile and desktop game interface for "Bond Tactics", a cute anime sticker-based tactical board game.
+
+**Screen layout**
+
+- Central 3 × 3 tactical board as the main visual focus.
+- Left and right character reserve panels, each displaying five collectible chibi character portraits.
+- Player and opponent health indicators.
+- Clear current-turn indicator.
+- Compact action panel showing placement, attack and skill actions.
+- Selected character information with HP, ATK, range and skill icon.
+- Bond token counter and short combat log.
+- Clearly visible victory and defeat feedback states.
+
+**Art direction**
+
+- Japanese anime mobile game UI.
+- Pastel ivory, soft blue, pink, lavender and restrained gold.
+- Rounded panels, clean borders and readable typography.
+- Collectible sticker-inspired portraits.
+- Subtle magical motifs without visual clutter.
+- Strong hierarchy between the board, available actions and secondary information.
+
+**Usability requirements**
+
+- The board occupies the largest visual area.
+- Empty, occupied, selected, attackable and sealed cells must be visually distinguishable.
+- Text and controls must remain legible at normal game window sizes.
+- Maintain clear separation between interactive elements.
+
+**Output**
+
+- 16:9 landscape composition, 1920 × 1080.
+- No watermark.
+- This is a visual UI concept, not a rendered game screenshot.
+
+Do not invent extra board cells or obscure the grid with decorative effects.
+
+## 8. Demo 實作規劃
+
+建議分三個階段，先確認玩法有趣，再大量投入美術。
+
+## 01
+
+核心
+
+可玩原型
+
+- 3×3 棋盤與角色佔位。
+- 玩家／AI 輪流行動。
+- 生命值、攻擊、角色退場。
+- 三子連線與全員擊敗勝利條件。
+- 暫時使用簡單色塊和文字圖示。
+
+## 02
+
+策略
+
+加入羈絆與技能
+
+- 10 名角色資料。
+- 先手疾行、範圍擴張、羈絆護盾、封鎖棋格。
+- 攻擊範圍預覽。
+- AI 連線判斷、危險格評估與攻擊決策。
+
+## 03
+
+美術
+
+貼紙化與遊戲體驗
+
+- 10 張獨立角色貼紙。
+- 棋盤、技能圖示與羈絆特效。
+- 動畫、音效、回合提示。
+- 勝利畫面、角色收藏與重新開局。
+
+### 核心程式邏輯
+
+以下為不依賴特定引擎的核心規則示意，可作為 Godot 或 Unity 實作時的基礎。
+
+```
+public enum ActionType
+{
+    Place,
+    Attack,
+    UseSkill
+}
+
+public class CharacterData
+{
+    public string Id;
+    public int MaxHp;
+    public int Hp;
+    public int Attack;
+    public int Range;
+    public bool IsAlive = true;
+}
+
+public class BoardCell
+{
+    public int X;
+    public int Y;
+    public string OccupantId;
+    public bool IsSealed;
+
+    public bool IsEmpty =>
+        string.IsNullOrEmpty(OccupantId) && !IsSealed;
+}
+
+public class TurnState
+{
+    public int CurrentPlayer;
+    public bool ActionUsed;
+    public int ExtraPlacements;
+}
+
+// 每次普通行動只能執行一次。
+// 佔位後角色不能自行離開棋格。
+// 角色被擊敗時才清空其棋格。
+//
+// 特殊技能必須明確定義：
+// 1. 是否消耗主要行動
+// 2. 每局使用次數
+// 3. 是否可觸發額外行動
+// 4. 是否能影響已佔領棋格
+// 5. 是否允許改變位置
+
+```
+
+### 必須先定義的技術細節
+
+1. 佔位和攻擊如何選擇？ 建議點擊角色後，再點選空格或敵人。
+2. 被攻擊時能否反擊？ 第一版建議不自動反擊，避免回合規則過於複雜。
+3. 佔位後能否攻擊？ 可以，但需要消耗後續回合的行動。
+4. 先手技能如何運作？ 只允許額外佔位，不能無限連鎖。
+5. 棋格被封鎖時如何處理？ 不能佔位、不能計入連線；持續時間結束後恢復。
+6. 棋盤上沒有可行動的角色時怎麼辦？ 若仍有可用技能則可以使用；否則跳過回合或結束對局，依遊戲狀態判斷。
+
+## 9. Demo 驗收清單
+
+## 開發驗收進度
+
+0 / 10
+
+棋盤系統
+
+9 格正確排列，佔位狀態同步更新
+
+回合系統
+
+正常每回合一次主要行動，能正確切換玩家
+
+佔位限制
+
+角色佔位後不能任意移動或逃跑
+
+戰鬥系統
+
+攻擊距離、傷害、死亡與清格正確
+
+勝利判定
+
+三子連線與全員擊敗均可正常結束對局
+
+羈絆系統
+
+標記生成、觸發條件與次數限制正確
+
+技能系統
+
+先手、範圍擴張、護盾、封鎖格均可測試
+
+AI 對手
+
+會阻止對手連線，也會利用可用攻擊
+
+美術素材
+
+10 名角色風格一致、透明背景及圖示尺寸正確
+
+遊戲 UI
+
+回合、生命、技能、選格及勝負提示清楚
+
+重設清單複製驗收清單
+
+## 10. 最終建議
+
+《羈絆棋戰》的關鍵不只是三子連線，而是讓每個棋格同時具有連線價值、戰鬥風險與羈絆價值。
+
+第一個可玩版本應聚焦於：
+
+- 3×3 棋盤。
+- 5 對 5 角色貼紙。
+- 佔位後不可逃跑。
+- 一回合一次行動。
+- 近戰、遠程及簡單技能。
+- 三子連線與全員擊敗。
+- 羈絆先佔位符作為核心特色。
+
+等這套規則玩起來有策略深度後，再加入角色收藏、更多技能、陣營克制和關卡挑戰，會比一開始就製作大量角色和特效更有效率。

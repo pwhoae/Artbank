@@ -1,0 +1,933 @@
+# 《羈絆棋戰》Godot 4 完整開發教學：從零製作到可玩 Demo
+
+根據你上傳的《羈絆棋戰.txt》策劃書，我建議使用 Godot 4 + GDScript + 2D Control UI 開發第一版。先完成一款能實際遊玩的回合制戰棋，再逐步加入 Q 版角色貼紙、技能、羈絆標記、戰鬥特效與 AI。
+
+這份教學會以你的遊戲規則為核心，而不是單純講解 Godot 的基本操作。
+
+[新聞公告 │ 龍魂旅人](https://images.openai.com/static-rsc-4/DSN7w-5cYI6zKUPWq7FMkeG-pDNuihAy4Pqg7qNklYtr8yANMFj6me8Pa8ftZnhlPpbpWhtmLro7LzaApYnE_0d1cBoKyUVspGxXqD02nCILrWv-OjaQ1GBo25k5pu_VJs6kROI3YKphJXRejibvtMuA0M--XJkgBQPSsrINEoQ?purpose=inline)
+
+第一階段：建立可玩原型
+
+3×3 棋盤、角色佔位、玩家與 AI 輪流行動、HP、攻擊、勝負判定。先用簡單色塊測試。
+
+[This item is unavailable - Etsy](https://images.openai.com/static-rsc-4/Gtfloz_amk_6Mgj7QLaL4YNbZbBtmn_h4hEXvyrn6hDpqZym-_q2PLgAzCoKw73CFfoHNwhsLsjS6HpJZ2scZpvOxHNVY3yq4zP8Q7G1LeG1_jlUoWLKwj5SzAAkxap5JTS9Om8Xk6Fl3DlHSENo4FS4sqmMeogLEMox8OYIH1g?purpose=inline)
+
+第二階段：加入策略系統
+
+10 名角色、近戰與遠程攻擊、技能、羈絆標記、棋格封鎖、簡單戰術 AI。
+
+[セブンズストーリー（セブスト） 公式サイト](https://images.openai.com/static-rsc-4/Byq0O2poWVim-wl1i_Q-48mrd9JHwMTa1ZeL1czNmcS95H2w-mdBhjU8-0MClJWokotdlpI8F8GPn9LfasMWX9V6B2lzz58XEVl7QXYE8wMXpdR0MWY_3QN337AfwcG0P-fYOOk9OzWzBEZuRGscX9pUXuWAbmXjyutd54S9308?purpose=inline)
+
+第三階段：完成遊戲 Demo
+
+角色貼紙素材、選取與攻擊動畫、音效、戰鬥紀錄、勝負畫面、重新開始與可執行遊戲。
+
+## 一、先確定遊戲規則與技術架構
+
+你的遊戲結合了井字棋、戰棋與角色技能。最重要的設計是：角色佔領棋格後不能自行離開，只有被擊敗後才會清空棋格。
+
+因此，每一個棋格不只是連線位置，也是一個戰鬥位置。
+
+## Demo 核心規格
+
+棋盤
+
+# 3 × 3
+
+共 9 格
+
+角色
+
+# 5 vs 5
+
+兩個陣營，共 10 名
+
+主要行動
+
+# 每回合 1 次
+
+佔位、攻擊或技能
+
+主要勝利條件
+
+# 2 種
+
+三子連線、擊敗全隊
+
+### 建議採用的技術
+
+| 項目    | Godot 實作方式                         |
+| ----- | ---------------------------------- |
+| 遊戲引擎  | Godot 4.x，2D 專案                    |
+| 程式語言  | GDScript                           |
+| 棋盤與介面 | `Control`、`GridContainer`、`Button` |
+| 角色資料  | 自訂 `Resource` 或資料檔                 |
+| 回合管理  | `GameManager` 狀態機                  |
+| 戰鬥判定  | 獨立的規則函式                            |
+| AI 對手 | 先用規則評分，再考慮搜尋演算法                    |
+| 動畫    | `AnimationPlayer`、`Tween`          |
+| 音效    | `AudioStreamPlayer`                |
+| 角色圖片  | 透明 PNG，之後可換成 Sprite2D              |
+
+開發原則：先讓規則正確，再讓畫面漂亮。 第一版不需要先製作十名精美角色，也不需要先做複雜的動畫。
+
+## 二、安裝 Godot 並建立專案
+
+### 步驟 1：建立新專案
+
+1. 前往 [Godot 官方下載頁面](https://godotengine.org/download/?utm_source=chatgpt.com)，下載 Godot 4.x Standard 版本。
+2. 開啟 Project Manager，點選建立新專案。
+3. 專案名稱輸入 `BondTactics`。
+4. Renderer 選擇 `Compatibility`，方便這款 2D 遊戲在較多裝置執行。
+5. 建立專案，進入編輯器。
+
+### 步驟 2：設定遊戲解析度
+
+在 `Project > Project Settings > Display > Window` 設定：
+
+- Viewport Width：1280
+- Viewport Height：720
+- Stretch Mode：`canvas_items`
+
+先採用 16:9 桌面版配置。之後若要支援手機，再調整介面排版與觸控區域。
+
+### 步驟 3：建立專案資料夾
+
+在 FileSystem 面板建立以下資料夾：
+
+res\://
+
+scenes/
+
+Main.tscn
+
+Battle.tscn（第二階段）
+
+scripts/
+
+game.gd
+
+game_rules.gd（後續拆分）
+
+battle_ai.gd（後續拆分）
+
+data/
+
+characters.json（角色設定）
+
+assets/
+
+characters/
+
+boards/
+
+icons/
+
+vfx/
+
+audio/
+
+第一版可以先只使用 `Main.tscn` 與 `game.gd`，其他資料夾用來準備後續擴充。
+
+## 三、建立第一個遊戲場景
+
+### 步驟 4：建立 Main.tscn
+
+1. 點選 `2D Scene`，將根節點改名為 `Main`。
+2. 根節點使用 `Control`，讓整個遊戲畫面以 UI 方式排版。
+3. 將根節點的 Layout 設為 `Full Rect`。
+4. 儲存為 `res://scenes/Main.tscn`。
+5. 在根節點新增腳本，儲存為 `res://scripts/game.gd`。
+
+第一版的場景可以由程式動態建立所有按鈕，暫時不需要手動製作九個棋格。
+
+### 步驟 5：先定義棋盤資料
+
+你的棋盤需要保存以下資訊：
+
+- 棋格是否被佔領。
+- 棋格屬於哪個玩家。
+- 棋格上角色的 HP。
+- 棋格是否被封鎖。
+- 棋格上的角色是誰。
+
+建議每個棋格的資料使用 Dictionary，角色的生命、攻擊力與射程則另外管理。
+
+例如：
+
+```
+var cell_data := {
+    "owner": -1,       # -1 代表空格
+    "character_id": "",
+    "hp": 0,
+    "sealed": false
+}
+```
+
+玩家編號統一使用 `0` 代表玩家、`1` 代表 AI。這樣可以避免之後判斷陣營時混亂。
+
+## 四、第一個可玩的版本：完整程式
+
+接下來製作的版本會包含：
+
+- 3×3 棋盤。
+- 玩家五名備戰角色。
+- AI 五名備戰角色。
+- 點擊角色再點空格即可佔位。
+- 點擊己方角色，再點可攻擊的敵人即可攻擊。
+- 佔位後不能移動。
+- 近戰距離判定。
+- 生命值、角色退場。
+- 三子連線與全員擊敗判定。
+- AI 自動佔位或攻擊。
+- 重新開始。
+
+為了先驗證玩法，第一版所有角色的生命值均設為 3、攻擊力均設為 1、攻擊距離均設為 1。這是測試用數值，並非最終角色平衡。
+
+### 步驟 6：貼上 `game.gd`
+
+將下面的程式完整貼進 `res://scripts/game.gd`。這是用來驗證核心規則的單檔原型，介面由程式自動建立，不需要另外建立 UI 節點。
+
+```
+
+extends Control
+
+const BOARD_SIZE := 3
+const TEAM_PLAYER := 0
+const TEAM_AI := 1
+const MAX_HP := 3
+const ATTACK_DAMAGE := 1
+const ATTACK_RANGE := 1
+
+var board: Array[Dictionary] = []
+var pieces: Array[Dictionary] = []
+var current_team := TEAM_PLAYER
+var selected_reserve := -1
+var selected_piece := -1
+var game_over := false
+var ai_busy := false
+
+var status_label: Label
+var board_grid: GridContainer
+var reserve_box: HBoxContainer
+var restart_button: Button
+var cell_buttons: Array[Button] = []
+var reserve_buttons: Array[Button] = []
+
+
+func _ready() -> void:
+    _build_ui()
+    _new_game()
+
+
+func _build_ui() -> void:
+    var root := VBoxContainer.new()
+    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    root.add_theme_constant_override("separation", 12)
+    add_child(root)
+
+    var title := Label.new()
+    title.text = "羈絆棋戰 | BOND TACTICS"
+    title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    title.add_theme_font_size_override("font_size", 28)
+    root.add_child(title)
+
+    status_label = Label.new()
+    status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    root.add_child(status_label)
+
+    board_grid = GridContainer.new()
+    board_grid.columns = BOARD_SIZE
+    board_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+    board_grid.add_theme_constant_override("h_separation", 8)
+    board_grid.add_theme_constant_override("v_separation", 8)
+    root.add_child(board_grid)
+
+    for i in range(9):
+        var cell := Button.new()
+        cell.custom_minimum_size = Vector2(150, 110)
+        cell.add_theme_font_size_override("font_size", 18)
+        cell.pressed.connect(_on_cell_pressed.bind(i))
+        board_grid.add_child(cell)
+        cell_buttons.append(cell)
+
+    var reserve_title := Label.new()
+    reserve_title.text = "玩家備戰區（點選角色，再點空格佔位）"
+    reserve_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    root.add_child(reserve_title)
+
+    reserve_box = HBoxContainer.new()
+    reserve_box.alignment = BoxContainer.ALIGNMENT_CENTER
+    reserve_box.add_theme_constant_override("separation", 6)
+    root.add_child(reserve_box)
+
+    for i in range(5):
+        var reserve := Button.new()
+        reserve.custom_minimum_size = Vector2(100, 64)
+        reserve.pressed.connect(_on_reserve_pressed.bind(i))
+        reserve_box.add_child(reserve)
+        reserve_buttons.append(reserve)
+
+    restart_button = Button.new()
+    restart_button.text = "重新開始"
+    restart_button.pressed.connect(_new_game)
+    root.add_child(restart_button)
+
+
+func _new_game() -> void:
+    board.clear()
+    pieces.clear()
+
+    for i in range(9):
+        board.append({
+            "owner": -1,
+            "piece_id": -1,
+            "sealed": false
+        })
+
+    for team in range(2):
+        for i in range(5):
+            pieces.append({
+                "id": team * 5 + i,
+                "owner": team,
+                "hp": MAX_HP,
+                "atk": ATTACK_DAMAGE,
+                "range": ATTACK_RANGE,
+                "alive": true,
+                "placed": false
+            })
+
+    current_team = TEAM_PLAYER
+    selected_reserve = -1
+    selected_piece = -1
+    game_over = false
+    ai_busy = false
+    _refresh_ui()
+
+
+func _on_reserve_pressed(index: int) -> void:
+    if game_over or current_team != TEAM_PLAYER:
+        return
+
+    var piece_id: int = index
+    var piece: Dictionary = pieces[piece_id]
+
+    if not piece["alive"] or piece["placed"]:
+        return
+
+    selected_reserve = index
+    selected_piece = -1
+    _refresh_ui()
+
+
+func _on_cell_pressed(index: int) -> void:
+    if game_over or current_team != TEAM_PLAYER or ai_busy:
+        return
+
+    var cell: Dictionary = board[index]
+
+    if selected_reserve >= 0:
+        if cell["owner"] != -1 or cell["sealed"]:
+            return
+
+        var piece_id: int = selected_reserve
+        _place_piece(piece_id, index)
+
+        selected_reserve = -1
+        selected_piece = -1
+        _finish_player_action()
+        return
+
+    if selected_piece >= 0:
+        var attacker_id: int = selected_piece
+
+        if cell["owner"] == TEAM_PLAYER:
+            selected_piece = int(cell["piece_id"])
+            _refresh_ui()
+            return
+
+        if cell["owner"] == TEAM_AI:
+            if _can_attack(attacker_id, index):
+                _attack(attacker_id, index)
+                selected_piece = -1
+                _finish_player_action()
+                return
+
+        return
+
+    if cell["owner"] == TEAM_PLAYER:
+        selected_piece = int(cell["piece_id"])
+        _refresh_ui()
+
+
+func _place_piece(piece_id: int, cell_index: int) -> void:
+    pieces[piece_id]["placed"] = true
+    board[cell_index]["owner"] = pieces[piece_id]["owner"]
+    board[cell_index]["piece_id"] = piece_id
+
+
+func _distance(a: int, b: int) -> int:
+    var ax := a % BOARD_SIZE
+    var ay := int(a / BOARD_SIZE)
+    var bx := b % BOARD_SIZE
+    var by := int(b / BOARD_SIZE)
+    return abs(ax - bx) + abs(ay - by)
+
+
+func _can_attack(piece_id: int, target_index: int) -> bool:
+    var target: Dictionary = board[target_index]
+
+    if not pieces[piece_id]["alive"]:
+        return false
+    if target["owner"] == -1 or target["owner"] == pieces[piece_id]["owner"]:
+        return false
+    if target["sealed"]:
+        return false
+
+    var source_index := -1
+    for i in range(9):
+        if board[i]["piece_id"] == piece_id:
+            source_index = i
+            break
+
+    if source_index == -1:
+        return false
+
+    return _distance(source_index, target_index) <= int(pieces[piece_id]["range"])
+
+
+func _attack(piece_id: int, target_index: int) -> void:
+    var target_piece_id: int = board[target_index]["piece_id"]
+    var damage: int = pieces[piece_id]["atk"]
+
+    pieces[target_piece_id]["hp"] -= damage
+
+    if pieces[target_piece_id]["hp"] <= 0:
+        pieces[target_piece_id]["hp"] = 0
+        pieces[target_piece_id]["alive"] = false
+        pieces[target_piece_id]["placed"] = false
+
+        # 只有角色被擊敗才清空棋格
+        board[target_index]["owner"] = -1
+        board[target_index]["piece_id"] = -1
+
+
+func _finish_player_action() -> void:
+    if _check_victory():
+        _refresh_ui()
+        return
+
+    current_team = TEAM_AI
+    selected_piece = -1
+    selected_reserve = -1
+    _refresh_ui()
+    _run_ai_turn()
+
+
+func _run_ai_turn() -> void:
+    if game_over:
+        return
+
+    ai_busy = true
+
+    # AI 優先攻擊相鄰的玩家角色
+    for i in range(9):
+        if board[i]["owner"] != TEAM_AI:
+            continue
+
+        var attacker_id: int = board[i]["piece_id"]
+
+        for j in range(9):
+            if board[j]["owner"] != TEAM_PLAYER:
+                continue
+
+            if _can_attack(attacker_id, j):
+                _attack(attacker_id, j)
+                _end_ai_turn()
+                return
+
+    # 找出第一個可用角色
+    var reserve_id := -1
+    for i in range(5, 10):
+        if pieces[i]["alive"] and not pieces[i]["placed"]:
+            reserve_id = i
+            break
+
+    # 找出第一個空格
+    if reserve_id >= 0:
+        for i in range(9):
+            if board[i]["owner"] == -1 and not board[i]["sealed"]:
+                _place_piece(reserve_id, i)
+                _end_ai_turn()
+                return
+
+    # 沒有可行動的棋子或空格時，跳過回合
+    _end_ai_turn()
+
+
+func _end_ai_turn() -> void:
+    ai_busy = false
+
+    if _check_victory():
+        _refresh_ui()
+        return
+
+    current_team = TEAM_PLAYER
+    _refresh_ui()
+
+
+func _check_victory() -> bool:
+    var lines := [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ]
+
+    for line in lines:
+        var a: int = board[line[0]]["owner"]
+        var b: int = board[line[1]]["owner"]
+        var c: int = board[line[2]]["owner"]
+
+        if a != -1 and a == b and b == c:
+            game_over = true
+            status_label.text = "玩家勝利！" if a == TEAM_PLAYER else "AI 勝利！"
+            return true
+
+    for team in range(2):
+        var alive_count := 0
+
+        for piece in pieces:
+            if piece["owner"] == team and piece["alive"]:
+                alive_count += 1
+
+        if alive_count == 0:
+            game_over = true
+            status_label.text = "AI 勝利！" if team == TEAM_PLAYER else "玩家勝利！"
+            return true
+
+    return false
+
+
+func _refresh_ui() -> void:
+    for i in range(9):
+        var cell: Dictionary = board[i]
+        var button: Button = cell_buttons[i]
+
+        if cell["owner"] == -1:
+            button.text = "封鎖" if cell["sealed"] else "空格"
+        else:
+            var piece_id: int = cell["piece_id"]
+            var team_name := "玩家" if cell["owner"] == TEAM_PLAYER else "AI"
+            button.text = "%s\n角色 %d\nHP %d" % [
+                team_name,
+                piece_id % 5 + 1,
+                pieces[piece_id]["hp"]
+            ]
+
+        button.disabled = game_over or current_team != TEAM_PLAYER or ai_busy
+
+        if selected_piece >= 0 and _can_attack(selected_piece, i):
+            button.text += "\n可攻擊"
+
+    for i in range(5):
+        var piece: Dictionary = pieces[i]
+        var button: Button = reserve_buttons[i]
+
+        if not piece["alive"]:
+            button.text = "已退場"
+        elif piece["placed"]:
+            button.text = "已佔位"
+        else:
+            button.text = "角色 %d\n待命" % (i + 1)
+
+        button.disabled = (
+            game_over
+            or current_team != TEAM_PLAYER
+            or not piece["alive"]
+            or piece["placed"]
+        )
+
+    if not game_over:
+        status_label.text = (
+            "你的回合：選擇角色佔位或攻擊"
+            if current_team == TEAM_PLAYER
+            else "AI 思考中..."
+        )
+
+    restart_button.disabled = false
+
+```
+
+### 步驟 7：設定主場景並執行
+
+1. 儲存腳本。
+2. 回到 `Main.tscn`。
+3. 按下 `F6` 執行目前場景；如果這是第一次執行，也可以按 `F5`，並將 `Main.tscn` 設為主場景。
+4. 檢查畫面是否出現九宮格、五個玩家角色按鈕及回合提示。
+
+如果出現程式錯誤，先檢查縮排是否使用一致的空格、腳本是否附加在 `Control` 根節點，以及所有程式是否完整貼上。
+
+這個原型的範圍： 已包含基本佔位、近戰、HP、角色退場及勝利判定；但 AI 目前只會優先攻擊或佔據第一個空格，還不是具備戰術判斷的對手。技能、羈絆、封鎖格與完整 UI 會在後續階段實作。
+
+## 五、測試核心玩法是否正確
+
+完成程式後，依照以下順序測試。不要急著加入技能，先確定基本回合流程沒有問題。
+
+## 開發測試清單
+
+0/9 完成
+
+棋盤測試
+
+畫面顯示 3×3 共 9 格，棋格能正確更新。
+
+佔位測試
+
+選擇備戰角色，再點空格，角色會出現在棋格。
+
+禁止移動
+
+已佔位角色不能再從備戰區派出，也不能任意搬動。
+
+攻擊測試
+
+選擇己方角色，再點距離 1 格的敵人，敵人 HP 減少 1。
+
+退場測試
+
+角色 HP 歸零後退場，原棋格重新變成空格。
+
+連線測試
+
+任意橫向、直向或斜向三格同屬一隊時，遊戲結束。
+
+全員擊敗測試
+
+一方五名角色全部退場時，另一方獲勝。
+
+回合測試
+
+玩家完成一次行動後，AI 行動，再輪到玩家。
+
+重新開始
+
+重新開始後，棋盤、HP、角色與回合狀態全部重設。
+
+重設測試清單
+
+### 需要特別注意的兩個規則問題
+
+1\. 佔位後不可逃跑
+
+不要提供一般移動函式。只有 `_attack()` 將敵方角色 HP 降至零時，才允許清空該棋格。
+
+2\. 三子連線與戰鬥必須共用棋盤狀態
+
+連線判斷應檢查棋格目前的 `owner`，不能只記錄角色曾經佔過哪一格。角色被擊敗後，連線就必須立即失效。
+
+另外，這份原型還需要補上平局判定、AI 的防連線決策，以及更完整的回合結束處理，才能進入正式測試。
+
+## 六、第二階段：將原型升級成正式架構
+
+單檔程式適合快速驗證，但繼續加入十名角色、技能與羈絆後，應拆分責任，避免所有程式都塞在 `game.gd`。
+
+### 建議的程式架構
+
+Main.tscn
+
+主畫面與場景切換
+
+BattleUI
+
+棋盤、按鈕、角色資訊
+
+GameManager
+
+回合、行動與勝負狀態
+
+BattleSystem
+
+攻擊、傷害、死亡與護盾
+
+BattleAI
+
+評估棋格、攻擊與防守
+
+CharacterData / SkillData / BondSystem
+
+可擴充角色、技能、羈絆的資料與規則
+
+### 步驟 8：建立角色資料
+
+在 Godot 中，推薦使用自訂 `Resource` 來保存角色設定，讓角色數值與程式分離。
+
+建立 `res://scripts/character_data.gd`：
+
+```
+
+extends Resource
+class_name CharacterData
+
+@export var character_id: String = ""
+@export var display_name: String = ""
+@export var faction: int = 0
+
+@export_range(1, 10) var max_hp: int = 3
+@export_range(1, 10) var attack: int = 1
+@export_range(1, 3) var attack_range: int = 1
+
+@export var skill_id: String = ""
+@export var bond_id: String = ""
+@export var portrait: Texture2D
+
+```
+
+建立完成後，可以在 FileSystem 中新增 `Resource` 資源，為每名角色設定不同數值與圖片。
+
+例如：
+
+| 角色 | HP | ATK | 射程 | 定位   |
+| -- | -- | --- | -- | ---- |
+| 星芽 | 3  | 1   | 1  | 先手佔位 |
+| 鈴盾 | 4  | 1   | 1  | 防禦護盾 |
+| 焰羽 | 3  | 2   | 1  | 近戰輸出 |
+| 月兔 | 2  | 1   | 2  | 遠程攻擊 |
+| 花靈 | 3  | 1   | 1  | 羈絆支援 |
+
+其餘五名影之羈絆隊角色依照相同方式建立。
+
+注意：這個表格是初始平衡提案。若使用遠程攻擊，應另外設計射程規則，不能只修改角色資料就假設所有攻擊判定已經完成。
+
+### 步驟 9：建立獨立的戰鬥系統
+
+把攻擊判定從 UI 中移除，讓 `BattleSystem` 負責：
+
+1. 檢查攻擊者是否存活。
+2. 檢查目標是否為敵人。
+3. 計算曼哈頓距離。
+4. 確認距離是否在射程內。
+5. 計算護盾、傷害與 HP。
+6. 處理角色退場。
+7. 通知遊戲管理器重新檢查勝負。
+
+曼哈頓距離公式：
+
+\\[ d=|x_1-x_2|+|y_1-y_2| \\]
+
+近戰攻擊距離為 1；遠程角色可以攻擊距離 1–2 的目標。範圍攻擊則應另外定義作用格子，避免和一般攻擊混在一起。
+
+### 步驟 10：加入四種核心技能
+
+[Petra: Gen 3 Mythic Cavalry Hero | Kingshot Optimizer](https://images.openai.com/static-rsc-4/dMotiZPRPQ8ODb4Y4Habnapi9Bp23KBwQ76_vA7KHE5HlRrS4U2UMdGzOlokSCsDBFCDVa5KIMe2ZUVOO1qtUd-NXQKkovx4Xr3xRa9BxKX03db2hPQEZP-Pg6KJm4BbPRns7vQN64aHHtcQfoedjghS9MNsHo26dN9JmylyKtg?purpose=inline)
+
+先手疾行
+
+每局一次，讓玩家連續進行兩次佔位。第二次佔位不得再觸發額外行動。
+
+[Paddle Star! - Boom | TFT Skins | TFT Skins Database](https://images.openai.com/static-rsc-4/Rv7aEY7PGoDj5IwN8FC_I924iHTOsVx1c8g5wRIcpHpfYfF36lKzzEMRwR63CyEEfSv4nFGTGMTpMOszY2jOBUrHYxH3IMltNm7EvnMsg_B5_B0vHPyoPo8w4G6Pr4KzPegKsWlja3ZhTGUNXVX2Ku0-lfJxcJjBNRTJ0W_IkVU?purpose=inline)
+
+範圍擴張
+
+本次攻擊射程提高到 2 格，攻擊結束後效果失效。
+
+[Pomme Protector - FANTASY LIFE i: The Girl Who Steals Time Database | Gamer Guides®](https://images.openai.com/static-rsc-4/KL2caSeJWQMDTT8R05ZeCv8wnPKubv2pn3coBhhGFLdIgu9hZtytveEyy8wa3XC3jj1_gLtfUJqMXxjWCYihdmr3M5gqBX60jQeUOtl2TzjdUR-0zTeJlbJxIfAbF_aoO1qAq7yPEa_8y9TqGFJiiQPZJQzsTKEsCPD5usQScp0?purpose=inline)
+
+羈絆護盾
+
+自身或相鄰友軍抵擋下一次 1 點傷害。需要保存護盾狀態，並在受傷時消耗。
+
+[Download Glowing Purple Circle Emblem PNG 06202024 PNG | Wallpapers.com](https://images.openai.com/static-rsc-4/S6W72-Wy-K4IMe8qPKWUKvUapL1ppG3Yss2LXVHYTmRtUmxsPLCMRbkJbl4op5NsYUDGmsBtdSSZhZh7zh61IRzbkzVEj5UI-otYTFdORto28BaPP4tqv-jAZuUH5zYTSEet1h38tb7o7MVC0eO8pm0cblEG_3__hedc0zxWt0U?purpose=inline)
+
+封鎖棋格
+
+指定空格暫時封鎖至下一回合結束，封鎖期間不能佔位。
+
+每一個技能都要明確設定：消耗幾次行動、每局使用次數、持續時間、是否允許連鎖觸發，以及目標是否能為空格或已佔領格。
+
+第一版建議先完成羈絆護盾與封鎖棋格，再實作先手疾行，因為額外行動會增加回合流程的複雜度。
+
+### 步驟 11：實作羈絆標記
+
+依照你的策劃書，羈絆標記不是角色，不能直接構成三子連線。
+
+建議為棋格增加以下欄位：
+
+```
+var bond_owner: int = -1
+var bond_active: bool = false
+var bond_turns_left: int = 0
+```
+
+實作順序：
+
+1. 角色佔位後，顯示是否可生成羈絆標記。
+2. 玩家選擇相鄰空格放置標記。
+3. 標記記錄所屬陣營。
+4. 相鄰友軍觸發守護或共鳴效果。
+5. 敵方技能可以破壞標記。
+6. 回合結束時更新持續時間。
+7. 標記消失後，更新 UI 與戰鬥判定。
+
+要特別注意：棋格封鎖、角色佔位、羈絆標記是三種不同狀態，不能用同一個 `owner` 欄位代替。
+
+## 七、第三階段：製作真正有策略性的 AI
+
+目前的 AI 只會攻擊或佔據第一個空格。升級時應改成「候選行動＋評分」。
+
+### 步驟 12：建立 AI 行動評分
+
+每個 AI 回合先列出所有合法行動，再為每個行動評分。
+
+| 行動          | 建議評分方向 |
+| ----------- | ------ |
+| 能立即三子連線     | 極高優先級  |
+| 能阻止玩家下一回合連線 | 高優先級   |
+| 能擊敗敵方角色     | 高優先級   |
+| 能佔據中心格      | 中高優先級  |
+| 能形成兩格連線     | 中優先級   |
+| 佔據普通空格      | 基礎分數   |
+| 不能執行的行動     | 不列入候選  |
+
+簡化版可以採用：
+
+\\[ S(a)=W_vV+W_bB+W_kK+W_cC \\]
+
+其中：
+
+- \\(V\\)：是否能立即獲勝。
+- \\(B\\)：是否能阻止玩家獲勝。
+- \\(K\\)：擊敗敵方角色的收益。
+- \\(C\\)：棋格位置與連線價值。
+- \\(W\\)：各項評分的權重。
+
+先完成評分式 AI，就可以在不修改棋盤規則的前提下持續提升難度。後續再考慮 Minimax 或有限深度搜尋。
+
+## 八、第四階段：加入角色貼紙與遊戲美術
+
+等核心玩法穩定後，再開始匯入你的日系 Q 版角色素材。
+
+### 步驟 13：製作並匯入圖片
+
+建議每名角色單獨輸出透明 PNG，而不是直接把 5×2 貼紙總表放進遊戲。
+
+["Pink Paladin Girl Chibi with Sword and Shield" Sticker for Sale by RaineDDesigns | Redbubble](https://images.openai.com/static-rsc-4/SZ5Gf0NhHNh8HTwjrxMNKSgQOPwYe7qpx7xg-_VlXusqJQ63vz0HcljYI4mQuKUtq1C6dYXVaNK2tlXHgAUQq4F7scadRIm58qMlqTu3ofJtHuuFJ8qp89Pv9awF25DC-7t8_zekT469b_OKzXDdPF3mlG-SXk-IaG5peEYCKBA?purpose=inline)
+
+角色貼紙
+
+1024 × 1024 PNG、透明背景、統一頭身比例、白色刀模外框。
+
+[(game, UI, final fantasy, card game) A beautifully...\<!-- --> - \<!-- -->FluxPro.art](https://images.openai.com/static-rsc-4/_v3w2zkvKZBsSIZmOs2Mw7i2VZU6bAVsSBWBPLipLbugtPC12npyxdDJ996SC24EzqI9qrGXcerXkPGIh2S-jcuIsylMNu2VHgPLerQiNWgfpKjAMcQRWLlz9o3YNppc73imcnOngYgkz62X73lCjIYkPbVIZ91Hs_yhoXSXKeU?purpose=inline)
+
+棋盤底圖
+
+九格等大、格線清晰，角色與特效不遮擋棋格邊界。
+
+[Combat Feedback VFX Pack – Hit Sparks, Crit Bursts & Impact Effects by Template Foundry](https://images.openai.com/static-rsc-4/-h9bAGxUon0X7K3z21IcU9tDmIul3bcYldt3j-nmlZYoUayrxa955qF2kXl0dvgqTLH2NTdvy3qq5RoArU4V_Mz8AJPwX735HgfUHser0-xbdruMBeWMcIzjEOQIxpMghB_mHTxP9VeputRZiqUKAINWAvmZk2vpXdKI2gkLL7A?purpose=inline)
+
+羈絆與攻擊特效
+
+每種特效獨立輸出，使用短動畫播放，避免遮住棋盤。
+
+匯入 Godot 後：
+
+1. 將圖片放入 `assets/characters/`。
+2. 以 `Texture2D` 保存角色立繪。
+3. 角色在棋格中使用 `TextureRect` 或 `Sprite2D` 顯示。
+4. 在選取角色時顯示外框。
+5. 在可攻擊的敵人棋格顯示紅色或紫色提示。
+6. 使用 `AnimationPlayer` 或 Tween 製作佔位彈跳、受擊閃光、死亡淡出。
+
+美術驗收重點： 十名角色比例一致、圖片不被裁切、透明背景正確，而且角色在小尺寸棋格中仍容易辨識。
+
+## 九、第五階段：完善 UI、音效與遊戲流程
+
+### 步驟 14：建立必要畫面
+
+[STEAM新作・無料ゲーム『からぱりうぉーず』可愛くて戦略性が面白い、部室争奪戦ストラテジー　\[感想／時間停止型RTS\]: JJ PCゲームラボ](https://images.openai.com/static-rsc-4/S9ynBwLZqg88rDmLnk1QZi0WAgs79XMnmuOaIO2VS41B1_44qFoEYtPDQm1PCKXDeYa-bbMBYSvmQeKFDedj8H5U95p5QG0nE6V2uULgs27iGIG7L21SN_0lBeO50b0yPnkTiFghDv0dwXh33UoZtJOgHBrpzhiDf9kWxR_7stQ?purpose=inline)
+
+主選單
+
+開始遊戲、角色收藏、設定、離開遊戲。
+
+[画像ギャラリー | Android版 ブラウンダスト2](https://images.openai.com/static-rsc-4/G-lceH7aRKuGMA4sXR9_9Puvs26PbW9ak450izaipcyEpoW204En7dKrf3WC_k4QlcocOA_We0DMmF4WyVVgydHVyt4sfuSIzWehJ2LoMf-upmcAejfYwjcRKKSX8rj6qqdDBGYIpthiFBjzuHhlgCnNS21ORGvksQH3dY_OIsM?purpose=inline)
+
+戰鬥畫面
+
+棋盤、備戰角色、HP、技能、回合提示、行動紀錄。
+
+[【心得】戰鬥試煉場 16-18 1\~2隊 SET 更新 @超異域公主連結☆Re:Dive 哈啦板 - 巴哈姆特](https://images.openai.com/static-rsc-4/3yqB_nqjIxjxUO-j0B60lSDKUEE5wILnSMbiXd9TP8CK4jPZ3VfP6JUC1sP2Rmc1y-LCMs_NhBIAQhm1LbRXs6NPSCoXwYLgJ7jHTZMpTNFqAoT5CEV7bDPSoFfst2_FxlCoAyYAQgzr_ZVNs_aE9xmJTUYfR3xYu9f_1uFIvaQ?purpose=inline)
+
+結算畫面
+
+顯示勝利或失敗、對局結果，以及重新開始按鈕。
+
+### 步驟 15：加入音效
+
+建議先準備以下音效：
+
+- 點擊與選取。
+- 角色佔位。
+- 近戰攻擊與受擊。
+- 護盾觸發。
+- 羈絆標記生成。
+- 角色退場。
+- 勝利與失敗。
+
+使用 `AudioStreamPlayer` 播放背景音樂，使用 `AudioStreamPlayer2D` 或 `AudioStreamPlayer` 播放適合的音效。這是一款固定視角的 2D 桌遊，不需要一開始就製作空間音效系統。
+
+## 十、第六階段：匯出可執行 Demo
+
+### 步驟 16：建立匯出設定
+
+1. 確認 `Main.tscn` 已設定為主場景。
+2. 開啟 `Project > Export`。
+3. 安裝 Godot 提示所需的 Export Templates。
+4. 新增 Windows Desktop 匯出預設。
+5. 設定輸出位置，例如 `build/BondTactics.exe`。
+6. 執行匯出。
+7. 在沒有開啟 Godot 編輯器的情況下測試遊戲。
+
+正式交付前，至少確認：
+
+- 遊戲可以正常啟動與關閉。
+- 棋盤不會因視窗尺寸改變而消失。
+- 所有圖片、音效與資料均已匯出。
+- 重新開始不會保留上一局的 HP 或棋格狀態。
+- 勝負條件與回合切換正確。
+- 沒有阻塞遊戲流程的錯誤訊息。
+
+官方文件可參考：
+
+- [Godot 2D 入門教學](https://docs.godotengine.org/en/stable/getting_started/first_2d_game/index.html?utm_source=chatgpt.com)
+- [GDScript 語言指南](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/index.html?utm_source=chatgpt.com)
+- [Godot 匯出專案教學](https://docs.godotengine.org/en/stable/tutorials/export/index.html?utm_source=chatgpt.com)
+
+## 十一、建議的完整開發順序
+
+以下順序能降低返工風險。時間是個人開發的粗略估算，實際取決於你對 Godot 與程式的熟悉程度。
+
+### 第 1 週：核心原型
+
+建立棋盤、佔位、攻擊、HP、勝負判定、重新開始。
+
+### 第 2 週：AI 與技能
+
+AI 連線判斷、攻擊決策、技能次數、羈絆與封鎖規則。
+
+### 第 3 週：美術與 UI
+
+十名角色、棋盤貼圖、技能圖示、動畫、音效。
+
+### 第 4 週：測試與交付
+
+測試各種勝負情況、調整平衡、修正 UI、匯出 Windows Demo。
+
+## 最重要的建議
+
+《羈絆棋戰》最值得優先完成的不是角色收藏介面，而是三個相互影響的系統：
+
+1. 佔位決策： 佔據哪一格，決定連線機會與後續戰鬥風險。
+2. 戰鬥決策： 角色無法自由逃跑，因此攻擊與防守都會改變棋盤控制。
+3. 羈絆決策： 先佔位符、護盾與技能可以創造額外戰術，但必須限制次數與觸發條件。
+
+先用簡單圖形完成一局真正能玩的遊戲，再把十名角色與貼紙風格逐步替換進去，會是最穩定的開發路線。
