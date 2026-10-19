@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPhone Clock App Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            iosBg: '#000000',
+            iosCard: '#1C1C1E',
+            iosCardSecondary: '#2C2C2E',
+            iosOrange: '#FF9500',
+            iosGreen: '#34C759',
+            iosRed: '#FF3B30',
+            iosGrayText: '#8E8E93',
+            iosSeparator: '#38383A'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Helvetica Neue', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar styling to match iOS clean aesthetics */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3A3A3C;
+      border-radius: 4px;
+    }
+    /* Touch target prevention of blue tap highlights */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-2 sm:p-6 text-white font-sans antialiased">
+
+  <div class="relative w-full max-w-[390px] h-[812px] bg-black rounded-[50px] shadow-2xl border-[10px] border-slate-800 flex flex-col justify-between overflow-hidden">
+    
+    <!-- Dynamic Island / Top Notch -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-black rounded-b-2xl z-50 flex items-center justify-center">
+      <div class="w-3 h-3 bg-slate-900 rounded-full mr-3 border border-slate-800"></div>
+      <div class="w-2 h-2 bg-slate-900 rounded-full"></div>
+    </div>
+
+    <!-- Status Bar Header -->
+    <div class="pt-3 px-7 flex justify-between items-center text-xs font-semibold text-white z-40">
+      <span id="status-bar-time">09:41</span>
+      <div class="flex items-center space-x-1.5">
+        <!-- Cellular Icon -->
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l.64-.64C8.03 20.62 9.95 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+        <!-- Wifi Icon -->
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 4c3.34 0 6.38 1.28 8.68 3.38L12 20.1 3.32 11.38C5.62 9.28 8.66 8 12 8z"/></svg>
+        <!-- Battery Icon -->
+        <div class="w-5 h-2.5 border border-white/80 rounded-sm p-0.5 flex items-center">
+          <div class="h-full w-full bg-white rounded-xs"></div>
+        </div>
+      </div>
+    </div>
+
+    <main class="flex-1 relative overflow-hidden flex flex-col pt-4">
+      
+      <!-- PAGE 1: WORLD CLOCK -->
+      <section id="tab-worldclock" class="absolute inset-0 pt-4 pb-16 px-5 flex flex-col justify-between transition-opacity duration-300 opacity-100 z-10">
+        <div>
+          <div class="flex justify-between items-center pb-2 border-b border-iosSeparator">
+            <h1 class="text-3xl font-bold tracking-tight">世界時鐘</h1>
+            <button class="text-iosOrange text-2xl font-light hover:opacity-80 transition">+</button>
+          </div>
+
+          <!-- Live Analog Clock Display -->
+          <div class="flex flex-col items-center justify-center my-6">
+            <div class="relative w-48 h-48 rounded-full bg-iosCard shadow-lg flex items-center justify-center border border-slate-800">
+              <canvas id="analog-clock-canvas" width="192" height="192" class="w-full h-full"></canvas>
+            </div>
+            <div class="text-center mt-4">
+              <div id="digital-clock-time" class="text-4xl font-extralight tracking-widest text-white">00:00:00</div>
+              <div id="digital-clock-date" class="text-iosGrayText text-sm mt-1 font-medium">---</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- City Clocks List -->
+        <div class="space-y-3 overflow-y-auto max-h-48 pr-1">
+          <div class="flex justify-between items-center py-2 border-b border-iosSeparator/50">
+            <div>
+              <div class="text-iosGrayText text-xs">今天，+0小時</div>
+              <div class="text-xl font-medium">台北 / 香港</div>
+            </div>
+            <div id="city-time-local" class="text-3xl font-light">00:00</div>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-iosSeparator/50">
+            <div>
+              <div class="text-iosGrayText text-xs">今天，-15小時</div>
+              <div class="text-xl font-medium">庫比蒂諾 (Cupertino)</div>
+            </div>
+            <div id="city-time-cupertino" class="text-3xl font-light">00:00</div>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-iosSeparator/50">
+            <div>
+              <div class="text-iosGrayText text-xs">今天，-7小時</div>
+              <div class="text-xl font-medium">倫敦</div>
+            </div>
+            <div id="city-time-london" class="text-3xl font-light">00:00</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE 2: ALARM -->
+      <section id="tab-alarm" class="absolute inset-0 pt-4 pb-16 px-5 hidden transition-opacity duration-300 opacity-0 z-10">
+        <div class="flex justify-between items-center pb-2 border-b border-iosSeparator">
+          <h1 class="text-3xl font-bold tracking-tight">鬧鐘</h1>
+          <button class="text-iosOrange text-2xl font-light hover:opacity-80 transition">+</button>
+        </div>
+
+        <div class="mt-4 space-y-4 overflow-y-auto max-h-[580px] pr-1">
+          <div class="text-xs text-iosGrayText font-semibold tracking-wider uppercase">睡眠 / 起床</div>
+          <div class="bg-iosCard rounded-2xl p-4 flex justify-between items-center">
+            <div>
+              <div class="text-2xl font-light text-white">07:00 <span class="text-sm text-iosGrayText">AM</span></div>
+              <div class="text-xs text-iosGrayText mt-1">鬧鐘, 每天</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-iosCardSecondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-iosGreen"></div>
+            </label>
+          </div>
+
+          <div class="text-xs text-iosGrayText font-semibold tracking-wider uppercase pt-2">其他鬧鐘</div>
+          
+          <div class="bg-iosCard rounded-2xl p-4 flex justify-between items-center">
+            <div>
+              <div class="text-3xl font-light text-white">08:30 <span class="text-sm text-iosGrayText">AM</span></div>
+              <div class="text-xs text-iosGrayText mt-1">工作日</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer">
+              <div class="w-11 h-6 bg-iosCardSecondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-iosGreen"></div>
+            </label>
+          </div>
+
+          <div class="bg-iosCard rounded-2xl p-4 flex justify-between items-center">
+            <div>
+              <div class="text-3xl font-light text-white">09:15 <span class="text-sm text-iosGrayText">AM</span></div>
+              <div class="text-xs text-iosGrayText mt-1">開會提醒</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-11 h-6 bg-iosCardSecondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-iosGreen"></div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE 3: STOPWATCH -->
+      <section id="tab-stopwatch" class="absolute inset-0 pt-4 pb-16 px-5 hidden flex-col justify-between transition-opacity duration-300 opacity-0 z-10">
+        <h1 class="text-3xl font-bold tracking-tight pb-2 border-b border-iosSeparator">秒錶</h1>
+
+        <!-- Digital Timer Readout -->
+        <div class="my-auto text-center">
+          <div id="sw-display" class="text-6xl font-extralight tracking-tight font-mono">00:00.00</div>
+        </div>
+
+        <!-- Controls -->
+        <div>
+          <div class="flex justify-between items-center mb-6 px-4">
+            <button id="sw-lap-btn" class="w-20 h-20 rounded-full bg-iosCardSecondary text-white font-medium flex items-center justify-center border-2 border-black active:scale-95 transition" disabled>
+              計圈
+            </button>
+            <button id="sw-start-btn" class="w-20 h-20 rounded-full bg-iosGreen/20 text-iosGreen font-medium flex items-center justify-center border-2 border-black active:scale-95 transition">
+              開始
+            </button>
+          </div>
+
+          <!-- Lap List Container -->
+          <div class="border-t border-iosSeparator h-44 overflow-y-auto pt-2">
+            <ul id="sw-lap-list" class="divide-y divide-iosSeparator/40 text-sm">
+              <!-- Dynamically populated lap entries -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE 4: TIMER -->
+      <section id="tab-timer" class="absolute inset-0 pt-4 pb-16 px-5 hidden flex-col justify-between transition-opacity duration-300 opacity-0 z-10">
+        <h1 class="text-3xl font-bold tracking-tight pb-2 border-b border-iosSeparator">計時器</h1>
+
+        <!-- Circular Countdown Ring -->
+        <div class="relative w-64 h-64 mx-auto my-auto flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90">
+            <circle cx="128" cy="128" r="110" stroke="#2C2C2E" stroke-width="8" fill="transparent" />
+            <circle id="timer-progress-ring" cx="128" cy="128" r="110" stroke="#FF9500" stroke-width="8" fill="transparent"
+                    stroke-dasharray="691.15" stroke-dashoffset="0" stroke-linecap="round" class="transition-all duration-200" />
+          </svg>
+          <div class="absolute text-center">
+            <div id="timer-display" class="text-5xl font-extralight tracking-tight font-mono">01:00</div>
+            <div class="text-xs text-iosGrayText mt-1">倒數計時</div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div>
+          <div class="flex justify-between items-center mb-6 px-4">
+            <button id="timer-cancel-btn" class="w-20 h-20 rounded-full bg-iosCardSecondary text-iosGrayText font-medium flex items-center justify-center border-2 border-black active:scale-95 transition" disabled>
+              取消
+            </button>
+            <button id="timer-start-btn" class="w-20 h-20 rounded-full bg-iosOrange/20 text-iosOrange font-medium flex items-center justify-center border-2 border-black active:scale-95 transition">
+              開始
+            </button>
+          </div>
+
+          <!-- Preset Selection Pills -->
+          <div class="flex justify-around bg-iosCard rounded-xl p-2 text-xs font-medium text-iosGrayText">
+            <button onclick="setTimerPreset(60)" class="py-2 px-3 rounded-lg hover:bg-iosCardSecondary hover:text-white transition">1 分鐘</button>
+            <button onclick="setTimerPreset(300)" class="py-2 px-3 rounded-lg hover:bg-iosCardSecondary hover:text-white transition">5 分鐘</button>
+            <button onclick="setTimerPreset(600)" class="py-2 px-3 rounded-lg hover:bg-iosCardSecondary hover:text-white transition">10 分鐘</button>
+            <button onclick="setTimerPreset(900)" class="py-2 px-3 rounded-lg hover:bg-iosCardSecondary hover:text-white transition">15 分鐘</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <nav class="h-16 bg-iosCard/90 backdrop-blur-md border-t border-iosSeparator/60 flex justify-around items-center px-2 text-[10px] z-50">
+      <button onclick="switchTab(0)" id="nav-btn-0" class="flex flex-col items-center text-iosOrange space-y-1 transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        <span>世界時鐘</span>
+      </button>
+
+      <button onclick="switchTab(1)" id="nav-btn-1" class="flex flex-col items-center text-iosGrayText space-y-1 transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        <span>鬧鐘</span>
+      </button>
+
+      <button onclick="switchTab(2)" id="nav-btn-2" class="flex flex-col items-center text-iosGrayText space-y-1 transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0012 4c-4.97 0-9 4.03-9 9s4.03 9 9 9 8.99-4.03 8.99-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+        <span>秒錶</span>
+      </button>
+
+      <button onclick="switchTab(3)" id="nav-btn-3" class="flex flex-col items-center text-iosGrayText space-y-1 transition">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.2 3.15.8-1.23-4.5-2.67z"/></svg>
+        <span>計時器</span>
+      </button>
+    </nav>
+
+    <!-- Bottom Home Indicator Bar -->
+    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/40 rounded-full z-50"></div>
+  </div>
+
+  <script>
+    // Tab Navigation Logic
+    const tabs = ['tab-worldclock', 'tab-alarm', 'tab-stopwatch', 'tab-timer'];
+    function switchTab(activeIndex) {
+      tabs.forEach((tabId, idx) => {
+        const elem = document.getElementById(tabId);
+        const navBtn = document.getElementById(`nav-btn-${idx}`);
+        if (idx === activeIndex) {
+          elem.classList.remove('hidden');
+          setTimeout(() => elem.classList.remove('opacity-0'), 10);
+          navBtn.className = 'flex flex-col items-center text-iosOrange space-y-1 transition';
+        } else {
+          elem.classList.add('opacity-0');
+          elem.classList.add('hidden');
+          navBtn.className = 'flex flex-col items-center text-iosGrayText space-y-1 transition';
+        }
+      });
+    }
+
+    const canvas = document.getElementById('analog-clock-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function updateClocks() {
+      const now = new Date();
+      
+      // Update status bar time
+      document.getElementById('status-bar-time').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      // Update digital readout
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const secs = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('digital-clock-time').innerText = `${hrs}:${mins}:${secs}`;
+      
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+      document.getElementById('digital-clock-date').innerText = now.toLocaleDateString('zh-TW', options);
+
+      // World clock cities
+      document.getElementById('city-time-local').innerText = `${hrs}:${mins}`;
+      
+      const cupTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+      document.getElementById('city-time-cupertino').innerText = cupTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      const lonTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/London"}));
+      document.getElementById('city-time-london').innerText = lonTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+      // Render Canvas Analog Clock
+      drawAnalogClock(now);
+    }
+
+    function drawAnalogClock(now) {
+      const width = canvas.width;
+      const height = canvas.height;
+      const center = width / 2;
+      const radius = center - 8;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Outer Dial
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#1C1C1E';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#3A3A3C';
+      ctx.stroke();
+
+      // Hour Ticks
+      for (let i = 0; i < 12; i++) {
+        const angle = (i * Math.PI / 6);
+        const x1 = center + Math.cos(angle) * (radius - 10);
+        const y1 = center + Math.sin(angle) * (radius - 10);
+        const x2 = center + Math.cos(angle) * (radius - 4);
+        const y2 = center + Math.sin(angle) * (radius - 4);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#8E8E93';
+        ctx.stroke();
+      }
+
+      const sec = now.getSeconds() + now.getMilliseconds() / 1000;
+      const min = now.getMinutes() + sec / 60;
+      const hr = (now.getHours() % 12) + min / 60;
+
+      // Hour Hand
+      const hrAngle = (hr * Math.PI / 6) - (Math.PI / 2);
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.lineTo(center + Math.cos(hrAngle) * (radius * 0.5), center + Math.sin(hrAngle) * (radius * 0.5));
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Minute Hand
+      const minAngle = (min * Math.PI / 30) - (Math.PI / 2);
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.lineTo(center + Math.cos(minAngle) * (radius * 0.75), center + Math.sin(minAngle) * (radius * 0.75));
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Second Hand
+      const secAngle = (sec * Math.PI / 30) - (Math.PI / 2);
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.lineTo(center + Math.cos(secAngle) * (radius * 0.85), center + Math.sin(secAngle) * (radius * 0.85));
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#FF9500';
+      ctx.stroke();
+
+      // Center Pin
+      ctx.beginPath();
+      ctx.arc(center, center, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#FF9500';
+      ctx.fill();
+    }
+
+    setInterval(updateClocks, 1000 / 30); // 30 FPS redraw
+
+    let swRunning = false;
+    let swStartTime = 0;
+    let swElapsedTime = 0;
+    let swInterval = null;
+    let swLaps = [];
+
+    const swDisplay = document.getElementById('sw-display');
+    const swStartBtn = document.getElementById('sw-start-btn');
+    const swLapBtn = document.getElementById('sw-lap-btn');
+    const swLapList = document.getElementById('sw-lap-list');
+
+    function formatTime(ms) {
+      const minutes = Math.floor(ms / 60000);
+      const seconds = Math.floor((ms % 60000) / 1000);
+      const milliseconds = Math.floor((ms % 1000) / 10);
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(2, '0')}`;
+    }
+
+    swStartBtn.addEventListener('click', () => {
+      if (!swRunning) {
+        // Start Stopwatch
+        swRunning = true;
+        swStartTime = Date.now() - swElapsedTime;
+        swInterval = setInterval(() => {
+          swElapsedTime = Date.now() - swStartTime;
+          swDisplay.innerText = formatTime(swElapsedTime);
+        }, 10);
+
+        swStartBtn.innerText = '停止';
+        swStartBtn.className = 'w-20 h-20 rounded-full bg-iosRed/20 text-iosRed font-medium flex items-center justify-center border-2 border-black active:scale-95 transition';
+        swLapBtn.innerText = '計圈';
+        swLapBtn.disabled = false;
+        swLapBtn.className = 'w-20 h-20 rounded-full bg-iosCardSecondary text-white font-medium flex items-center justify-center border-2 border-black active:scale-95 transition';
+      } else {
+        // Pause Stopwatch
+        swRunning = false;
+        clearInterval(swInterval);
+
+        swStartBtn.innerText = '開始';
+        swStartBtn.className = 'w-20 h-20 rounded-full bg-iosGreen/20 text-iosGreen font-medium flex items-center justify-center border-2 border-black active:scale-95 transition';
+        swLapBtn.innerText = '重設';
+      }
+    });
+
+    swLapBtn.addEventListener('click', () => {
+      if (swRunning) {
+        // Record Lap
+        swLaps.unshift(swElapsedTime);
+        renderLaps();
+      } else {
+        // Reset Stopwatch
+        swElapsedTime = 0;
+        swLaps = [];
+        swDisplay.innerText = '00:00.00';
+        swLapList.innerHTML = '';
+        swLapBtn.innerText = '計圈';
+        swLapBtn.disabled = true;
+        swLapBtn.className = 'w-20 h-20 rounded-full bg-iosCardSecondary/50 text-iosGrayText font-medium flex items-center justify-center border-2 border-black transition cursor-not-allowed';
+      }
+    });
+
+    function renderLaps() {
+      swLapList.innerHTML = swLaps.map((lapTime, idx) => {
+        const lapNum = swLaps.length - idx;
+        return `
+          <li class="py-2 flex justify-between items-center">
+            <span class="text-iosGrayText">圈數 ${lapNum}</span>
+            <span class="font-mono font-medium">${formatTime(lapTime)}</span>
+          </li>
+        `;
+      }).join('');
+    }
+
+    let timerTotalSecs = 60;
+    let timerRemainingSecs = 60;
+    let timerRunning = false;
+    let timerInterval = null;
+
+    const timerDisplay = document.getElementById('timer-display');
+    const timerStartBtn = document.getElementById('timer-start-btn');
+    const timerCancelBtn = document.getElementById('timer-cancel-btn');
+    const timerProgressRing = document.getElementById('timer-progress-ring');
+    const ringCircumference = 2 * Math.PI * 110; // r=110
+
+    function updateTimerUI() {
+      const mins = Math.floor(timerRemainingSecs / 60);
+      const secs = timerRemainingSecs % 60;
+      timerDisplay.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+      // Update ring offset
+      const progress = timerRemainingSecs / timerTotalSecs;
+      const offset = ringCircumference * (1 - progress);
+      timerProgressRing.style.strokeDashoffset = offset;
+    }
+
+    function setTimerPreset(seconds) {
+      if (timerRunning) return;
+      timerTotalSecs = seconds;
+      timerRemainingSecs = seconds;
+      updateTimerUI();
+    }
+
+    timerStartBtn.addEventListener('click', () => {
+      if (!timerRunning) {
+        // Start Timer
+        timerRunning = true;
+        timerStartBtn.innerText = '暫停';
+        timerStartBtn.className = 'w-20 h-20 rounded-full bg-iosOrange/20 text-iosOrange font-medium flex items-center justify-center border-2 border-black active:scale-95 transition';
+        
+        timerCancelBtn.disabled = false;
+        timerCancelBtn.className = 'w-20 h-20 rounded-full bg-iosCardSecondary text-white font-medium flex items-center justify-center border-2 border-black active:scale-95 transition';
+
+        timerInterval = setInterval(() => {
+          if (timerRemainingSecs > 0) {
+            timerRemainingSecs--;
+            updateTimerUI();
+          } else {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            timerStartBtn.innerText = '開始';
+            alert('時間到！');
+          }
+        }, 1000);
+      } else {
+        // Pause Timer
+        timerRunning = false;
+        clearInterval(timerInterval);
+        timerStartBtn.innerText = '繼續';
+      }
+    });
+
+    timerCancelBtn.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerRemainingSecs = timerTotalSecs;
+      updateTimerUI();
+
+      timerStartBtn.innerText = '開始';
+      timerStartBtn.className = 'w-20 h-20 rounded-full bg-iosOrange/20 text-iosOrange font-medium flex items-center justify-center border-2 border-black active:scale-95 transition';
+      
+      timerCancelBtn.disabled = true;
+      timerCancelBtn.className = 'w-20 h-20 rounded-full bg-iosCardSecondary/50 text-iosGrayText font-medium flex items-center justify-center border-2 border-black transition cursor-not-allowed';
+    });
+
+    // Initialize Timer Ring
+    timerProgressRing.style.strokeDasharray = `${ringCircumference} ${ringCircumference}`;
+    updateTimerUI();
+  </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 聊天系統 UI 模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            bg: '#202531',
+                            panel: '#282e3d',
+                            accent: '#478cbf',
+                            accentHover: '#53a1dc',
+                            border: '#363d4e',
+                            text: '#e0e0e0'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1e28;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #363d4e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-godot-text font-sans antialiased min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl bg-godot-bg border border-godot-border rounded-xl shadow-2xl overflow-hidden flex flex-col h-[600px]">
+        
+        <!-- Header / Control Panel -->
+        <div class="bg-godot-panel p-3 border-b border-godot-border flex justify-between items-center text-sm">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-green-500 rounded-full inline-block animate-pulse"></span>
+                <span class="font-semibold text-slate-200">Godot 聊天系統 (RPC/Multiplayer 模擬)</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <label class="text-xs text-slate-400">當前玩家 ID:</label>
+                <input id="usernameInput" type="text" value="Player_1024" class="bg-godot-bg border border-godot-border rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-godot-accent w-28">
+            </div>
+        </div>
+
+        <!-- Channel Selector -->
+        <div class="flex bg-[#1d222d] border-b border-godot-border px-3 pt-2 gap-1 text-sm">
+            <button onclick="switchChannel('all')" id="tab-all" class="channel-tab bg-godot-accent text-white px-4 py-1.5 rounded-t-md font-medium text-xs transition">綜合</button>
+            <button onclick="switchChannel('world')" id="tab-world" class="channel-tab bg-godot-panel hover:bg-slate-700 text-slate-400 px-4 py-1.5 rounded-t-md font-medium text-xs transition">世界</button>
+            <button onclick="switchChannel('party')" id="tab-party" class="channel-tab bg-godot-panel hover:bg-slate-700 text-slate-400 px-4 py-1.5 rounded-t-md font-medium text-xs transition">隊伍</button>
+            <button onclick="switchChannel('system')" id="tab-system" class="channel-tab bg-godot-panel hover:bg-slate-700 text-slate-400 px-4 py-1.5 rounded-t-md font-medium text-xs transition">系統</button>
+        </div>
+
+        <!-- Message Scroll Area (PanelContainer / ScrollContainer) -->
+        <div id="scrollContainer" class="flex-1 p-4 overflow-y-auto space-y-2 bg-[#1a1e28] text-sm leading-relaxed">
+            <!-- Messages will be added dynamically here -->
+        </div>
+
+        <!-- Input Box Area (HStackContainer) -->
+        <div class="p-3 bg-godot-panel border-t border-godot-border flex gap-2 items-center">
+            <select id="channelSelect" class="bg-godot-bg text-slate-300 border border-godot-border text-xs rounded px-2 py-2 focus:outline-none focus:border-godot-accent">
+                <option value="world">【世界】</option>
+                <option value="party">【隊伍】</option>
+            </select>
+            
+            <input id="messageInput" type="text" placeholder="輸入訊息... (按下 Enter 傳送)" 
+                   class="flex-1 bg-godot-bg border border-godot-border rounded-md px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-godot-accent transition">
+            
+            <button onclick="sendMessage()" 
+                    class="bg-godot-accent hover:bg-godot-accentHover text-white px-5 py-2 rounded-md font-medium text-sm transition shadow-md active:scale-95">
+                傳送
+            </button>
+        </div>
+
+        <!-- Footer / Simulated Bot Controller -->
+        <div class="bg-[#181b24] px-4 py-2 border-t border-godot-border/50 flex justify-between items-center text-xs text-slate-400">
+            <span>模擬器狀態: <span id="msgCount">0</span> 條訊息</span>
+            <div class="flex gap-2">
+                <button onclick="simulateIncomingMessage()" class="hover:text-godot-accent underline">模擬其他玩家發言</button>
+                <span>•</span>
+                <button onclick="clearChat()" class="hover:text-red-400 underline">清空聊天室</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChannel = 'all';
+        let messages = [];
+        const MAX_MESSAGES = 100;
+
+        const scrollContainer = document.getElementById('scrollContainer');
+        const messageInput = document.getElementById('messageInput');
+        const usernameInput = document.getElementById('usernameInput');
+        const channelSelect = document.getElementById('channelSelect');
+        const msgCountLabel = document.getElementById('msgCount');
+
+        messageInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize default system prompt
+        window.onload = () => {
+            addMessage('SYSTEM', '歡迎來到 Godot 聊天系統 UI 測試展示頁面！', 'system', '系統');
+            addMessage('SYSTEM', '伺服器連線成功 (RPC Peer ID: ' + Math.floor(1000 + Math.random() * 9000) + ')', 'system', '系統');
+        };
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            const username = usernameInput.value.trim() || 'Player';
+            const channel = channelSelect.value;
+            const channelName = channel === 'world' ? '世界' : '隊伍';
+
+            if (!text) return;
+
+            // RPC Simulation: Add message locally and broadcast
+            addMessage(username, text, channel, channelName);
+            messageInput.value = '';
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        function addMessage(sender, content, channel, channelTag) {
+            const time = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            
+            const msgObj = {
+                sender: escapeHTML(sender),
+                content: escapeHTML(content),
+                channel: channel,
+                channelTag: channelTag,
+                time: time
+            };
+
+            messages.push(msgObj);
+
+            // Maintain max messages limit (Prevent Memory Leak)
+            if (messages.length > MAX_MESSAGES) {
+                messages.shift();
+            }
+
+            renderMessages();
+            updateCount();
+        }
+
+        function renderMessages() {
+            scrollContainer.innerHTML = '';
+
+            const filtered = messages.filter(msg => {
+                if (currentChannel === 'all') return true;
+                return msg.channel === currentChannel;
+            });
+
+            filtered.forEach(msg => {
+                const el = document.createElement('div');
+                el.className = 'flex items-start gap-1.5 animate-fade-in text-slate-200';
+
+                let tagClass = 'bg-blue-600/30 text-blue-400 border-blue-500/40';
+                if (msg.channel === 'party') tagClass = 'bg-green-600/30 text-green-400 border-green-500/40';
+                if (msg.channel === 'system') tagClass = 'bg-amber-600/30 text-amber-400 border-amber-500/40';
+
+                el.innerHTML = `
+                    <span class="text-[10px] text-slate-500 font-mono mt-0.5">${msg.time}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded border ${tagClass} font-semibold">${msg.channelTag}</span>
+                    <span class="font-bold text-godot-accent">${msg.sender}:</span>
+                    <span class="break-all flex-1">${msg.content}</span>
+                `;
+                scrollContainer.appendChild(el);
+            });
+
+            // Smooth scroll to bottom
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+
+        function switchChannel(channel) {
+            currentChannel = channel;
+            
+            // Update Tab active styling
+            document.querySelectorAll('.channel-tab').forEach(tab => {
+                tab.className = 'channel-tab bg-godot-panel hover:bg-slate-700 text-slate-400 px-4 py-1.5 rounded-t-md font-medium text-xs transition';
+            });
+
+            const activeTab = document.getElementById(`tab-${channel}`);
+            if (activeTab) {
+                activeTab.className = 'channel-tab bg-godot-accent text-white px-4 py-1.5 rounded-t-md font-medium text-xs transition';
+            }
+
+            renderMessages();
+        }
+
+        function simulateIncomingMessage() {
+            const botNames = ['Knight_Alex', 'Mage_Luna', 'DragonSlayer99', 'GodotDev'];
+            const randomName = botNames[Math.floor(Math.random() * botNames.length)];
+            const sampleTexts = [
+                '這關副本有人要一起嗎？',
+                'Godot 4.x 的 RPC 功能真方便！',
+                '有人有多餘的魔力藥水嗎？',
+                '今天伺服器 Ping 蠻低的！'
+            ];
+            const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+            const isWorld = Math.random() > 0.4;
+            
+            addMessage(
+                randomName, 
+                randomText, 
+                isWorld ? 'world' : 'party', 
+                isWorld ? '世界' : '隊伍'
+            );
+        }
+
+        function clearChat() {
+            messages = [];
+            renderMessages();
+            updateCount();
+        }
+
+        function updateCount() {
+            msgCountLabel.innerText = messages.length;
+        }
+    </script>
+</body>
+</html>
