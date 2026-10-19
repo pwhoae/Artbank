@@ -1,6 +1,8 @@
-在寫第一行程式碼前，必須清楚回答「我到底為什麼要開發這款遊戲？我最想從中獲得什麼？」 引擎、風格與發行商皆可調整或外包，唯獨「開發初衷」是無法繞過的根本動力。   
-
-第一招：我不完美;第二招：我有使命;第三招：我就是你
+```
+在寫第一行程式碼前，必須清楚回答「我到底為什麼要開發這款遊戲？我最想從中獲得什麼？」 唯獨「開發初衷」是無法繞過的根本動力。
+```
+```第一招：我不完美;第二招：我有使命;第三招：我就是你```
+```创意的定义与三大前提 **玩家能理解, 新的东西,新的体验**|设定清晰体验目标|对默认规则动手|行为系统的有机融合|打破知识断层与多元积累```
 
 ### 流程
 |A|B|
@@ -11,7 +13,6 @@
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B1%90%E5%AF%8C%E7%B4%B0%E7%AF%80%E6%96%B9%E6%B3%95%20(2).JPG" width="300" height="300"></img>
 
 <hr>
-创意的定义与三大前提 **玩家能理解, 新的东西,新的体验**|设定清晰体验目标|对默认规则动手|行为系统的有机融合|打破知识断层与多元积累
 
 ### Juicy 方法
 wennie:會讓人不知不覺地被吸引到某個地方
@@ -25,10 +26,11 @@ In加速：先慢后快，拉满期待感。 Out减速：先快后慢，营造�
 软件圖標变Q弹的程序
 畫風上色
 推拉摇移
-【涩之炼金术～エロ文本写作指南】 https://www.bilibili.com/video/BV1PDez63E9F/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 3d插畫
 
-射擊遊戲  https://github.com/pwhoae/Artbank/blob/main/html/Godot_html/juicy%20Idea/Godot%203D%20%E5%B0%84%E5%87%BB%E6%B8%B8%E6%88%8F%E5%85%A8%E5%A5%97%E7%89%B9%E6%95%88%203D%20%E4%BA%A4%E4%BA%92%E6%BC%94%E7%A4%BA.html 
+<a href="https://www.bilibili.com/video/BV1PDez63E9F/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e">【涩之炼金术～エロ文本写作指南】 
+</a><br>
+<a href="https://github.com/pwhoae/Artbank/blob/main/html/Godot_html/juicy%20Idea/Godot%203D%20%E5%B0%84%E5%87%BB%E6%B8%B8%E6%88%8F%E5%85%A8%E5%A5%97%E7%89%B9%E6%95%88%203D%20%E4%BA%A4%E4%BA%92%E6%BC%94%E7%A4%BA.html">射擊遊戲   </a>
 
 [過3關下棋
 砍擊抖動閃光
