@@ -1,10 +1,10 @@
 ---
 title: "AI会不会取代程序员? 前 Meta 工程师的真实答案"
-source: "https://www.bilibili.com/video/BV17uuM6rEMa/?spm_id_from=333.1245.0.0"
+source: "https://www.bilibili.com/video/BV17uuM6rEMa/?"
 author:
   - "[[SchelleyYuki]]"
 published: 2026-08-08
-created: 2026-10-17
+created: 2026-10-19
 description: "AI编程正在改变行业现状。通过合理的程序员职业规划，你可以掌握应对AI冲击的实战策略，避免在职场中被替代。本视频透过第一性原理，深入分析AI对程序员的影响，探讨技术人员如何在人工智能时代保持竞争力。无论你是担心被裁员的软件工程师，还是希望提升个人不可替代性的开发者，这里都有针对性的职业建议。内容基于我在Meta工作的的真实经历，帮助你更从容地规划职业路径。通过调整技能树和工作重点，你可以将AI对程"
 tags:
   - "clippings"
