@@ -27,6 +27,8 @@ In加速：先慢后快，拉满期待感。 Out减速：先快后慢，营造�
 软件圖標变Q弹的程序
 畫風上色
 推拉摇移
+建造類遊戲
+
 3d插畫
 
 <a href="https://www.bilibili.com/video/BV1PDez63E9F/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e">【涩之炼金术～エロ文本写作指南】 
