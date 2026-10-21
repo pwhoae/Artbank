@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>羈絆棋戰 Bond Tactics - Playable Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sticker-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .sticker-card:hover {
+            transform: translateY(-2px);
+        }
+        .grid-cell {
+            aspect-ratio: 1 / 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Title Header -->
+    <header class="text-center mb-4">
+        <h1 class="text-3xl font-extrabold tracking-wider text-amber-400">羈絆棋戰 (Bond Tactics)</h1>
+        <p class="text-xs text-slate-400">3x3 戰棋 × 貼紙收集 × 井字連線 Prototype Demo</p>
+    </header>
+
+    <!-- Game Container -->
+    <div class="w-full max-w-4xl bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-4 grid grid-cols-1 md:grid-cols-12 gap-4">
+
+        <!-- Left Panel: Player 1 (Light) -->
+        <div class="md:col-span-3 bg-slate-850 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+                    <span class="font-bold text-sky-400">光之羈絆隊 (P1)</span>
+                    <span id="p1-score" class="text-xs bg-sky-900 text-sky-200 px-2 py-0.5 rounded">存活: 5</span>
+                </div>
+                <div id="p1-reserve" class="space-y-2">
+                    <!-- P1 Character Cards rendered dynamically -->
+                </div>
+            </div>
+            <div id="p1-turn-indicator" class="mt-3 text-center text-xs font-semibold py-1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 hidden">
+                YOUR TURN
+            </div>
+        </div>
+
+        <!-- Center Panel: Board & Combat Log -->
+        <div class="md:col-span-6 flex flex-col items-center">
+            
+            <!-- Info Bar -->
+            <div class="w-full flex justify-between items-center bg-slate-900 px-4 py-2 rounded-lg border border-slate-700 mb-3 text-sm">
+                <div>回合: <span id="current-turn" class="font-bold text-amber-400">1</span></div>
+                <div id="turn-status" class="font-semibold text-sky-400">玩家 1 行動中</div>
+                <button id="end-turn-btn" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1 rounded border border-slate-500">跳過/結束</button>
+            </div>
+
+            <!-- 3x3 Board -->
+            <div id="board" class="w-full max-w-[360px] grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl border-2 border-amber-500/40 shadow-inner">
+                <!-- 9 Cells generated dynamically -->
+            </div>
+
+            <!-- Combat & System Log -->
+            <div id="combat-log" class="w-full bg-slate-950/80 rounded border border-slate-800 p-2 mt-3 text-xs h-24 overflow-y-auto font-mono text-slate-300 space-y-1">
+                <p class="text-slate-500">系統：遊戲開始！請選擇左側備戰區角色並進行佔位。</p>
+            </div>
+        </div>
+
+        <!-- Right Panel: Player 2 / AI (Shadow) -->
+        <div class="md:col-span-3 bg-slate-850 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+                    <span class="font-bold text-purple-400">影之羈絆隊 (AI)</span>
+                    <span id="p2-score" class="text-xs bg-purple-900 text-purple-200 px-2 py-0.5 rounded">存活: 5</span>
+                </div>
+                <div id="p2-reserve" class="space-y-2">
+                    <!-- P2 Character Cards rendered dynamically -->
+                </div>
+            </div>
+            <div id="p2-turn-indicator" class="mt-3 text-center text-xs font-semibold py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 hidden">
+                AI TURN
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal for Action Selection (Attack/Skill) -->
+    <div id="action-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center hidden z-50">
+        <div class="bg-slate-800 border border-slate-600 p-4 rounded-xl w-80 text-center shadow-xl">
+            <h3 id="modal-title" class="font-bold text-amber-400 mb-2">選擇行動</h3>
+            <p id="modal-desc" class="text-xs text-slate-300 mb-4">請選擇該棋格角色的行動：</p>
+            <div class="space-y-2" id="modal-actions">
+                <!-- Buttons injected dynamically -->
+            </div>
+            <button onclick="closeModal()" class="mt-3 text-xs text-slate-400 underline">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const STATE = {
+            turn: 1,
+            currentPlayer: 1, // 1: P1, 2: P2 (AI)
+            selectedReserveId: null,
+            selectedBoardCell: null,
+            board: Array(9).fill(null), // Cell contents: { id, owner, name, hp, maxHp, atk, range, icon, skill }
+            sealedCells: Array(9).fill(false),
+            bondedCells: Array(9).fill(null), // player index or null
+            gameOver: false,
+            p1Characters: [],
+            p2Characters: []
+        };
+
+        // Character Data Preset
+        const CHARACTERS_P1 = [
+            { id: 'p1_1', name: '星芽', hp: 3, maxHp: 3, atk: 1, range: 1, skill: '先手疾行', skillDesc: '連續佔位', icon: '🌸', owner: 1, placed: false, dead: false },
+            { id: 'p1_2', name: '鈴盾', hp: 5, maxHp: 5, atk: 1, range: 1, skill: '羈絆護盾', skillDesc: '減免傷害', icon: '🛡️', owner: 1, placed: false, dead: false },
+            { id: 'p1_3', name: '焰羽', hp: 4, maxHp: 4, atk: 2, range: 1, skill: '爆炎打擊', skillDesc: '高額輸出', icon: '🔥', owner: 1, placed: false, dead: false },
+            { id: 'p1_4', name: '月兔', hp: 2, maxHp: 2, atk: 1, range: 2, skill: '範圍擴張', skillDesc: '遠程射擊', icon: '🌙', owner: 1, placed: false, dead: false },
+            { id: 'p1_5', name: '花靈', hp: 3, maxHp: 3, atk: 1, range: 1, skill: '羈絆祈願', skillDesc: '標記神聖', icon: '🍃', owner: 1, placed: false, dead: false }
+        ];
+
+        const CHARACTERS_P2 = [
+            { id: 'p2_1', name: '夜刃', hp: 3, maxHp: 3, atk: 2, range: 1, skill: '暗殺 strike', skillDesc: '近戰爆發', icon: '🗡️', owner: 2, placed: false, dead: false },
+            { id: 'p2_2', name: '霜狐', hp: 3, maxHp: 3, atk: 1, range: 2, skill: '寒霜射擊', skillDesc: '遠端控制', icon: '🦊', owner: 2, placed: false, dead: false },
+            { id: 'p2_3', name: '暗翼', hp: 4, maxHp: 4, atk: 1, range: 2, skill: '範圍斬擊', skillDesc: '群體打擊', icon: '🦇', owner: 2, placed: false, dead: false },
+            { id: 'p2_4', name: '鐵偶', hp: 5, maxHp: 5, atk: 1, range: 1, skill: '堅實防禦', skillDesc: '吸收傷害', icon: '🤖', owner: 2, placed: false, dead: false },
+            { id: 'p2_5', name: '幻貓', hp: 2, maxHp: 2, atk: 1, range: 1, skill: '封鎖棋格', skillDesc: '阻斷連線', icon: '🐾', owner: 2, placed: false, dead: false }
+        ];
+
+        // Init
+        function initGame() {
+            STATE.p1Characters = JSON.parse(JSON.stringify(CHARACTERS_P1));
+            STATE.p2Characters = JSON.parse(JSON.stringify(CHARACTERS_P2));
+            renderBoard();
+            renderReserves();
+            updateTurnIndicators();
+            log("遊戲載入完成。輪到 Player 1 (光之羈絆隊) 行動。");
+        }
+
+        // Render Board
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            for (let i = 0; i < 9; i++) {
+                const cellData = STATE.board[i];
+                const isSealed = STATE.sealedCells[i];
+                const bondOwner = STATE.bondedCells[i];
+
+                const cell = document.createElement('div');
+                cell.className = `grid-cell relative rounded-lg border-2 flex flex-col items-center justify-center cursor-pointer select-none transition-all ${
+                    isSealed 
+                        ? 'bg-slate-800 border-red-500/50' 
+                        : cellData 
+                            ? cellData.owner === 1 ? 'bg-sky-950/60 border-sky-500' : 'bg-purple-950/60 border-purple-500' 
+                            : 'bg-slate-900 border-slate-700 hover:border-amber-400/50'
+                }`;
+
+                cell.onclick = () => handleCellClick(i);
+
+                if (isSealed) {
+                    cell.innerHTML = `<span class="text-2xl opacity-40">🚫</span><span class="text-[10px] text-red-400">封鎖</span>`;
+                } else if (cellData) {
+                    cell.innerHTML = `
+                        <div class="text-2xl mb-1">${cellData.icon}</div>
+                        <div class="text-xs font-bold ${cellData.owner === 1 ? 'text-sky-300' : 'text-purple-300'}">${cellData.name}</div>
+                        <div class="w-full px-2 mt-1">
+                            <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-red-500 h-full" style="width: ${(cellData.hp / cellData.maxHp) * 100}%"></div>
+                            </div>
+                        </div>
+                        <span class="text-[9px] text-slate-400 mt-0.5">HP:${cellData.hp}/${cellData.maxHp} ATK:${cellData.atk}</span>
+                    `;
+                } else {
+                    cell.innerHTML = `<span class="text-xs text-slate-600 font-mono">#0${i+1}</span>`;
+                    if (bondOwner) {
+                        cell.innerHTML += `<span class="absolute bottom-1 text-[10px] ${bondOwner === 1 ? 'text-sky-400' : 'text-purple-400'}">♥ 羈絆</span>`;
+                    }
+                }
+
+                boardEl.appendChild(cell);
+            }
+        }
+
+        // Render Reserves
+        function renderReserves() {
+            const p1Container = document.getElementById('p1-reserve');
+            const p2Container = document.getElementById('p2-reserve');
+
+            p1Container.innerHTML = '';
+            p2Container.innerHTML = '';
+
+            STATE.p1Characters.forEach(c => {
+                p1Container.appendChild(createStickerCard(c, 1));
+            });
+
+            STATE.p2Characters.forEach(c => {
+                p2Container.appendChild(createStickerCard(c, 2));
+            });
+
+            document.getElementById('p1-score').innerText = `存活: ${STATE.p1Characters.filter(c => !c.dead).length}`;
+            document.getElementById('p2-score').innerText = `存活: ${STATE.p2Characters.filter(c => !c.dead).length}`;
+        }
+
+        function createStickerCard(c, owner) {
+            const card = document.createElement('div');
+            const isSelected = STATE.selectedReserveId === c.id;
+            const isInteractive = owner === STATE.currentPlayer && !c.placed && !c.dead && !STATE.gameOver;
+
+            card.className = `sticker-card p-2 rounded-lg border flex items-center justify-between text-xs select-none ${
+                c.dead 
+                    ? 'opacity-30 bg-slate-900 border-slate-800 line-through' 
+                    : c.placed 
+                        ? 'opacity-50 bg-slate-800 border-slate-700' 
+                        : isSelected 
+                            ? 'bg-amber-500/20 border-amber-400 shadow-md' 
+                            : 'bg-slate-800 border-slate-700 hover:border-slate-500'
+            } ${isInteractive ? 'cursor-pointer' : 'cursor-not-allowed'}`;
+
+            card.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">${c.icon}</span>
+                    <div>
+                        <div class="font-bold ${owner === 1 ? 'text-sky-300' : 'text-purple-300'}">${c.name}</div>
+                        <div class="text-[10px] text-slate-400">${c.skill} (${c.skillDesc})</div>
+                    </div>
+                </div>
+                <div class="text-right text-[10px] text-slate-400">
+                    <div>HP:${c.hp}</div>
+                    <div>ATK:${c.atk}</div>
+                </div>
+            `;
+
+            if (isInteractive) {
+                card.onclick = () => {
+                    STATE.selectedReserveId = (STATE.selectedReserveId === c.id) ? null : c.id;
+                    renderReserves();
+                    log(`已選取角色：${c.name}。請點擊棋盤空格進行佔位。`);
+                };
+            }
+
+            return card;
+        }
+
+        // Cell Click Handler
+        function handleCellClick(index) {
+            if (STATE.gameOver) return;
+
+            const cellContent = STATE.board[index];
+
+            // 1. Placing from Reserve
+            if (STATE.selectedReserveId) {
+                if (cellContent || STATE.sealedCells[index]) {
+                    log("該位置不可佔領！", "text-amber-400");
+                    return;
+                }
+
+                const charList = STATE.currentPlayer === 1 ? STATE.p1Characters : STATE.p2Characters;
+                const char = charList.find(c => c.id === STATE.selectedReserveId);
+
+                if (char) {
+                    char.placed = true;
+                    STATE.board[index] = char;
+                    STATE.selectedReserveId = null;
+                    log(`[P${STATE.currentPlayer}] ${char.name} 佔領了 #0${index+1} 格！`);
+
+                    // Check win after placement
+                    if (checkWin()) return;
+
+                    endTurn();
+                }
+                return;
+            }
+
+            // 2. Interacting with Occupied Cell
+            if (cellContent) {
+                if (cellContent.owner === STATE.currentPlayer) {
+                    openActionModal(index, cellContent);
+                } else {
+                    log("那是對手的角色！你可以點擊己方角色進行攻擊。", "text-amber-400");
+                }
+            }
+        }
+
+        // Action Modal
+        function openActionModal(index, char) {
+            STATE.selectedBoardCell = index;
+            const modal = document.getElementById('action-modal');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const actions = document.getElementById('modal-actions');
+
+            title.innerText = `${char.icon} ${char.name} 行動選單`;
+            desc.innerText = `選擇你想要執行的戰術：`;
+            actions.innerHTML = '';
+
+            // Attack Button
+            const atkBtn = document.createElement('button');
+            atkBtn.className = "w-full py-2 bg-red-600/80 hover:bg-red-500 text-white font-bold rounded text-xs border border-red-400";
+            atkBtn.innerText = `⚔️ 攻擊 (射程: ${char.range})`;
+            atkBtn.onclick = () => {
+                closeModal();
+                promptAttackTargets(index, char);
+            };
+            actions.appendChild(atkBtn);
+
+            // Skill Button
+            const skillBtn = document.createElement('button');
+            skillBtn.className = "w-full py-2 bg-purple-600/80 hover:bg-purple-500 text-white font-bold rounded text-xs border border-purple-400";
+            skillBtn.innerText = `✨ 施放技能: ${char.skill}`;
+            skillBtn.onclick = () => {
+                closeModal();
+                useSkill(index, char);
+            };
+            actions.appendChild(skillBtn);
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('action-modal').classList.add('hidden');
+        }
+
+        // Combat Mechanics
+        function promptAttackTargets(cellIdx, attacker) {
+            log(`請點擊射程 (${attacker.range} 格) 內的敵方目標：`);
+            // Highlight targets logic simulated via log prompt
+            const enemies = [];
+            for (let i = 0; i < 9; i++) {
+                const target = STATE.board[i];
+                if (target && target.owner !== attacker.owner) {
+                    const dist = getManhattanDistance(cellIdx, i);
+                    if (dist <= attacker.range) {
+                        enemies.push({ index: i, target });
+                    }
+                }
+            }
+
+            if (enemies.length === 0) {
+                log("射程內沒有可攻擊的敵人！", "text-amber-400");
+                return;
+            }
+
+            // Simple auto-target or first enemy for simplicity in click
+            const chosen = enemies[0];
+            executeAttack(attacker, chosen.target, chosen.index);
+        }
+
+        function executeAttack(attacker, target, targetIdx) {
+            target.hp -= attacker.atk;
+            log(`⚔️ [P${attacker.owner}] ${attacker.name} 對 [P${target.owner}] ${target.name} 造成 ${attacker.atk} 點傷害！`, "text-red-400");
+
+            if (target.hp <= 0) {
+                target.dead = true;
+                STATE.board[targetIdx] = null;
+                log(`💥 [P${target.owner}] ${target.name} 被擊敗，移出棋盤！`, "text-red-500");
+            }
+
+            renderBoard();
+            renderReserves();
+
+            if (checkWin()) return;
+            endTurn();
+        }
+
+        function useSkill(cellIdx, char) {
+            log(`✨ [P${char.owner}] ${char.name} 使用技能【${char.skill}】！`);
+            
+            if (char.skill === '封鎖棋格') {
+                // Seal an empty cell
+                const emptyIdx = STATE.board.findIndex((c, i) => !c && !STATE.sealedCells[i]);
+                if (emptyIdx !== -1) {
+                    STATE.sealedCells[emptyIdx] = true;
+                    log(`🚫 格子 #0${emptyIdx+1} 已被封鎖！`, "text-purple-400");
+                }
+            } else if (char.skill === '羈絆護盾' || char.skill === '堅實防禦') {
+                char.hp = Math.min(char.maxHp, char.hp + 1);
+                log(`🛡️ ${char.name} 恢復了 1 點生命值！`, "text-green-400");
+            } else {
+                log(`技能生效：該技能強化了自身的戰術位置。`);
+            }
+
+            renderBoard();
+            renderReserves();
+            endTurn();
+        }
+
+        // Distance Calc
+        function getManhattanDistance(idx1, idx2) {
+            const x1 = idx1 % 3, y1 = Math.floor(idx1 / 3);
+            const x2 = idx2 % 3, y2 = Math.floor(idx2 / 3);
+            return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+        }
+
+        // Win Conditions Check
+        function checkWin() {
+            // A. Tic-Tac-Toe 3-in-a-row
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Horizontals
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Verticals
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ];
+
+            for (let line of lines) {
+                const [a, b, c] = line;
+                if (STATE.board[a] && STATE.board[b] && STATE.board[c]) {
+                    if (STATE.board[a].owner === STATE.board[b].owner && STATE.board[b].owner === STATE.board[c].owner) {
+                        const winner = STATE.board[a].owner;
+                        declareWinner(winner, `完成三子連線 (#0${a+1}, #0${b+1}, #0${c+1})！`);
+                        return true;
+                    }
+                }
+            }
+
+            // B. Eliminate All
+            const p1Alive = STATE.p1Characters.some(c => !c.dead);
+            const p2Alive = STATE.p2Characters.some(c => !c.dead);
+
+            if (!p1Alive) {
+                declareWinner(2, "全滅對手所有角色！");
+                return true;
+            }
+            if (!p2Alive) {
+                declareWinner(1, "全滅對手所有角色！");
+                return true;
+            }
+
+            return false;
+        }
+
+        function declareWinner(winner, reason) {
+            STATE.gameOver = true;
+            const winnerName = winner === 1 ? '光之羈絆隊 (P1)' : '影之羈絆隊 (AI)';
+            log(`🎉 遊戲結束！【${winnerName}】獲得勝利！原因：${reason}`, "text-amber-300 font-bold");
+            alert(`🎉 勝利者：${winnerName}\n${reason}`);
+        }
+
+        // Turn Logic
+        function endTurn() {
+            STATE.selectedReserveId = null;
+            STATE.selectedBoardCell = null;
+            STATE.currentPlayer = STATE.currentPlayer === 1 ? 2 : 1;
+
+            if (STATE.currentPlayer === 1) {
+                STATE.turn++;
+            }
+
+            updateTurnIndicators();
+            renderBoard();
+            renderReserves();
+
+            log(`--- 輪到 ${STATE.currentPlayer === 1 ? 'Player 1 (光之羈絆隊)' : 'AI (影之羈絆隊)'} 行動 ---`);
+
+            if (STATE.currentPlayer === 2 && !STATE.gameOver) {
+                setTimeout(aiPlayTurn, 800);
+            }
+        }
+
+        function updateTurnIndicators() {
+            document.getElementById('current-turn').innerText = STATE.turn;
+            document.getElementById('turn-status').innerText = STATE.currentPlayer === 1 ? '玩家 1 行動中' : 'AI 行動中';
+
+            const p1Ind = document.getElementById('p1-turn-indicator');
+            const p2Ind = document.getElementById('p2-turn-indicator');
+
+            if (STATE.currentPlayer === 1) {
+                p1Ind.classList.remove('hidden');
+                p2Ind.classList.add('hidden');
+            } else {
+                p2Ind.classList.remove('hidden');
+                p1Ind.classList.add('hidden');
+            }
+        }
+
+        // AI Logic
+        function aiPlayTurn() {
+            if (STATE.gameOver) return;
+
+            // 1. Try to attack if possible
+            for (let i = 0; i < 9; i++) {
+                const cell = STATE.board[i];
+                if (cell && cell.owner === 2) {
+                    for (let j = 0; j < 9; j++) {
+                        const target = STATE.board[j];
+                        if (target && target.owner === 1) {
+                            if (getManhattanDistance(i, j) <= cell.range) {
+                                executeAttack(cell, target, j);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Otherwise place character in empty spot
+            const unplacedAI = STATE.p2Characters.filter(c => !c.placed && !c.dead);
+            const emptyCells = STATE.board.map((v, idx) => (v === null && !STATE.sealedCells[idx]) ? idx : null).filter(v => v !== null);
+
+            if (unplacedAI.length > 0 && emptyCells.length > 0) {
+                const char = unplacedAI[0];
+                const targetCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+                char.placed = true;
+                STATE.board[targetCell] = char;
+                log(`[AI] 派遣了 ${char.name} 佔領 #0${targetCell+1} 格！`);
+
+                if (checkWin()) return;
+                endTurn();
+                return;
+            }
+
+            // Pass
+            log("[AI] 無可用行動，跳過回合。");
+            endTurn();
+        }
+
+        // Logger Helper
+        function log(msg, colorClass = "text-slate-300") {
+            const logEl = document.getElementById('combat-log');
+            const p = document.createElement('p');
+            p.className = colorClass;
+            p.innerText = msg;
+            logEl.appendChild(p);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        document.getElementById('end-turn-btn').onclick = () => {
+            if (!STATE.gameOver) {
+                log(`[P${STATE.currentPlayer}] 選擇跳過此回合。`);
+                endTurn();
+            }
+        };
+
+        // Initialize on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>

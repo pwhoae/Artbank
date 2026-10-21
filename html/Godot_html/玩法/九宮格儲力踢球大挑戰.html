@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>九宮格儲力踢球大挑戰</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Three.js for 3D graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Tone.js for Web Audio synthesis -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Teko:wght@600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow: hidden;
+    }
+    .font-teko {
+      font-family: 'Teko', sans-serif;
+    }
+    /* Pulse glow effect for power meter */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+      50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+    }
+    .power-glow {
+      animation: pulseGlow 1s infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-white h-screen w-screen relative overflow-hidden">
+
+  <!-- 3D Canvas -->
+  <div id="canvas-container" class="absolute inset-0 z-0"></div>
+
+  <!-- UI Overlay Layer -->
+  <div class="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4 md:p-6">
+
+    <!-- Top Navigation & Scoreboard Bar -->
+    <div class="flex justify-between items-start w-full max-w-5xl mx-auto pointer-events-auto">
+      <!-- Title & High Score -->
+      <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700/60 rounded-2xl p-3 md:p-4 shadow-xl">
+        <h1 class="text-xl md:text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent flex items-center gap-2">
+          <i class="fa-solid font-bold fa-futbol text-white"></i> 九宮格神射手
+        </h1>
+        <div class="text-xs md:text-sm text-slate-400 mt-1 flex items-center gap-2">
+          <span>最高紀錄: <span id="high-score" class="text-amber-400 font-bold">0</span> 分</span>
+        </div>
+      </div>
+
+      <!-- Current Score & Shot Counter -->
+      <div class="flex gap-3">
+        <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700/60 rounded-2xl px-4 py-2 text-center shadow-xl">
+          <div class="text-xs text-slate-400 uppercase tracking-wider">得分</div>
+          <div id="score-display" class="text-2xl md:text-4xl font-teko font-bold text-emerald-400">0</div>
+        </div>
+        <div class="bg-slate-800/80 backdrop-blur-md border border-slate-700/60 rounded-2xl px-4 py-2 text-center shadow-xl">
+          <div class="text-xs text-slate-400 uppercase tracking-wider">剩餘球數</div>
+          <div id="balls-display" class="text-2xl md:text-4xl font-teko font-bold text-cyan-400">10</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Feedback Banner (Goals, Misses, Combo) -->
+    <div id="feedback-banner" class="self-center transform transition-all duration-300 scale-0 opacity-0 text-center pointer-events-none">
+      <div id="feedback-text" class="text-4xl md:text-7xl font-black tracking-wider uppercase drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">
+        GOAL!
+      </div>
+      <div id="feedback-subtext" class="text-lg md:text-2xl font-bold text-amber-300 drop-shadow-md mt-1">
+        精準命中角球 +300
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Power Charge Area -->
+    <div class="w-full max-w-xl mx-auto flex flex-col items-center gap-4 pointer-events-auto pb-4">
+
+      <!-- Target Selection Grid Visual Aid (2D Sync Control) -->
+      <div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/60 shadow-2xl w-full max-w-xs">
+        <div class="text-xs text-center text-slate-300 mb-2 font-medium flex justify-between items-center px-1">
+          <span><i class="fa-solid fa-crosshairs text-amber-400"></i> 選擇射門目標區</span>
+          <span id="target-label" class="text-amber-400 font-bold">正中央 (5)</span>
+        </div>
+        <!-- 3x3 Grid Buttons -->
+        <div class="grid grid-cols-3 gap-2 aspect-[4/2.5]">
+          <button data-grid="0" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">1</button>
+          <button data-grid="1" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">2</button>
+          <button data-grid="2" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">3</button>
+          <button data-grid="3" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">4</button>
+          <button data-grid="4" class="grid-btn bg-amber-500 text-slate-900 border-2 border-amber-300 rounded-lg text-sm font-bold transition flex items-center justify-center shadow-lg shadow-amber-500/30">5</button>
+          <button data-grid="5" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">6</button>
+          <button data-grid="6" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">7</button>
+          <button data-grid="7" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">8</button>
+          <button data-grid="8" class="grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center">9</button>
+        </div>
+      </div>
+
+      <!-- Power Bar Indicator -->
+      <div class="w-full bg-slate-800/90 rounded-2xl p-3 border border-slate-700/60 shadow-xl">
+        <div class="flex justify-between text-xs font-bold text-slate-300 mb-1">
+          <span><i class="fa-solid fa-bolt text-yellow-400"></i> 踢球力道 (Power)</span>
+          <span id="power-percent" class="text-yellow-400">0%</span>
+        </div>
+        <div class="w-full bg-slate-950 h-6 rounded-xl overflow-hidden p-0.5 border border-slate-800 relative">
+          <!-- Perfect zone marker -->
+          <div class="absolute right-[10%] top-0 bottom-0 w-[15%] bg-emerald-500/30 border-x border-emerald-400/50 z-0 flex items-center justify-center">
+            <span class="text-[9px] text-emerald-300 font-bold tracking-tighter uppercase">Perfect</span>
+          </div>
+          <!-- Filling Bar -->
+          <div id="power-bar" class="h-full bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 rounded-lg transition-all duration-75 w-0 relative z-10"></div>
+        </div>
+      </div>
+
+      <!-- Kick Button / Mobile Control -->
+      <div class="w-full flex gap-3">
+        <button id="kick-btn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 active:scale-95 text-slate-950 font-black text-xl rounded-2xl shadow-xl shadow-orange-500/20 transition flex items-center justify-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-play"></i> 按住儲力 / 鬆開踢球 (長按空白鍵)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over / Game Start Modal -->
+  <div id="modal-overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md z-30 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 md:p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden">
+      <!-- Glow background -->
+      <div class="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-orange-500/20 rounded-full blur-3xl"></div>
+
+      <div class="relative z-10">
+        <div class="w-20 h-20 bg-gradient-to-tr from-amber-500 to-orange-500 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-lg shadow-orange-500/30 mb-4">
+          <i class="fa-solid fa-trophy text-slate-950"></i>
+        </div>
+
+        <h2 id="modal-title" class="text-3xl font-black text-white mb-2">九宮格儲力踢球</h2>
+        <p id="modal-desc" class="text-slate-400 text-sm mb-6">點擊下方的九宮格選擇射門位置，長按「儲力」按鈕或「空白鍵」蓄力，在最佳力道區鬆開擊球進門！</p>
+
+        <!-- Stats Breakdown (Shown on Game Over) -->
+        <div id="modal-stats" class="hidden grid-cols-2 gap-3 mb-6">
+          <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+            <div class="text-xs text-slate-400">總得分</div>
+            <div id="final-score" class="text-2xl font-bold text-amber-400 font-teko">0</div>
+          </div>
+          <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+            <div class="text-xs text-slate-400">進球率</div>
+            <div id="final-accuracy" class="text-2xl font-bold text-emerald-400 font-teko">0%</div>
+          </div>
+        </div>
+
+        <button id="start-btn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl transition transform hover:scale-[1.02] active:scale-95 cursor-pointer">
+          開始遊戲
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Game Logic -->
+  <script>
+    // --- AUDIO SYSTEM (Tone.js) ---
+    let synth, metalSynth, noiseSynth;
+    let audioInitialized = false;
+
+    function initAudio() {
+      if (audioInitialized) return;
+      try {
+        Tone.start();
+        // Synth for UI clicks & Goals
+        synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        // Metal Synth for Goal Post impact
+        metalSynth = new Tone.MetalSynth({ frequency: 200, envelope: { decay: 0.4 }, harmonicity: 3.1 }).toDestination();
+        metalSynth.volume.value = -12;
+        // Whistle / Kick sound generator
+        noiseSynth = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination();
+        noiseSynth.volume.value = -10;
+        audioInitialized = true;
+      } catch (e) {
+        console.log("Audio init deferred");
+      }
+    }
+
+    function playSound(type) {
+      if (!audioInitialized) return;
+      try {
+        if (type === 'kick') {
+          noiseSynth.triggerAttackRelease("16n");
+        } else if (type === 'goal') {
+          synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n");
+        } else if (type === 'post') {
+          metalSynth.triggerAttackRelease("16n");
+        } else if (type === 'miss') {
+          synth.triggerAttackRelease(["C3", "A2"], "16n");
+        } else if (type === 'select') {
+          synth.triggerAttackRelease("F4", "32n");
+        }
+      } catch (e) {}
+    }
+
+    // --- 3D SCENE SETUP ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a); // Slate-900 background
+    scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 2.5, 9); // Camera behind the penalty spot
+    camera.lookAt(0, 1.8, -12);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const stadiumLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    stadiumLight1.position.set(10, 20, 10);
+    stadiumLight1.castShadow = true;
+    stadiumLight1.shadow.mapSize.width = 1024;
+    stadiumLight1.shadow.mapSize.height = 1024;
+    scene.add(stadiumLight1);
+
+    const stadiumLight2 = new THREE.DirectionalLight(0x38bdf8, 0.4); // Cool cyan fill light
+    stadiumLight2.position.set(-10, 15, -10);
+    scene.add(stadiumLight2);
+
+    // --- FIELD & GOAL CREATION ---
+    // Grass Ground
+    const pitchGeometry = new THREE.PlaneGeometry(60, 80);
+    const pitchMaterial = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
+    const pitch = new THREE.Mesh(pitchGeometry, pitchMaterial);
+    pitch.rotation.x = -Math.PI / 2;
+    pitch.receiveShadow = true;
+    scene.add(pitch);
+
+    // Pitch Stripes for visual depth
+    for (let i = -40; i < 40; i += 4) {
+      const stripeGeo = new THREE.PlaneGeometry(60, 2);
+      const stripeMat = new THREE.MeshStandardMaterial({ color: i % 8 === 0 ? 0x166534 : 0x15803d, roughness: 0.8 });
+      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      stripe.rotation.x = -Math.PI / 2;
+      stripe.position.set(0, 0.01, i);
+      stripe.receiveShadow = true;
+      scene.add(stripe);
+    }
+
+    // Goal Frame Dimensions
+    const GOAL_WIDTH = 7.32;
+    const GOAL_HEIGHT = 2.44;
+    const GOAL_Z = -12;
+
+    // Goal Post Material
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.5 });
+    const postRadius = 0.08;
+
+    // Left, Right Posts & Crossbar
+    const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(postRadius, postRadius, GOAL_HEIGHT, 16), postMat);
+    leftPost.position.set(-GOAL_WIDTH / 2, GOAL_HEIGHT / 2, GOAL_Z);
+    leftPost.castShadow = true;
+    scene.add(leftPost);
+
+    const rightPost = new THREE.Mesh(new THREE.CylinderGeometry(postRadius, postRadius, GOAL_HEIGHT, 16), postMat);
+    rightPost.position.set(GOAL_WIDTH / 2, GOAL_HEIGHT / 2, GOAL_Z);
+    rightPost.castShadow = true;
+    scene.add(rightPost);
+
+    const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(postRadius, postRadius, GOAL_WIDTH, 16), postMat);
+    crossbar.rotation.z = Math.PI / 2;
+    crossbar.position.set(0, GOAL_HEIGHT, GOAL_Z);
+    crossbar.castShadow = true;
+    scene.add(crossbar);
+
+    // Net Backing (Semi-transparent grid plane)
+    const netGeo = new THREE.PlaneGeometry(GOAL_WIDTH, GOAL_HEIGHT);
+    const netMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, wireframe: true, opacity: 0.3, transparent: true });
+    const net = new THREE.Mesh(netGeo, netMat);
+    net.position.set(0, GOAL_HEIGHT / 2, GOAL_Z - 1.5);
+    scene.add(net);
+
+    // --- 9-GRID TARGET BOARDS CREATION ---
+    const gridTargetGroup = new THREE.Group();
+    const cellWidth = GOAL_WIDTH / 3;
+    const cellHeight = GOAL_HEIGHT / 3;
+    const gridPanels = [];
+
+    // Colors & Scores for targets (Corners worth more)
+    const gridData = [
+      { id: 0, row: 2, col: 0, score: 300, name: "左上角" },
+      { id: 1, row: 2, col: 1, score: 100, name: "中上方" },
+      { id: 2, row: 2, col: 2, score: 300, name: "右上角" },
+      { id: 3, row: 1, col: 0, score: 200, name: "左側" },
+      { id: 4, row: 1, col: 1, score: 100, name: "正中央" },
+      { id: 5, row: 1, col: 2, score: 200, name: "右側" },
+      { id: 6, row: 0, col: 0, score: 300, name: "左下角" },
+      { id: 7, row: 0, col: 1, score: 100, name: "中下方" },
+      { id: 8, row: 0, col: 2, score: 300, name: "右下角" },
+    ];
+
+    gridData.forEach((data) => {
+      // Calculate 3D center position of each panel inside the goal
+      const x = (data.col - 1) * cellWidth;
+      const y = (data.row + 0.5) * cellHeight;
+      const z = GOAL_Z - 0.1;
+
+      // Panel Geometry
+      const panelGeo = new THREE.PlaneGeometry(cellWidth * 0.92, cellHeight * 0.92);
+
+      // Create Dynamic Canvas Texture for Numbers (1-9)
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, 120, 120);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 64px Noto Sans TC, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((data.id + 1).toString(), 64, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const panelMat = new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide
+      });
+
+      const mesh = new THREE.Mesh(panelGeo, panelMat);
+      mesh.position.set(x, y, z);
+      mesh.userData = { ...data, targetX: x, targetY: y, targetZ: GOAL_Z };
+
+      gridTargetGroup.add(mesh);
+      gridPanels.push(mesh);
+    });
+
+    scene.add(gridTargetGroup);
+
+    // --- SOCCER BALL CREATION ---
+    const ballRadius = 0.22;
+    const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
+
+    // Dynamic Ball Canvas Pattern (Classic Black & White Panels)
+    const ballCanvas = document.createElement('canvas');
+    ballCanvas.width = 256;
+    ballCanvas.height = 256;
+    const bCtx = ballCanvas.getContext('2d');
+    bCtx.fillStyle = '#ffffff';
+    bCtx.fillRect(0, 0, 256, 256);
+    bCtx.fillStyle = '#0f172a';
+    for (let i = 0; i < 6; i++) {
+      bCtx.beginPath();
+      bCtx.arc((i % 3) * 100 + 30, Math.floor(i / 3) * 120 + 50, 30, 0, Math.PI * 2);
+      bCtx.fill();
+    }
+    const ballTexture = new THREE.CanvasTexture(ballCanvas);
+    const ballMat = new THREE.MeshStandardMaterial({ map: ballTexture, roughness: 0.3 });
+
+    const ball = new THREE.Mesh(ballGeo, ballMat);
+    const BALL_START_POS = new THREE.Vector3(0, ballRadius, 4);
+    ball.position.copy(BALL_START_POS);
+    ball.castShadow = true;
+    scene.add(ball);
+
+    // Aim Crosshair / Target Marker in 3D
+    const aimGeo = new THREE.RingGeometry(0.15, 0.2, 32);
+    const aimMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+    const aimMarker = new THREE.Mesh(aimGeo, aimMat);
+    aimMarker.position.set(0, cellHeight * 1.5, GOAL_Z + 0.05);
+    scene.add(aimMarker);
+
+    // --- GOALKEEPER AI CREATION ---
+    const keeperGroup = new THREE.Group();
+    // Body Parts
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 }); // Cyan jersey
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xfdba74, roughness: 0.6 });
+
+    // Torso
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.35), bodyMat);
+    torso.position.y = 1.1;
+    torso.castShadow = true;
+    keeperGroup.add(torso);
+
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), skinMat);
+    head.position.y = 1.75;
+    head.castShadow = true;
+    keeperGroup.add(head);
+
+    // Arms
+    const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.7);
+    const leftArm = new THREE.Mesh(armGeo, bodyMat);
+    leftArm.position.set(-0.45, 1.2, 0);
+    leftArm.rotation.z = Math.PI / 6;
+    keeperGroup.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, bodyMat);
+    rightArm.position.set(0.45, 1.2, 0);
+    rightArm.rotation.z = -Math.PI / 6;
+    keeperGroup.add(rightArm);
+
+    const KEEPER_START_POS = new THREE.Vector3(0, 0, GOAL_Z + 0.3);
+    keeperGroup.position.copy(KEEPER_START_POS);
+    scene.add(keeperGroup);
+
+    // --- GAME STATE VARIABLES ---
+    let score = 0;
+    let ballsLeft = 10;
+    let highScore = localStorage.getItem('penalty_high_score') || 0;
+    document.getElementById('high-score').textContent = highScore;
+
+    let selectedGridIndex = 4; // Default center (5)
+    let isCharging = false;
+    let power = 0;
+    let powerDirection = 1; // 1 for filling, -1 for depleting
+    let isBallInFlight = false;
+    let ballVelocity = new THREE.Vector3();
+    let ballSpin = new THREE.Vector3();
+
+    // Goalkeeper AI State
+    let keeperTargetPos = new THREE.Vector3();
+    let isKeeperDiving = false;
+
+    // --- DOM ELEMENTS ---
+    const scoreDisplay = document.getElementById('score-display');
+    const ballsDisplay = document.getElementById('balls-display');
+    const powerBar = document.getElementById('power-bar');
+    const powerPercent = document.getElementById('power-percent');
+    const kickBtn = document.getElementById('kick-btn');
+    const gridBtns = document.querySelectorAll('.grid-btn');
+    const targetLabel = document.getElementById('target-label');
+
+    const feedbackBanner = document.getElementById('feedback-banner');
+    const feedbackText = document.getElementById('feedback-text');
+    const feedbackSubtext = document.getElementById('feedback-subtext');
+
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDesc = document.getElementById('modal-desc');
+    const modalStats = document.getElementById('modal-stats');
+    const startBtn = document.getElementById('start-btn');
+
+    // Update Aim Crosshair position when selected grid changes
+    function updateSelectedGrid(index) {
+      if (isBallInFlight) return;
+      selectedGridIndex = index;
+      const targetPanel = gridPanels[selectedGridIndex];
+      const data = targetPanel.userData;
+
+      // Move Aim Marker in 3D Space
+      aimMarker.position.set(data.targetX, data.targetY, data.targetZ + 0.05);
+
+      // UI Highlight Update
+      gridBtns.forEach((btn, i) => {
+        if (i === index) {
+          btn.className = "grid-btn bg-amber-500 text-slate-900 border-2 border-amber-300 rounded-lg text-sm font-bold transition flex items-center justify-center shadow-lg shadow-amber-500/30 scale-105";
+        } else {
+          btn.className = "grid-btn bg-slate-800 hover:bg-amber-500/30 border border-slate-600 rounded-lg text-sm font-bold transition flex items-center justify-center";
+        }
+      });
+
+      targetLabel.textContent = `${data.name} (${data.id + 1})`;
+      playSound('select');
+    }
+
+    // Grid button click handlers
+    gridBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-grid'));
+        updateSelectedGrid(idx);
+      });
+    });
+
+    // --- POWER CHARGE & KICK LOGIC ---
+    function startCharging(e) {
+      if (e) e.preventDefault();
+      initAudio();
+      if (isBallInFlight || ballsLeft <= 0) return;
+      isCharging = true;
+      power = 0;
+      powerDirection = 1;
+    }
+
+    function releaseAndKick(e) {
+      if (e) e.preventDefault();
+      if (!isCharging || isBallInFlight) return;
+      isCharging = false;
+      executeKick();
+    }
+
+    // Event Listeners for Spacebar & Touch
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !e.repeat) startCharging();
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') releaseAndKick();
+    });
+
+    kickBtn.addEventListener('mousedown', startCharging);
+    kickBtn.addEventListener('mouseup', releaseAndKick);
+    kickBtn.addEventListener('touchstart', startCharging, { passive: false });
+    kickBtn.addEventListener('touchend', releaseAndKick, { passive: false });
+
+    function executeKick() {
+      isBallInFlight = true;
+      ballsLeft--;
+      ballsDisplay.textContent = ballsLeft;
+      playSound('kick');
+
+      const targetData = gridPanels[selectedGridIndex].userData;
+
+      // Base Target Location with Power Variance / Error offset if power is bad
+      let errorMargin = 0;
+      if (power < 40) {
+        errorMargin = (40 - power) * 0.03; // Underpowered -> drops low
+      } else if (power > 90) {
+        errorMargin = (power - 90) * 0.05; // Overpowered -> flies high/wild
+      }
+
+      const finalTargetX = targetData.targetX + (Math.random() - 0.5) * errorMargin;
+      const finalTargetY = Math.max(0.2, targetData.targetY + (Math.random() - 0.5) * errorMargin + (power > 90 ? 1.0 : 0));
+      const finalTargetZ = GOAL_Z;
+
+      // Compute Initial Velocity Vector (Parabolic Arc)
+      const distanceZ = Math.abs(BALL_START_POS.z - finalTargetZ);
+      const timeOfFlight = 0.6 - (power / 100) * 0.25; // Faster shot at higher power
+
+      const vx = (finalTargetX - BALL_START_POS.x) / timeOfFlight;
+      const vz = (finalTargetZ - BALL_START_POS.z) / timeOfFlight;
+      // Physics gravity compensation formula: y = y0 + vy*t - 0.5*g*t^2
+      const vy = (finalTargetY - BALL_START_POS.y + 0.5 * 9.8 * timeOfFlight * timeOfFlight) / timeOfFlight;
+
+      ballVelocity.set(vx, vy, vz);
+      ballSpin.set(Math.random() * 10, Math.random() * 10, 0);
+
+      // Goalkeeper AI Dive Logic
+      triggerGoalkeeperAI(finalTargetX, finalTargetY);
+    }
+
+    function triggerGoalkeeperAI(targetX, targetY) {
+      isKeeperDiving = true;
+
+      // Goalkeeper accuracy depends on shot difficulty & corner placement
+      const isCorner = [0, 2, 6, 8].includes(selectedGridIndex);
+      const saveChance = isCorner ? 0.35 : 0.65; // Goalkeeper harder to save corner shots
+
+      if (Math.random() < saveChance) {
+        // AI correctly predicts target zone
+        keeperTargetPos.set(targetX * 0.85, Math.min(GOAL_HEIGHT, targetY), GOAL_Z + 0.2);
+      } else {
+        // AI dives wrong direction or reacts late
+        const wrongX = (Math.random() > 0.5 ? 1 : -1) * (cellWidth * 1.2);
+        keeperTargetPos.set(wrongX, cellHeight, GOAL_Z + 0.2);
+      }
+    }
+
+    let collisionHandled = false;
+
+    function resetRound() {
+      setTimeout(() => {
+        if (ballsLeft <= 0) {
+          endGame();
+          return;
+        }
+        // Reset Ball & Goalkeeper
+        ball.position.copy(BALL_START_POS);
+        ballVelocity.set(0, 0, 0);
+        keeperGroup.position.copy(KEEPER_START_POS);
+        keeperGroup.rotation.set(0, 0, 0);
+
+        isBallInFlight = false;
+        collisionHandled = false;
+        isKeeperDiving = false;
+
+        // Hide Banner
+        feedbackBanner.classList.add('scale-0', 'opacity-0');
+      }, 1800);
+    }
+
+    function showFeedback(title, subtext, colorClass) {
+      feedbackText.textContent = title;
+      feedbackText.className = `text-4xl md:text-7xl font-black tracking-wider uppercase drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] ${colorClass}`;
+      feedbackSubtext.textContent = subtext;
+      feedbackBanner.classList.remove('scale-0', 'opacity-0');
+      feedbackBanner.classList.add('scale-100', 'opacity-100');
+    }
+
+    function checkCollisions() {
+      if (collisionHandled) return;
+
+      // 1. Goalkeeper Collision Check
+      const distToKeeper = ball.position.distanceTo(keeperGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
+      if (distToKeeper < 0.8) {
+        collisionHandled = true;
+        ballVelocity.negate().multiplyScalar(0.3); // Bounce off keeper
+        showFeedback("SAVED!", "被守門員精彩撲出！", "text-cyan-400");
+        playSound('miss');
+        resetRound();
+        return;
+      }
+
+      // 2. Goal Plane Crossing Check (Near GOAL_Z)
+      if (ball.position.z <= GOAL_Z) {
+        collisionHandled = true;
+
+        const bx = ball.position.x;
+        const by = ball.position.y;
+
+        // Check inside Goal Frame Boundaries
+        const insideX = Math.abs(bx) <= GOAL_WIDTH / 2;
+        const insideY = by >= 0 && by <= GOAL_HEIGHT;
+
+        if (insideX && insideY) {
+          // SUCCESSFUL GOAL! Calculate grid score
+          const hitTarget = gridPanels[selectedGridIndex].userData;
+          let earnedScore = hitTarget.score;
+
+          // Perfect power bonus
+          if (power >= 75 && power <= 90) {
+            earnedScore += 100;
+          }
+
+          score += earnedScore;
+          scoreDisplay.textContent = score;
+
+          // Pulse grid target effect
+          gridPanels[selectedGridIndex].scale.set(1.1, 1.1, 1.1);
+          setTimeout(() => gridPanels[selectedGridIndex].scale.set(1, 1, 1), 300);
+
+          showFeedback("GOAL!!", `精準命中 ${hitTarget.name} +${earnedScore}分`, "text-emerald-400");
+          playSound('goal');
+        } else {
+          // MISS / OUT OF BOUNDS / POST HIT
+          if (Math.abs(Math.abs(bx) - GOAL_WIDTH / 2) < 0.3 || Math.abs(by - GOAL_HEIGHT) < 0.3) {
+            playSound('post');
+            showFeedback("HIT POST!", "擊中門框！", "text-amber-400");
+          } else {
+            playSound('miss');
+            showFeedback("MISS!", "踢偏了！門外球", "text-rose-500");
+          }
+        }
+
+        resetRound();
+      }
+    }
+
+    // --- MAIN GAME LOOP ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      // Power Charging Bar Animation
+      if (isCharging) {
+        power += powerDirection * 120 * delta;
+        if (power >= 100) {
+          power = 100;
+          powerDirection = -1;
+        } else if (power <= 0) {
+          power = 0;
+          powerDirection = 1;
+        }
+        powerBar.style.width = `${power}%`;
+        powerPercent.textContent = `${Math.round(power)}%`;
+      }
+
+      // Physics & Ball Motion Update
+      if (isBallInFlight) {
+        // Gravity
+        ballVelocity.y -= 9.8 * delta;
+
+        // Apply Position
+        ball.position.addScaledVector(ballVelocity, delta);
+
+        // Rotation
+        ball.rotation.x += ballSpin.x * delta;
+        ball.rotation.y += ballSpin.y * delta;
+
+        // Check Collisions
+        checkCollisions();
+      }
+
+      // Goalkeeper Dive Animation Lerp
+      if (isKeeperDiving) {
+        keeperGroup.position.lerp(keeperTargetPos, delta * 6);
+        // Tilt keeper body while diving
+        if (keeperTargetPos.x > 0.5) keeperGroup.rotation.z = -Math.PI / 4;
+        else if (keeperTargetPos.x < -0.5) keeperGroup.rotation.z = Math.PI / 4;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // Game Over & Start Flow
+    function startGame() {
+      score = 0;
+      ballsLeft = 10;
+      scoreDisplay.textContent = score;
+      ballsDisplay.textContent = ballsLeft;
+
+      modalOverlay.classList.add('hidden');
+      updateSelectedGrid(4); // Default to center 5
+    }
+
+    function endGame() {
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('penalty_high_score', highScore);
+        document.getElementById('high-score').textContent = highScore;
+      }
+
+      modalTitle.textContent = "遊戲結束";
+      modalDesc.textContent = "你已經踢完所有球！來看看你的最終戰績：";
+
+      document.getElementById('final-score').textContent = score;
+      document.getElementById('final-accuracy').textContent = `${Math.round((score / 3000) * 100)}%`;
+
+      modalStats.classList.remove('hidden');
+      modalStats.classList.add('grid');
+
+      startBtn.textContent = "再試一次";
+      modalOverlay.classList.remove('hidden');
+    }
+
+    startBtn.addEventListener('click', () => {
+      initAudio();
+      startGame();
+    });
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start 3D Loop
+    window.onload = () => {
+      animate();
+    };
+  </script>
+</body>
+</html>

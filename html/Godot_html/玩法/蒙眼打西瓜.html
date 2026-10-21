@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蒙眼打西瓜：指令三真一假</title>
+    <!-- Tailwind CSS for modern responsive UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for winning effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', 'Fredoka', sans-serif;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* Custom animation effects */
+        .blindfold-overlay {
+            background: radial-gradient(circle at center, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.96) 70%, rgba(15, 23, 42, 0.99) 100%);
+            backdrop-filter: blur(8px);
+            transition: all 0.5s ease;
+        }
+
+        .blindfold-peek {
+            background: radial-gradient(circle at center, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.88) 50%, rgba(15, 23, 42, 0.98) 100%);
+            backdrop-filter: blur(3px);
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+        }
+
+        .wood-texture {
+            background-color: #8B4513;
+            background-image: radial-gradient(#A0522D 15%, transparent 16%), radial-gradient(#6B8E23 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+        }
+
+        .stick-swing {
+            transform-origin: bottom center;
+            animation: swing 0.3s ease-in-out;
+        }
+
+        @keyframes swing {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-60deg) translateY(-20px); }
+            100% { transform: rotate(40deg) translateY(10px); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <header class="w-full bg-slate-800/90 border-b border-slate-700 p-3 sm:p-4 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl sm:text-4xl">🍉</span>
+                <div>
+                    <h1 class="text-lg sm:text-2xl font-black text-amber-400 tracking-wide">蒙眼打西瓜</h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">⚠️ 四個語音指令中有 3 個真話、1 個謊言！</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 sm:space-x-6 text-sm sm:text-base font-bold">
+                <div class="bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700">
+                    <span class="text-slate-400">關卡:</span> <span id="level-display" class="text-amber-400 font-extrabold text-lg">1</span>
+                </div>
+                <div class="bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-700">
+                    <span class="text-slate-400">剩餘揮棒:</span> <span id="strikes-display" class="text-emerald-400 font-extrabold text-lg">3</span>
+                </div>
+                <button id="rules-btn" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-xl transition text-xs sm:text-sm">
+                    <i class="fa-solid fa-circle-question mr-1"></i> 規則
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-6 flex flex-col gap-4">
+        
+        <!-- Game Playfield (Canvas overlay + Blindfold) -->
+        <div class="relative w-full aspect-[4/3] sm:aspect-[16/9] bg-emerald-900/40 rounded-3xl border-4 border-slate-700 overflow-hidden shadow-2xl flex items-center justify-center">
+            
+            <!-- 2D Canvas for Ground Grid, Player, Watermelon -->
+            <canvas id="gameCanvas" class="w-full h-full block bg-emerald-950"></canvas>
+
+            <!-- Blindfold Blur Overlay (Obscures map visually) -->
+            <div id="blindfold-layer" class="absolute inset-0 blindfold-overlay flex flex-col items-center justify-between p-4 pointer-events-none z-10 transition-opacity duration-500">
+                <div class="mt-2 text-center bg-slate-900/80 px-4 py-2 rounded-full border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-semibold animate-bounce">
+                    🙈 蒙眼模式中：閱讀底下助手指令，判斷哪個是假指令！
+                </div>
+                
+                <!-- Stick Visual Indicator -->
+                <div id="player-stick" class="text-4xl sm:text-6xl text-amber-600 opacity-80 mb-6 transition-transform duration-200">
+                    🦯
+                </div>
+            </div>
+
+            <!-- Peek Preview Button overlay (Limited use per stage) -->
+            <div class="absolute top-3 right-3 z-20">
+                <button id="peek-btn" class="bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl shadow-lg backdrop-blur flex items-center gap-1.5 transition active:scale-95">
+                    <i class="fa-solid fa-eye"></i> 偷看一秒 (<span id="peek-count">1</span>)
+                </button>
+            </div>
+
+            <!-- Compass / Distance Radar Indicator -->
+            <div class="absolute bottom-3 left-3 z-20 bg-slate-900/80 border border-slate-700 p-2.5 rounded-2xl text-xs flex items-center gap-3 backdrop-blur">
+                <div id="radar-icon" class="text-xl text-amber-400">🧭</div>
+                <div>
+                    <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">聽覺預估距離</div>
+                    <div id="estimated-distance" class="text-emerald-400 font-mono font-bold text-sm">約 ? 步</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm sm:text-base font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-users"></i> 隊友助威語音 (三真一假)：
+                </h2>
+                <span class="text-xs text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full">其中 1 個故意亂報！</span>
+            </div>
+
+            <div id="guides-container" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <!-- Guide Cards populated dynamically -->
+            </div>
+        </div>
+
+        <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row gap-4 items-center justify-between">
+            
+            <!-- Movement D-Pad Controls -->
+            <div class="grid grid-cols-3 gap-2 w-full sm:w-auto max-w-[240px]">
+                <div></div>
+                <button id="btn-forward" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-500 active:text-slate-950 text-slate-200 font-black py-3 rounded-xl shadow border border-slate-600 flex flex-col items-center justify-center text-xs">
+                    <i class="fa-solid fa-arrow-up text-base"></i> 前進
+                </button>
+                <div></div>
+
+                <button id="btn-left" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-500 active:text-slate-950 text-slate-200 font-black py-3 rounded-xl shadow border border-slate-600 flex flex-col items-center justify-center text-xs">
+                    <i class="fa-solid fa-arrow-left text-base"></i> 左轉
+                </button>
+                <button id="btn-backward" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-500 active:text-slate-950 text-slate-200 font-black py-3 rounded-xl shadow border border-slate-600 flex flex-col items-center justify-center text-xs">
+                    <i class="fa-solid fa-arrow-down text-base"></i> 後退
+                </button>
+                <button id="btn-right" class="bg-slate-700 hover:bg-slate-600 active:bg-amber-500 active:text-slate-950 text-slate-200 font-black py-3 rounded-xl shadow border border-slate-600 flex flex-col items-center justify-center text-xs">
+                    <i class="fa-solid fa-arrow-right text-base"></i> 右轉
+                </button>
+            </div>
+
+            <!-- Swing Strike Action Button -->
+            <div class="w-full sm:flex-1 flex flex-col justify-center gap-2">
+                <button id="btn-strike" class="w-full h-16 bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xl rounded-2xl shadow-lg border-2 border-red-400/50 flex items-center justify-center gap-3 active:scale-98 transition pulse-glow">
+                    <span>⚡ 奮力一擊 (揮棒)</span>
+                </button>
+                <p class="text-center text-[11px] text-slate-400">走向預判的位置後，按下揮棒打碎西瓜！</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="rules-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button id="close-rules" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-xl font-bold text-amber-400 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-gamepad"></i> 遊戲規則與玩 clear 指南
+            </h3>
+            <ul class="text-xs sm:text-sm text-slate-300 space-y-2.5 list-disc list-inside leading-relaxed">
+                <li><strong class="text-white">蒙眼挑戰：</strong>你被戴上了蒙眼布，無法直接看到沙灘上的西瓜位置。</li>
+                <li><strong class="text-white">三真一假：</strong>畫面上有 4 位熱心隊友為你指路，但<span class="text-red-400 font-bold">其中 1 位的方向或距離指令是完全相反的謊言</span>！</li>
+                <li><strong class="text-white">交叉比對：</strong>請綜合對比 4 人的語音指令，找出衝突的那個說謊者，並依照真話指引調整方向與距離。</li>
+                <li><strong class="text-white">偷看機會：</strong>每關有 1 次偷看 1 秒的機會，請珍惜使用！</li>
+                <li><strong class="text-white">勝利條件：</strong>走至西瓜正前方或位置上，按下「奮力一擊」，成功擊中即可過關！</li>
+            </ul>
+            <button id="confirm-rules" class="mt-6 w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl transition">
+                我知道了，開始遊戲！
+            </button>
+        </div>
+    </div>
+
+    <div id="result-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border-2 border-slate-600 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <div id="result-icon" class="text-6xl mb-3">🍉</div>
+            <h3 id="result-title" class="text-2xl font-black text-white mb-2">一棒命中！</h3>
+            <p id="result-desc" class="text-sm text-slate-300 mb-6">完美拆穿謊言，成功將西瓜打爆！</p>
+            
+            <div id="liar-reveal-box" class="bg-slate-900/90 p-3 rounded-2xl border border-slate-700 mb-6 text-left text-xs">
+                <div class="text-slate-400 mb-1 font-bold">🕵️ 說謊者揭密：</div>
+                <div id="liar-name" class="text-red-400 font-bold text-sm">--</div>
+                <div id="liar-detail" class="text-slate-300 mt-0.5">--</div>
+            </div>
+
+            <button id="next-level-btn" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black rounded-xl text-base shadow-lg transition">
+                進入下一關
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        const state = {
+            level: 1,
+            strikesLeft: 3,
+            peeksLeft: 1,
+            player: { x: 4, y: 7, dir: 0 }, // dir: 0:North, 1:East, 2:South, 3:West
+            watermelon: { x: 4, y: 2 },
+            gridSize: 9,
+            guides: [],
+            liarIndex: -1,
+            isGameOver: false,
+            isPeeking: false
+        };
+
+        const dirNames = ["北 (上)", "東 (右)", "南 (下)", "西 (左)"];
+        const guideAvatars = [
+            { name: "小明 (紅隊)", icon: "👦", color: "text-red-400" },
+            { name: "阿美 (黃隊)", icon: "👧", color: "text-amber-400" },
+            { name: "大熊 (藍隊)", icon: "🧔", color: "text-blue-400" },
+            { name: "莉莉 (綠隊)", icon: "👩", color: "text-emerald-400" }
+        ];
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            drawGame();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function initLevel() {
+            state.strikesLeft = Math.max(1, 4 - Math.floor(state.level / 3));
+            state.peeksLeft = 1;
+            state.isGameOver = false;
+            state.isPeeking = false;
+
+            // Randomize Player & Watermelon positions on a 9x9 grid
+            state.player = {
+                x: Math.floor(Math.random() * 7) + 1,
+                y: Math.floor(Math.random() * 3) + 5, // bottom half
+                dir: 0 // Facing North initially
+            };
+
+            do {
+                state.watermelon = {
+                    x: Math.floor(Math.random() * 7) + 1,
+                    y: Math.floor(Math.random() * 3) + 1 // top half
+                };
+            } while (state.player.x === state.watermelon.x && state.player.y === state.watermelon.y);
+
+            // Generate Instructions: 3 Truths, 1 Lie
+            generateGuideInstructions();
+
+            // Update UI
+            document.getElementById('level-display').innerText = state.level;
+            document.getElementById('strikes-display').innerText = state.strikesLeft;
+            document.getElementById('peek-count').innerText = state.peeksLeft;
+            document.getElementById('blindfold-layer').classList.remove('blindfold-peek');
+
+            resizeCanvas();
+            updateRadar();
+        }
+
+        function generateGuideInstructions() {
+            const dx = state.watermelon.x - state.player.x; // + is Right, - is Left
+            const dy = state.player.y - state.watermelon.y; // + is Forward, - is Backward
+
+            // Truth calculations
+            const trueDxText = dx > 0 ? `往右 ${dx} 步` : (dx < 0 ? `往左 ${Math.abs(dx)} 步` : "左右位置正確");
+            const trueDyText = dy > 0 ? `向前 ${dy} 步` : (dy < 0 ? `向後 ${Math.abs(dy)} 步` : "前後位置正確");
+
+            // Define true statements derived from true position
+            const trueStatements = [
+                `西瓜在你${dy > 0 ? '前方' : '後方'}，需${trueDyText}`,
+                `你需要${trueDxText}才能對準`,
+                `總直線距離大約 ${Math.abs(dx) + Math.abs(dy)} 步`,
+                dy === 0 ? "你目前與西瓜平行" : (dx === 0 ? "你正對著西瓜的縱軸" : `應該先${trueDyText}，再${trueDxText}`)
+            ];
+
+            // Select 1 liar randomly out of 4 guides
+            state.liarIndex = Math.floor(Math.random() * 4);
+
+            // Generate a lie that directly contradicts the truth
+            const fakeDx = dx > 0 ? -dx - 1 : Math.abs(dx) + 2;
+            const fakeDy = dy > 0 ? -dy - 1 : Math.abs(dy) + 2;
+            const fakeDxText = fakeDx > 0 ? `往右 ${Math.abs(fakeDx)} 步` : `往左 ${Math.abs(fakeDx)} 步`;
+            const fakeDyText = fakeDy > 0 ? `向前 ${Math.abs(fakeDy)} 步` : `向後 ${Math.abs(fakeDy)} 步`;
+
+            const falseStatements = [
+                `方向錯了！西瓜在你${dy > 0 ? '後方' : '前方'}才對`,
+                `完全偏了！聽我的，你需要${fakeDxText}`,
+                `距離超遠，至少要走 ${Math.abs(dx) + Math.abs(dy) + 5} 步！`,
+                `聽我的沒錯，趕快${fakeDyText}！`
+            ];
+
+            const liarStatement = falseStatements[Math.floor(Math.random() * falseStatements.length)];
+
+            // Build Guides array
+            state.guides = guideAvatars.map((avatar, idx) => {
+                const isLiar = idx === state.liarIndex;
+                let text = "";
+                if (isLiar) {
+                    text = liarStatement;
+                } else {
+                    text = trueStatements[idx % trueStatements.length];
+                }
+                return {
+                    ...avatar,
+                    isLiar: isLiar,
+                    text: text
+                };
+            });
+
+            renderGuidesUI();
+        }
+
+        function renderGuidesUI() {
+            const container = document.getElementById('guides-container');
+            container.innerHTML = '';
+
+            state.guides.forEach((g) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 flex flex-col justify-between hover:border-slate-500 transition shadow";
+                card.innerHTML = `
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                        <span class="text-xl">${g.icon}</span>
+                        <span class="text-xs font-bold ${g.color}">${g.name}</span>
+                    </div>
+                    <p class="text-xs text-slate-200 font-medium leading-snug bg-slate-800/80 p-2 rounded-lg border border-slate-700/50">
+                        "${g.text}"
+                    </p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function drawGame() {
+            if (!ctx) return;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const cols = state.gridSize;
+            const rows = state.gridSize;
+            const cellW = w / cols;
+            const cellH = h / rows;
+
+            // Clear Background
+            ctx.fillStyle = '#064e3b'; // Sand/Beach green tint
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw Sandy Grid Pattern
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= cols; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellW, 0);
+                ctx.lineTo(i * cellW, h);
+                ctx.stroke();
+            }
+            for (let j = 0; j <= rows; j++) {
+                ctx.beginPath();
+                ctx.moveTo(0, j * cellH);
+                ctx.lineTo(w, j * cellH);
+                ctx.stroke();
+            }
+
+            // Draw Watermelon
+            const wmX = (state.watermelon.x + 0.5) * cellW;
+            const wmY = (state.watermelon.y + 0.5) * cellH;
+            const radius = Math.min(cellW, cellH) * 0.35;
+
+            // Watermelon shadow
+            ctx.beginPath();
+            ctx.ellipse(wmX, wmY + radius * 0.4, radius, radius * 0.4, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fill();
+
+            // Watermelon Body
+            ctx.beginPath();
+            ctx.arc(wmX, wmY, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#15803d';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#052e16';
+            ctx.stroke();
+
+            // Watermelon Stripes
+            ctx.strokeStyle = '#166534';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(wmX - radius * 0.7, wmY);
+            ctx.quadraticCurveTo(wmX, wmY - radius * 0.5, wmX + radius * 0.7, wmY);
+            ctx.stroke();
+
+            // Draw Player
+            const pX = (state.player.x + 0.5) * cellW;
+            const pY = (state.player.y + 0.5) * cellH;
+            const pradius = Math.min(cellW, cellH) * 0.35;
+
+            // Player Shadow
+            ctx.beginPath();
+            ctx.ellipse(pX, pY + pradius * 0.3, pradius, pradius * 0.3, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fill();
+
+            // Player Body
+            ctx.beginPath();
+            ctx.arc(pX, pY, pradius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f59e0b'; // Amber player
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#78350f';
+            ctx.stroke();
+
+            // Blindfold / Eyewear icon on player
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(pX - pradius * 0.7, pY - pradius * 0.3, pradius * 1.4, pradius * 0.4);
+
+            // Direction Arrow Indicator
+            ctx.save();
+            ctx.translate(pX, pY);
+            // Angle based on dir: 0:North (-90deg), 1:East (0deg), 2:South (90deg), 3:West (180deg)
+            const angles = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
+            ctx.rotate(angles[state.player.dir]);
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(pradius + 4, 0);
+            ctx.lineTo(pradius - 6, -6);
+            ctx.lineTo(pradius - 6, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function movePlayer(action) {
+            if (state.isGameOver) return;
+
+            // Actions: 'forward', 'backward', 'left', 'right'
+            if (action === 'forward') {
+                if (state.player.dir === 0 && state.player.y > 0) state.player.y--;
+                else if (state.player.dir === 1 && state.player.x < state.gridSize - 1) state.player.x++;
+                else if (state.player.dir === 2 && state.player.y < state.gridSize - 1) state.player.y++;
+                else if (state.player.dir === 3 && state.player.x > 0) state.player.x--;
+            } else if (action === 'backward') {
+                if (state.player.dir === 0 && state.player.y < state.gridSize - 1) state.player.y++;
+                else if (state.player.dir === 1 && state.player.x > 0) state.player.x--;
+                else if (state.player.dir === 2 && state.player.y > 0) state.player.y--;
+                else if (state.player.dir === 3 && state.player.x < state.gridSize - 1) state.player.x++;
+            } else if (action === 'left') {
+                state.player.dir = (state.player.dir + 3) % 4; // Turn Left
+            } else if (action === 'right') {
+                state.player.dir = (state.player.dir + 1) % 4; // Turn Right
+            }
+
+            drawGame();
+            updateRadar();
+            animateStick();
+        }
+
+        function updateRadar() {
+            const dist = Math.abs(state.watermelon.x - state.player.x) + Math.abs(state.watermelon.y - state.player.y);
+            const estElem = document.getElementById('estimated-distance');
+            
+            // Add a slight audio/visual feedback based on distance
+            if (dist === 0 || dist === 1) {
+                estElem.className = "text-red-400 font-mono font-bold text-sm animate-pulse";
+                estElem.innerText = `非常接近！ (約 ${dist} 步)`;
+            } else if (dist <= 3) {
+                estElem.className = "text-amber-400 font-mono font-bold text-sm";
+                estElem.innerText = `很近了 (約 ${dist} 步)`;
+            } else {
+                estElem.className = "text-emerald-400 font-mono font-bold text-sm";
+                estElem.innerText = `約 ${dist} 步`;
+            }
+        }
+
+        function animateStick() {
+            const stick = document.getElementById('player-stick');
+            stick.classList.add('stick-swing');
+            setTimeout(() => stick.classList.remove('stick-swing'), 300);
+        }
+
+        function strike() {
+            if (state.isGameOver) return;
+
+            animateStick();
+            const p = state.player;
+            const w = state.watermelon;
+
+            // Check if player is on or directly facing the watermelon
+            let hit = false;
+            if (p.x === w.x && p.y === w.y) {
+                hit = true; // Directly stepped on watermelon
+            } else {
+                // Check 1 cell ahead in facing direction
+                let targetX = p.x;
+                let targetY = p.y;
+                if (p.dir === 0) targetY--;
+                else if (p.dir === 1) targetX++;
+                else if (p.dir === 2) targetY++;
+                else if (p.dir === 3) targetX--;
+
+                if (targetX === w.x && targetY === w.y) {
+                    hit = true;
+                }
+            }
+
+            if (hit) {
+                // Success!
+                handleWin();
+            } else {
+                // Missed!
+                state.strikesLeft--;
+                document.getElementById('strikes-display').innerText = state.strikesLeft;
+
+                if (state.strikesLeft <= 0) {
+                    handleLoss();
+                } else {
+                    showToast(`揮空了！揮棒落空，剩餘 ${state.strikesLeft} 次機會！`, 'bg-red-600');
+                }
+            }
+        }
+
+        function handleWin() {
+            state.isGameOver = true;
+            triggerConfetti();
+
+            const liar = state.guides[state.liarIndex];
+
+            document.getElementById('result-icon').innerText = '💥🍉';
+            document.getElementById('result-title').innerText = '完美擊碎西瓜！';
+            document.getElementById('result-title').className = 'text-2xl font-black text-amber-400 mb-2';
+            document.getElementById('result-desc').innerText = `恭喜通過第 ${state.level} 關！你成功拆穿了說謊者！`;
+
+            document.getElementById('liar-name').innerText = `${liar.icon} ${liar.name}`;
+            document.getElementById('liar-detail').innerText = `故意給出假的提示："${liar.text}"`;
+
+            document.getElementById('next-level-btn').innerText = '進入下一關';
+            document.getElementById('next-level-btn').onclick = () => {
+                state.level++;
+                document.getElementById('result-modal').classList.add('hidden');
+                initLevel();
+            };
+
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function handleLoss() {
+            state.isGameOver = true;
+
+            const liar = state.guides[state.liarIndex];
+
+            document.getElementById('result-icon').innerText = '🙈❌';
+            document.getElementById('result-title').innerText = '揮棒機會用盡！';
+            document.getElementById('result-title').className = 'text-2xl font-black text-red-500 mb-2';
+            document.getElementById('result-desc').innerText = '可惜！你被說謊的助手誤導了方向！';
+
+            document.getElementById('liar-name').innerText = `${liar.icon} ${liar.name}`;
+            document.getElementById('liar-detail').innerText = `說謊指引："${liar.text}"`;
+
+            document.getElementById('next-level-btn').innerText = '重試本關';
+            document.getElementById('next-level-btn').onclick = () => {
+                document.getElementById('result-modal').classList.add('hidden');
+                initLevel();
+            };
+
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function peekMap() {
+            if (state.peeksLeft <= 0 || state.isPeeking || state.isGameOver) return;
+
+            state.peeksLeft--;
+            document.getElementById('peek-count').innerText = state.peeksLeft;
+            state.isPeeking = true;
+
+            const blindfold = document.getElementById('blindfold-layer');
+            blindfold.classList.add('blindfold-peek');
+
+            setTimeout(() => {
+                blindfold.classList.remove('blindfold-peek');
+                state.isPeeking = false;
+            }, 1200);
+        }
+
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function showToast(msg, bgClass = 'bg-slate-800') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-20 left-1/2 -translate-x-1/2 ${bgClass} text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-2xl shadow-2xl z-50 transition-all duration-300 border border-white/20`;
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 1800);
+        }
+
+        function registerEvents() {
+            // D-Pad buttons
+            document.getElementById('btn-forward').onclick = () => movePlayer('forward');
+            document.getElementById('btn-backward').onclick = () => movePlayer('backward');
+            document.getElementById('btn-left').onclick = () => movePlayer('left');
+            document.getElementById('btn-right').onclick = () => movePlayer('right');
+            document.getElementById('btn-strike').onclick = strike;
+
+            // Peek & Rule Modals
+            document.getElementById('peek-btn').onclick = peekMap;
+            
+            const rulesModal = document.getElementById('rules-modal');
+            document.getElementById('rules-btn').onclick = () => rulesModal.classList.remove('hidden');
+            document.getElementById('close-rules').onclick = () => rulesModal.classList.add('hidden');
+            document.getElementById('confirm-rules').onclick = () => rulesModal.classList.add('hidden');
+
+            // Keyboard Control Shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (state.isGameOver) return;
+                switch (e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                    case 'W':
+                        movePlayer('forward');
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                    case 'S':
+                        movePlayer('backward');
+                        break;
+                    case 'ArrowLeft':
+                    case 'a':
+                    case 'A':
+                        movePlayer('left');
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                    case 'D':
+                        movePlayer('right');
+                        break;
+                    case ' ':
+                        strike();
+                        break;
+                }
+            });
+        }
+
+        // Window Onload Initialization
+        window.onload = function() {
+            registerEvents();
+            initLevel();
+        };
+    </script>
+</body>
+</html>
