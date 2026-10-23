@@ -425,6 +425,10 @@ interface ItemFactory:
 
 <a id="美術"></a>
 ### 美術
+```
+什麼是繪畫中的生命力？欣賞生命力的本質是在欣賞多樣性。世界上沒有一模一樣的物體，如果不畫出獨有的生命力，就是在忽視個性、抹殺多樣性。
+觀察與抽象化動態>大型與小型上的動態強化
+```
 Fresnel實現「透肉感」
 
 【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
