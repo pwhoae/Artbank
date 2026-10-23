@@ -1,10 +1,10 @@
 ---
 title: "AI 越普及，知識差距會更大？前 NVIDIA 工程師 Donald Szeto 談 AI 與創業｜矽接港"
-source: "https://www.youtube.com/watch?v=0Il9Y6Ednf4"
+source: "https://www.youtube.com/watch?v=0Il9Y6Ednf4&list=WL&index=2"
 author:
   - "[[Erik FY. 方源]]"
 published: 2026-10-20
-created: 2026-10-21
+created: 2026-10-23
 description: "Donald 曾任 NVIDIA 硬件工程師，係 PredictionIO 聯合創辦人兼 CTO，之後加入 Salesforce 參與 Einstein 開發，亦係《Designing Deep Learning Systems》合著者。今集聊到：・識寫 Prompt，同真正識用 AI，有甚麼分別？・點樣用 AI 學習，同時保留查證同判斷能力？・AI 幫手寫程式，工程師點解反而有更多內容"
 tags:
   - "clippings"
