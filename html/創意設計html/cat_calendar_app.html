@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喵喵可愛月曆 - Cat Calendar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Comic Neue & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cat: {
+                            pink: '#FFB7B2',
+                            lightpink: '#FFF0F0',
+                            orange: '#FFDAC1',
+                            cream: '#FAF0E6',
+                            brown: '#8D5B4C',
+                            dark: '#4A3E3D',
+                            accent: '#E07A5F',
+                            green: '#E2F0CB'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Comic Neue', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FAF0E6;
+            color: #4A3E3D;
+            background-image: radial-gradient(#FFD1DC 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        
+        .cat-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 3px solid #FFB7B2;
+            box-shadow: 0 8px 20px rgba(141, 91, 76, 0.1);
+        }
+
+        .cat-btn {
+            transition: all 0.2s ease;
+        }
+        .cat-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+        .cat-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* 隱藏滾動條 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 日曆格子樣式 */
+        .calendar-day {
+            min-h-[80px];
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover {
+            border-color: #FFB7B2;
+            background-color: #FFF0F0;
+        }
+
+        /* 可愛貓爪浮點動畫 */
+        @keyframes pawPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .paw-animated {
+            animation: pawPop 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-full font-sans flex flex-col justify-between p-3 sm:p-6">
+
+    <!-- 主容器 -->
+    <div class="max-w-5xl mx-auto w-full flex-grow flex flex-col gap-6">
+
+        <!-- 頂部 Header & 貓咪標題 -->
+        <header class="cat-card rounded-3xl p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <!-- 可愛貓咪 SVG 圖示 -->
+                <div class="relative w-16 h-16 bg-cat-pink rounded-full flex items-center justify-center text-cat-brown text-3xl shadow-inner">
+                    <i class="fa-solid fa-cat"></i>
+                    <!-- 貓耳標籤 -->
+                    <div class="absolute -top-1 -left-1 w-5 h-5 bg-cat-pink transform -rotate-45 rounded-sm"></div>
+                    <div class="absolute -top-1 -right-1 w-5 h-5 bg-cat-pink transform rotate-45 rounded-sm"></div>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-cat-dark flex items-center gap-2">
+                        喵喵手帳月曆 <i class="fa-solid fa-paw text-cat-accent text-xl"></i>
+                    </h1>
+                    <p class="text-sm text-cat-brown font-medium">記錄與主子的每一天喵～</p>
+                </div>
+            </div>
+
+            <!-- 月份切換控制器 -->
+            <div class="flex items-center gap-3 bg-cat-lightpink px-4 py-2 rounded-full border-2 border-cat-pink">
+                <button id="prevMonth" class="cat-btn w-9 h-9 bg-white text-cat-accent rounded-full flex items-center justify-center shadow font-bold hover:bg-cat-pink hover:text-white">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span id="currentMonthYear" class="text-lg font-bold text-cat-dark min-w-[130px] text-center">
+                    2026 年 10 月
+                </span>
+                <button id="nextMonth" class="cat-btn w-9 h-9 bg-white text-cat-accent rounded-full flex items-center justify-center shadow font-bold hover:bg-cat-pink hover:text-white">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <button id="todayBtn" class="cat-btn px-3 py-1 bg-cat-accent text-white rounded-full text-xs font-bold shadow hover:bg-cat-brown">
+                    今天
+                </button>
+            </div>
+        </header>
+
+        <!-- 主要內容區：左側月曆 + 右側貓咪記事本 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- 左側：月曆主體 (佔 2 欄) -->
+            <main class="lg:col-span-2 cat-card rounded-3xl p-4 sm:p-6 flex flex-col justify-between">
+                
+                <!-- 星期表頭 -->
+                <div class="grid grid-cols-7 text-center font-bold text-cat-brown mb-2 border-b-2 border-cat-orange pb-2">
+                    <span class="text-red-400"><i class="fa-solid fa-sun text-xs mr-1"></i>日</span>
+                    <span>一</span>
+                    <span>二</span>
+                    <span>三</span>
+                    <span>四</span>
+                    <span>五</span>
+                    <span class="text-cat-accent"><i class="fa-solid fa-cloud-moon text-xs mr-1"></i>六</span>
+                </div>
+
+                <!-- 日期網格 -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1 sm:gap-2 text-sm">
+                    <!-- JavaScript 將在此動態生成日期 -->
+                </div>
+
+                <!-- 月曆圖例/說明 -->
+                <div class="mt-4 pt-3 border-t border-cat-orange/40 flex flex-wrap justify-between items-center text-xs text-cat-brown gap-2">
+                    <div class="flex items-center gap-3">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-cat-pink inline-block"></span> 今天</span>
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-paw text-cat-accent"></i> 已打卡/記事</span>
+                    </div>
+                    <div class="text-cat-dark italic">
+                        💡 點擊日期可新增記事或打卡喵！
+                    </div>
+                </div>
+            </main>
+
+            <!-- 右側：貓咪每日卡片 & 記事清單 (佔 1 欄) -->
+            <aside class="flex flex-col gap-6">
+                
+                <!-- 今日貓咪小語 / 知識卡片 -->
+                <div class="cat-card rounded-3xl p-5 bg-gradient-to-br from-white to-cat-lightpink relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 text-cat-pink/20 text-8xl">
+                        <i class="fa-solid fa-cat"></i>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold bg-cat-orange px-2.5 py-1 rounded-full text-cat-brown flex items-center gap-1">
+                            <i class="fa-solid fa-lightbulb"></i> 每日喵知識
+                        </span>
+                        <span id="selectedDateDisplay" class="text-xs font-bold text-cat-brown">
+                            -
+                        </span>
+                    </div>
+                    <p id="catFact" class="text-sm text-cat-dark font-medium leading-relaxed relative z-10 my-2">
+                        貓咪的鬍鬚可以用來測量空間寬度，千萬不可以剪掉喔！
+                    </p>
+                    <button id="refreshFact" class="text-xs text-cat-accent hover:underline font-bold flex items-center gap-1 mt-1">
+                        <i class="fa-solid fa-rotate"></i> 換一則喵小語
+                    </button>
+                </div>
+
+                <!-- 選定日期的待辦/記事清單 -->
+                <div class="cat-card rounded-3xl p-5 flex-grow flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-bold text-lg text-cat-dark flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-list text-cat-accent"></i> 喵喵記事本
+                        </h2>
+                        <span id="noteCount" class="text-xs bg-cat-pink text-white font-bold px-2 py-0.5 rounded-full">0 則</span>
+                    </div>
+
+                    <!-- 新增記事輸入框 -->
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="noteInput" placeholder="寫下事項或給貓主子的提醒..." 
+                            class="flex-1 px-3 py-2 text-sm rounded-xl border-2 border-cat-pink focus:outline-none focus:border-cat-accent bg-white/80">
+                        <button id="addNoteBtn" class="cat-btn bg-cat-accent text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-cat-brown flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <!-- 記事列表容器 -->
+                    <ul id="noteList" class="space-y-2 flex-1 overflow-y-auto max-h-60 no-scrollbar pr-1">
+                        <!-- 動態載入事項 -->
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+    </div>
+
+    <!-- 頁腳 -->
+    <footer class="mt-6 text-center text-xs text-cat-brown font-medium">
+        <p> Made with <i class="fa-solid fa-heart text-red-400"></i> for Cat Lovers | 喵喵日曆 &copy; 2026</p>
+    </footer>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // --- 貓咪語錄庫 ---
+        const catFacts = [
+            "貓咪的鬍鬚可以用來測量空間寬度，千萬不可以剪掉喔！",
+            "貓咪發出咕嚕聲不只代表開心，有時也是自我療癒的方式喵～",
+            "貓咪大約有70%的人生都在睡覺中度過，真令人羨慕！",
+            "每一隻貓咪的鼻子紋路（鼻紋）都是獨一無二的，就像人類指紋一樣。",
+            "貓咪用頭蹭你是在把你標記為「他的專屬財產」喵！",
+            "貓咪跳躍的高度最多可達自己身高的 6 倍喔！",
+            "貓咪耳朵有 32 塊肌肉，可以 180 度獨立轉動！",
+            "貓咪踩踏（揉麵糰）是小貓時期留下來的習慣，代表牠覺得很有安全感。"
+        ];
+
+        // --- 狀態變數 ---
+        let currentDate = new Date();
+        let selectedDateStr = formatDateKey(new Date());
+        
+        // 從 LocalStorage 載入資料 (若無則預設空物件)
+        let calendarData = JSON.parse(localStorage.getItem('catCalendarData')) || {};
+
+        // --- DOM 元素引用 ---
+        const calendarGrid = document.getElementById('calendarGrid');
+        const currentMonthYear = document.getElementById('currentMonthYear');
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+        const todayBtn = document.getElementById('todayBtn');
+        const catFact = document.getElementById('catFact');
+        const refreshFactBtn = document.getElementById('refreshFact');
+        const selectedDateDisplay = document.getElementById('selectedDateDisplay');
+        const noteInput = document.getElementById('noteInput');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const noteList = document.getElementById('noteList');
+        const noteCount = document.getElementById('noteCount');
+
+        // --- 工具函式 ---
+        function formatDateKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function saveCalendarData() {
+            localStorage.setItem('catCalendarData', JSON.stringify(calendarData));
+        }
+
+        // --- 隨機貓咪語錄 ---
+        function updateCatFact() {
+            const randomIdx = Math.floor(Math.random() * catFacts.length);
+            catFact.innerText = catFacts[randomIdx];
+        }
+
+        // --- 渲染月曆 ---
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            // 更新標題
+            const monthNames = ["1 月", "2 月", "3 月", "4 月", "5 月", "6 月", "7 月", "8 月", "9 月", "10 月", "11 月", "12 月"];
+            currentMonthYear.innerText = `${year} 年 ${monthNames[month]}`;
+
+            // 清空網格
+            calendarGrid.innerHTML = '';
+
+            // 計算本月第一天是星期幾 & 本月總天數
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            const prevLastDate = new Date(year, month, 0).getDate();
+
+            // 補齊上個月的剩餘天數
+            for (let i = firstDayIndex; i > 0; i--) {
+                const dayNum = prevLastDate - i + 1;
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'p-2 rounded-2xl bg-gray-100/50 text-gray-300 min-h-[70px] text-xs flex flex-col justify-between cursor-not-allowed';
+                dayDiv.innerHTML = `<span class="font-bold">${dayNum}</span>`;
+                calendarGrid.appendChild(dayDiv);
+            }
+
+            // 本月日期渲染
+            const todayStr = formatDateKey(new Date());
+
+            for (let day = 1; day <= lastDate; day++) {
+                const dateObj = new Date(year, month, day);
+                const dateKey = formatDateKey(dateObj);
+
+                const isToday = (dateKey === todayStr);
+                const isSelected = (dateKey === selectedDateStr);
+                const dayData = calendarData[dateKey] || { notes: [], pawMark: false };
+
+                const dayDiv = document.createElement('div');
+                
+                // 動態樣式類別
+                let baseClasses = 'calendar-day p-2 rounded-2xl border-2 transition-all min-h-[75px] flex flex-col justify-between cursor-pointer relative group ';
+                
+                if (isSelected) {
+                    baseClasses += 'border-cat-accent bg-cat-lightpink shadow-md ';
+                } else if (isToday) {
+                    baseClasses += 'border-cat-pink bg-cat-cream/80 font-bold ';
+                } else {
+                    baseClasses += 'border-transparent bg-white/60 hover:bg-white ';
+                }
+
+                dayDiv.className = baseClasses;
+
+                // 內容標籤
+                let pawBadge = dayData.pawMark 
+                    ? `<span class="text-cat-accent text-xs paw-animated" title="已打卡"><i class="fa-solid fa-paw"></i></span>` 
+                    : `<span class="text-gray-300 text-xs opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-paw"></i></span>`;
+
+                let noteBadge = (dayData.notes && dayData.notes.length > 0)
+                    ? `<span class="bg-cat-orange text-cat-brown font-bold text-[10px] px-1.5 py-0.5 rounded-full">${dayData.notes.length}</span>`
+                    : '';
+
+                dayDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${isToday ? 'bg-cat-pink text-white' : 'text-cat-dark'}">
+                            ${day}
+                        </span>
+                        ${pawBadge}
+                    </div>
+                    <div class="flex justify-end items-center gap-1 mt-1">
+                        ${noteBadge}
+                    </div>
+                `;
+
+                // 點擊事件：選擇該日期
+                dayDiv.addEventListener('click', () => {
+                    selectedDateStr = dateKey;
+                    renderCalendar();
+                    renderNotes();
+                });
+
+                // 雙擊事件：快速切換爪印打卡
+                dayDiv.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    if (!calendarData[dateKey]) calendarData[dateKey] = { notes: [], pawMark: false };
+                    calendarData[dateKey].pawMark = !calendarData[dateKey].pawMark;
+                    saveCalendarData();
+                    renderCalendar();
+                });
+
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        // --- 渲染選擇日期的記事清單 ---
+        function renderNotes() {
+            const [y, m, d] = selectedDateStr.split('-');
+            selectedDateDisplay.innerText = `${y} / ${m} / ${d}`;
+
+            const dayData = calendarData[selectedDateStr] || { notes: [], pawMark: false };
+            const notes = dayData.notes || [];
+
+            noteCount.innerText = `${notes.length} 則`;
+            noteList.innerHTML = '';
+
+            if (notes.length === 0) {
+                noteList.innerHTML = `
+                    <div class="text-center py-8 text-cat-brown/60 text-xs flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-cat text-2xl text-cat-pink"></i>
+                        <span>這天還沒有記事喵，點擊上方新增吧！</span>
+                    </div>
+                `;
+                return;
+            }
+
+            notes.forEach((note, index) => {
+                const li = document.createElement('li');
+                li.className = 'bg-white p-2.5 rounded-xl border border-cat-pink/50 flex items-center justify-between text-xs text-cat-dark shadow-sm group hover:border-cat-pink';
+                
+                li.innerHTML = `
+                    <span class="flex-1 pr-2 break-all ${note.completed ? 'line-through text-gray-400' : ''}">${escapeHtml(note.text)}</span>
+                    <div class="flex items-center gap-1">
+                        <button onclick="toggleNote(${index})" class="text-cat-brown hover:text-green-500 p-1">
+                            <i class="fa-regular ${note.completed ? 'fa-circle-check text-green-500' : 'fa-circle'}"></i>
+                        </button>
+                        <button onclick="deleteNote(${index})" class="text-cat-brown hover:text-red-400 p-1 opacity-80 group-hover:opacity-100">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                noteList.appendChild(li);
+            });
+        }
+
+        // HTML 轉義防止 XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        // --- 新增記事 ---
+        function addNote() {
+            const text = noteInput.value.trim();
+            if (!text) return;
+
+            if (!calendarData[selectedDateStr]) {
+                calendarData[selectedDateStr] = { notes: [], pawMark: false };
+            }
+
+            calendarData[selectedDateStr].notes.push({
+                text: text,
+                completed: false
+            });
+
+            saveCalendarData();
+            noteInput.value = '';
+            renderNotes();
+            renderCalendar();
+        }
+
+        // --- 切換記事完成狀態 ---
+        window.toggleNote = function(index) {
+            if (calendarData[selectedDateStr] && calendarData[selectedDateStr].notes[index]) {
+                const note = calendarData[selectedDateStr].notes[index];
+                note.completed = !note.completed;
+                saveCalendarData();
+                renderNotes();
+            }
+        };
+
+        // --- 刪除記事 ---
+        window.deleteNote = function(index) {
+            if (calendarData[selectedDateStr] && calendarData[selectedDateStr].notes[index]) {
+                calendarData[selectedDateStr].notes.splice(index, 1);
+                saveCalendarData();
+                renderNotes();
+                renderCalendar();
+            }
+        };
+
+        // --- 事件監聽配置 ---
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        todayBtn.addEventListener('click', () => {
+            currentDate = new Date();
+            selectedDateStr = formatDateKey(currentDate);
+            renderCalendar();
+            renderNotes();
+        });
+
+        refreshFactBtn.addEventListener('click', updateCatFact);
+
+        addNoteBtn.addEventListener('click', addNote);
+
+        noteInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addNote();
+        });
+
+        // --- 初始化頁面 ---
+        window.onload = function() {
+            updateCatFact();
+            renderCalendar();
+            renderNotes();
+        };
+    </script>
+</body>
+</html>
