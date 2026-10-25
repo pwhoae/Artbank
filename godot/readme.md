@@ -2,6 +2,10 @@ Addons #simple card/simple card pile ui
 善用現成 Addons / Plugins（不要重複造輪子）Panku Console：遊戲內即時控制台，可追蹤變數、執行命令，極度利於 Debug 與測試。 
 GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）。 
 如何逆向一个Godot游戏？:用GDRE 
+5. 貼圖/复用与旋转角度增加變化:https://ambientcg.com/
+6. 地编參考:https://www.artstation.com/artwork/dyk3nQ
+7. 解刨示意圖:tripoai https://studio.tripo3d.ai?invite_code=O0E0Z6
+
 # **🎮 Godot Resource Bank & Development Notes**
 
 歡迎來到 **Artbank \- Godot 專案資源庫**！本倉庫整理了各種 Godot 4 的遊戲機制原型、Shader 視覺效果、工具套件、音效 UI 範例以及個人開發筆記。
