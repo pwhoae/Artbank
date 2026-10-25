@@ -1,3 +1,20 @@
+lerp:從 A 點移動到 B 點
+
+映射比例 remap(value, istart, istop, ostart, ostop)
+```
+value：目前你要轉換的數值。
+istart / istop：原本舊範圍的「起點」與「終點」（Input start/stop）。
+ostart / ostop：想要轉換過去新範圍的「起點」與「終點」（Output start/stop）。
+
+1. 手电筒电池电量与灯光强度联动
+逻辑：随着电池电量从 max_battery 消耗至 0，通过 remap(battery, max_battery, 0, max_energy, 0) 动态调整 2D 点光源（Light2D）的强度。 
+
+2. 经验值进度条适配
+逻辑：人物升级后所需经验值呈指数增长（如递增 25%），使用 remap(current_exp, 0, required_exp, 0, bar.max_value) 将经验自动映射到 UI 进度条。 
+
+3. 移动速度与脚步声音调（Pitch）变化
+逻辑：根据角色的移动速度 X 轴绝对值 abs(velocity.x)，在 0 到 max_speed 范围内，映射到音效播放器（AudioStreamPlayer）的 pitch_scale 范围（如 0.8 至 1.3）。 
+```
 ### 3D Notes
 tools:
 輕量級 Low-Poly 3D 模型庫：poly.pizza (Quaternius)<br>
