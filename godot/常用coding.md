@@ -1,3 +1,197 @@
+<details>
+<summary>
+	### GDScript ->避免硬編碼->用var export
+</summary>
+	
+### GDScript ->避免硬編碼->用var export
+	
+```
+#帕斯卡 class_name [ClassName]  /signal [HitPlayer]
+#蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
+```
+### 0.0 基本
+```
+# export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
+# ctrl: @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
+# enum [enum Phase { Fighting, Win, Resetting }]
+# 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
+# 显示系统对话框 OS.alert("message")
+await get_tree().create_timer(2).timeout # 等待時間 
+
+### 輔助func
+clamp
+lerp/lerp_angle
+randi/randf
+position.direction_to(player.position)
+match type
+
+### 時間
+var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間;var split_date=date.split('T')	#split 分開;text=str(", ".join(split_date))	#join 組合
+
+### 打印调试
+print_rich("[color=red]Error[/color]");assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
+```
+
+### 0. signal
+```
+|player.gd|another.gd|
+|1 signal start <br> 2 start.emit() #发射信号|@export player <br> 3 player.start.connect(func) #only start.emit()>turn on the func |
+# 信号定义 [signal player_died]
+# 发射信号 [health_changed.emit(50)]
+# 连接信号 [$HealthComponent.health_changed.connect(_on_health_changed{here is func})]
+# 断开连接 [$HealthComponent.health_changed.disconnect(_on_health_changed)]
+```
+### 0. Input 53 input system
+inputeventmouse/mouse click gui
+```
+# 键盘输入 [if Input.is_key_pressed(KEY_SPACE)]
+# 鼠标输入 [if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)]
+# 游戏手柄 [if Input.is_joy_button_pressed(0, JOY_BUTTON_A)]/# 触摸输入[if Input.is_action_pressed]("touch"):
+```
+### 0. scene
+```
+# 方式 1：通过路径 [get_tree().change_scene_to_file("res://levels/level_2.tscn")]
+# 方式 2：通过资源 [var level_2 = load("res://levels/level_2.tscn")]>[get_tree().change_scene_to_packed(level_2)]
+[var enemy = scene.instantiate()][add_child(enemy)]
+[get_tree().reload_current_scene()][get_tree().quit()]
+```
+### 0. node
+```
+# 创建节点 [var enemy = Enemy.new()]
+# 添加到父节点 [add_child(enemy)]
+# 从父节点移除 [remove_child(enemy)]
+# 获取父节点 [var parent = get_parent()] [var children = get_children()]
+# 获取子节点数量 [var count = get_child_count()] [var child = get_child(0)]
+# 有func [if node.has_method("shoot"):]/# 获取方法列表 [var methods = node.get_method_list()]/# 获取属性列表 [var props = node.get_property_list()]
+```
+### 0. Group
+```
+# 添加节点到组 [add_to_group("enemies")]
+# 从组移除 [remove_from_group("enemies")]
+# 检查是否在组中 [if is_in_group("enemies"):]
+# 获取组中所有节点 [var enemies = get_tree().get_nodes_in_group("enemies")]
+# 调用组中所有节点的方法 [get_tree().call_group("enemies", "take_damage", 10)]
+# 连接到组中所有节点 [get_tree().connect("node_added", self, "_on_node_added")]
+```
+### 0. FileAccess 读写
+```
+# 读取文件
+var file = FileAccess.open("res://data.txt", FileAccess.READ)
+var content = file.get_as_text()
+file.close()
+
+# 写入文件
+var file = FileAccess.open("user://save.dat", FileAccess.WRITE)
+file.store_string("save data")
+file.close()
+# 检查文件是否存在 [if FileAccess.file_exists("res://data.txt")]
+```
+### 0. AudioStreamPlayer2D 音频
+```
+# 加载音频流 [if stream_path != "": var stream = load(stream_path)];# 播放/停止/暂停音频 [play()/stop()/pause()];# 检查是否正在播放/获取播放位置 [is_playing()/get_playback_position()]
+```
+	
+### tilemap>terrain: https://wareya.github.io/webtyler/
+
+### 0. OS
+```
+# "Windows" [OS.get_name()];# 可执行文件路径 print(OS.get_executable_path());# 用户数据目录 print(OS.get_user_data_dir());# 请求权限（移动） OS.request_permission("camera")  
+```
+### 0. ResourceLoader
+```
+# 手动卸载 [ResourceLoader.unload("res://large_texture.png") ];# 卸载所有未使用的资源 [ResourceQueue.unload_unused_resources()]
+```
+### 0. Json
+```
+# 序列化为 JSON
+func save_to_json(path: String) -> Error: 
+    var data = {
+        "name": name,
+    }
+    ***var json_string = JSON.stringify(data, "  ")
+    return OK
+
+# 从 JSON 反序列化
+```
+### 0. DisplayServer
+```gdscript
+# 窗口管理
+DisplayServer.window_set_title("My Game")
+DisplayServer.window_set_size(Vector2i(1280, 720))
+DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+# 屏幕信息
+var screen_count = DisplayServer.get_screen_count()
+var screen_size = DisplayServer.screen_get_size()
+
+# 键盘
+if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+    DisplayServer.virtual_keyboard_show()
+```
+### 0. 渲染 RenderingServer
+```
+var light = DirectionalLight3D.new() # 光源属性 3D
+light.light_color = Color(1, 0.9, 0.8)  # 暖色阳光
+light.light_energy = 1.5  # 光照强度
+light.shadow_enabled = true  # 启用阴影
+light.shadow_max_distance = 100  # 阴影最大距离
+
+var light = DirectionalLight3D.new() # 阴影设置 3D
+light.shadow_enabled = true
+light.shadow_max_distance = 50  # 减少阴影距离
+light.shadow_orthogonal_size = 20  # 正交大小
+light.shadow_bias = 0.01  # 阴影偏移
+```
+### 输入灵敏度
+```gdscript
+class_name InputSensitivity
+func _ready():
+    load_sensitivity_settings()
+
+# 加载灵敏度设置
+func load_sensitivity_settings():
+    var config = ConfigFile.new()
+    var err = config.load("user://input_sensitivity.ini")
+    
+    if err == OK:mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0);gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0);axis_deadzone = config.get_value("deadzone", "axis", 0.1);
+
+func save_sensitivity_settings():
+    # 保存灵敏度设置
+    var config = ConfigFile.new()
+    config.set_value("sensitivity", "mouse", mouse_sensitivity);config.set_value("sensitivity", "gamepad", gamepad_sensitivity);config.set_value("deadzone", "axis", axis_deadzone);
+    config.save("user://input_sensitivity.ini")
+
+func set_sensitivity(sensitivity: float):
+    mouse_sensitivity = clamp(sensitivity, 0.1, 5.0)
+    gamepad_sensitivity = clamp(sensitivity, 0.1, 5.0)
+    axis_deadzone = clamp(zone, 0.0, 0.5)
+
+func get_sensitivity() -> float:
+    return mouse_sensitivity;return gamepad_sensitivity;return axis_deadzone;
+
+# 应用灵敏度到轴值
+func apply_to_axis_value(value: float) -> float:
+    if abs(value) < axis_deadzone:return 0.0;
+	var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone);adjusted = clamp(adjusted, 0.0, 1.0);return sign(value) * adjusted * gamepad_sensitivity;# 应用灵敏度 
+```
+# 工厂模式
+```
+class_name FactoryPattern
+# 简单工厂
+static func create_enemy(type: String) -> Node:
+    var enemy: Node
+    match type:"basic":enemy = BasicEnemy.new();"advanced":enemy = AdvancedEnemy.new();"boss":enemy = BossEnemy.new();return enemy;
+
+# 工厂方法
+func create_product(product_type: String) -> Object:
+    match product_type: "weapon":return create_weapon();"armor":return create_armor();"potion":return create_potion();return null;
+
+# 抽象工厂
+interface ItemFactory:
+    func create_weapon() -> Object
+    func create_armor() -> Object
+```
+</details>
 ### 思考方向
 1. filedialog:玩家upload file
 2. DisplayServer.clipboard_set("要複製的內容")
