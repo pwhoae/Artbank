@@ -1,3 +1,15 @@
+### 思考方向
+1. filedialog:玩家upload file
+2. DisplayServer.clipboard_set("要複製的內容")
+3. marker2d/3d
+4. Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
+5. static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
+6. move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime)
+7. death zone>worldboundary
+8. editable 取得node
+9. gui>playerdata>autoload>GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
+10. [3d要加入場景光照+環境光+camera]
+<hr>
 lerp:從 A 點移動到 B 點
 
 映射比例 remap(value, istart, istop, ostart, ostop)
