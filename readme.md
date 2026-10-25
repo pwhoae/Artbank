@@ -1,3 +1,5 @@
+AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
+動畫 用動畫庫mixamo
 smc automation|青年就業通
 
 
