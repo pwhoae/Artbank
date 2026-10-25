@@ -122,11 +122,13 @@ GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）
 设计规划图模板:地貌与历史背景+多维细节参考库+建筑结构+灯光氛围：确定时间段及角落光影+贴花与破损细节：收集管道、污渍、电线、海报等生活化元素+空间测量: 放入角色模型进行实际跑图测试，反复测量比例与空间感。 
 
 6. tscn | gdscript | assets (audio,png,glb,);收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
-7. mesh.create_convex_shape（）給static+collsion|碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。在 Action Editor 中创建 default（默认姿态）、idle_loop（待机循环）和 run_loop（跑步循环）动画。  
-8. asd rotate xyz
-9. 动态天花板算法:代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
-10.  开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。
-11. 參考 《绝区零》风格细节表现
+
+**GD 名Tscn+number+_nodename**
+8. mesh.create_convex_shape（）給static+collsion|碰撞体命名规范：模型重命名后缀带 -col（如 ground_col、wall_col），导入 Godot 时系统会自动生成 StaticBody3D 静态碰撞体。在 Action Editor 中创建 default（默认姿态）、idle_loop（待机循环）和 run_loop（跑步循环）动画。  
+9. asd rotate xyz
+10. 动态天花板算法:代码自动化实现：运行时在 BaseRoom 脚本中过滤出所有地面/坑洞等无天花板网格的 ID 列表。  使用 get_used_cells() 遍历当前房间已被绘制的坐标。  若坐标处的单元格需要天花板，则通过代码在 ceilings 网格地图的对应三维坐标动态绘制天花板。
+11.  开关 Process 函数：使用 set_process(false) 可直接禁用 _process 或 _physics_process。
+12. 參考 《绝区零》风格细节表现
 空间透视与立面设计：避免平面化的造型（如平扁的武器/刀具）。必须画出块面的透视厚度与立面转折，体现强烈的体积感与空间穿插（如绳索的前后层次）。 
 MD+ 1
 小结构的收敛性：次要小结构不能过大抢戏，需严谨控制粗细与位置。 
