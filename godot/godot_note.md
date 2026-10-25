@@ -19,72 +19,12 @@
 把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
 ```
 
-
-
-
-
-
-### Common function
-lerp:從 A 點移動到 B 點
-
-映射比例 remap(value, istart, istop, ostart, ostop)
-```
-value：目前你要轉換的數值。
-istart / istop：原本舊範圍的「起點」與「終點」（Input start/stop）。
-ostart / ostop：想要轉換過去新範圍的「起點」與「終點」（Output start/stop）。
-
-1. 手电筒电池电量与灯光强度联动
-逻辑：随着电池电量从 max_battery 消耗至 0，通过 remap(battery, max_battery, 0, max_energy, 0) 动态调整 2D 点光源（Light2D）的强度。 
-
-2. 经验值进度条适配
-逻辑：人物升级后所需经验值呈指数增长（如递增 25%），使用 remap(current_exp, 0, required_exp, 0, bar.max_value) 将经验自动映射到 UI 进度条。 
-
-3. 移动速度与脚步声音调（Pitch）变化
-逻辑：根据角色的移动速度 X 轴绝对值 abs(velocity.x)，在 0 到 max_speed 范围内，映射到音效播放器（AudioStreamPlayer）的 pitch_scale 范围（如 0.8 至 1.3）。 
-```
-<hr>
-<details>
-	<summary> ###  游戏属性系统</summary>
-
-1. 属性系统
-类型划分：属性（生命、攻击、防御）与专门作用于技能标签的技能属性。 
-数值分层：支持“基础值 + 额外值 + 百分比加成 = 最终值”的计算链路。 
-基础属性：包含技能等级、释放条件、资源消耗、冷却时间（CD）及运行时技能数据。 
-技能原子化：将复杂技能拆解为多个独立“技能能力（Skill Ability）”。例如：一个技能可组合“近战范围 AOE + 子弹位移 + 附加 Buff”。 
-
-3. Buff 系统（Buff System）
-管理单位身上的持续性效果，包含 Buff 等级、属性修改、周期效果（DoT/HoT）、叠层层数以及触发时传入的运行时参数。 
-
-4. 统一触发系统（Trigger System）
-配置链路：将一次触发拆解为 事件 → 条件 → 目标 → 触发效果。 
-通用性：受击、造成暴击、击杀目标、Buff 周期结算等均走同一套配置链路，绝大多数被动技能也基于此系统实现。 
-
-5. 伤害结算（Damage Processing）
-技能命中目标后触发，集中处理攻击属性、伤害类型、暴击、抗性、防具穿透、伤害加成等综合计算，输出最终数值。 
-
-6. AI 与状态机（AI & State Machine）
-行为树 AI：怪物与召唤物使用行为树处理寻路、追击、站位、距离判断及普通怪与 Boss 的技能选择差异。 
-逻辑状态机：非动画状态机，用于控制单位逻辑状态（移动、待机、释放技能、受击、死亡），并将状态驱动给动画与定位逻辑。 
-
-7. 配置表与数据流（Data & Table Pipelines）
-二维表格（Excel/AI辅助生成）：用于技能基础数据、数值等级、Buff 等数据，通过导表工具转码。 
-ScriptableObject (SO)：针对技能能力组合与复杂触发逻辑，使用 Unity SO 等可视化资源进行配置。 
-</details>
+### <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">Coding </a>
 <hr>
 
-### 思考方向
-1. filedialog:玩家upload file
-2. DisplayServer.clipboard_set("要複製的內容")
-3. marker2d/3d
-4. Player+camera (springarm) Camera3D：并勾选 Current 使其激活>camera飛過去地圖演示>tween
-5. static (mesh>網格>static>3角網格)/interactive item (聚光燈{spotlight}+光源{omnienergy}+area3D)[(glb,gltf)]
-6. move>animationplayer>animationtree (use editable to achieve animation>player{velocity.length()}.xfadetime)
-7. death zone>worldboundary
-8. editable 取得node
-9. gui>playerdata>autoload>GameManager（建議做成單例）>控制分數/控制關卡/常用 Node 類型
-<hr>
 
-先建[玩法](#玩法) 再填[美術](#美術)<br><a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%B8%B8%E7%94%A8coding.md">常用coding.md</a>
+
+先建[玩法](#玩法) 再填[美術](#美術)<br>
 
 <details><summary>參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a></summary>
 https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
@@ -105,213 +45,28 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 <hr>
 
 <a id="玩法"></a>
-### 先建玩法
-
+### 玩法
 ```
-输入->检测->变换->通信->状态与逻辑
 在构思任何新机制（如宝箱、NPC、抓钩等）时，只需通过回答这 5 个问题即可梳理出整体开发思路： 
 宝箱：检测玩家靠近 → 输入（按 E 键） → 状态逻辑判断是否已打开 → 变换（播放旋转打开动画） → 通信（给玩家增加物品）。 
 抓钩：输入（按下左键） → 变换与检测（向指针方向发射，检测碰撞点） → 状态切换（从地面运动切换为空中飞行） → 变换（计算弧度并拉动玩家位移）。
 ```
-<img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%8F%90%E7%A4%BA%E6%89%8B%E6%B3%95%E7%8D%8E%E5%8B%B5.jpeg" width="300" height="300"></img>
+[偽3d效果>2.5D||互動式動態霧氣||派對屬性||AtlasTexture 拼圖]
+
+
+21點+拼點攻擊
+挑战把粉丝做成游戏关卡 only up
+萌萌夾擊
+
+2. 彩虹字,浮動,互動流體模擬,卡反絕區零火鍋,3D 掃雷, 瘋狂鴿子3d /滾動的天空/ 號角保齡球/ 閃避球/ 滑雪/ 美夢zzz/ TNT弹道轨迹
+11. 宝箱|门|NPC|子弹|抓钩勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門+robot核心就是key
+14. 進入迷宮>獲得新道具>擊敗 Boss>開啟新地圖 ## 被動遊戲 vs 主動遊戲
+15. 遠路+直接 ## 找开源demo>做遊戲:miss hit/鏡像密碼
+16. 手忙腳亂開鎖遊戲
+17. Galumb:彈床/滾木/棍/拳頭/激光
+18. 大希王模拟器 https://game.hiro.idealland.info/
 <hr>
 
-<details>
-<summary>
-	### GDScript ->避免硬編碼->用var export
-</summary>
-	
-### GDScript ->避免硬編碼->用var export
-	
-```
-#帕斯卡 class_name [ClassName]  /signal [HitPlayer]
-#蛇形 @export_category("Player Setting")/@export_group("Player")/@export>@ready>var [蛇形 player_score]/func [ player_score]
-```
-### 0.0 基本
-```
-# export导出变量（在编辑器中可见） [@export var speed: float = 5.0]
-# ctrl: @onready 节点引用（通过@onready 自动获取） [@onready var camera = $Camera3D]
-# enum [enum Phase { Fighting, Win, Resetting }]
-# 使用 @preload 在编译时加载{會慢} [@preload("res://player.png")]
-# 显示系统对话框 OS.alert("message")
-await get_tree().create_timer(2).timeout # 等待時間 
-
-### 輔助func
-clamp
-lerp/lerp_angle
-randi/randf
-position.direction_to(player.position)
-match type
-
-### 時間
-var date=Time.get_datetime_string_from_system() #get_datetime_string/get_datetime_dict/get_unix_time 時間;var split_date=date.split('T')	#split 分開;text=str(", ".join(split_date))	#join 組合
-
-### 打印调试
-print_rich("[color=red]Error[/color]");assert(value > 0, "Value must be positive")/#push_warning("Warning message")/#push_error("Error message")
-```
-
-### 0. signal
-```
-|player.gd|another.gd|
-|1 signal start <br> 2 start.emit() #发射信号|@export player <br> 3 player.start.connect(func) #only start.emit()>turn on the func |
-# 信号定义 [signal player_died]
-# 发射信号 [health_changed.emit(50)]
-# 连接信号 [$HealthComponent.health_changed.connect(_on_health_changed{here is func})]
-# 断开连接 [$HealthComponent.health_changed.disconnect(_on_health_changed)]
-```
-### 0. Input 53 input system
-inputeventmouse/mouse click gui
-```
-# 键盘输入 [if Input.is_key_pressed(KEY_SPACE)]
-# 鼠标输入 [if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)]
-# 游戏手柄 [if Input.is_joy_button_pressed(0, JOY_BUTTON_A)]/# 触摸输入[if Input.is_action_pressed]("touch"):
-```
-### 0. scene
-```
-# 方式 1：通过路径 [get_tree().change_scene_to_file("res://levels/level_2.tscn")]
-# 方式 2：通过资源 [var level_2 = load("res://levels/level_2.tscn")]>[get_tree().change_scene_to_packed(level_2)]
-[var enemy = scene.instantiate()][add_child(enemy)]
-[get_tree().reload_current_scene()][get_tree().quit()]
-```
-### 0. node
-```
-# 创建节点 [var enemy = Enemy.new()]
-# 添加到父节点 [add_child(enemy)]
-# 从父节点移除 [remove_child(enemy)]
-# 获取父节点 [var parent = get_parent()] [var children = get_children()]
-# 获取子节点数量 [var count = get_child_count()] [var child = get_child(0)]
-# 有func [if node.has_method("shoot"):]/# 获取方法列表 [var methods = node.get_method_list()]/# 获取属性列表 [var props = node.get_property_list()]
-```
-### 0. Group
-```
-# 添加节点到组 [add_to_group("enemies")]
-# 从组移除 [remove_from_group("enemies")]
-# 检查是否在组中 [if is_in_group("enemies"):]
-# 获取组中所有节点 [var enemies = get_tree().get_nodes_in_group("enemies")]
-# 调用组中所有节点的方法 [get_tree().call_group("enemies", "take_damage", 10)]
-# 连接到组中所有节点 [get_tree().connect("node_added", self, "_on_node_added")]
-```
-### 0. FileAccess 读写
-```
-# 读取文件
-var file = FileAccess.open("res://data.txt", FileAccess.READ)
-var content = file.get_as_text()
-file.close()
-
-# 写入文件
-var file = FileAccess.open("user://save.dat", FileAccess.WRITE)
-file.store_string("save data")
-file.close()
-# 检查文件是否存在 [if FileAccess.file_exists("res://data.txt")]
-```
-### 0. AudioStreamPlayer2D 音频
-```
-# 加载音频流 [if stream_path != "": var stream = load(stream_path)];# 播放/停止/暂停音频 [play()/stop()/pause()];# 检查是否正在播放/获取播放位置 [is_playing()/get_playback_position()]
-```
-	
-### tilemap>terrain: https://wareya.github.io/webtyler/
-
-### 0. OS
-```
-# "Windows" [OS.get_name()];# 可执行文件路径 print(OS.get_executable_path());# 用户数据目录 print(OS.get_user_data_dir());# 请求权限（移动） OS.request_permission("camera")  
-```
-### 0. ResourceLoader
-```
-# 手动卸载 [ResourceLoader.unload("res://large_texture.png") ];# 卸载所有未使用的资源 [ResourceQueue.unload_unused_resources()]
-```
-### 0. Json
-```
-# 序列化为 JSON
-func save_to_json(path: String) -> Error: 
-    var data = {
-        "name": name,
-    }
-    ***var json_string = JSON.stringify(data, "  ")
-    return OK
-
-# 从 JSON 反序列化
-```
-### 0. DisplayServer
-```gdscript
-# 窗口管理
-DisplayServer.window_set_title("My Game")
-DisplayServer.window_set_size(Vector2i(1280, 720))
-DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-
-# 屏幕信息
-var screen_count = DisplayServer.get_screen_count()
-var screen_size = DisplayServer.screen_get_size()
-
-# 键盘
-if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
-    DisplayServer.virtual_keyboard_show()
-```
-### 0. 渲染 RenderingServer
-```
-var light = DirectionalLight3D.new() # 光源属性 3D
-light.light_color = Color(1, 0.9, 0.8)  # 暖色阳光
-light.light_energy = 1.5  # 光照强度
-light.shadow_enabled = true  # 启用阴影
-light.shadow_max_distance = 100  # 阴影最大距离
-
-var light = DirectionalLight3D.new() # 阴影设置 3D
-light.shadow_enabled = true
-light.shadow_max_distance = 50  # 减少阴影距离
-light.shadow_orthogonal_size = 20  # 正交大小
-light.shadow_bias = 0.01  # 阴影偏移
-```
-### 输入灵敏度
-```gdscript
-class_name InputSensitivity
-func _ready():
-    load_sensitivity_settings()
-
-# 加载灵敏度设置
-func load_sensitivity_settings():
-    var config = ConfigFile.new()
-    var err = config.load("user://input_sensitivity.ini")
-    
-    if err == OK:mouse_sensitivity = config.get_value("sensitivity", "mouse", 1.0);gamepad_sensitivity = config.get_value("sensitivity", "gamepad", 1.0);axis_deadzone = config.get_value("deadzone", "axis", 0.1);
-
-func save_sensitivity_settings():
-    # 保存灵敏度设置
-    var config = ConfigFile.new()
-    config.set_value("sensitivity", "mouse", mouse_sensitivity);config.set_value("sensitivity", "gamepad", gamepad_sensitivity);config.set_value("deadzone", "axis", axis_deadzone);
-    config.save("user://input_sensitivity.ini")
-
-func set_sensitivity(sensitivity: float):
-    mouse_sensitivity = clamp(sensitivity, 0.1, 5.0)
-    gamepad_sensitivity = clamp(sensitivity, 0.1, 5.0)
-    axis_deadzone = clamp(zone, 0.0, 0.5)
-
-func get_sensitivity() -> float:
-    return mouse_sensitivity;return gamepad_sensitivity;return axis_deadzone;
-
-# 应用灵敏度到轴值
-func apply_to_axis_value(value: float) -> float:
-    if abs(value) < axis_deadzone:return 0.0;
-	var adjusted = (abs(value) - axis_deadzone) / (1.0 - axis_deadzone);adjusted = clamp(adjusted, 0.0, 1.0);return sign(value) * adjusted * gamepad_sensitivity;# 应用灵敏度 
-```
-# 工厂模式
-```
-class_name FactoryPattern
-# 简单工厂
-static func create_enemy(type: String) -> Node:
-    var enemy: Node
-    match type:"basic":enemy = BasicEnemy.new();"advanced":enemy = AdvancedEnemy.new();"boss":enemy = BossEnemy.new();return enemy;
-
-# 工厂方法
-func create_product(product_type: String) -> Object:
-    match product_type: "weapon":return create_weapon();"armor":return create_armor();"potion":return create_potion();return null;
-
-# 抽象工厂
-interface ItemFactory:
-    func create_weapon() -> Object
-    func create_armor() -> Object
-```
-</details>
-
-<hr>
 
 <a id="美術"></a>
 ### 美術
@@ -319,45 +74,23 @@ interface ItemFactory:
 什麼是繪畫中的生命力？欣賞生命力的本質是在欣賞多樣性。世界上沒有一模一樣的物體，如果不畫出獨有的生命力，就是在忽視個性、抹殺多樣性。
 觀察與抽象化動態>大型與小型上的動態強化
 ```
-Fresnel實現「透肉感」
-
-【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
-<br>【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e<br>
-https://www.bilibili.com/video/BV1frJi6SEcF/<br>
+1. 參考 《绝区零》风格细节表现:避免平面化的造型（如平扁的武器/刀具）。必须画出块面的透视厚度与立面转折，体现强烈的体积感与空间穿插（如绳索的前后层次）
+2.  【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+3.  【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
+4.  https://www.bilibili.com/video/BV1frJi6SEcF/
+5.  
+```
 排布插件 ：github.com/HungryProton/scatter<br>
 地形插件 ：Terrain 3D<br>
 材质下载插件：	Poly Haven Import/Ambient CG (error) <br>
-
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E8%B2%BC%E5%9C%96_2_4_%E7%89%B9%E6%AE%8A.PNG" width="300" height="300"></img>
 
-**美術=為什麼喜歡這種東西>有梗**
-**思考遊戲什麼需要camera展示/什麼時候用AE**
-**從「肌肉記憶」到「敘事與審美」：作品的真正價值不在於點擊滑鼠有多快或熬夜調材質的「苦勞」，而在於創作者的審美、個人閱歷、敘事邏輯與個人認知。**
 Albedo（基礎色 / 固有色）：物體本身的顏色，決定物體吸收多少光、反射多少光。
 Roughness（粗糙度）：決定高光的集中或發散程度。  
 Metallic（金屬度）
 Normal（法線貼圖）：用以精細控制表面光照反射的微觀方向與凹凸細節。
-菲涅爾效應：光線入射角不同，反射率會產生變化。[視線的水面幾乎沒有反射能看到水底，而遠處水景反射則非常清晰。] PBR 完美模擬了這種物理規律。  「濕身效果」的實現原理：在原有 PBR 材質貼圖上，疊加一層半透明的雨水材質貼圖。  覆蓋原表面的粗糙度、金屬度和法線等信息，並利用動態遮罩與水痕法線貼圖，讓水滴隨機出現與消失，呈現出水膜的高光與逼真的動態雨滴感。  
-
-先大后小》抓轮廓〉拒绝过度细化
-
-<img src="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8F%83%E8%80%83%E5%9C%96/%E5%BB%BA%E7%AF%89/%E5%BB%BA%E7%AF%89%E5%AD%B8%E7%BF%92%20(3).JPG" width="300" height="300"></img>
-建筑的核心目的是塑造“空”： 无论内部空间还是外部空间，“空”的部分才是人类真正使用和活动的场所。
-高宽比与压迫感： 街道越窄、两侧建筑越高，中间空间的压迫感越强。若无法展宽街道，需采用相应剖面设计解决。 
-退台手法 (Setback)：
-原理： 沿街行人抬头只能看到底层边缘，无法看到高层退进的部分。 
-MD
-效果： 在增加建筑面积的同时，保持街道地面的舒适尺度与开阔感（欧洲老城区高层建筑常用手法）。 
-
-| 空间操作/形态 | 空间特性与心理感受 | 现实/设计应用延伸 |
-| ----- | ----- | ----- |
-| **阳角 (Convex Corner)**  MD | 人流贴着边缘走，流线具**强流动性**，停留线弱，不宜做停留设计。  MD | 城市角部的交通疏导设计。  MD |
-| **阴角 (Concave Corner)**  MD | 偏离主要直线流线，人流更容易且舒适地在此**停留**。  MD | 适合布置座椅、小憩区或角落广场。  MD |
-| **开阔通道 vs 凹入空间**  MD | 去掉一栋沿街建筑会打破单一流线，形成**适合停留的局部口袋空间**。  MD | 街道微更新、避风/避人流节点。  MD |
-| **围合与开口（对称 vs 不对称）**  MD | **半围合：** 具有私密性与内向性； **全围合：** 阻隔外界，类似四合院；  MD  **中开口：** 庄严、具有对称仪式感； **侧开口：** 放松，形成视线转折。  MD | 中国传统园林折线步道（移步换景、掩映）；巴塞罗那网格切角街区（街块组合的灵活性）。  MD+ 1 |
-
-
-
+Fresnel實現「透肉感」:菲涅爾效應：光線入射角不同，反射率會產生變化。[視線的水面幾乎沒有反射能看到水底，而遠處水景反射則非常清晰。] PBR 完美模擬了這種物理規律。  「濕身效果」的實現原理：在原有 PBR 材質貼圖上，疊加一層半透明的雨水材質貼圖。  覆蓋原表面的粗糙度、金屬度和法線等信息，並利用動態遮罩與水痕法線貼圖，讓水滴隨機出現與消失，呈現出水膜的高光與逼真的動態雨滴感。  
+```
 
 ## 2d/3d 視覺與渲染設定
 ```
