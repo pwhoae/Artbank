@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豪華抽卡模擬器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        rarity5: '#ffb400',
+                        rarity4: '#a259ff',
+                        rarity3: '#4a90e2',
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'bounce-short': 'bounceShort 0.5s ease-in-out 2',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.8', transform: 'scale(1)' },
+                            '50%': { opacity: '1', transform: 'scale(1.05)' },
+                        },
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        /* 自定義滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* 5星光芒背景動畫 */
+        .bg-star-5 {
+            background: radial-gradient(circle, rgba(255, 180, 0, 0.4) 0%, rgba(255, 215, 0, 0.1) 60%, rgba(15, 23, 42, 0) 100%),
+                        linear-gradient(135deg, #78350f 0%, #b45309 50%, #78350f 100%);
+        }
+        .bg-star-4 {
+            background: radial-gradient(circle, rgba(162, 89, 255, 0.4) 0%, rgba(192, 132, 252, 0.1) 60%, rgba(15, 23, 42, 0) 100%),
+                        linear-gradient(135deg, #581c87 0%, #7e22ce 50%, #581c87 100%);
+        }
+        .bg-star-3 {
+            background: radial-gradient(circle, rgba(74, 144, 226, 0.3) 0%, rgba(96, 165, 250, 0.1) 60%, rgba(15, 23, 42, 0) 100%),
+                        linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #1e3a8a 100%);
+        }
+
+        /* 卡片光澤效果 */
+        .card-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .card-shine::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                60deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.25) 50%,
+                transparent 70%
+            );
+            transform: rotate(30deg) translateY(-100%);
+            transition: transform 0.8s ease-in-out;
+        }
+        .card-shine:hover::after {
+            transform: rotate(30deg) translateY(100%);
+        }
+
+        /* 抽卡結果展現動畫 */
+        .card-enter {
+            animation: cardAppear 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0.5) translateY(50px);
+        }
+
+        @keyframes cardAppear {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between font-sans bg-slate-950 text-slate-100 overflow-x-hidden">
+
+    <!-- 頂部導航欄 -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <!-- 標題與標誌 -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-md">
+                    <i class="fa-solid me-0.5 fa-wand-magic-sparkles"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide bg-gradient-to-r from-amber-400 via-purple-300 to-blue-400 bg-clip-text text-transparent">星海祈願</h1>
+                    <p class="text-xs text-slate-400">極致模擬抽卡體驗</p>
+                </div>
+            </div>
+
+            <!-- 卡池切換標籤 -->
+            <div class="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-sm">
+                <button id="banner-char-btn" onclick="switchBanner('character')" class="px-4 py-1.5 rounded-lg font-medium transition-all duration-200 bg-amber-500 text-slate-950 shadow-md">
+                    <i class="fa-solid fa-user-ninja mr-1.5"></i>角色限定池
+                </button>
+                <button id="banner-weapon-btn" onclick="switchBanner('weapon')" class="px-4 py-1.5 rounded-lg font-medium transition-all duration-200 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-shield-halberd mr-1.5"></i>神兵鍛造池
+                </button>
+                <button id="banner-standard-btn" onclick="switchBanner('standard')" class="px-4 py-1.5 rounded-lg font-medium transition-all duration-200 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-gem mr-1.5"></i>常駐祈願池
+                </button>
+            </div>
+
+            <!-- 資源與按鈕 -->
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-full px-3.5 py-1.5 flex items-center gap-2 shadow-inner">
+                    <i class="fa-solid fa-sparkles text-amber-400"></i>
+                    <span id="currency-count" class="font-bold text-amber-300 text-sm">16,000</span>
+                    <button onclick="addCurrency(1600)" class="ml-1 text-slate-400 hover:text-amber-400 transition-colors" title="補充結晶 (+10抽)">
+                        <i class="fa-solid fa-circle-plus text-base"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleModal('history-modal')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition" title="抽卡紀錄">
+                        <i class="fa-solid fa-clock-rotate-left mr-1"></i>紀錄
+                    </button>
+                    <button onclick="toggleModal('inventory-modal')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition" title="背包">
+                        <i class="fa-solid fa-box-archive mr-1"></i>背包
+                    </button>
+                    <button onclick="resetData()" class="p-1.5 bg-rose-900/30 hover:bg-rose-900/60 border border-rose-700/50 rounded-lg text-xs font-medium text-rose-300 transition" title="重置數據">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要區域 -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow flex flex-col justify-center items-center w-full relative">
+        <!-- 卡池資訊卡片 -->
+        <div id="banner-container" class="w-full relative rounded-3xl overflow-hidden border border-slate-700/60 shadow-2xl bg-slate-900 min-h-[460px] flex flex-col justify-between transition-all duration-500">
+            <!-- 動態背景 -->
+            <div id="banner-bg" class="absolute inset-0 bg-cover bg-center opacity-40 transition-all duration-700"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+
+            <!-- 卡池頂部資訊 -->
+            <div class="relative z-10 p-6 md:p-8 flex justify-between items-start">
+                <div>
+                    <span id="banner-badge" class="inline-block px-3 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold rounded-full mb-2">
+                        角色概率UP
+                    </span>
+                    <h2 id="banner-title" class="text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-md">
+                        曜日之影 · 凰舞
+                    </h2>
+                    <p id="banner-subtitle" class="text-sm md:text-base text-slate-300 mt-2 max-w-md drop-shadow">
+                        限定五星角色「凰舞」獲取概率大幅提升！50% 機率獲得本期限定角色。
+                    </p>
+                </div>
+
+                <!-- 保底計數器 -->
+                <div class="bg-slate-950/70 border border-slate-800 backdrop-blur-md p-4 rounded-2xl text-right space-y-1 shadow-lg">
+                    <div class="text-xs text-slate-400">已累計抽數 (距離5星保底)</div>
+                    <div class="text-2xl font-black text-amber-400">
+                        <span id="pity-5star-count">0</span> <span class="text-xs text-slate-500 font-normal">/ <span id="pity-5star-max">90</span></span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 flex items-center justify-end gap-1">
+                        <span>保底狀態:</span>
+                        <span id="pity-status" class="text-amber-300 font-medium">小保底 (50%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡池主視覺展示區 -->
+            <div class="relative z-10 my-auto p-6 flex flex-wrap justify-center items-center gap-6">
+                <!-- 動態顯示的主打角色/武器清單 -->
+                <div id="up-items-display" class="flex flex-wrap justify-center gap-4">
+                    <!-- JavaScript 將在此動態生成 UP 物品清單 -->
+                </div>
+            </div>
+
+            <!-- 底部操作按鈕區 -->
+            <div class="relative z-10 p-6 md:p-8 bg-slate-950/60 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap justify-between items-center gap-4">
+                <!-- 概率詳情提示 -->
+                <div class="flex items-center gap-4 text-xs text-slate-400">
+                    <button onclick="toggleModal('rate-modal')" class="hover:text-amber-400 flex items-center gap-1 transition">
+                        <i class="fa-solid fa-circle-info"></i> 概率說明與細則
+                    </button>
+                    <span class="text-slate-700">|</span>
+                    <span class="text-slate-400">單抽 160 祈願星石</span>
+                </div>
+
+                <!-- 抽卡按鈕組 -->
+                <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+                    <!-- 單抽按鈕 -->
+                    <button onclick="performGacha(1)" class="group relative flex-1 sm:flex-none px-6 py-3.5 bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 border border-slate-600 rounded-2xl font-bold text-white shadow-lg transition duration-200 active:scale-95 flex items-center justify-center gap-2">
+                        <span>祈願 1 次</span>
+                        <span class="text-xs px-2 py-0.5 bg-slate-900/60 rounded-full text-amber-300 font-normal border border-amber-500/30 flex items-center gap-1">
+                            <i class="fa-solid fa-sparkles text-[10px]"></i>160
+                        </span>
+                    </button>
+
+                    <!-- 十連抽按鈕 -->
+                    <button onclick="performGacha(10)" class="group relative flex-1 sm:flex-none px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 border border-amber-300/50 rounded-2xl font-black shadow-lg shadow-amber-500/20 transition duration-200 active:scale-95 flex items-center justify-center gap-2 card-shine">
+                        <i class="fa-solid fa-wand-magic-sparkles text-slate-900"></i>
+                        <span>祈願 10 次</span>
+                        <span class="text-xs px-2 py-0.5 bg-amber-950/20 rounded-full text-slate-950 font-bold border border-amber-950/30 flex items-center gap-1">
+                            <i class="fa-solid fa-sparkles text-[10px]"></i>1600
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="bg-slate-950 border-t border-slate-800/60 py-4 px-4 text-center text-xs text-slate-500">
+        <p>本網站僅供抽卡概率娛樂模擬，無任何真實貨幣交易功能。</p>
+    </footer>
+
+    <!-- 抽卡動畫全螢幕遮罩 -->
+    <div id="gacha-animation-overlay" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-500">
+        <div id="animation-content" class="text-center relative">
+            <!-- 閃光球效果 -->
+            <div id="gacha-orb" class="w-40 h-40 rounded-full mx-auto shadow-2xl flex items-center justify-center transition-all duration-1000 scale-50">
+                <i class="fa-solid fa-star text-6xl text-white animate-spin-slow"></i>
+            </div>
+            <p id="animation-text" class="mt-8 text-xl font-bold tracking-widest text-slate-300">正在召喚星海之力...</p>
+        </div>
+        <button onclick="skipAnimation()" class="absolute top-6 right-6 px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-full text-xs font-semibold border border-slate-700 transition">
+            跳過動畫 <i class="fa-solid fa-forward ml-1"></i>
+        </button>
+    </div>
+
+    <!-- 抽卡結果展示彈窗 -->
+    <div id="result-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 md:p-8 hidden overflow-y-auto">
+        <!-- 頂部資訊 -->
+        <div class="w-full max-w-6xl flex justify-between items-center py-2 border-b border-slate-800">
+            <div class="text-lg font-bold text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 祈願結果
+            </div>
+            <div class="text-xs text-slate-400">點擊任意卡片查看詳細</div>
+        </div>
+
+        <!-- 結果展示卡片區域 -->
+        <div id="result-cards-container" class="w-full max-w-6xl my-auto py-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 justify-center">
+            <!-- JavaScript 動態填入抽取的卡片 -->
+        </div>
+
+        <!-- 底部確定按鈕 -->
+        <div class="w-full max-w-6xl flex justify-center py-4">
+            <button onclick="closeResultModal()" class="px-10 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-full shadow-lg shadow-amber-500/20 transition transform active:scale-95">
+                確認
+            </button>
+        </div>
+    </div>
+
+    <!-- 抽卡歷史紀錄彈窗 -->
+    <div id="history-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> 祈願歷史紀錄
+                </h3>
+                <button onclick="toggleModal('history-modal')" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-grow">
+                <!-- 統計資訊區塊 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-center">
+                        <div class="text-xs text-slate-400">總祈願數</div>
+                        <div id="stat-total-pulls" class="text-xl font-black text-white mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-center">
+                        <div class="text-xs text-slate-400">獲得5星數量</div>
+                        <div id="stat-5star-count" class="text-xl font-black text-amber-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-center">
+                        <div class="text-xs text-slate-400">5星平均出貨</div>
+                        <div id="stat-avg-5star" class="text-xl font-black text-blue-400 mt-1">0</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-center">
+                        <div class="text-xs text-slate-400">累積消耗星石</div>
+                        <div id="stat-total-spent" class="text-xl font-black text-purple-400 mt-1">0</div>
+                    </div>
+                </div>
+
+                <!-- 歷史清單表格 -->
+                <div>
+                    <h4 class="text-sm font-semibold text-slate-300 mb-3">詳細出貨紀錄 (最近 50 筆)</h4>
+                    <div class="overflow-x-auto rounded-xl border border-slate-800">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">項目名稱</th>
+                                    <th class="p-3">類別</th>
+                                    <th class="p-3">稀有度</th>
+                                    <th class="p-3">卡池</th>
+                                    <th class="p-3">抽取時間</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+                                <!-- 動態填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 背包彈窗 -->
+    <div id="inventory-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-box-archive text-amber-400"></i> 我的圖鑑與背包
+                </h3>
+                <button onclick="toggleModal('inventory-modal')" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-grow">
+                <!-- 背包過濾選項 -->
+                <div class="flex gap-2 mb-6">
+                    <button onclick="filterInventory('all')" id="filter-all" class="px-3 py-1 bg-amber-500 text-slate-950 text-xs font-bold rounded-lg">全部</button>
+                    <button onclick="filterInventory('5')" id="filter-5" class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700">5星</button>
+                    <button onclick="filterInventory('4')" id="filter-4" class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700">4星</button>
+                    <button onclick="filterInventory('character')" id="filter-char" class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700">角色</button>
+                    <button onclick="filterInventory('weapon')" id="filter-weapon" class="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700">武器</button>
+                </div>
+
+                <!-- 物品網格 -->
+                <div id="inventory-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    <!-- 動態生成背包物品 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 概率與保底規則說明彈窗 -->
+    <div id="rate-modal" class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-amber-400"></i> 祈願規則與概率說明
+                </h3>
+                <button onclick="toggleModal('rate-modal')" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-bold text-amber-400 text-sm mb-2">角色限定祈願規則：</h4>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300">
+                        <li>5星物品基礎獲取概率：<span class="text-white font-semibold">0.600%</span>。</li>
+                        <li>4星物品基礎獲取概率：<span class="text-white font-semibold">5.100%</span>。</li>
+                        <li><span class="text-amber-300 font-semibold">保底機制</span>：最多 90 次祈願必定獲得 5 星角色。當第 74 抽未獲得 5 星時，後續每抽概率大幅提升（軟保底）。</li>
+                        <li><span class="text-amber-300 font-semibold">小保底/大保底</span>：當抽中 5 星角色時，有 50% 概率為本期 UP 角色。若本次未獲得 UP 角色，則下次獲得的 5 星必定為本期 UP 角色（大保底）。</li>
+                        <li>每 10 次祈願必定獲得至少 1 個 4 星或以上物品。</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-bold text-purple-400 text-sm mb-2">神兵鍛造祈願規則：</h4>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300">
+                        <li>5星武器基礎獲取概率：<span class="text-white font-semibold">0.700%</span>。</li>
+                        <li>5星保底次數為 <span class="text-white font-semibold">80 次</span>。當第 62 抽未獲得 5 星時開始提升概率。</li>
+                        <li>當抽中 5 星武器時，有 75% 概率為本期 UP 武器。</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 訊息提示 Toast -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- JavaScript 核心邏輯 -->
+    <script>
+        // --- 遊戲數據庫定義 ---
+        const DATABASE = {
+            characters: {
+                star5: [
+                    { id: 'c5_1', name: '凰舞', title: '曜日之影', type: 'character', rarity: 5, icon: 'fa-user-ninja', color: 'from-amber-500 to-red-600', isLimited: true },
+                    { id: 'c5_2', name: '凜月', title: '霜雪之華', type: 'character', rarity: 5, icon: 'fa-user-astronaut', color: 'from-cyan-400 to-blue-600', isLimited: true },
+                    { id: 'c5_3', name: '雷霆', title: '極霄怒號', type: 'character', rarity: 5, icon: 'fa-user-shield', color: 'from-purple-500 to-indigo-600', isStandard: true },
+                    { id: 'c5_4', name: '風行者', title: '流雲幻羽', type: 'character', rarity: 5, icon: 'fa-user-tag', color: 'from-emerald-400 to-teal-600', isStandard: true },
+                ],
+                star4: [
+                    { id: 'c4_1', name: '香菱', title: '萬民百味', type: 'character', rarity: 4, icon: 'fa-user', color: 'from-purple-600 to-indigo-700' },
+                    { id: 'c4_2', name: '班尼特', title: '命運試煉', type: 'character', rarity: 4, icon: 'fa-user-gear', color: 'from-purple-600 to-indigo-700' },
+                    { id: 'c4_3', name: '行秋', title: '水色澹華', type: 'character', rarity: 4, icon: 'fa-user-graduate', color: 'from-purple-600 to-indigo-700' },
+                    { id: 'c4_4', name: '菲謝爾', title: '斷罪之皇女', type: 'character', rarity: 4, icon: 'fa-user-secret', color: 'from-purple-600 to-indigo-700' }
+                ]
+            },
+            weapons: {
+                star5: [
+                    { id: 'w5_1', name: '赤角飛仙劍', title: '絕世神兵', type: 'weapon', rarity: 5, icon: 'fa-hand-back-fist', color: 'from-amber-500 to-red-600', isLimited: true },
+                    { id: 'w5_2', name: '蒼翠法典', title: '元素祕典', type: 'weapon', rarity: 5, icon: 'fa-book-bookmark', color: 'from-emerald-500 to-teal-600', isStandard: true },
+                    { id: 'w5_3', name: '破空長槍', title: '龍脊之槍', type: 'weapon', rarity: 5, icon: 'fa-shield-halberd', color: 'from-blue-500 to-indigo-600', isStandard: true },
+                ],
+                star4: [
+                    { id: 'w4_1', name: '祭禮殘章', type: 'weapon', rarity: 4, icon: 'fa-book', color: 'from-purple-600 to-indigo-700' },
+                    { id: 'w4_2', name: '絕弦', type: 'weapon', rarity: 4, icon: 'fa-bow-arrow', color: 'from-purple-600 to-indigo-700' },
+                    { id: 'w4_3', name: '匣裡日月', type: 'weapon', rarity: 4, icon: 'fa-gem', color: 'from-purple-600 to-indigo-700' },
+                    { id: 'w4_4', name: '西風長槍', type: 'weapon', rarity: 4, icon: 'fa-shield-halberd', color: 'from-purple-600 to-indigo-700' },
+                ],
+                star3: [
+                    { id: 'w3_1', name: '討龍英傑譚', type: 'weapon', rarity: 3, icon: 'fa-book-open', color: 'from-blue-600 to-slate-700' },
+                    { id: 'w3_2', name: '黎明神劍', type: 'weapon', rarity: 3, icon: 'fa-gavel', color: 'from-blue-600 to-slate-700' },
+                    { id: 'w3_3', name: '黑纓槍', type: 'weapon', rarity: 3, icon: 'fa-shield-cat', color: 'from-blue-600 to-slate-700' },
+                    { id: 'w3_4', name: '彈弓', type: 'weapon', rarity: 3, icon: 'fa-crosshairs', color: 'from-blue-600 to-slate-700' },
+                    { id: 'w3_5', name: '冷刃', type: 'weapon', rarity: 3, icon: 'fa-sitemap', color: 'from-blue-600 to-slate-700' }
+                ]
+            }
+        };
+
+        // --- 卡池配置 ---
+        const BANNERS = {
+            character: {
+                id: 'character',
+                name: '角色限定池',
+                title: '曜日之影 · 凰舞',
+                subtitle: '限定 5 星角色「凰舞」獲取概率大幅提升！',
+                badge: '限定角色 UP',
+                up5Star: DATABASE.characters.star5[0], // 凰舞
+                up4Stars: [DATABASE.characters.star4[0], DATABASE.characters.star4[1], DATABASE.characters.star4[2]],
+                bgGradient: 'from-amber-950/40 via-slate-900 to-slate-950',
+                pityMax5: 90,
+                softPity5: 74,
+                baseRate5: 0.006,
+                baseRate4: 0.051
+            },
+            weapon: {
+                id: 'weapon',
+                name: '神兵鍛造池',
+                title: '神兵鑄造 · 赤角飛仙',
+                subtitle: '限定 5 星武器「赤角飛仙劍」獲得概率提升！',
+                badge: '限定武器 UP',
+                up5Star: DATABASE.weapons.star5[0], // 赤角飛仙劍
+                up4Stars: [DATABASE.weapons.star4[0], DATABASE.weapons.star4[1], DATABASE.weapons.star4[2]],
+                bgGradient: 'from-purple-950/40 via-slate-900 to-slate-950',
+                pityMax5: 80,
+                softPity5: 62,
+                baseRate5: 0.007,
+                baseRate4: 0.060
+            },
+            standard: {
+                id: 'standard',
+                name: '常駐祈願池',
+                title: '奔行世間 · 常駐祈願',
+                subtitle: '常駐角色與武器，祈願獲得強大助力。',
+                badge: '常駐池',
+                up5Star: null,
+                up4Stars: [],
+                bgGradient: 'from-blue-950/40 via-slate-900 to-slate-950',
+                pityMax5: 90,
+                softPity5: 74,
+                baseRate5: 0.006,
+                baseRate4: 0.051
+            }
+        };
+
+        // --- 全局狀態 ---
+        let currentBannerKey = 'character';
+        let currency = 16000;
+        let isAnimationSkipped = false;
+
+        // 保底狀態紀錄 (分別紀錄各卡池)
+        let state = {
+            character: { pity5: 0, pity4: 0, guaranteed5: false },
+            weapon: { pity5: 0, pity4: 0, guaranteed5: false },
+            standard: { pity5: 0, pity4: 0, guaranteed5: false },
+            history: [],
+            inventory: {}
+        };
+
+        // --- 初始化頁面 ---
+        window.onload = function() {
+            loadLocalData();
+            updateUI();
+            switchBanner('character');
+        };
+
+        // 保存/加載 本地數據
+        function saveData() {
+            localStorage.setItem('gacha_sim_data', JSON.stringify({ currency, state }));
+        }
+
+        function loadLocalData() {
+            const saved = localStorage.getItem('gacha_sim_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    currency = parsed.currency ?? 16000;
+                    state = { ...state, ...parsed.state };
+                } catch (e) {
+                    console.error("重置數據，讀取失敗:", e);
+                }
+            }
+        }
+
+        function resetData() {
+            if (confirm("確定要重置所有抽卡紀錄、背包與保底次數嗎？")) {
+                localStorage.removeItem('gacha_sim_data');
+                currency = 16000;
+                state = {
+                    character: { pity5: 0, pity4: 0, guaranteed5: false },
+                    weapon: { pity5: 0, pity4: 0, guaranteed5: false },
+                    standard: { pity5: 0, pity4: 0, guaranteed5: false },
+                    history: [],
+                    inventory: {}
+                };
+                updateUI();
+                showToast("數據已重置！", "info");
+            }
+        }
+
+        // --- UI 更新邏輯 ---
+        function updateUI() {
+            document.getElementById('currency-count').innerText = currency.toLocaleString();
+            
+            const banner = BANNERS[currentBannerKey];
+            const bannerState = state[currentBannerKey];
+
+            document.getElementById('pity-5star-count').innerText = bannerState.pity5;
+            document.getElementById('pity-5star-max').innerText = banner.pityMax5;
+
+            // 保底狀態提示
+            const pityStatusEl = document.getElementById('pity-status');
+            if (currentBannerKey === 'standard') {
+                pityStatusEl.innerText = '常駐隨機';
+                pityStatusEl.className = 'text-blue-400 font-medium';
+            } else if (bannerState.guaranteed5) {
+                pityStatusEl.innerText = '大保底 (100% UP)';
+                pityStatusEl.className = 'text-amber-400 font-bold animate-pulse';
+            } else {
+                pityStatusEl.innerText = currentBannerKey === 'character' ? '小保底 (50% UP)' : '小保底 (75% UP)';
+                pityStatusEl.className = 'text-amber-300 font-medium';
+            }
+
+            renderUpItems();
+        }
+
+        // 切換卡池
+        function switchBanner(bannerKey) {
+            currentBannerKey = bannerKey;
+            const banner = BANNERS[bannerKey];
+
+            // 按鈕樣式切換
+            ['character', 'weapon', 'standard'].forEach(key => {
+                const btn = document.getElementById(`banner-${key}-btn`);
+                if (key === bannerKey) {
+                    btn.className = 'px-4 py-1.5 rounded-lg font-medium transition-all duration-200 bg-amber-500 text-slate-950 shadow-md';
+                } else {
+                    btn.className = 'px-4 py-1.5 rounded-lg font-medium transition-all duration-200 text-slate-400 hover:text-white';
+                }
+            });
+
+            // 文案更新
+            document.getElementById('banner-title').innerText = banner.title;
+            document.getElementById('banner-subtitle').innerText = banner.subtitle;
+            document.getElementById('banner-badge').innerText = banner.badge;
+
+            updateUI();
+        }
+
+        // 渲染卡池 UP 主打物品
+        function renderUpItems() {
+            const container = document.getElementById('up-items-display');
+            container.innerHTML = '';
+            const banner = BANNERS[currentBannerKey];
+
+            if (banner.up5Star) {
+                container.appendChild(createItemBadge(banner.up5Star, true));
+            }
+
+            banner.up4Stars.forEach(item => {
+                container.appendChild(createItemBadge(item, false));
+            });
+        }
+
+        function createItemBadge(item, is5Star) {
+            const div = document.createElement('div');
+            div.className = `flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md ${
+                is5Star 
+                ? 'bg-amber-500/10 border-amber-500/40 text-amber-300' 
+                : 'bg-purple-500/10 border-purple-500/40 text-purple-300'
+            }`;
+            div.innerHTML = `
+                <i class="fa-solid ${item.icon} text-sm"></i>
+                <span class="text-xs font-bold">${item.name}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded ${is5Star ? 'bg-amber-500 text-slate-950 font-black' : 'bg-purple-500 text-white'}">
+                    ${item.rarity}★
+                </span>
+            `;
+            return div;
+        }
+
+        // --- 核心抽卡邏輯算法 ---
+        function performGacha(pullCount) {
+            const cost = pullCount * 160;
+            if (currency < cost) {
+                showToast("祈願星石不足！請點擊右上角「+」補充。", "error");
+                return;
+            }
+
+            currency -= cost;
+            const results = [];
+            const banner = BANNERS[currentBannerKey];
+            const bannerState = state[currentBannerKey];
+
+            for (let i = 0; i < pullCount; i++) {
+                bannerState.pity5++;
+                bannerState.pity4++;
+
+                // 計算當前5星獲得概率 (動態軟保底)
+                let currentRate5 = banner.baseRate5;
+                if (bannerState.pity5 > banner.softPity5) {
+                    currentRate5 += (bannerState.pity5 - banner.softPity5) * 0.06; // 74抽後概率急速上升
+                }
+
+                const rand = Math.random();
+
+                // 觸發 5 星判定
+                if (rand < currentRate5 || bannerState.pity5 >= banner.pityMax5) {
+                    const item = getStar5Item(banner, bannerState);
+                    results.push(item);
+                    
+                    // 重置5星保底
+                    bannerState.pity5 = 0;
+                    bannerState.pity4 = 0;
+                } 
+                // 觸發 4 星判定 (10抽保底)
+                else if (Math.random() < banner.baseRate4 || bannerState.pity4 >= 10) {
+                    const item = getStar4Item(banner);
+                    results.push(item);
+                    
+                    bannerState.pity4 = 0;
+                } 
+                // 3 星垃圾/普通武器
+                else {
+                    const item = getRandomFromList(DATABASE.weapons.star3);
+                    results.push(item);
+                }
+
+                // 紀錄到背包與歷史
+                recordResult(results[results.length - 1]);
+            }
+
+            saveData();
+            updateUI();
+
+            // 觸發動畫與展示結果 modal
+            startGachaAnimation(results);
+        }
+
+        // 獲取 5 星物品 (大/小保底處理)
+        function getStar5Item(banner, bannerState) {
+            if (currentBannerKey === 'standard') {
+                const pool = [...DATABASE.characters.star5.filter(c => c.isStandard), ...DATABASE.weapons.star5.filter(w => w.isStandard)];
+                return getRandomFromList(pool);
+            }
+
+            // 限定池小保底/大保底邏輯
+            const upWinRate = currentBannerKey === 'character' ? 0.50 : 0.75;
+            const isUP = bannerState.guaranteed5 || (Math.random() < upWinRate);
+
+            if (isUP) {
+                bannerState.guaranteed5 = false; // 重置大保底狀態
+                return banner.up5Star;
+            } else {
+                bannerState.guaranteed5 = true; // 歪了！觸發下次大保底
+                // 從常駐庫歪一個出來
+                const offPool = currentBannerKey === 'character' 
+                    ? DATABASE.characters.star5.filter(c => c.isStandard)
+                    : DATABASE.weapons.star5.filter(w => w.isStandard);
+                return getRandomFromList(offPool);
+            }
+        }
+
+        // 獲取 4 星物品
+        function getStar4Item(banner) {
+            if (banner.up4Stars && banner.up4Stars.length > 0 && Math.random() < 0.5) {
+                return getRandomFromList(banner.up4Stars);
+            }
+            const all4Stars = [...DATABASE.characters.star4, ...DATABASE.weapons.star4];
+            return getRandomFromList(all4Stars);
+        }
+
+        function getRandomFromList(list) {
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        function recordResult(item) {
+            // 寫入歷史紀錄
+            state.history.unshift({
+                name: item.name,
+                type: item.type === 'character' ? '角色' : '武器',
+                rarity: item.rarity,
+                bannerName: BANNERS[currentBannerKey].name,
+                time: new Date().toLocaleTimeString()
+            });
+
+            // 寫入背包數量
+            state.inventory[item.id] = (state.inventory[item.id] || 0) + 1;
+        }
+
+        // --- 動畫處理與展示 Modal ---
+        function startGachaAnimation(results) {
+            isAnimationSkipped = false;
+            const overlay = document.getElementById('gacha-animation-overlay');
+            const orb = document.getElementById('gacha-orb');
+            const text = document.getElementById('animation-text');
+
+            // 判定本次抽卡最高稀有度
+            const maxRarity = Math.max(...results.map(r => r.rarity));
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+
+            // 設置閃光球配色
+            if (maxRarity === 5) {
+                orb.className = "w-40 h-40 rounded-full mx-auto shadow-2xl flex items-center justify-center transition-all duration-1000 bg-gradient-to-r from-amber-400 to-yellow-600 shadow-amber-500/80 scale-110 animate-pulse-glow";
+                text.innerText = "金色傳說！星辰為之降臨！";
+                text.className = "mt-8 text-2xl font-black tracking-widest text-amber-300 drop-shadow";
+            } else if (maxRarity === 4) {
+                orb.className = "w-40 h-40 rounded-full mx-auto shadow-2xl flex items-center justify-center transition-all duration-1000 bg-gradient-to-r from-purple-500 to-indigo-600 shadow-purple-500/80 scale-100";
+                text.innerText = "紫色紫氣東來！獲得稀有物品！";
+                text.className = "mt-8 text-xl font-bold tracking-widest text-purple-300";
+            } else {
+                orb.className = "w-40 h-40 rounded-full mx-auto shadow-2xl flex items-center justify-center transition-all duration-1000 bg-gradient-to-r from-blue-500 to-slate-600 shadow-blue-500/50 scale-90";
+                text.innerText = "藍天白雲，再接再厲...";
+                text.className = "mt-8 text-lg font-medium tracking-widest text-slate-400";
+            }
+
+            // 2.5秒後自動結束動畫展示結果
+            setTimeout(() => {
+                if (!isAnimationSkipped) {
+                    finishAnimation(results);
+                }
+            }, 2200);
+        }
+
+        function skipAnimation() {
+            isAnimationSkipped = true;
+            const overlay = document.getElementById('gacha-animation-overlay');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+
+        function finishAnimation(results) {
+            const overlay = document.getElementById('gacha-animation-overlay');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                showResultModal(results);
+            }, 300);
+        }
+
+        // 展示結果 Modal 卡片
+        function showResultModal(results) {
+            const container = document.getElementById('result-cards-container');
+            container.innerHTML = '';
+
+            results.forEach((item, index) => {
+                const card = document.createElement('div');
+                const rarityBg = item.rarity === 5 ? 'bg-star-5 border-amber-400/80 shadow-amber-500/30' 
+                               : item.rarity === 4 ? 'bg-star-4 border-purple-400/80 shadow-purple-500/30' 
+                               : 'bg-star-3 border-slate-700 shadow-slate-900/50';
+
+                card.className = `card-enter relative flex flex-col justify-between items-center p-4 rounded-2xl border ${rarityBg} shadow-xl card-shine`;
+                card.style.animationDelay = `${index * 0.08}s`;
+
+                card.innerHTML = `
+                    <div class="w-full flex justify-between items-center text-xs font-bold">
+                        <span class="px-2 py-0.5 rounded bg-slate-950/60 backdrop-blur-md ${item.rarity === 5 ? 'text-amber-400' : item.rarity === 4 ? 'text-purple-300' : 'text-slate-400'}">
+                            ${item.rarity} ★
+                        </span>
+                        <span class="text-[10px] text-slate-300/80">${item.type === 'character' ? '角色' : '武器'}</span>
+                    </div>
+
+                    <div class="my-6 text-center">
+                        <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-950/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-3xl mb-2 text-white">
+                            <i class="fa-solid ${item.icon}"></i>
+                        </div>
+                        <div class="font-black text-white text-base tracking-wide">${item.name}</div>
+                        ${item.title ? `<div class="text-[10px] text-amber-200/80 mt-0.5">${item.title}</div>` : ''}
+                    </div>
+
+                    <div class="text-[10px] text-slate-300/60 font-mono">
+                        NEW!
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function closeResultModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+        }
+
+        // --- 彈窗模組與紀錄/背包渲染 ---
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                if (modalId === 'history-modal') renderHistory();
+                if (modalId === 'inventory-modal') renderInventory('all');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // 渲染歷史紀錄表格與數據統計
+        function renderHistory() {
+            const tbody = document.getElementById('history-table-body');
+            tbody.innerHTML = '';
+
+            const totalPulls = state.history.length;
+            const star5Count = state.history.filter(h => h.rarity === 5).length;
+            const avg5Star = star5Count > 0 ? (totalPulls / star5Count).toFixed(1) : '0';
+
+            document.getElementById('stat-total-pulls').innerText = totalPulls;
+            document.getElementById('stat-5star-count').innerText = star5Count;
+            document.getElementById('stat-avg-5star').innerText = avg5Star;
+            document.getElementById('stat-total-spent').innerText = (totalPulls * 160).toLocaleString();
+
+            state.history.slice(0, 50).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/40 transition';
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold ${item.rarity === 5 ? 'text-amber-400' : item.rarity === 4 ? 'text-purple-400' : 'text-slate-300'}">
+                        ${item.name}
+                    </td>
+                    <td class="p-3 text-slate-400">${item.type}</td>
+                    <td class="p-3 font-bold">${item.rarity} ★</td>
+                    <td class="p-3 text-slate-400">${item.bannerName}</td>
+                    <td class="p-3 text-slate-500 font-mono text-[10px]">${item.time}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 渲染背包物品網格
+        function renderInventory(filterType) {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+
+            // 匯集所有資料庫物品
+            const allItems = [
+                ...DATABASE.characters.star5,
+                ...DATABASE.characters.star4,
+                ...DATABASE.weapons.star5,
+                ...DATABASE.weapons.star4,
+                ...DATABASE.weapons.star3
+            ];
+
+            allItems.forEach(item => {
+                const count = state.inventory[item.id] || 0;
+                if (count === 0 && filterType !== 'all') return; // 過濾未獲得
+
+                if (filterType === '5' && item.rarity !== 5) return;
+                if (filterType === '4' && item.rarity !== 4) return;
+                if (filterType === 'character' && item.type !== 'character') return;
+                if (filterType === 'weapon' && item.type !== 'weapon') return;
+
+                const card = document.createElement('div');
+                const isOwned = count > 0;
+                card.className = `p-3 rounded-2xl border flex flex-col justify-between items-center text-center relative ${
+                    isOwned 
+                    ? (item.rarity === 5 ? 'bg-amber-950/30 border-amber-500/40' : item.rarity === 4 ? 'bg-purple-950/30 border-purple-500/40' : 'bg-slate-800/40 border-slate-700')
+                    : 'bg-slate-900/40 border-slate-800 opacity-40 grayscale'
+                }`;
+
+                card.innerHTML = `
+                    <div class="absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-950/80 font-mono text-slate-300">
+                        x${count}
+                    </div>
+                    <div class="w-12 h-12 my-2 rounded-xl bg-slate-950/60 flex items-center justify-center text-xl text-slate-200">
+                        <i class="fa-solid ${item.icon}"></i>
+                    </div>
+                    <div class="text-xs font-bold text-white tracking-wide">${item.name}</div>
+                    <div class="text-[10px] text-amber-400 font-semibold mt-1">${item.rarity} ★</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterInventory(type) {
+            renderInventory(type);
+        }
+
+        // 補充晶片/貨幣
+        function addCurrency(amount) {
+            currency += amount;
+            updateUI();
+            saveData();
+            showToast(`成功獲得 ${amount} 祈願星石！`, "success");
+        }
+
+        // 自定義 Toast 提示
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-900/90 border-rose-700 text-rose-200' 
+                          : type === 'success' ? 'bg-emerald-900/90 border-emerald-700 text-emerald-200' 
+                          : 'bg-slate-800/90 border-slate-700 text-slate-200';
+
+            toast.className = `px-4 py-3 rounded-2xl border backdrop-blur-md shadow-xl text-xs font-semibold flex items-center gap-2 transition-all duration-300 translate-y-4 opacity-0 ${bgClass}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
