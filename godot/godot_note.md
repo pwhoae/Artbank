@@ -3,7 +3,7 @@
 创意就是組合
 
 ### 流程:認證玩法->確立美術>均衡性能+美術+細節
-需要策劃案 vs. Demo 策劃案決定上限
+需要策劃案 vs. Demo 策劃案決定上限<br>
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E9%81%8A%E6%88%B2%E7%AD%96%E5%88%92.md">遊戲策划</a>
 <hr>
 
