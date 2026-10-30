@@ -1,3 +1,14 @@
+Tripo3d: [https://www.tripo3d.ai/zh](https://www.tripo3d.ai/zh)
+svganimate: [https://svganimate.ai/](https://svganimate.ai/)
+lovart: [https://www.lovart.ai/zh-TW](https://www.lovart.ai/zh-TW)
+napkin: [https://app.napkin.ai/page/CgoiCHByb2Qtb25lEiwKBFBhZ2UaJDJmNjRiMmVjLWIyMDQtNGRlNC04ODE1LWNlZTU0MTZkZjc2MQ](https://app.napkin.ai/page/CgoiCHByb2Qtb25lEiwKBFBhZ2UaJDJmNjRiMmVjLWIyMDQtNGRlNC04ODE1LWNlZTU0MTZkZjc2MQ)
+partyrock: [https://partyrock.aws/u/Mohameed/1UyjrVQWW/ATS-Optimized-CV-Builder](https://partyrock.aws/u/Mohameed/1UyjrVQWW/ATS-Optimized-CV-Builder)
+LPC Spritesheet: [https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light)
+shotdeck: [https://shotdeck.com/welcome/trial](https://shotdeck.com/welcome/trial
+幀找動畫: [https://trace.moe/](https://trace.moe/)
+
+
+
 https://reactbits.dev/animations/scroll-expand
 id type（2d/3d）name link description tooltip
 Shiny Text/Curved Loop/Fuzzy Text/Falling Text/Rotating Text/Scroll Velocity/Electric Border/Orbit Images/Pixel Transition/Logo Loop/Target Cursor/
