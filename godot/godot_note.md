@@ -72,6 +72,7 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 <a id="美術"></a>
 ### 美術
 <h1>建議找美術包</h1>
+<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%9C%B0%E7%BC%96%E5%8F%82%E8%80%83.md">地编参考</a>
 
 ```
 什麼是繪畫中的生命力？欣賞生命力的本質是在欣賞多樣性。世界上沒有一模一樣的物體，如果不畫出獨有的生命力，就是在忽視個性、抹殺多樣性。
