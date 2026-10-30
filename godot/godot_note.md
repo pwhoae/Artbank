@@ -282,6 +282,7 @@ HDR、模型、贴图素材：https://polyhaven.com/
 第五步：環境與天氣（Environments and Weather）為了避免單一場景過於單調，開發者自行構思了各種天氣與環境主題（如雪景），並透過 Claude 協助編寫環境切換管理器（Switcher）以及雪景 Shader 等程式碼。  地形由手動雕刻，所有道具、燈光與材質皆為手動擺放與調整。  
 第六步：關卡與除錯（The Level & Coding）程式碼編寫與優化、NPC 行為樹（Behavior Trees）的設計、以及錯誤除錯（Debugging），Claude 提供了大量建議，但最終採用與否、如何修改與整合均由開發者親自把關。  
 
+Godot 游戏设置界面 GDScript https://share.gemini.google/tCLs76Hoj8V1  
 
 
 
