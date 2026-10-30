@@ -1,3 +1,5 @@
+嘉音門票 https://www.facebook.com/story.php?story_fbid=633852002634156&id=100080280857737&mibextid=wwXIfr&rdid=zP6ndOPdOCVd5J7I#
+
 Tripo3d: [https://www.tripo3d.ai/zh](https://www.tripo3d.ai/zh)
 svganimate: [https://svganimate.ai/](https://svganimate.ai/)
 lovart: [https://www.lovart.ai/zh-TW](https://www.lovart.ai/zh-TW)
