@@ -72,6 +72,7 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 <a id="美術"></a>
 ### 美術
 <h1>建議找美術包</h1>
+
 ```
 什麼是繪畫中的生命力？欣賞生命力的本質是在欣賞多樣性。世界上沒有一模一樣的物體，如果不畫出獨有的生命力，就是在忽視個性、抹殺多樣性。
 觀察與抽象化動態>大型與小型上的動態強化
@@ -81,10 +82,12 @@ https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 敢於修改，不留情面地推倒重來:膽子大的人面對畫錯的地方時，敢於大膽否定自己。   
 敢於發問，拒絕無謂的內耗:膽子小的人往往不好意思開口求教，容易在同一個盲點上鑽牛角尖、重複犯錯。  
 ```
+
 1. 參考 《绝区零》风格细节表现:避免平面化的造型（如平扁的武器/刀具）。必须画出块面的透视厚度与立面转折，体现强烈的体积感与空间穿插（如绳索的前后层次）
 2.  【迷失 Stray 地编参考】https://www.bilibili.com/video/BV1enK562E17/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 3.  【Godot学习记录_快速搭建3D室外场景】 https://www.bilibili.com/video/BV1bV6wBXE5o/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e
 4.  https://www.bilibili.com/video/BV1frJi6SEcF/
+
 5.  
 ```
 排布插件 ：github.com/HungryProton/scatter<br>
@@ -269,6 +272,14 @@ HDR、模型、贴图素材：https://polyhaven.com/
 初創期不要給自己太多枷鎖。當年 UP 主建立第一個生意時，表格裡列了上百行各行各業能想到的生意，只要合法且賺錢、自己覺得能幹就都留下來。  
 生意的本質是「商品 + 匹配的流量」：
 做生意的第一步是找買家（找到購買商品的人），而商品不能憑空存在，必須有相應的流量去支撐它。而能告訴你「什麼商品和什麼流量匹配在一起生意能成立」的答案，就是你的對標。  
+
+
+第一步：核心構想（The Idea）概念完全由開發者自己發想，並與 Claude 進行討論與細化（例如：「這類遊戲通常有哪些機制？是否合適？」），而非盲目交由 AI 決定。  
+第二步：原型製作（The Prototype）花費約 1 個半月時間，完全不碰視覺美術，僅用 Unity 中的方塊與膠囊人進行灰模（Greybox）測試。  大多數時間都花在遊玩、反覆調整速度、移動、遊戲設計、NPC 與玩家行為邏輯上。  
+第三步：尋找視覺風格（The Visual Style）將原型截圖上傳給 Claude，請其針對不同風格（如微縮模型 diorama、霓虹車輛等）為 AI 繪圖工具（Nana Banana）編寫提示詞（Prompts）來尋找參考。  結合購買的現成資產、自己在 3ds Max 中製作的模型，以及混搭寫實與卡通化的獨特美學。  
+第四步：資產與道具（The Assets）選定風格參考後，利用特定關鍵圖像確保所有道具風格保持一致，並由開發者親自動手修改與新增。  
+第五步：環境與天氣（Environments and Weather）為了避免單一場景過於單調，開發者自行構思了各種天氣與環境主題（如雪景），並透過 Claude 協助編寫環境切換管理器（Switcher）以及雪景 Shader 等程式碼。  地形由手動雕刻，所有道具、燈光與材質皆為手動擺放與調整。  
+第六步：關卡與除錯（The Level & Coding）程式碼編寫與優化、NPC 行為樹（Behavior Trees）的設計、以及錯誤除錯（Debugging），Claude 提供了大量建議，但最終採用與否、如何修改與整合均由開發者親自把關。  
 
 
 
