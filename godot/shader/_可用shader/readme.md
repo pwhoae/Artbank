@@ -1,3 +1,23 @@
+shader
+
+按步驟拆解Shader,提供shader使用方法和使用案例:
+第一步：檢視輸入與輸出（Inputs & Outputs）
+Attributes / In：從 CPU 傳進來的頂點數據（如位置、顏色、UV 座標）。
+Uniforms：全域變數，由 CPU 傳入且在整個畫面繪製過程中保持不變（如時間 u_time、解析度、光源位置）。
+Varyings：從頂點著色器傳遞給片元著色器的插值數據（經過光柵化後平滑過渡）。
+第二步：分析向量與數學運算
+Shader 高度依賴線性代數，常見的內建函數包括：
+dot(a, b)（點積）：常用於計算光照強弱（角度越小越亮）。
+cross(a, b)（叉積）：計算垂直於兩個向量的方向。
+normalize()（歸一化）、clamp()（限制數值範圍）、mix()（線性插值）。
+第三步：追蹤紋理採樣（Textures）
+尋找類似 texture() 或 texture2D() 的語句。這代表代碼正在讀取圖片或貼圖數據，並依據 UV 座標對應到當前像素上。
+第四步：鎖定最終輸出（Final Output）
+尋找代碼的結尾處，查看最終變數如何被賦值（例如 Fragment Shader 最終輸出的顏色值）。
+
+
+
+
 # **🎨 Godot Shader, VFX & Gameplay 系統資源庫**
 
 本倉庫收集並整理了適用於 **Godot Engine** 的各類 **3D/2D Shader 著色器**、**HTML 可視化預覽工具**、**UI 動效系統** 以及 **動作玩法原型 (Gameplay Prototype)** 與參考資源。
