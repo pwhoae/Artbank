@@ -26,6 +26,11 @@
 敢於修改，不留情面地推倒重來:膽子大的人面對畫錯的地方時，敢於大膽否定自己。   
 敢於發問，拒絕無謂的內耗:膽子小的人往往不好意思開口求教，容易在同一個盲點上鑽牛角尖、重複犯錯。  
 ```
+<hr>
+
+### 技巧
+<a href="https://github.com/pwhoae/Artbank/blob/main/godot/Godot_coding.md">Godot coding</a>
+
 
 
 
