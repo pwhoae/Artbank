@@ -30,9 +30,12 @@
 
 ### 技巧
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/Godot_coding.md">Godot coding</a>
-
-
-
-
-
-
+1. 不要重复造轮子>Assets
+2. [視差省MB+Low poly(Quaternius)+與低解析度貼圖]
+3. tscn | gdscript **GD 名Tscn+number+_nodename** | assets (audio,png,glb,)
+4. 收藏 property (position,rotation,scale,shape) Collision3D常用>Margin以防止穿墙。
+5. tripoAI+地編
+```
+把圖中的結構部件按照3D資產圖一次擺放，所有結構部件不能重複，按照大中小依次排放，8k解析度，頂級攝影照片。電影級布，泛光，風格化PBR，半寫實材質搭配法線貼圖效果為主，輔以手繪質感的磨損細節，絕區零遊戲風格
+```
+<hr>
