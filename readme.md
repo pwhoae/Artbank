@@ -1,43 +1,28 @@
-嘉音門票 https://www.facebook.com/story.php?story_fbid=633852002634156&id=100080280857737&mibextid=wwXIfr&rdid=zP6ndOPdOCVd5J7I#
-
-Tripo3d: [https://www.tripo3d.ai/zh](https://www.tripo3d.ai/zh)
-svganimate: [https://svganimate.ai/](https://svganimate.ai/)
-lovart: [https://www.lovart.ai/zh-TW](https://www.lovart.ai/zh-TW)
-napkin: [https://app.napkin.ai/page/CgoiCHByb2Qtb25lEiwKBFBhZ2UaJDJmNjRiMmVjLWIyMDQtNGRlNC04ODE1LWNlZTU0MTZkZjc2MQ](https://app.napkin.ai/page/CgoiCHByb2Qtb25lEiwKBFBhZ2UaJDJmNjRiMmVjLWIyMDQtNGRlNC04ODE1LWNlZTU0MTZkZjc2MQ)
-partyrock: [https://partyrock.aws/u/Mohameed/1UyjrVQWW/ATS-Optimized-CV-Builder](https://partyrock.aws/u/Mohameed/1UyjrVQWW/ATS-Optimized-CV-Builder)
-LPC Spritesheet: [https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light)
-shotdeck: [https://shotdeck.com/welcome/trial](https://shotdeck.com/welcome/trial
-幀找動畫: [https://trace.moe/](https://trace.moe/)
-
-
-
-https://reactbits.dev/animations/scroll-expand
-id type（2d/3d）name link description tooltip
-Shiny Text/Curved Loop/Fuzzy Text/Falling Text/Rotating Text/Scroll Velocity/Electric Border/Orbit Images/Pixel Transition/Logo Loop/Target Cursor/
-
-
-https://bluearchive.wiki/wiki/Models#Hifumi
-AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
-動畫 用動畫庫mixamo 火柴人/lego人動作
-
-smc automation|青年就業通
-
-
-shadertoy
-總是xx:https://www.bilibili.com/toy/6AF4DstEm8VTOebm/index.html
-nvidia:Kimodo: Scaling Controllable Human Motion Generation
-
-BlenderKit:https://www.blendkit.com
-Camera Shakify：用於為攝影機添加自然的手持鏡頭晃動效果。 
-ui:https://bencho.dev/
-https://genvizu.com/zh
-https://www.meigen.ai/
-actionforge
- 
-靈感：svg/樂魔、魔法盒
-表現性動效：可透過截圖、簡單摳圖/補圖方式，將市面上喜歡的遊戲 UI 轉為可編輯素材進行臨摹或再創作。  
 # 🎨 Artbank & GameDev Resource Hub
 
+> 一站式 2D / 3D 美術、遊戲開發、UI 靈感、AI 工具與製作資源收藏庫。
+
+<p align="center">
+  <strong>ART · DESIGN · GAMEDEV · AI · WORKFLOW</strong>
+</p>
+
+---
+
+## 🧭 目錄
+
+- [快速連結](#-快速連結-quick-links)
+- [新增與待分類資源](#-新增與待分類資源)
+- [商業邏輯思考框架](#-商業邏輯思考框架)
+- [設計靈感與 UI 平台](#-設計靈感與-ui-平台)
+- [2D / 3D 美術與素材資源](#-3d--2d-美術與素材資源)
+- [音樂與音效資源](#-音樂與音效資源)
+- [AI 生成與 MCP 工具](#-ai-生成與-mcp-工具)
+- [開發、圖表與圖像處理工具](#-開發圖表與圖像處理工具)
+- [遊戲開發與腳本工具](#-遊戲開發與腳本工具)
+- [社交、瀏覽器擴充與其他](#-社交瀏覽器擴充與其他)
+- [相簿與記錄](#-相簿與記錄)
+
+---
 
 > 整合 2D/3D 美術資源、UI 設計靈感、音效音樂、AI 與 MCP 開發工具、遊戲開發思考框架及各類輔助工具的綜合資源庫。
 
@@ -48,6 +33,69 @@ actionforge
 * 📄 [GPT 生成 README 歷史版本](https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/readme.md)
 * 🔒 [Artbank Private Repo](https://github.com/pwhoae/artbank_private)
 * 💡 [Artbank Private 靈感庫](https://github.com/pwhoae/artbank_private/tree/main/_%E9%9D%88%E6%84%9F)
+
+---
+
+## 🧭 新增與待分類資源
+
+> 持續收集中的工具與參考資料；尚未完全歸類的項目先集中於此，方便後續整理。
+
+### 🤖 AI / 生成式工具
+
+| 工具 | 用途 / 備註 | 連結 |
+| :--- | :--- | :--- |
+| **Tripo3D** | AI 3D 模型生成 | [tripo3d.ai](https://www.tripo3d.ai/zh) |
+| **Lovart** | AI 設計工具 | [lovart.ai](https://www.lovart.ai/zh-TW) |
+| **Napkin** | 視覺化內容與圖表 | [napkin.ai](https://app.napkin.ai/page/CgoiCHByb2Qtb25lEiwKBFBhZ2UaJDJmNjRiMmVjLWIyMDQtNGRlNC04ODE1LWNlZTU0MTZkZjc2MQ) |
+| **PartyRock** | AWS AI 應用範例：ATS Optimized CV Builder | [開啟範例](https://partyrock.aws/u/Mohameed/1UyjrVQWW/ATS-Optimized-CV-Builder) |
+| **GenVizu** | 視覺化工具 | [genvizu.com](https://genvizu.com/zh) |
+| **Meigen** | AI 工具 | [meigen.ai](https://www.meigen.ai/) |
+
+### 🎨 動效 / SVG / UI 靈感
+
+| 工具 / 資源 | 用途 / 備註 | 連結 |
+| :--- | :--- | :--- |
+| **SVG Animate** | SVG 動畫製作 | [svganimate.ai](https://svganimate.ai/) |
+| **React Bits** | 網頁互動與動畫元件；包含 Shiny Text、Curved Loop、Fuzzy Text、Falling Text、Rotating Text、Scroll Velocity、Electric Border、Orbit Images、Pixel Transition、Logo Loop、Target Cursor 等 | [Scroll Expand](https://reactbits.dev/animations/scroll-expand) |
+| **Bencho UI** | UI 設計參考 | [bencho.dev](https://bencho.dev/) |
+| **Shadertoy** | Shader 與即時視覺效果靈感 | [shadertoy.com](https://www.shadertoy.com/) |
+| **總是 xx** | Bilibili 互動 / 視覺參考 | [開啟頁面](https://www.bilibili.com/toy/6AF4DstEm8VTOebm/index.html) |
+| **ActionForge** | 動作相關工具 / 參考 | — |
+
+### 🧊 3D / 角色 / 動畫參考
+
+| 工具 / 資源 | 用途 / 備註 | 連結 |
+| :--- | :--- | :--- |
+| **LPC Spritesheet Generator** | 2D 像素角色與 Spritesheet 生成 | [開啟角色生成器](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light) |
+| **Mixamo** | 使用動畫庫製作火柴人 / LEGO 人物動作參考 | [Mixamo](https://www.mixamo.com/) |
+| **AnimGen Example** | 角色動畫範例 | [Fab](https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790) |
+| **Blue Archive Models** | 角色模型參考 | [Hifumi 模型頁](https://bluearchive.wiki/wiki/Models#Hifumi) |
+| **BlenderKit** | Blender 模型與素材 | [blendkit.com](https://www.blendkit.com) |
+| **NVIDIA — Kimodo** | Scaling Controllable Human Motion Generation | — |
+| **Camera Shakify** | 為攝影機添加自然的手持鏡頭晃動效果 | — |
+
+### 🎬 影像 / 動畫 / 參考資料
+
+| 工具 / 資源 | 用途 / 備註 | 連結 |
+| :--- | :--- | :--- |
+| **ShotDeck** | 電影畫面與鏡頭參考資料庫 | [shotdeck.com](https://shotdeck.com/welcome/trial) |
+| **trace.moe（幀找動畫）** | 透過動畫截圖反向搜尋作品 | [trace.moe](https://trace.moe/) |
+
+### 🧰 其他工具與資料
+
+| 工具 / 資源 | 用途 / 備註 | 連結 |
+| :--- | :--- | :--- |
+| **SMC Automation** | 青年就業通相關自動化項目 | — |
+| **青年就業通** | 就業資訊 | — |
+| **嘉音門票** | Facebook 貼文 / 門票資訊 | [Facebook 貼文](https://www.facebook.com/story.php?story_fbid=633852002634156&id=100080280857737&mibextid=wwXIfr&rdid=zP6ndOPdOCVd5J7I) |
+
+### 💡 設計觀察與工作流備忘
+
+- **靈感來源：** SVG、樂魔、魔法盒。
+- **表現性動效：** 可透過截圖、簡單摳圖 / 補圖方式，將市面上喜歡的遊戲 UI 轉為可編輯素材，再進行臨摹或再創作。
+- **React Bits 元件索引欄位：** `id`、`type（2D / 3D）`、`name`、`link`、`description`、`tooltip`。
+
+---
 
 ---
 
@@ -187,7 +235,7 @@ actionforge
 
 | 平台 / 分類 | 建議擴充 / 工具 | 描述 / 連結 |
 | :--- | :--- | :--- |
-| **YouTube** | SponsorBlock | 自動跳过影片贊助廣告與片頭片尾 |
+| **YouTube** | SponsorBlock | 自動跳過影片贊助廣告與片頭片尾 |
 | **Bilibili** | BiliBlock / 小電視空降助手 | 避開黑名單內容與自動空降 |
 | **Threads** | Threads Downloader | 影片與圖像下載工具 ｜ [threadsdownloader.com](https://threadsdownloader.com/zh) |
 | **生涯探索** | Ikigai 生涯規劃工具 | [Ikigai Tool Results](https://ikigaitool.com/result/Vj9gQALBtx) |
@@ -195,7 +243,7 @@ actionforge
 ---
 
 ## 📷 相簿與記錄
-https://www.i-learner.com.hk/prize_presentation/pp2019/index.php
+[i-Learner Prize Presentation](https://www.i-learner.com.hk/prize_presentation/pp2019/index.php)
 * 📸 [HKUST GECO Photo Album (Day 2 Nov 15)](https://hkust-geco.gump.gg/album/day-2-november-15-sessions-5-8-ais-shss-seng)
 
 ---
