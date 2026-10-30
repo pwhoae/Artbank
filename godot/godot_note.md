@@ -283,6 +283,7 @@ HDR、模型、贴图素材：https://polyhaven.com/
 第六步：關卡與除錯（The Level & Coding）程式碼編寫與優化、NPC 行為樹（Behavior Trees）的設計、以及錯誤除錯（Debugging），Claude 提供了大量建議，但最終採用與否、如何修改與整合均由開發者親自把關。  
 
 Godot 游戏设置界面 GDScript https://share.gemini.google/tCLs76Hoj8V1  
+Godot code:https://share.gemini.google/hzLfFBYoV25B 
 
 
 
