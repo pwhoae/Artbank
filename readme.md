@@ -1,3 +1,5 @@
+https://reactbits.dev/animations/scroll-expand
+
 https://bluearchive.wiki/wiki/Models#Hifumi
 AnimGen Example:https://www.fab.com/listings/df37eb46-09bf-4604-9307-cdc39c769790
 動畫 用動畫庫mixamo 火柴人/lego人動作
