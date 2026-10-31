@@ -65,3 +65,8 @@ Galumb:彈床/滾木/棍/拳頭/激光
 <a href="https://www.bilibili.com/video/BV1PDez63E9F/?share_source=copy_web&vd_source=d7f849d08eeb1405afe10c2ea0062d8e">【涩之炼金术～エロ文本写作指南】 </a>
 <a href="https://github.com/pwhoae/Artbank/blob/main/html/Godot_html/juicy%20Idea/Godot%203D%20%E5%B0%84%E5%87%BB%E6%B8%B8%E6%88%8F%E5%85%A8%E5%A5%97%E7%89%B9%E6%95%88%203D%20%E4%BA%A4%E4%BA%92%E6%BC%94%E7%A4%BA.html">射擊遊戲   </a>
 <hr>
+
+### 運營
+数据与大盘分析：Data.ai、AppAnnie、七麦数据（Qimai）。 
+买量与广告出海监测：SocialPeta（广固）、Sensor Tower 
+
