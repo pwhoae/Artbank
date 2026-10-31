@@ -1,3 +1,8 @@
+贴图下载网站：https://ambientcg.com/
+HDR、模型、贴图素材：https://polyhaven.com/
+素材、参考：https://pixabay.com/
+插件等：https://blenderco.cn/
+
 # 🎨 Artbank & GameDev Resource Hub
 
 > 一站式 2D / 3D 美術、遊戲開發、UI 靈感、AI 工具與製作資源收藏庫。
