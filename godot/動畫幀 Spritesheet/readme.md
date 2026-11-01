@@ -1,3 +1,9 @@
+摇一摇
+Orc idle
+hip pop dance
+
+<hr>
+
 |  |  |  |  |  |
 | :---- | :---- | :---- | :---- | :---- |
 |  | \>\<V \=direction | ()=optional | \*=mandary |  |
