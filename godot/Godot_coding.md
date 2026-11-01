@@ -1,3 +1,5 @@
+教程驅動開發（Tutorial-Driven Development）:先寫教程，再讓 AI 實現：古法編程時，我們使用第三方庫只需讀教程、看接口就能上手，不必先弄懂內部實現。同理，使用 AI 時也先讓其學習「教程」，再按照教程分步實現，每篇教程只完成一個具體功能。 
+
 參考書<a href="https://github.com/wangshucheng/godot-engine-book/tree/main/articles"> website</a>
 https://github.com/pwhoae/Artbank/blob/main/godot/readme.md
 	
