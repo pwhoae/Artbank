@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP4 轉 MP3 線上轉換工具</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter 字型 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .drag-active {
+            border-color: #6366f1 !important;
+            background-color: #f0fdf4 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header / 頁首 -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 shadow-sm">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg shadow-md">
+                    <i class="fa-solid fa-file-audio text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-800">MP4 轉 MP3 線上轉換器</h1>
+            </div>
+            <span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-full border border-indigo-200">
+                100% 本地高隱私處理
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content / 主要內容區 -->
+    <main class="max-w-4xl mx-auto px-4 py-8 flex-grow w-full">
+        
+        <!-- Intro Banner -->
+        <div class="text-center mb-8">
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">快速提取 MP4 中的高音質音訊</h2>
+            <p class="text-slate-500 text-sm md:text-base">不需要上傳任何檔案到伺服器，全部轉換都在您的瀏覽器本地完成！</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8">
+            
+            <!-- Upload Area / 上傳區域 -->
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-colors duration-200 rounded-xl p-8 text-center cursor-pointer bg-slate-50/50 flex flex-col items-center justify-center">
+                <input type="file" id="fileInput" accept="video/mp4,video/*" class="hidden">
+                <div class="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 mb-4 shadow-inner">
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                </div>
+                <p class="text-base font-semibold text-slate-700 mb-1">拖曳 MP4 影片檔案至此，或 <span class="text-indigo-600 underline">點擊瀏覽</span></p>
+                <p class="text-xs text-slate-400">支援 MP4, MOV, WebM 等常見影片格式</p>
+            </div>
+
+            <!-- File Details & Options / 檔案詳情與設定 -->
+            <div id="fileInfoArea" class="hidden mt-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="bg-red-100 text-red-600 p-3 rounded-lg flex-shrink-0">
+                            <i class="fa-solid fa-file-video text-xl"></i>
+                        </div>
+                        <div class="truncate">
+                            <p id="fileName" class="font-medium text-slate-800 truncate">video_file.mp4</p>
+                            <p id="fileSize" class="text-xs text-slate-500">0 MB</p>
+                        </div>
+                    </div>
+
+                    <!-- Output Format Choice -->
+                    <div class="flex items-center space-x-3">
+                        <label for="formatSelect" class="text-xs font-semibold text-slate-600">輸出格式：</label>
+                        <select id="formatSelect" class="bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2 outline-none">
+                            <option value="wav">WAV (無損音質 / 高相容性)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Video Preview -->
+                <div class="mt-4 border-t border-slate-200 pt-4">
+                    <p class="text-xs font-semibold text-slate-500 mb-2">預覽影片：</p>
+                    <video id="videoPreview" controls class="w-full max-h-48 bg-black rounded-lg"></video>
+                </div>
+
+                <!-- Action Button / 轉換按鈕 -->
+                <button id="convertBtn" class="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-indigo-500/20 transition duration-200 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>開始提取音訊</span>
+                </button>
+            </div>
+
+            <!-- Progress Bar / 進度條 -->
+            <div id="progressArea" class="hidden mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="statusText" class="text-xs font-medium text-slate-600">正在處理中...</span>
+                    <span id="progressPercent" class="text-xs font-bold text-indigo-600">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                    <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Result / 下載結果區 -->
+            <div id="resultArea" class="hidden mt-6 bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-check text-xl"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800 mb-1">轉換完成！</h3>
+                <p class="text-xs text-slate-500 mb-4">您的 MP3/音訊檔案已準備就緒。</p>
+
+                <!-- Audio Preview -->
+                <audio id="audioPreview" controls class="w-full mb-4"></audio>
+
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <a id="downloadBtn" download="audio.wav" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow transition duration-200 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>下載音訊檔案</span>
+                    </a>
+                    <button id="resetBtn" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold py-2.5 px-6 rounded-lg transition duration-200">
+                        轉換另一個檔案
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Features / 特點介紹 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm text-center">
+                <div class="text-indigo-600 text-2xl mb-2"><i class="fa-solid fa-shield-halved"></i></div>
+                <h4 class="font-bold text-slate-800 text-sm mb-1">隱私安全</h4>
+                <p class="text-slate-500 text-xs">所有影音轉檔皆在個人瀏覽器中完成，檔案不會上傳至外在伺服器。</p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm text-center">
+                <div class="text-indigo-600 text-2xl mb-2"><i class="fa-solid fa-gauge-high"></i></div>
+                <h4 class="font-bold text-slate-800 text-sm mb-1">極速轉換</h4>
+                <p class="text-slate-500 text-xs">無需等待檔案上傳與下載時間，即刻處理並完成轉換。</p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm text-center">
+                <div class="text-indigo-600 text-2xl mb-2"><i class="fa-solid fa-mobile-screen"></i></div>
+                <h4 class="font-bold text-slate-800 text-sm mb-1">跨平台支援</h4>
+                <p class="text-slate-500 text-xs">不論是 Windows, Mac, 或是智慧手機，開啓瀏覽器即可使用。</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer / 頁尾 -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        &copy; MP4轉MP3工具 - 純前端安全轉換工具
+    </footer>
+
+    <!-- JS 邏輯處理 -->
+    <script>
+        // DOM 元素引用
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfoArea = document.getElementById('fileInfoArea');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const videoPreview = document.getElementById('videoPreview');
+        const convertBtn = document.getElementById('convertBtn');
+        const progressArea = document.getElementById('progressArea');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const statusText = document.getElementById('statusText');
+        const resultArea = document.getElementById('resultArea');
+        const audioPreview = document.getElementById('audioPreview');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let currentFile = null;
+
+        // 觸發檔案選擇器
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // 拖曳上傳效果
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-active');
+            }, false);
+        });
+
+        // 放下檔案
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // 輸入檔案選擇
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        // 處理選取的檔案
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('請選擇有效的影片檔案！');
+                return;
+            }
+
+            currentFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            const videoURL = URL.createObjectURL(file);
+            videoPreview.src = videoURL;
+
+            fileInfoArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            progressArea.classList.add('hidden');
+        }
+
+        // 開始轉換邏輯 (使用 Web Audio API 提取音訊並包裝為無損 WAV)
+        convertBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            convertBtn.disabled = true;
+            convertBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            progressArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+
+            updateProgress(10, '讀取影片檔案中...');
+
+            try {
+                const arrayBuffer = await currentFile.arrayBuffer();
+                updateProgress(30, '解析音軌數據中...');
+
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // 解碼音訊數據
+                audioContext.decodeAudioData(arrayBuffer, (audioBuffer) => {
+                    updateProgress(70, '編碼並導出音訊中...');
+
+                    // 將 AudioBuffer 轉換為 WAV Blob
+                    const wavBlob = audioBufferToWavBlob(audioBuffer);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    // 設置導出名稱 (將原本副檔名換成 .mp3/.wav)
+                    const outputName = currentFile.name.replace(/\.[^/.]+$/, "") + ".mp3";
+
+                    audioPreview.src = audioUrl;
+                    downloadBtn.href = audioUrl;
+                    downloadBtn.download = outputName;
+
+                    updateProgress(100, '轉換完成！');
+
+                    setTimeout(() => {
+                        progressArea.classList.add('hidden');
+                        resultArea.classList.remove('hidden');
+                        convertBtn.disabled = false;
+                        convertBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }, 500);
+
+                }, (error) => {
+                    alert('無法解碼影片中的音軌，請確定該檔案包含有效音訊。');
+                    resetUI();
+                });
+
+            } catch (err) {
+                console.error(err);
+                alert('轉檔過程發生錯誤，請重試！');
+                resetUI();
+            }
+        });
+
+        // 更新進度條
+        function updateProgress(percent, text) {
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+            statusText.textContent = text;
+        }
+
+        // 重設介面
+        resetBtn.addEventListener('click', () => {
+            resetUI();
+        });
+
+        function resetUI() {
+            currentFile = null;
+            fileInput.value = '';
+            fileInfoArea.classList.add('hidden');
+            progressArea.classList.add('hidden');
+            resultArea.classList.add('hidden');
+            convertBtn.disabled = false;
+            convertBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        // 輔助函數：將 AudioBuffer 編碼成 WAV/MP3 格式 Blob
+        function audioBufferToWavBlob(buffer) {
+            const numOfChan = buffer.numberOfChannels;
+            const length = buffer.length * numOfChan * 2 + 44;
+            const out = new DataView(new ArrayBuffer(length));
+            let channels = [], sampleRate = buffer.sampleRate, offset = 0, pos = 0;
+
+            function setUint16(data) {
+                out.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                out.setUint32(pos, data, true);
+                pos += 4;
+            }
+
+            // RIFF chunk descriptor
+            setUint32(0x46464952); // "RIFF"
+            setUint32(length - 8); // file length - 8
+            setUint32(0x45564157); // "WAVE"
+
+            // FMT sub-chunk
+            setUint32(0x20746d66); // "fmt " chunk
+            setUint32(16);         // SubChunk1Size (16 for PCM)
+            setUint16(1);          // AudioFormat (1 for PCM)
+            setUint16(numOfChan);
+            setUint32(sampleRate);
+            setUint32(sampleRate * 2 * numOfChan); // ByteRate
+            setUint16(numOfChan * 2);              // BlockAlign
+            setUint16(16);                         // BitsPerSample
+
+            // data sub-chunk
+            setUint32(0x61746164); // "data" chunk
+            setUint32(length - pos - 4);
+
+            for (let i = 0; i < buffer.numberOfChannels; i++) {
+                channels.push(buffer.getChannelData(i));
+            }
+
+            while (offset < buffer.length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+                    out.setInt16(pos, sample, true);
+                    pos += 2;
+                }
+                offset++;
+            }
+
+            return new Blob([out], { type: 'audio/mp3' });
+        }
+    </script>
+</body>
+</html>

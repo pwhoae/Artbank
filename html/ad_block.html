@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdBlock 模擬與學習工具</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 圖示庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 模擬被 CSS 規則隱藏的廣告類別 */
+        .adblock-hidden {
+            display: none !important;
+        }
+        /* 模擬廣告元素樣式 */
+        .mock-ad {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- 頂部導覽列 -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-600 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10 shadow-lg shadow-red-600/30">
+                    <i class="fa-solid => fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Smart AdBlocker</h1>
+                    <p class="text-xs text-slate-400">廣告攔截模擬與規則測試器</p>
+                </div>
+            </div>
+
+            <!-- 主開關 -->
+            <div class="flex items-center space-x-3 bg-slate-900 px-4 py-2 rounded-full border border-slate-800">
+                <span class="text-sm font-medium" id="status-text">攔截器狀態: <span class="text-green-400 font-bold">已啟用</span></span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="toggle-adblock" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- 左側面板：控制與統計 -->
+        <div class="lg:col-span-4 space-y-6">
+            
+            <!-- 數據統計卡片 -->
+            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50 shadow-xl">
+                <h2 class="text-md font-bold mb-4 flex items-center text-slate-200">
+                    <i class="fa-solid fa-chart-pie mr-2 text-indigo-400"></i> 即時攔截統計
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800">
+                        <p class="text-xs text-slate-400">已攔截廣告數</p>
+                        <p class="text-2xl font-black text-emerald-400 mt-1" id="blocked-count">0</p>
+                    </div>
+                    <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800">
+                        <p class="text-xs text-slate-400">估計節省流量</p>
+                        <p class="text-2xl font-black text-cyan-400 mt-1" id="data-saved">0 KB</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 規則管理面板 -->
+            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50 shadow-xl space-y-4">
+                <h2 class="text-md font-bold text-slate-200 flex items-center">
+                    <i class="fa-solid fa-filter mr-2 text-amber-400"></i> 過濾規則設定
+                </h2>
+
+                <!-- 攔截類型切換 -->
+                <div class="space-y-2 text-sm">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="rule-banner" checked class="rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                        <span class="text-slate-300">攔截橫幅廣告 (Banner Ads)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="rule-sidebar" checked class="rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                        <span class="text-slate-300">攔截側邊欄廣告 (Sidebar Ads)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="rule-popup" checked class="rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                        <span class="text-slate-300">攔截蓋版彈出廣告 (Popups)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="rule-tracking" checked class="rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                        <span class="text-slate-300">阻擋追蹤指令碼 (Tracking Scripts)</span>
+                    </label>
+                </div>
+
+                <hr class="border-slate-700/50">
+
+                <!-- 自訂過濾規則輸入 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2">新增 CSS 類別過濾器</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="custom-rule-input" placeholder="例如: .sponsored-post" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-indigo-500">
+                        <button id="add-rule-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition">新增</button>
+                    </div>
+                </div>
+
+                <!-- 自訂規則列表 -->
+                <div>
+                    <p class="text-xs text-slate-400 mb-2">已啟用的過濾標籤：</p>
+                    <div id="rules-list" class="flex flex-wrap gap-2">
+                        <!-- 動態插入規則標籤 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 攔截日誌 -->
+            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50 shadow-xl">
+                <h2 class="text-md font-bold mb-3 text-slate-200 flex items-center">
+                    <i class="fa-solid fa-list-check mr-2 text-emerald-400"></i> 即時攔截日誌
+                </h2>
+                <div id="logs-container" class="bg-slate-950 rounded-xl p-3 h-48 overflow-y-auto font-mono text-xs space-y-1.5 border border-slate-800 text-slate-400">
+                    <p class="text-slate-500">// 系統已準備就緒，等待事件...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 右側面板：模擬網頁環境 -->
+        <div class="lg:col-span-8">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                
+                <!-- 模擬瀏覽器頂部網址列 -->
+                <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center space-x-3">
+                    <div class="flex space-x-1.5">
+                        <span class="w-3 h-3 bg-red-500/80 rounded-full inline-block"></span>
+                        <span class="w-3 h-3 bg-amber-500/80 rounded-full inline-block"></span>
+                        <span class="w-3 h-3 bg-emerald-500/80 rounded-full inline-block"></span>
+                    </div>
+                    <div class="flex-1 bg-slate-900 rounded-lg px-3 py-1 text-xs text-slate-400 border border-slate-800 flex items-center justify-between">
+                        <span class="flex items-center"><i class="fa-solid fa-lock text-emerald-500 mr-2 text-[10px]"></i> https://example-news-site.com</span>
+                        <button id="refresh-demo-btn" class="hover:text-white transition" title="重新載入測試頁面">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 模擬網站主體區域 -->
+                <div class="p-6 bg-slate-100 text-slate-900 min-h-[600px] relative overflow-hidden" id="web-page">
+
+                    <!-- 廣告 1：頂部頁眉橫幅廣告 -->
+                    <div class="mock-ad ad-banner bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-xl mb-6 shadow-md border border-purple-400 flex justify-between items-center relative" data-ad-id="top-banner" data-size="120">
+                        <div>
+                            <span class="bg-yellow-400 text-xs font-bold text-slate-900 px-2 py-0.5 rounded mr-2">贊助內容</span>
+                            <span class="font-bold">超級優惠！買一送一限時搶購中！</span>
+                        </div>
+                        <button class="bg-white text-purple-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow hover:bg-slate-100">立即點擊</button>
+                    </div>
+
+                    <!-- 網站文章標題與內容 -->
+                    <div class="space-y-4">
+                        <h1 class="text-2xl font-bold text-slate-800">最新科技趨勢：廣告攔截器運作原理大解密</h1>
+                        <div class="flex items-center space-x-3 text-xs text-slate-500 border-b border-slate-200 pb-3">
+                            <span>作者：科技觀察家</span>
+                            <span>•</span>
+                            <span>發布日期：2026年10月</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            
+                            <!-- 文章主要內容 -->
+                            <div class="md:col-span-2 space-y-4 text-slate-700 text-sm leading-relaxed">
+                                <p>現代廣告攔截軟體主要透過比對<b>網路請求 URL</b> 以及<b>DOM 樹狀結構中的 CSS 選擇器</b>來運作。當網頁載入時，攔截器會根據黑名單規則阻擋特定的網絡請求，或隱藏符合特徵的 HTML 元素。</p>
+                                
+                                <!-- 廣告 2：內文插入廣告 -->
+                                <div class="mock-ad ad-infeed bg-amber-100 border border-amber-300 p-4 rounded-xl my-4 text-center relative" data-ad-id="infeed-ad" data-size="80">
+                                    <p class="text-xs text-amber-800 font-semibold mb-1">[ 廣告 ] 想要快速學習程式語言嗎？</p>
+                                    <p class="text-sm font-bold text-amber-950">加入線上課程，首月只需 9.99 美金！</p>
+                                </div>
+
+                                <p>除了傳統的過濾清單（如 EasyList），許多現代攔截器還加入了機器學習算法與隱私保護功能，能夠防範動態生成的追蹤指令碼與指紋追蹤技術。</p>
+                                
+                                <p>透過模擬器，您可以測試不同規則對網頁呈現效果的影響，理解前端安全與網絡過濾的基本邏輯。</p>
+                            </div>
+
+                            <!-- 網站側邊欄 -->
+                            <div class="space-y-4">
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <h3 class="font-bold text-sm text-slate-800 mb-2">熱門文章</h3>
+                                    <ul class="text-xs space-y-2 text-slate-600">
+                                        <li class="hover:underline cursor-pointer">1. 網路安全防護指南</li>
+                                        <li class="hover:underline cursor-pointer">2. 如何提升網頁載入速度</li>
+                                        <li class="hover:underline cursor-pointer">3. JavaScript 效能優化技巧</li>
+                                    </ul>
+                                </div>
+
+                                <!-- 廣告 3：側邊欄廣告 -->
+                                <div class="mock-ad ad-sidebar bg-slate-800 text-white p-4 rounded-xl text-center space-y-2 relative" data-ad-id="sidebar-ad" data-size="150">
+                                    <span class="text-[10px] text-slate-400 block uppercase tracking-wider">ADVERTISEMENT</span>
+                                    <i class="fa-solid fa-gamepad text-3xl text-emerald-400"></i>
+                                    <p class="text-xs font-bold">2026 最好玩的線上遊戲！</p>
+                                    <button class="bg-emerald-500 text-slate-900 text-xs font-bold px-3 py-1 rounded w-full">免費遊玩</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- 廣告 4：模擬蓋版彈出視窗廣告 -->
+                    <div id="mock-popup-ad" class="mock-ad ad-popup fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity" data-ad-id="popup-ad" data-size="200">
+                        <div class="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-200 relative text-center">
+                            <button id="close-popup-btn" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-lg">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                                <i class="fa-solid fa-gift"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-lg">恭喜獲得幸運抽獎機會！</h3>
+                            <p class="text-xs text-slate-500 mt-2 mb-4">點擊下方按鈕領取您的專屬好禮。</p>
+                            <button class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl text-sm shadow-lg shadow-red-600/30">立即領取</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 邏輯引擎 -->
+    <script>
+        // 核心運作狀態
+        const state = {
+            enabled: true,
+            rules: {
+                banner: true,
+                sidebar: true,
+                popup: true,
+                tracking: true
+            },
+            customRules: ['.sponsored-post', '.ad-infeed'],
+            blockedCount: 0,
+            dataSavedKB: 0
+        };
+
+        // DOM 元素引用
+        const elements = {
+            toggleAdblock: document.getElementById('toggle-adblock'),
+            statusText: document.getElementById('status-text'),
+            ruleBanner: document.getElementById('rule-banner'),
+            ruleSidebar: document.getElementById('rule-sidebar'),
+            rulePopup: document.getElementById('rule-popup'),
+            blockedCount: document.getElementById('blocked-count'),
+            dataSaved: document.getElementById('data-saved'),
+            logsContainer: document.getElementById('logs-container'),
+            customRuleInput: document.getElementById('custom-rule-input'),
+            addRuleBtn: document.getElementById('add-rule-btn'),
+            rulesList: document.getElementById('rules-list'),
+            refreshBtn: document.getElementById('refresh-demo-btn'),
+            closePopupBtn: document.getElementById('close-popup-btn'),
+            mockPopup: document.getElementById('mock-popup-ad')
+        };
+
+        // 新增日誌記錄
+        function logAction(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('p');
+            
+            let colorClass = 'text-slate-400';
+            if (type === 'block') colorClass = 'text-emerald-400';
+            if (type === 'warn') colorClass = 'text-amber-400';
+
+            logEntry.className = `${colorClass} leading-tight`;
+            logEntry.innerHTML = `<span class="text-slate-600">[${time}]</span> ${message}`;
+            
+            elements.logsContainer.appendChild(logEntry);
+            elements.logsContainer.scrollTop = elements.logsContainer.scrollHeight;
+        }
+
+        // 更新數據看板
+        function updateStats() {
+            elements.blockedCount.textContent = state.blockedCount;
+            elements.dataSaved.textContent = `${state.dataSavedKB} KB`;
+        }
+
+        // 核心廣告攔截檢查邏輯
+        function applyAdBlocker() {
+            // 重置統計與畫面顯示
+            let currentBlocked = 0;
+            let currentSavedKB = 0;
+
+            const allAdElements = document.querySelectorAll('.mock-ad');
+
+            if (!state.enabled) {
+                // 攔截器關閉：顯示所有廣告
+                allAdElements.forEach(el => el.classList.remove('adblock-hidden'));
+                logAction('AdBlocker 已停用，恢復顯示所有廣告元素。', 'warn');
+                return;
+            }
+
+            // 逐一檢查廣告元素
+            allAdElements.forEach(ad => {
+                let shouldBlock = false;
+                let reason = '';
+
+                // 檢查內建各類型規則
+                if (state.rules.banner && ad.classList.contains('ad-banner')) {
+                    shouldBlock = true;
+                    reason = '匹配橫幅廣告過濾器 (.ad-banner)';
+                } else if (state.rules.sidebar && ad.classList.contains('ad-sidebar')) {
+                    shouldBlock = true;
+                    reason = '匹配側邊欄廣告過濾器 (.ad-sidebar)';
+                } else if (state.rules.popup && ad.classList.contains('ad-popup')) {
+                    shouldBlock = true;
+                    reason = '匹配蓋版廣告過濾器 (.ad-popup)';
+                }
+
+                // 檢查自訂 CSS 規則
+                state.customRules.forEach(rule => {
+                    if (rule && ad.matches(rule)) {
+                        shouldBlock = true;
+                        reason = `匹配自訂規則 (${rule})`;
+                    }
+                });
+
+                // 執行攔截動作
+                if (shouldBlock) {
+                    if (!ad.classList.contains('adblock-hidden')) {
+                        ad.classList.add('adblock-hidden');
+                        const size = parseInt(ad.dataset.size || '50', 10);
+                        currentBlocked++;
+                        currentSavedKB += size;
+                        logAction(`[已攔截] 元素 #${ad.dataset.adId || 'ad'} (${reason})`, 'block');
+                    }
+                } else {
+                    ad.classList.remove('adblock-hidden');
+                }
+            });
+
+            // 更新總計數
+            state.blockedCount = currentBlocked;
+            state.dataSavedKB = currentSavedKB;
+            updateStats();
+        }
+
+        // 渲染自訂規則列表標籤
+        function renderCustomRules() {
+            elements.rulesList.innerHTML = '';
+            state.customRules.forEach((rule, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'bg-slate-800 text-indigo-300 border border-slate-700 px-2.5 py-1 rounded-md text-xs flex items-center space-x-1.5';
+                tag.innerHTML = `
+                    <span>${rule}</span>
+                    <button class="text-slate-500 hover:text-red-400 remove-rule-btn" data-index="${index}">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                elements.rulesList.appendChild(tag);
+            });
+
+            // 綁定刪除規則事件
+            document.querySelectorAll('.remove-rule-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.dataset.index, 10);
+                    const removed = state.customRules.splice(idx, 1)[0];
+                    logAction(`已移除規則: ${removed}`);
+                    renderCustomRules();
+                    applyAdBlocker();
+                });
+            });
+        }
+
+        // 事件監聽設定
+        function setupEventListeners() {
+            // 主開關切換
+            elements.toggleAdblock.addEventListener('change', (e) => {
+                state.enabled = e.target.checked;
+                elements.statusText.innerHTML = state.enabled 
+                    ? '攔截器狀態: <span class="text-green-400 font-bold">已啟用</span>'
+                    : '攔截器狀態: <span class="text-red-400 font-bold">已停用</span>';
+                applyAdBlocker();
+            });
+
+            // 選項切換
+            elements.ruleBanner.addEventListener('change', (e) => { state.rules.banner = e.target.checked; applyAdBlocker(); });
+            elements.ruleSidebar.addEventListener('change', (e) => { state.rules.sidebar = e.target.checked; applyAdBlocker(); });
+            elements.rulePopup.addEventListener('change', (e) => { state.rules.popup = e.target.checked; applyAdBlocker(); });
+
+            // 新增自訂規則
+            elements.addRuleBtn.addEventListener('click', () => {
+                const value = elements.customRuleInput.value.trim();
+                if (value && !state.customRules.includes(value)) {
+                    state.customRules.push(value);
+                    logAction(`新增過濾規則: ${value}`);
+                    elements.customRuleInput.value = '';
+                    renderCustomRules();
+                    applyAdBlocker();
+                }
+            });
+
+            // 重新載入模擬
+            elements.refreshBtn.addEventListener('click', () => {
+                logAction('重新載入測試頁面...');
+                applyAdBlocker();
+            });
+
+            // 手動關閉模擬彈窗廣告
+            elements.closePopupBtn.addEventListener('click', () => {
+                elements.mockPopup.classList.add('adblock-hidden');
+            });
+        }
+
+        // 初始化應用程式
+        function init() {
+            setupEventListeners();
+            renderCustomRules();
+            logAction('Smart AdBlocker 模組加載完成');
+            applyAdBlocker();
+        }
+
+        // 啟動頁面
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
