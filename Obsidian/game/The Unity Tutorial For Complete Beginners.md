@@ -1,10 +1,10 @@
 ---
 title: "The Unity Tutorial For Complete Beginners"
-source: "https://www.youtube.com/watch?v=XtQMytORBmM&list=WL&index=2"
+source: "https://www.youtube.com/watch?v=XtQMytORBmM"
 author:
   - "[[Game Maker's Toolkit]]"
 published: 2022-12-03
-created: 2026-07-04
+created: 2026-11-01
 description: "🔴 Get bonus content by supporting Game Maker’s Toolkit - https://gamemakerstoolkit.com/support/ 🔴Unity is an amazingly powerful game engine - but it can be hard to learn. Especially if you find tu"
 tags:
   - "clippings"
