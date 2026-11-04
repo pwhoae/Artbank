@@ -4,7 +4,7 @@ source: "https://www.youtube.com/watch?v=Oatl69iaS80"
 author:
   - "[[Thomas Brush]]"
 published: 2025-12-06
-created: 2026-07-20
+created: 2026-11-04
 description: "Did you know you can make your game beautiful, for free, and completely alone?► Grab the Ovani sound bundle now! https://ovanisound.com/products/black-friday-mega-bundle-sale-2025?variant=50786650161"
 tags:
   - "clippings"
@@ -13,8 +13,7 @@ tags:
 
 Did you know you can make your game beautiful, for free, and completely alone?  
 ► Grab the Ovani sound bundle now! https://ovanisound.com/products/black-friday-mega-bundle-sale-2025?variant=50786650161467  
-► Get 50% off my game dev course during the massive Summer Sale: https://fulltimegamedev.mykajabi.com/full-time-game-dev-sale  
-► Learn how to make a game studio from your bedroom, free: https://www.fulltimegamedev.com/opt-in-how-to-make-six-figures  
+▶ Want to go full-time as a game dev? Apply for my group coaching program → https://www.thomasbrush.com/cta  
   
 Chapters:  
 00:00:00 - Intro: Making a Polished Game Solo with Free Assets  
