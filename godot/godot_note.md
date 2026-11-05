@@ -81,3 +81,5 @@ Galumb:彈床/滾木/棍/拳頭/激光
 数据与大盘分析：Data.ai、AppAnnie、七麦数据（Qimai）。 
 买量与广告出海监测：SocialPeta（广固）、Sensor Tower 
 
+
+https://github.com/pwhoae/Artbank/blob/main/godot/Extra%20Game%20Prompt.md
