@@ -1,3 +1,34 @@
+
+### 使用圖1動畫幀,生成圖2角色版本
+```
+Use the provided 4×4 animation sprite sheet as the exact animation and composition reference, and use the provided character reference image as the exact character identity reference.
+Generate a new 4×4 animation sprite sheet featuring the reference character performing the exact same animation shown in the original 4×4 sprite sheet.
+CRITICAL REQUIREMENTS:
+Preserve the exact 4×4 grid layout: 16 frames, 4 columns × 4 rows.
+Preserve the exact position of every frame.
+Do NOT shift, translate, reposition, rotate, reorder, crop, resize, or rearrange any frame.
+Each generated frame must occupy the same cell and have the same framing, scale, camera angle, viewpoint, and composition as the corresponding source frame.
+Preserve the original animation timing and frame-to-frame motion.
+Preserve the exact poses, body orientation, limb movement, silhouette changes, facial direction, and action progression from the source animation.
+Only replace the original character with the provided reference character.
+Maintain the reference character's identity, facial features, hairstyle, clothing, colors, proportions, accessories, and distinctive visual characteristics consistently across all 16 frames.
+Adapt the reference character's anatomy naturally to each pose while keeping the character recognizable and consistent.
+Keep the character's feet/contact points, center of mass, and overall spatial placement aligned with the corresponding source frame.
+No additional movement or displacement beyond the movement already present in the original animation.
+Do not introduce new poses, new actions, exaggerated motion, or different framing.
+Do not alter the background or visual environment unless necessary to integrate the character.
+Keep the same camera and perspective throughout.
+Maintain consistent scale across all 16 frames.
+The output must remain a clean 4×4 animation sprite sheet.
+The source animation is the authoritative reference for MOTION, POSE, TIMING, FRAME POSITION, CAMERA, SCALE, AND COMPOSITION.
+The character reference is the authoritative reference for CHARACTER IDENTITY, APPEARANCE, CLOTHING, COLORS, FACIAL FEATURES, HAIR, AND ACCESSORIES.
+Think of the task as:
+SOURCE 4×4 ANIMATION = motion template
+CHARACTER REFERENCE = character identity
+OUTPUT = the same 4×4 animation performed by the reference character
+Do not redesign the animation. Do not reinterpret the poses. Do not move the frames. Do not alter the grid.
+```
+
 摇一摇
 Orc idle
 hip pop dance
