@@ -12,7 +12,7 @@ TDD:教程驅動+var+func+application
 <a id="玩法"></a>
 ### 玩法靈感
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E7%8E%A9%E6%B3%95%E9%9D%88%E6%84%9F.md">玩法靈感</a>
-## [不適合程式背景獨立開發者的遊戲方向]
+# [不適合程式背景獨立開發者的遊戲方向]
 ```
 ARPG（動作角色扮演遊戲）/2D 橫版過關遊戲:吃重美術/動作
 MMO（大型多人線上遊戲）:高難度的技術架構+需要龐大團隊
