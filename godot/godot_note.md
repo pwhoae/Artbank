@@ -60,7 +60,7 @@ TDD:教程驅動+var+func+application
 5. 建造類遊戲|派對屬性
 6. In加速：先慢后快，拉满期待感。 Out减速：先快后慢，营造爆发式出场的冲击感。
 7. 機制:宝箱|门|NPC|子弹|抓钩勾索,傳送門槍,coin〉升級,爬墻,動作設計：技能普攻/強化/大招,無縫第三人稱視角傳送門+robot核心就是key
-8. 信息量=完成度|中間插入漫畫演出|武器立繪要立體|連段+斬殺boss 擊破 動畫+處決動畫 攻击音+受击音+攻击vector+粒子特效+相机震动|BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。弹反和拼刀 (signal)|skilltree+連線 5. 6. 粒子特效|camera delay|遊戲運鏡
+8. 信息量=完成度|中間插入漫畫演出|武器立繪要立體|連段+斬殺boss 擊破 動畫+處決動畫 攻击音+受击音+攻击vector+粒子特效+相机震动|BoneAttachment3D 节点 绑定到角色的右手骨骼（Right Hand）上，使武器能随角色动作自然移动。弹反和拼刀 (signal)|skilltree+連線 5. 6. 粒子特效|camera delay|遊戲運鏡<br>
 <img src="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/%E6%BC%AB%E7%95%AB%E6%BC%94%E5%87%BA.jpeg" width="300" height="300"></img>
 <hr>
 
