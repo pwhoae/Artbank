@@ -1,0 +1,240 @@
+這裡為您提供一套在 Godot 4.x 中實作《Townscaper》風格核心邏輯的 GDScript 程式碼範例。
+
+這套範例包含 程序化網格生成（3D 波函數坍縮 WFC 簡化版） 與 簡單的建造控制。
+
+1. 核心建築控制器 (BuildingManager.gd)
+請將此腳本掛載在 Scene 的根節點上（例如 Node3D）：
+
+GDScript
+class_name BuildingManager
+extends Node3D
+
+# 建築區塊類型定義
+enum BlockType {
+	NONE,
+	FOUNDATION, # 水下/水面基座
+	BUILDING,   # 主建築/牆面
+	ROOF,       # 斜屋頂
+	ARCH        # 拱門
+}
+
+@export var grid_size: Vector3i = Vector3i(20, 20, 20)
+@export var cell_size: Vector3 = Vector3(2.0, 1.5, 2.0)
+
+# 儲存網格狀態 [x, y, z] -> BlockType
+var grid: Dictionary = {}
+# 儲存已生成的 MeshInstance3D 節點 [x, y, z] -> MeshInstance3D
+var mesh_nodes: Dictionary = {}
+
+func _ready() -> void:
+	create_water_plane()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		var camera = get_viewport().get_camera_3d()
+		if not camera:
+			return
+			
+		var mouse_pos = event.position
+		var ray_origin = camera.project_ray_origin(mouse_pos)
+		var ray_dir = camera.project_ray_normal(mouse_pos)
+		
+		# 滑鼠左鍵：新增區塊 / 滑鼠右鍵：刪除區塊
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			var target_pos = raycast_grid_position(ray_origin, ray_dir, false)
+			if target_pos != Vector3i(-1, -1, -1):
+				set_block(target_pos, BlockType.BUILDING)
+				recalculate_around(target_pos)
+				
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			var target_pos = raycast_grid_position(ray_origin, ray_dir, true)
+			if target_pos != Vector3i(-1, -1, -1):
+				remove_block(target_pos)
+				recalculate_around(target_pos)
+
+# 根據 WFC 規則重新計算指定位置與周邊的區塊類型（坍縮）
+func recalculate_block(pos: Vector3i) -> void:
+	if not grid.has(pos) or grid[pos] == BlockType.NONE:
+		return
+		
+	var above = pos + Vector3i(0, 1, 0)
+	var below = pos + Vector3i(0, -1, 0)
+	
+	# 1. 如果頂層沒有任何東西，坍縮為屋頂 (ROOF)
+	if not grid.has(above) or grid[above] == BlockType.NONE:
+		grid[pos] = BlockType.ROOF
+	# 2. 如果位於最底層 (Y=0)，坍縮為基座 (FOUNDATION)
+	elif pos.y == 0:
+		grid[pos] = BlockType.FOUNDATION
+	# 3. 如果下方沒有支撐，坍縮為拱門 (ARCH)
+	elif not grid.has(below) or grid[below] == BlockType.NONE:
+		grid[pos] = BlockType.ARCH
+	# 4. 一般牆面建築 (BUILDING)
+	else:
+		grid[pos] = BlockType.BUILDING
+		
+	update_block_mesh(pos)
+
+# 更新周圍相鄰 6 個方向的網格
+func recalculate_around(center_pos: Vector3i) -> void:
+	var neighbors = [
+		center_pos,
+		center_pos + Vector3i(0, 1, 0),
+		center_pos + Vector3i(0, -1, 0),
+		center_pos + Vector3i(1, 0, 0),
+		center_pos + Vector3i(-1, 0, 0),
+		center_pos + Vector3i(0, 0, 1),
+		center_pos + Vector3i(0, 0, -1)
+	]
+	for pos in neighbors:
+		if grid.has(pos):
+			recalculate_block(pos)
+
+func set_block(pos: Vector3i, type: BlockType) -> void:
+	grid[pos] = type
+	update_block_mesh(pos)
+
+func remove_block(pos: Vector3i) -> void:
+	if grid.has(pos):
+		grid.erase(pos)
+		if mesh_nodes.has(pos):
+			mesh_nodes[pos].queue_free()
+			mesh_nodes.erase(pos)
+
+# 更新 Mesh 幾何外觀
+func update_block_mesh(pos: Vector3i) -> void:
+	var type = grid.get(pos, BlockType.NONE)
+	
+	if mesh_nodes.has(pos):
+		mesh_nodes[pos].queue_free()
+		mesh_nodes.erase(pos)
+		
+	if type == BlockType.NONE:
+		return
+		
+	var mesh_inst = MeshInstance3D.new()
+	var mesh: Mesh
+	var material = StandardMaterial3D.new()
+	
+	match type:
+		BlockType.ROOF:
+			mesh = PrismMesh.new() # 使用三稜鏡代表斜屋頂
+			material.albedo_color = Color(0.85, 0.25, 0.2)
+		BlockType.FOUNDATION:
+			mesh = BoxMesh.new()
+			material.albedo_color = Color(0.3, 0.3, 0.35)
+		BlockType.ARCH:
+			mesh = BoxMesh.new() # 正式專案可替換成帶有拱門空洞的客製化 Mesh
+			material.albedo_color = Color(0.9, 0.75, 0.5)
+		BlockType.BUILDING:
+			mesh = BoxMesh.new()
+			material.albedo_color = Color(0.9, 0.8, 0.6)
+			
+	mesh_inst.mesh = mesh
+	mesh_inst.material_override = material
+	mesh_inst.scale = cell_size
+	mesh_inst.position = Vector3(pos) * cell_size + cell_size * 0.5
+	
+	add_child(mesh_inst)
+	mesh_nodes[pos] = mesh_inst
+
+# 射線檢測，計算點擊對應的 Grid 座標
+func raycast_grid_position(origin: Vector3, dir: Vector3, hit_existing: bool) -> Vector3i:
+	var step = 0.1
+	var current_pos = origin
+	var prev_grid_pos = Vector3i(-1, -1, -1)
+	
+	for i in range(500):
+		current_pos += dir * step
+		var grid_pos = Vector3i(
+			floor(current_pos.x / cell_size.x),
+			floor(current_pos.y / cell_size.y),
+			floor(current_pos.z / cell_size.z)
+		)
+		
+		# 點擊到海平面
+		if grid_pos.y < 0:
+			if hit_existing:
+				return Vector3i(-1, -1, -1)
+			return Vector3i(grid_pos.x, 0, grid_pos.z)
+			
+		if grid.has(grid_pos) and grid[grid_pos] != BlockType.NONE:
+			if hit_existing:
+				return grid_pos
+			else:
+				return prev_grid_pos
+				
+		prev_grid_pos = grid_pos
+		
+	return Vector3i(-1, -1, -1)
+
+# 生成基底海平面 Mesh
+func create_water_plane() -> void:
+	var water_mesh = MeshInstance3D.new()
+	var plane = PlaneMesh.new()
+	plane.size = Vector2(200, 200)
+	water_mesh.mesh = plane
+	
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.1, 0.5, 0.75, 0.8)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	water_mesh.material_override = mat
+	water_mesh.position = Vector3(0, 0, 0)
+	
+	add_child(water_mesh)
+2. Boids 鳥群模擬系統 (BirdBoids.gd)
+請建立一個新腳本並掛載到獨立節點（例如 Node3D），用於模擬建築周圍飛翔的鳥群：
+
+GDScript
+class_name BirdBoids
+extends Node3D
+
+@export var bird_count: int = 30
+@export var fly_bounds: Vector3 = Vector3(30, 15, 30)
+
+var boid_positions: Array[Vector3] = []
+var boid_velocities: Array[Vector3] = []
+var boid_meshes: Array[MeshInstance3D] = []
+
+func _ready() -> void:
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(0.2, 0.05, 0.4)
+	
+	for i in range(bird_count):
+		var pos = Vector3(
+			randf_range(-10, 10),
+			randf_range(5, 12),
+			randf_range(-10, 10)
+		)
+		var vel = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)).normalized() * 4.0
+		
+		var inst = MeshInstance3D.new()
+		inst.mesh = mesh
+		add_child(inst)
+		
+		boid_positions.append(pos)
+		boid_velocities.append(vel)
+		boid_meshes.append(inst)
+
+func _process(delta: float) -> void:
+	for i in range(bird_count):
+		var pos = boid_positions[i]
+		var vel = boid_velocities[i]
+		
+		# Boids 核心三律：凝聚、排斥、對齊 (簡化版中心吸引)
+		var center_attraction = (Vector3(0, 8, 0) - pos) * 0.2
+		vel += center_attraction * delta
+		vel = vel.normalized() * 5.0 # 保持恆速
+		
+		pos += vel * delta
+		
+		# 邊界反彈
+		if abs(pos.x) > fly_bounds.x: vel.x *= -1
+		if pos.y < 2.0 or pos.y > fly_bounds.y: vel.y *= -1
+		if abs(pos.z) > fly_bounds.z: vel.z *= -1
+		
+		boid_positions[i] = pos
+		boid_velocities[i] = vel
+		
+		boid_meshes[i].position = pos
+		boid_meshes[i].look_at(pos + vel, Vector3.UP)
