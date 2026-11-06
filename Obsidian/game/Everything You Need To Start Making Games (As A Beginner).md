@@ -4,7 +4,7 @@ source: "https://www.youtube.com/watch?v=_eK26atXTds"
 author:
   - "[[Juniper Dev]]"
 published: 2024-11-23
-created: 2026-07-11
+created: 2026-11-04
 description: "Happy Black Friday with FlexiSpot, with up to 65% OFF! Use my code ''24BFC7'' to get $50 off on the C7 ergonomic chair! https://bit.ly/3AMG92H (US) https://bit.ly/40PK9Ks (CA).Looking to start learn"
 tags:
   - "clippings"

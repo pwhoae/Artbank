@@ -4,7 +4,7 @@ source: "https://www.youtube.com/watch?v=Alwy-TH0WzE"
 author:
   - "[[MrElipteach]]"
 published: 2024-04-14
-created: 2026-08-10
+created: 2026-11-05
 description: "Balatro is a super cool and juicy game and I wanted to recreate some of his effects in GodotCheckout the source code: https://github.com/MrEliptik/godot_ui_components🎓 Learn how to make JUICY gam"
 tags:
   - "clippings"
@@ -17,6 +17,9 @@ Checkout the source code: https://github.com/MrEliptik/godot\_ui\_components
   
 🎓 Learn how to make JUICY games 👇  
 https://shorturl.at/eIT36  
+  
+💼 Want to work with me? I do game reviews, freelance work and consulting calls 👇  
+https://mreliptik.dev/work-with-me  
   
 👤 SOCIALS  
 \~~~~~~~~~~~~  
