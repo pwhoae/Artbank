@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Townscaper 技術概覽與 Procedural 建築 Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #e0f2fe;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        .color-swatch {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .color-swatch:hover {
+            transform: scale(1.15);
+        }
+        .color-swatch.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px #3b82f6;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="relative w-full h-full overflow-hidden text-slate-800">
+
+    <!-- Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Header -->
+    <header class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
+        <div class="glass-panel px-4 py-2 rounded-2xl flex items-center space-x-3 pointer-events-auto shadow-sm">
+            <i class="fa-solid font-bold text-xl text-sky-600 fa-city"></i>
+            <div>
+                <h1 class="font-bold text-base leading-tight text-slate-800">Townscaper 技術展示</h1>
+                <p class="text-xs text-slate-500">波函數坍縮 / 不規則網格 / Boids 飛鳥</p>
+            </div>
+        </div>
+
+        <!-- Top Right Actions: Undo/Redo & Share -->
+        <div class="flex items-center space-x-2 pointer-events-auto">
+            <button id="btn-undo" class="glass-panel p-3 rounded-xl text-slate-700 hover:text-sky-600 hover:bg-white transition" title="復原 (Undo)">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button id="btn-redo" class="glass-panel p-3 rounded-xl text-slate-700 hover:text-sky-600 hover:bg-white transition" title="重做 (Redo)">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <button id="btn-clear" class="glass-panel p-3 rounded-xl text-red-500 hover:bg-red-50 transition" title="清空城鎮">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <button id="btn-share" class="glass-panel px-4 py-2.5 rounded-xl font-medium text-sm text-sky-700 hover:bg-sky-50 transition flex items-center space-x-2">
+                <i class="fa-solid fa-share-nodes"></i>
+                <span>分享/複製代碼</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Palette Picker Sidebar (Left Side) -->
+    <div class="absolute left-4 top-1/2 -translate-y-1/2 glass-panel p-2.5 rounded-2xl flex flex-col space-y-2.5 z-10 shadow-lg">
+        <div class="text-center text-xs font-semibold text-slate-400 py-1">顏色</div>
+        <div id="palette-container" class="flex flex-col space-y-2">
+            <!-- Palette colors injected via JS -->
+        </div>
+    </div>
+
+    <!-- Mode Selector & Controls (Bottom Center) -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel px-5 py-3 rounded-2xl flex items-center space-x-6 z-10 shadow-xl">
+        <div class="flex items-center space-x-2">
+            <button id="tool-build" class="tool-btn bg-sky-500 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 shadow-md transition">
+                <i class="fa-solid fa-hammer"></i>
+                <span>建造 (左鍵)</span>
+            </button>
+            <button id="tool-delete" class="tool-btn bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 transition">
+                <i class="fa-solid fa-eraser"></i>
+                <span>拆除 (Alt+左鍵)</span>
+            </button>
+        </div>
+
+        <div class="h-6 w-[1px] bg-slate-300"></div>
+
+        <!-- Debug Toggles -->
+        <div class="flex items-center space-x-4 text-xs font-medium text-slate-600">
+            <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900">
+                <input type="checkbox" id="toggle-grid" class="rounded text-sky-500 focus:ring-sky-400" checked>
+                <span>顯示網格</span>
+            </label>
+            <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900">
+                <input type="checkbox" id="toggle-deform" class="rounded text-sky-500 focus:ring-sky-400" checked>
+                <span>不規則網格扭曲</span>
+            </label>
+            <label class="flex items-center space-x-1.5 cursor-pointer hover:text-slate-900">
+                <input type="checkbox" id="toggle-birds" class="rounded text-sky-500 focus:ring-sky-400" checked>
+                <span>鳥群 (Boids)</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Tech Information Panel Toggle Button (Bottom Right) -->
+    <button id="btn-tech-info" class="absolute bottom-6 right-6 glass-panel px-4 py-3 rounded-2xl text-slate-700 hover:text-sky-600 flex items-center space-x-2 z-10 shadow-lg text-sm font-semibold">
+        <i class="fa-solid fa-microchip"></i>
+        <span>技術概覽解析</span>
+    </button>
+
+    <!-- Technical Info Drawer Modal -->
+    <div id="tech-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex justify-end z-50 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="w-full max-w-md bg-white h-full p-6 overflow-y-auto shadow-2xl flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center space-x-2">
+                        <i class="fa-solid fa-cubes text-sky-500"></i>
+                        <span>Townscaper 技術要點</span>
+                    </h2>
+                    <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600 p-2 text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-5 text-sm text-slate-600 leading-relaxed">
+                    <section class="border-b border-slate-100 pb-4">
+                        <h3 class="font-semibold text-slate-800 mb-1 text-base">1. 波函數坍縮 (WFC)</h3>
+                        <p>根據鄰接元素約束（如上方是否有塊、周圍四鄰狀態），自動選擇對應的 Mesh 模型碎片（平屋頂、拱門、花園牆面、露台或拱門結構）。</p>
+                    </section>
+
+                    <section class="border-b border-slate-100 pb-4">
+                        <h3 class="font-semibold text-slate-800 mb-1 text-base">2. 非結構與不規則網格扭曲</h3>
+                        <p>將標準正方形 / 六邊形網格中心和頂點向量隨機偏移，使房屋擺脫方正機械感，生成具備有機自然美感的威尼斯水城風貌。</p>
+                    </section>
+
+                    <section class="border-b border-slate-100 pb-4">
+                        <h3 class="font-semibold text-slate-800 mb-1 text-base">3. 沙灘與浪花 (Sandbanks & Waves)</h3>
+                        <p>檢測建物底座與水面交界的輪廓線，進行外平滑與膨脹運算，自動產生動態生成的淺灘與浪花 Mesh。</p>
+                    </section>
+
+                    <section class="border-b border-slate-100 pb-4">
+                        <h3 class="font-semibold text-slate-800 mb-1 text-base">4. 頂點遮蔽與像素化風格</h3>
+                        <p>利用簡化的 Per-vertex Ambient Occlusion 算法計算角落陰影，配合高對比度色彩與輪廓描邊，營造治癒系輕量手繪風。</p>
+                    </section>
+
+                    <section class="pb-2">
+                        <h3 class="font-semibold text-slate-800 mb-1 text-base">5. 鳥群 Boids 模擬</h3>
+                        <p>鳥群停留在最高屋頂，受建造擾動時飛起，採用經典 Boids 算法（凝聚、排斥、對齊）在城鎮上空盤旋。</p>
+                    </section>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 text-xs text-slate-400 text-center">
+                Demo Inspired by Oskar Stålberg & Townscaper Article
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white px-4 py-2 rounded-xl text-xs shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center space-x-2">
+        <i class="fa-solid fa-circle-info text-sky-400"></i>
+        <span id="toast-msg">已將城鎮資料複製至剪貼簿！</span>
+    </div>
+
+    <!-- MAIN APP LOGIC -->
+    <script>
+        // --- Colors Palette Definitions ---
+        const PALETTE = [
+            { id: 'red', hex: '#ef4444', top: '#f87171', shadow: '#b91c1c' },
+            { id: 'orange', hex: '#f97316', top: '#fb923c', shadow: '#c2410c' },
+            { id: 'amber', hex: '#f59e0b', top: '#fbbf24', shadow: '#b45309' },
+            { id: 'teal', hex: '#14b8a6', top: '#2dd4bf', shadow: '#0f766e' },
+            { id: 'blue', hex: '#3b82f6', top: '#60a5fa', shadow: '#1d4ed8' },
+            { id: 'indigo', hex: '#6366f1', top: '#818cf8', shadow: '#4338ca' },
+            { id: 'rose', hex: '#f43f5e', top: '#fb7185', shadow: '#be123c' },
+            { id: 'white', hex: '#f8fafc', top: '#ffffff', shadow: '#cbd5e1' }
+        ];
+
+        let selectedColor = PALETTE[0];
+        let currentMode = 'build'; // 'build' or 'delete'
+
+        // --- Grid Config ---
+        const GRID_SIZE = 12; // 12x12
+        const MAX_HEIGHT = 10;
+        const CELL_SIZE = 2;
+
+        // Voxel Data Store: key "x,y,z" -> { color, type }
+        const gridData = new Map();
+        const historyStack = [];
+        let historyIndex = -1;
+
+        // Deformation Map: (x, z) -> Vector2 offset
+        const deformMap = new Map();
+
+        // --- Three.js Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xdbeafe);
+        scene.fog = new THREE.FogExp2(0xdbeafe, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 500);
+        camera.position.set(22, 18, 26);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.02; // Don't go under water
+        controls.minDistance = 5;
+        controls.maxDistance = 100;
+        controls.target.set(0, 2, 0);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+        sunLight.position.set(30, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 150;
+        const d = 25;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.bias = -0.0005;
+        scene.add(sunLight);
+
+        // --- Water Scene ---
+        const waterGeometry = new THREE.PlaneGeometry(300, 300);
+        const waterMaterial = new THREE.MeshStandardMaterial({
+            color: 0x38bdf8,
+            roughness: 0.1,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.8
+        });
+        const water = new THREE.Mesh(waterGeometry, waterMaterial);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = -0.1;
+        water.receiveShadow = true;
+        scene.add(water);
+
+        // --- Moody Clouds / Sky Elements ---
+        const cloudsGroup = new THREE.Group();
+        const cloudGeo = new THREE.DodecahedronGeometry(3, 1);
+        const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+        for(let i=0; i<16; i++) {
+            const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+            const angle = (i / 16) * Math.PI * 2;
+            const dist = 50 + Math.random() * 30;
+            cloud.position.set(Math.cos(angle)*dist, 15 + Math.random()*10, Math.sin(angle)*dist);
+            cloud.scale.set(2 + Math.random()*2, 1 + Math.random(), 2 + Math.random()*2);
+            cloudsGroup.add(cloud);
+        }
+        scene.add(cloudsGroup);
+
+        // --- Container Groups ---
+        const buildingsGroup = new THREE.Group();
+        const gridDebugGroup = new THREE.Group();
+        const sandbanksGroup = new THREE.Group();
+        scene.add(buildingsGroup);
+        scene.add(gridDebugGroup);
+        scene.add(sandbanksGroup);
+
+        // --- Raycaster & Placement Helpers ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // Pointer Cursor Plane Helper
+        const cursorGeo = new THREE.BoxGeometry(CELL_SIZE * 0.98, CELL_SIZE * 0.98, CELL_SIZE * 0.98);
+        const cursorMat = new THREE.MeshBasicMaterial({
+            color: 0x38bdf8,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.6
+        });
+        const cursorMesh = new THREE.Mesh(cursorGeo, cursorMat);
+        cursorMesh.visible = false;
+        scene.add(cursorMesh);
+
+        // --- Generate Irregular Grid Offset (Deformation) ---
+        function initDeformation() {
+            deformMap.clear();
+            for (let x = -GRID_SIZE; x <= GRID_SIZE; x++) {
+                for (let z = -GRID_SIZE; z <= GRID_SIZE; z++) {
+                    // Smooth pseudo-random vector force offset
+                    const angle = Math.sin(x * 0.4) + Math.cos(z * 0.4);
+                    const mag = 0.35; // displacement magnitude
+                    const dx = Math.cos(angle) * mag;
+                    const dz = Math.sin(angle) * mag;
+                    deformMap.set(`${x},${z}`, new THREE.Vector2(dx, dz));
+                }
+            }
+        }
+        initDeformation();
+
+        function getDeformedPos(gx, gy, gz, applyDeform = true) {
+            let px = (gx - GRID_SIZE / 2 + 0.5) * CELL_SIZE;
+            let pz = (gz - GRID_SIZE / 2 + 0.5) * CELL_SIZE;
+            let py = gy * CELL_SIZE + CELL_SIZE / 2;
+
+            if (applyDeform && document.getElementById('toggle-deform').checked) {
+                const offset = deformMap.get(`${gx},${gz}`);
+                if (offset) {
+                    px += offset.x;
+                    pz += offset.y;
+                }
+            }
+            return new THREE.Vector3(px, py, pz);
+        }
+
+        // --- Grid Rendering ---
+        function renderGridDebug() {
+            gridDebugGroup.clear();
+            if (!document.getElementById('toggle-grid').checked) return;
+
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.4 });
+            const points = [];
+
+            for (let x = 0; x <= GRID_SIZE; x++) {
+                for (let z = 0; z <= GRID_SIZE; z++) {
+                    const pos = getDeformedPos(x, 0, z);
+                    // Draw vertical marker
+                    const pBottom = pos.clone(); pBottom.y = 0;
+                    const pTop = pos.clone(); pTop.y = 0.3;
+                    
+                    const geo = new THREE.BufferGeometry().setFromPoints([pBottom, pTop]);
+                    const line = new THREE.Line(geo, lineMat);
+                    gridDebugGroup.add(line);
+                }
+            }
+        }
+
+        // --- Procedural Generation (Wave Function Collapse Lite Rules) ---
+        // Determines block appearance (Roof, Wall, Arch, Garden, Window, Door) based on 6 neighbors
+        function getVoxelType(x, y, z) {
+            const hasAbove = gridData.has(`${x},${y + 1},${z}`);
+            const hasBelow = gridData.has(`${x},${y - 1},${z}`);
+            const left = gridData.has(`${x - 1},${y},${z}`);
+            const right = gridData.has(`${x + 1},${y},${z}`);
+            const front = gridData.has(`${x},${y},${z + 1}`);
+            const back = gridData.has(`${x},${y},${z - 1}`);
+
+            const neighborCount = (left ? 1 : 0) + (right ? 1 : 0) + (front ? 1 : 0) + (back ? 1 : 0);
+
+            // Courtyard / Garden rule: flat single height block with surrounding blocks
+            if (!hasAbove && y === 0 && neighborCount >= 3) {
+                return 'garden';
+            }
+
+            // Arch rule: No block below, but has block above & lateral support
+            if (!hasBelow && y > 0 && hasAbove) {
+                return 'arch';
+            }
+
+            // Top layer is Roof
+            if (!hasAbove) {
+                return 'roof';
+            }
+
+            return 'wall';
+        }
+
+        // Create Mesh according to procedural rules & deformation
+        function createProceduralBlockMesh(x, y, z, blockData) {
+            const type = getVoxelType(x, y, z);
+            const pos = getDeformedPos(x, y, z);
+            const group = new THREE.Group();
+            group.position.copy(pos);
+
+            const paletteObj = PALETTE.find(p => p.id === blockData.color) || PALETTE[0];
+            const mainColor = new THREE.Color(paletteObj.hex);
+            const topColor = new THREE.Color(paletteObj.top);
+
+            let mainGeo, mainMat;
+
+            if (type === 'roof') {
+                // House Body + Roof Roof Top Mesh
+                const bodyGeo = new THREE.BoxGeometry(CELL_SIZE * 0.95, CELL_SIZE * 0.8, CELL_SIZE * 0.95);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.4 });
+                const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+                bodyMesh.position.y = -CELL_SIZE * 0.1;
+                bodyMesh.castShadow = true;
+                bodyMesh.receiveShadow = true;
+                group.add(bodyMesh);
+
+                // Roof Cone / Roof Top
+                const roofGeo = new THREE.ConeGeometry(CELL_SIZE * 0.72, CELL_SIZE * 0.5, 4);
+                const roofMat = new THREE.MeshStandardMaterial({ color: topColor, roughness: 0.3 });
+                const roofMesh = new THREE.Mesh(roofGeo, roofMat);
+                roofMesh.position.y = CELL_SIZE * 0.45;
+                roofMesh.rotation.y = Math.PI / 4;
+                roofMesh.castShadow = true;
+                group.add(roofMesh);
+
+                // Window Details
+                const winGeo = new THREE.PlaneGeometry(0.35, 0.45);
+                const winMat = new THREE.MeshBasicMaterial({ color: 0xfef08a }); // glowing light
+                const winFront = new THREE.Mesh(winGeo, winMat);
+                winFront.position.set(0, -0.05, CELL_SIZE * 0.48);
+                group.add(winFront);
+
+            } else if (type === 'arch') {
+                // Arch Pillars
+                const pillarGeo = new THREE.BoxGeometry(0.4, CELL_SIZE, 0.4);
+                const pillarMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.5 });
+                
+                const p1 = new THREE.Mesh(pillarGeo, pillarMat); p1.position.set(-0.7, 0, -0.7);
+                const p2 = new THREE.Mesh(pillarGeo, pillarMat); p2.position.set(0.7, 0, -0.7);
+                const p3 = new THREE.Mesh(pillarGeo, pillarMat); p3.position.set(-0.7, 0, 0.7);
+                const p4 = new THREE.Mesh(pillarGeo, pillarMat); p4.position.set(0.7, 0, 0.7);
+                
+                group.add(p1, p2, p3, p4);
+
+                // Top arch span
+                const topGeo = new THREE.BoxGeometry(CELL_SIZE * 0.95, 0.4, CELL_SIZE * 0.95);
+                const topMesh = new THREE.Mesh(topGeo, pillarMat);
+                topMesh.position.y = CELL_SIZE * 0.3;
+                group.add(topMesh);
+
+            } else if (type === 'garden') {
+                // Grass terrace
+                const gardenGeo = new THREE.BoxGeometry(CELL_SIZE * 0.96, 0.3, CELL_SIZE * 0.96);
+                const gardenMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.8 });
+                const gardenMesh = new THREE.Mesh(gardenGeo, gardenMat);
+                gardenMesh.position.y = -CELL_SIZE * 0.35;
+                group.add(gardenMesh);
+
+                // Small bench / bush detail
+                const bushGeo = new THREE.DodecahedronGeometry(0.25, 1);
+                const bushMat = new THREE.MeshStandardMaterial({ color: 0x15803d });
+                const bush = new THREE.Mesh(bushGeo, bushMat);
+                bush.position.set(0.4, -0.1, 0.4);
+                group.add(bush);
+
+            } else { // Standard Wall
+                mainGeo = new THREE.BoxGeometry(CELL_SIZE * 0.95, CELL_SIZE * 0.98, CELL_SIZE * 0.95);
+                mainMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.5 });
+                const wallMesh = new THREE.Mesh(mainGeo, mainMat);
+                wallMesh.castShadow = true;
+                wallMesh.receiveShadow = true;
+                group.add(wallMesh);
+
+                // Door at ground level
+                if (y === 0) {
+                    const doorGeo = new THREE.PlaneGeometry(0.5, 0.9);
+                    const doorMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+                    const door = new THREE.Mesh(doorGeo, doorMat);
+                    door.position.set(0, -0.1, CELL_SIZE * 0.485);
+                    group.add(door);
+                }
+            }
+
+            // Water Foundation Mesh if at level 0
+            if (y === 0) {
+                const baseGeo = new THREE.BoxGeometry(CELL_SIZE * 0.98, 0.8, CELL_SIZE * 0.98);
+                const baseMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 });
+                const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+                baseMesh.position.y = -CELL_SIZE * 0.5 - 0.2;
+                group.add(baseMesh);
+            }
+
+            // Per-block Key attached
+            group.userData = { key: `${x},${y},${z}`, x, y, z };
+            return group;
+        }
+
+        // --- Rebuild Scene & Procedural Dependencies ---
+        function rebuildTown() {
+            // Clear current building meshes
+            while (buildingsGroup.children.length > 0) {
+                const obj = buildingsGroup.children[0];
+                buildingsGroup.remove(obj);
+            }
+
+            // Re-generate all blocks
+            gridData.forEach((blockData, key) => {
+                const [x, y, z] = key.split(',').map(Number);
+                const meshGroup = createProceduralBlockMesh(x, y, z, blockData);
+                buildingsGroup.add(meshGroup);
+            });
+
+            // Dynamic Sandbanks & Waves Mesh around foundation
+            updateSandbanksAndWaves();
+
+            // Trigger Birds reaction
+            triggerBirds();
+        }
+
+        // --- Dynamic Sandbanks & Beach Waves ---
+        function updateSandbanksAndWaves() {
+            sandbanksGroup.clear();
+
+            const groundKeys = [];
+            gridData.forEach((val, key) => {
+                const [x, y, z] = key.split(',').map(Number);
+                if (y === 0) groundKeys.push({ x, z });
+            });
+
+            if (groundKeys.length === 0) return;
+
+            // Generate sand bank outline around ground blocks
+            const sandMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.9, transparent: true, opacity: 0.7 });
+            const waveMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+
+            groundKeys.forEach(({ x, z }) => {
+                const centerPos = getDeformedPos(x, 0, z);
+                
+                // Sandbank ring
+                const sandGeo = new THREE.CylinderGeometry(CELL_SIZE * 0.9, CELL_SIZE * 1.3, 0.1, 8);
+                const sand = new THREE.Mesh(sandGeo, sandMat);
+                sand.position.set(centerPos.x, -0.05, centerPos.z);
+                sandbanksGroup.add(sand);
+
+                // Outer Wave Ring
+                const waveGeo = new THREE.RingGeometry(CELL_SIZE * 1.3, CELL_SIZE * 1.55, 12);
+                const wave = new THREE.Mesh(waveGeo, waveMat);
+                wave.rotation.x = -Math.PI / 2;
+                wave.position.set(centerPos.x, 0.01, centerPos.z);
+                sandbanksGroup.add(wave);
+            });
+        }
+
+        // --- Boids Bird Simulation System ---
+        const BIRDS_COUNT = 30;
+        const boids = [];
+        const birdsGroup = new THREE.Group();
+        scene.add(birdsGroup);
+
+        const birdGeo = new THREE.BufferGeometry();
+        // Simple V-shaped Bird Mesh
+        const birdVertices = new Float32Array([
+            0, 0, 0.3,   -0.4, 0, -0.2,   0, 0, 0,
+            0, 0, 0.3,    0, 0, 0,        0.4, 0, -0.2
+        ]);
+        birdGeo.setAttribute('position', new THREE.BufferAttribute(birdVertices, 3));
+        const birdMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, side: THREE.DoubleSide });
+
+        function initBoids() {
+            for (let i = 0; i < BIRDS_COUNT; i++) {
+                const mesh = new THREE.Mesh(birdGeo, birdMat);
+                mesh.scale.set(0.8, 0.8, 0.8);
+                birdsGroup.add(mesh);
+
+                boids.push({
+                    mesh: mesh,
+                    position: new THREE.Vector3((Math.random() - 0.5) * 20, 10 + Math.random() * 10, (Math.random() - 0.5) * 20),
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.2),
+                    acceleration: new THREE.Vector3(),
+                    landingTarget: null,
+                    isLand: false
+                });
+            }
+        }
+        initBoids();
+
+        function triggerBirds() {
+            // Find highest rooftops to set as flight targets or roosting spots
+            let highestY = 0;
+            let highestPos = new THREE.Vector3(0, 10, 0);
+
+            gridData.forEach((val, key) => {
+                const [x, y, z] = key.split(',').map(Number);
+                if (y >= highestY) {
+                    highestY = y;
+                    highestPos = getDeformedPos(x, y, z);
+                    highestPos.y += 1.2;
+                }
+            });
+
+            boids.forEach(b => {
+                b.isLand = false;
+                b.velocity.set((Math.random() - 0.5) * 0.4, 0.3 + Math.random() * 0.2, (Math.random() - 0.5) * 0.4);
+                b.landingTarget = highestPos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3));
+            });
+        }
+
+        function updateBoids() {
+            if (!document.getElementById('toggle-birds').checked) {
+                birdsGroup.visible = false;
+                return;
+            }
+            birdsGroup.visible = true;
+
+            boids.forEach((boid) => {
+                if (boid.isLand) return;
+
+                // Simple attraction to landing spot or center
+                const target = boid.landingTarget || new THREE.Vector3(0, 12, 0);
+                const dir = target.clone().sub(boid.position).normalize().multiplyScalar(0.005);
+                boid.velocity.add(dir);
+                boid.velocity.clampLength(0.05, 0.25);
+                boid.position.add(boid.velocity);
+
+                // Rotate bird towards movement direction
+                const angle = Math.atan2(-boid.velocity.z, boid.velocity.x);
+                boid.mesh.rotation.y = angle;
+                boid.mesh.position.copy(boid.position);
+
+                // Wing flapping animation
+                boid.mesh.position.y += Math.sin(Date.now() * 0.01 + boid.position.x) * 0.02;
+
+                // Land check
+                if (boid.position.distanceTo(target) < 0.6) {
+                    boid.isLand = true;
+                }
+            });
+        }
+
+        // --- Interactivity / Raycasting ---
+        function getTargetVoxel(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Raycast against existing building blocks
+            const intersects = raycaster.intersectObjects(buildingsGroup.children, true);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                let group = hit.object;
+                while (group.parent && group.parent !== buildingsGroup) {
+                    group = group.parent;
+                }
+                if (group.userData && group.userData.key) {
+                    const { x, y, z } = group.userData;
+                    const normal = hit.face.normal.clone();
+                    normal.transformDirection(hit.object.matrixWorld);
+
+                    // Map normal direction to discrete grid step
+                    const nx = Math.round(normal.x);
+                    const ny = Math.round(normal.y);
+                    const nz = Math.round(normal.z);
+
+                    return {
+                        buildPos: { x: x + nx, y: Math.max(0, y + ny), z: z + nz },
+                        deletePos: { x, y, z }
+                    };
+                }
+            } else {
+                // Raycast against Water Plane for ground level placement
+                const waterIntersects = raycaster.intersectObject(water);
+                if (waterIntersects.length > 0) {
+                    const pt = waterIntersects[0].point;
+                    const gx = Math.floor(pt.x / CELL_SIZE + GRID_SIZE / 2);
+                    const gz = Math.floor(pt.y || pt.z / CELL_SIZE + GRID_SIZE / 2);
+
+                    if (gx >= 0 && gx < GRID_SIZE && gz >= 0 && gz < GRID_SIZE) {
+                        return {
+                            buildPos: { x: gx, y: 0, z: gz },
+                            deletePos: null
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Update Mouse Hover Cursor
+        window.addEventListener('pointermove', (e) => {
+            const target = getTargetVoxel(e);
+            if (target) {
+                cursorMesh.visible = true;
+                const pos = currentMode === 'build' ? target.buildPos : target.deletePos;
+                if (pos) {
+                    const deformed = getDeformedPos(pos.x, pos.y, pos.z);
+                    cursorMesh.position.copy(deformed);
+                    cursorMat.color.setHex(currentMode === 'build' ? 0x38bdf8 : 0xef4444);
+                } else {
+                    cursorMesh.visible = false;
+                }
+            } else {
+                cursorMesh.visible = false;
+            }
+        });
+
+        // Click Handler for Building / Deleting
+        window.addEventListener('pointerdown', (e) => {
+            // Only left click
+            if (e.button !== 0 || e.target.tagName !== 'CANVAS') return;
+
+            const target = getTargetVoxel(e);
+            if (!target) return;
+
+            const isDelete = currentMode === 'delete' || e.altKey;
+
+            if (isDelete && target.deletePos) {
+                const key = `${target.deletePos.x},${target.deletePos.y},${target.deletePos.z}`;
+                if (gridData.has(key)) {
+                    saveHistory();
+                    gridData.delete(key);
+                    rebuildTown();
+                }
+            } else if (!isDelete && target.buildPos) {
+                const { x, y, z } = target.buildPos;
+                if (y < MAX_HEIGHT) {
+                    const key = `${x},${y},${z}`;
+                    saveHistory();
+                    gridData.set(key, { color: selectedColor.id });
+                    rebuildTown();
+                }
+            }
+        });
+
+        // --- Save / Undo / Redo State Management ---
+        function saveHistory() {
+            // Truncate redo states
+            if (historyIndex < historyStack.length - 1) {
+                historyStack.splice(historyIndex + 1);
+            }
+            // Push current snapshot
+            const snapshot = JSON.stringify(Array.from(gridData.entries()));
+            historyStack.push(snapshot);
+            historyIndex = historyStack.length - 1;
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreSnapshot(historyStack[historyIndex]);
+            }
+        }
+
+        function redo() {
+            if (historyIndex < historyStack.length - 1) {
+                historyIndex++;
+                restoreSnapshot(historyStack[historyIndex]);
+            }
+        }
+
+        function restoreSnapshot(snapshotStr) {
+            if (!snapshotStr) return;
+            const entries = JSON.parse(snapshotStr);
+            gridData.clear();
+            entries.forEach(([k, v]) => gridData.set(k, v));
+            rebuildTown();
+        }
+
+        // --- Data Encoding & Sharing ---
+        function encodeTownData() {
+            const arr = Array.from(gridData.entries());
+            return btoa(JSON.stringify(arr));
+        }
+
+        function decodeTownData(code) {
+            try {
+                const jsonStr = atob(code);
+                const entries = JSON.parse(jsonStr);
+                gridData.clear();
+                entries.forEach(([k, v]) => gridData.set(k, v));
+                rebuildTown();
+                saveHistory();
+                showToast("成功載入城鎮地圖數據！");
+            } catch (err) {
+                showToast("無效的分享代碼！");
+            }
+        }
+
+        // --- Toast Notification ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 3000);
+        }
+
+        // --- UI Initialization & Listeners ---
+        function initUI() {
+            // Render Color Swatches
+            const paletteContainer = document.getElementById('palette-container');
+            PALETTE.forEach((color, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `color-swatch w-7 h-7 rounded-full shadow-md ${idx === 0 ? 'active' : ''}`;
+                btn.style.backgroundColor = color.hex;
+                btn.title = color.id;
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedColor = color;
+                });
+                paletteContainer.appendChild(btn);
+            });
+
+            // Tool Toggles
+            const btnBuild = document.getElementById('tool-build');
+            const btnDelete = document.getElementById('tool-delete');
+
+            btnBuild.addEventListener('click', () => {
+                currentMode = 'build';
+                btnBuild.className = 'tool-btn bg-sky-500 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 shadow-md transition';
+                btnDelete.className = 'tool-btn bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 transition';
+            });
+
+            btnDelete.addEventListener('click', () => {
+                currentMode = 'delete';
+                btnDelete.className = 'tool-btn bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 shadow-md transition';
+                btnBuild.className = 'tool-btn bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-semibold flex items-center space-x-2 transition';
+            });
+
+            // Undo / Redo / Clear
+            document.getElementById('btn-undo').addEventListener('click', undo);
+            document.getElementById('btn-redo').addEventListener('click', redo);
+            document.getElementById('btn-clear').addEventListener('click', () => {
+                saveHistory();
+                gridData.clear();
+                rebuildTown();
+            });
+
+            // Share / Copy Data
+            document.getElementById('btn-share').addEventListener('click', () => {
+                const code = encodeTownData();
+                const dummy = document.createElement('textarea');
+                document.body.appendChild(dummy);
+                dummy.value = code;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                showToast("城鎮數據已複製至剪貼簿！");
+            });
+
+            // Checkboxes
+            document.getElementById('toggle-grid').addEventListener('change', renderGridDebug);
+            document.getElementById('toggle-deform').addEventListener('change', () => {
+                renderGridDebug();
+                rebuildTown();
+            });
+
+            // Modal Toggles
+            const modal = document.getElementById('tech-modal');
+            document.getElementById('btn-tech-info').addEventListener('click', () => {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            });
+            document.getElementById('btn-close-modal').addEventListener('click', () => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            });
+        }
+
+        // --- Default Starter Town ---
+        function loadDefaultTown() {
+            // Build a small starting harbor village
+            const starter = [
+                {x: 5, y: 0, z: 5, color: 'orange'},
+                {x: 5, y: 1, z: 5, color: 'orange'},
+                {x: 5, y: 0, z: 6, color: 'blue'},
+                {x: 6, y: 0, z: 5, color: 'amber'},
+                {x: 6, y: 1, z: 5, color: 'amber'},
+                {x: 6, y: 2, z: 5, color: 'teal'},
+                {x: 7, y: 0, z: 5, color: 'rose'},
+                {x: 5, y: 0, z: 4, color: 'indigo'}
+            ];
+
+            starter.forEach(b => {
+                gridData.set(`${b.x},${b.y},${b.z}`, { color: b.color });
+            });
+
+            saveHistory();
+            rebuildTown();
+        }
+
+        // --- Render & Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Gentle sky clouds rotation
+            cloudsGroup.rotation.y += 0.0005;
+
+            // Boids Update
+            updateBoids();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Resize Event ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Startup Initialization
+        window.onload = () => {
+            initUI();
+            renderGridDebug();
+            loadDefaultTown();
+            animate();
+        };
+    </script>
+</body>
+</html>
