@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balatro Card Effects - Web Demo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=VT323&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            user-select: none;
+            overflow: hidden;
+            background-color: #0f172a;
+        }
+
+        .font-pixel {
+            font-family: 'VT323', monospace;
+        }
+
+        /* Animated Wavy Text Effect */
+        .wave-text span {
+            display: inline-block;
+            animation: wave 1.8s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Rainbow Text Gradient */
+        .rainbow-text {
+            background: linear-gradient(90deg, #ff595e, #ffca3a, #8ac926, #1982c4, #6a4c93, #ff595e);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: rainbow 4s linear infinite;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* CRT Overlay Filter */
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Custom Pixel Card Border */
+        .card-container {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            touch-action: none;
+        }
+
+        .card-inner {
+            transform-style: preserve-3d;
+            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Canvas Background */
+        #bgCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-between items-center text-white overflow-hidden select-none">
+
+    <!-- Background Swirling Shader Canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- CRT & Pixelation Overlay Layer -->
+    <div id="crtLayer" class="crt-overlay absolute inset-0 z-30 pointer-events-none transition-opacity duration-300"></div>
+
+    <!-- MAIN PARALLAX WRAPPER -->
+    <div id="parallaxAnchor" class="relative z-10 w-full h-full flex flex-col justify-between items-center p-4 md:p-8 transition-transform duration-75 ease-out">
+
+        <!-- Top Header & UI Controls -->
+        <header class="w-full max-w-5xl flex flex-col sm:flex-row justify-between items-center bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border-2 border-slate-700 shadow-2xl gap-4 z-20">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold wave-text tracking-wide flex items-center gap-2">
+                    <span class="rainbow-text">BALATRO</span> 
+                    <span class="text-white">EFFECTS IN HTML</span>
+                </h1>
+                <p class="text-xs text-slate-400 font-medium">Recreating Godot Juicy Polish in Web Platform</p>
+            </div>
+
+            <!-- Options Panel -->
+            <div class="flex items-center gap-3 text-xs sm:text-sm">
+                <button id="toggleCrtBtn" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold px-3 py-2 rounded-xl transition flex items-center gap-2 border-b-4 border-indigo-800">
+                    <i class="fa-solid font-bold fa-tv"></i> CRT Filter: ON
+                </button>
+                <button id="drawBtn" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold px-4 py-2 rounded-xl transition flex items-center gap-2 border-b-4 border-emerald-800 shadow-lg">
+                    <i class="fa-solid fa-cards"></i> Redraw Hand
+                </button>
+            </div>
+        </header>
+
+        <!-- Center Score Display / Multiplier FX (Juicy RichText style) -->
+        <div class="flex flex-col items-center justify-center my-auto z-10 text-center">
+            <div id="scoreBox" class="bg-slate-900/90 border-4 border-amber-500 px-6 py-3 rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.4)] flex items-center gap-4 transition transform duration-200 hover:scale-105 cursor-pointer">
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-amber-400 tracking-wider">CHIPS</span>
+                    <span id="chipsVal" class="text-3xl font-black text-blue-400 font-pixel tracking-widest">1,450</span>
+                </div>
+                <span class="text-2xl font-black text-red-500">X</span>
+                <div class="flex flex-col">
+                    <span class="text-xs font-bold text-red-400 tracking-wider">MULT</span>
+                    <span id="multVal" class="text-3xl font-black text-red-500 font-pixel tracking-widest wave-text">
+                        <span>3</span><span>8</span><span>.</span><span>5</span>
+                    </span>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300 mt-2 bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs">
+                💡 <span class="text-amber-300">Hover</span> for 3D Tilt, <span class="text-emerald-300">Drag</span> for Velocity Spring, <span class="text-rose-400">Click</span> to Dissolve Card!
+            </p>
+        </div>
+
+        <!-- Card Hand Container -->
+        <div class="relative w-full max-w-4xl h-64 sm:h-72 flex justify-center items-end pb-4 z-20">
+            <div id="cardHand" class="relative w-full h-full flex justify-center items-center">
+                <!-- Cards dynamically injected here -->
+            </div>
+        </div>
+
+        <!-- Footer / Credits -->
+        <footer class="w-full text-center text-xs text-slate-400 z-10">
+            Inspired by <a href="https://github.com/MrEliptik/godot_ui_components" target="_blank" class="text-indigo-400 underline font-semibold">MrEliptik's Godot UI Video</a> & LocalThunk's Balatro.
+        </footer>
+    </div>
+
+    <!-- JAVASCRIPT CODE IMPLEMENTATION -->
+    <script>
+        // --- 1. GAME DATA & SUITS ---
+        const SUITS = [
+            { name: 'Spades', symbol: '♠', color: '#1e293b', border: '#475569' },
+            { name: 'Hearts', symbol: '♥', color: '#e11d48', border: '#fda4af' },
+            { name: 'Clubs', symbol: '♣', color: '#0f766e', border: '#5eead4' },
+            { name: 'Diamonds', symbol: '♦', color: '#ea580c', border: '#ffedd5' }
+        ];
+
+        const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+        let handCards = [];
+        let crtEnabled = true;
+
+        // Sound Synthesis using Web Audio API (No External Audio files)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playCardSound(freq = 440, duration = 0.08, type = 'sine') {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audioCtx.currentTime + duration);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // --- 2. BACKGROUND SWIRL SHADER SIMULATION (CANVAS) ---
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let time = 0;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function renderBackground() {
+            time += 0.01;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Create rich Balatro-style radial fluid background pattern
+            const grad = ctx.createRadialGradient(
+                width/2 + Math.sin(time*0.5)*100, 
+                height/2 + Math.cos(time*0.7)*100, 
+                50, 
+                width/2, 
+                height/2, 
+                Math.max(width, height)*0.8
+            );
+            
+            grad.addColorStop(0, '#1e1b4b'); // Deep indigo
+            grad.addColorStop(0.5, '#311042'); // Liquid Purple
+            grad.addColorStop(1, '#090d16'); // Dark Void
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw animated vortex/swirl lines
+            ctx.save();
+            ctx.translate(width/2, height/2);
+            ctx.strokeStyle = 'rgba(147, 51, 234, 0.15)';
+            ctx.lineWidth = 14;
+
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                const r = 120 + i * 65 + Math.sin(time + i) * 20;
+                const startAngle = time * (i % 2 === 0 ? 0.4 : -0.4);
+                ctx.arc(0, 0, r, startAngle, startAngle + Math.PI * 1.4);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            requestAnimationFrame(renderBackground);
+        }
+        renderBackground();
+
+        // --- 3. PARALLAX EFFECT ---
+        const parallaxAnchor = document.getElementById('parallaxAnchor');
+        window.addEventListener('mousemove', (e) => {
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const dx = (e.clientX - cx) / cx;
+            const dy = (e.clientY - cy) / cy;
+
+            // Subtle parallax sway for the entire UI
+            parallaxAnchor.style.transform = `translate3d(${dx * 12}px, ${dy * 12}px, 0px) rotateX(${-dy * 2}deg) rotateY(${dx * 2}deg)`;
+        });
+
+        // --- 4. CARD GENERATION & DYNAMICS ---
+        const cardHandContainer = document.getElementById('cardHand');
+
+        function createRandomCardData(id) {
+            const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
+            const rank = RANKS[Math.floor(Math.random() * RANKS.length)];
+            return { id, suit, rank, val: Math.floor(Math.random() * 10) + 1 };
+        }
+
+        function drawHand(cardCount = 6) {
+            cardHandContainer.innerHTML = '';
+            handCards = [];
+
+            for (let i = 0; i < cardCount; i++) {
+                const cardData = createRandomCardData(Date.now() + i);
+                handCards.push(cardData);
+
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card-container absolute cursor-pointer';
+                cardEl.dataset.id = cardData.id;
+                cardEl.dataset.index = i;
+
+                // DOM Inner structure for 3D Rotations and Shadow separation
+                cardEl.innerHTML = `
+                    <!-- Offset Dynamic Shadow -->
+                    <div class="card-shadow absolute inset-0 bg-black/60 rounded-xl blur-sm transition-transform duration-100 -z-10 pointer-events-none"></div>
+                    
+                    <!-- Main Card Body -->
+                    <div class="card-inner relative w-28 h-40 sm:w-36 sm:h-52 bg-slate-800 border-4 rounded-xl flex flex-col justify-between p-3 shadow-2xl overflow-hidden select-none"
+                         style="border-color: ${cardData.suit.border};">
+                        
+                        <!-- Top Left Value -->
+                        <div class="flex flex-col items-center leading-none w-fit">
+                            <span class="text-xl sm:text-2xl font-black font-pixel" style="color:${cardData.suit.color}">${cardData.rank}</span>
+                            <span class="text-base sm:text-lg" style="color:${cardData.suit.color}">${cardData.suit.symbol}</span>
+                        </div>
+
+                        <!-- Center Suit Art / Graphic -->
+                        <div class="absolute inset-0 flex items-center justify-center opacity-25 pointer-events-none">
+                            <span class="text-6xl sm:text-7xl" style="color:${cardData.suit.color}">${cardData.suit.symbol}</span>
+                        </div>
+
+                        <!-- Bottom Right Value (Inverted) -->
+                        <div class="flex flex-col items-center leading-none w-fit self-end rotate-180">
+                            <span class="text-xl sm:text-2xl font-black font-pixel" style="color:${cardData.suit.color}">${cardData.rank}</span>
+                            <span class="text-base sm:text-lg" style="color:${cardData.suit.color}">${cardData.suit.symbol}</span>
+                        </div>
+
+                        <!-- Dissolve Canvas Overlay -->
+                        <canvas class="dissolve-canvas absolute inset-0 w-full h-full pointer-events-none z-30 opacity-0"></canvas>
+                    </div>
+                `;
+
+                cardHandContainer.appendChild(cardEl);
+                setupCardInteractions(cardEl, i, cardCount);
+
+                // Play staggered draw audio & animate from offscreen deck (Drawing Animation)
+                setTimeout(() => {
+                    playCardSound(300 + i * 60, 0.06, 'triangle');
+                }, i * 80);
+            }
+        }
+
+        // --- 5. CARD INTERACTION PHYSICS (3D Tilt, Drag Velocity, Sine Waves) ---
+        function setupCardInteractions(card, index, totalCards) {
+            const inner = card.querySelector('.card-inner');
+            const shadow = card.querySelector('.card-shadow');
+            
+            // Damped Oscillator physics variables for dragging/velocity tilt
+            let posX = 0, posY = 0;
+            let velX = 0, velY = 0;
+            let lastX = 0, lastY = 0;
+            let isDragging = false;
+            let isHovered = false;
+
+            // Card Base Layout Position (Arc curve calculation)
+            function getBaseTransform() {
+                const mid = (totalCards - 1) / 2;
+                const offset = index - mid;
+                // Fan out rotation & slight parabolic height arc
+                const rot = offset * 5; 
+                const translateY = Math.abs(offset) * 8;
+                const translateX = offset * 45; // Stagger horizontal overlap
+                return { translateX, translateY, rot };
+            }
+
+            // Apply base positioning with staggered animation entry
+            const base = getBaseTransform();
+            card.style.transform = `translate3d(${base.translateX}px, ${base.translateY + 300}px, 0px) rotate(${base.rot}deg)`;
+            card.style.opacity = '0';
+
+            // Animate card entry (Tweening draw)
+            setTimeout(() => {
+                card.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
+                card.style.transform = `translate3d(${base.translateX}px, ${base.translateY}px, 0px) rotate(${base.rot}deg)`;
+                card.style.opacity = '1';
+
+                // Remove entry transition after finish to allow smooth continuous updates
+                setTimeout(() => { card.style.transition = ''; }, 500);
+            }, index * 75);
+
+            // 3D TILT EFFECT ON HOVER
+            card.addEventListener('mousemove', (e) => {
+                if (isDragging) return;
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+
+                // Rotations bounded to max tilt angle
+                const rotateX = (-y / (rect.height / 2)) * 18;
+                const rotateY = (x / (rect.width / 2)) * 18;
+
+                inner.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.1) translateY(-15px)`;
+                
+                // Shadow offsets based on screen center (Balatro Shadow effect)
+                const screenCenterX = window.innerWidth / 2;
+                const shadowOffsetX = (rect.left - screenCenterX) * 0.08;
+                shadow.style.transform = `translate3d(${shadowOffsetX}px, 25px, 0px) scale(0.9)`;
+            });
+
+            card.addEventListener('mouseenter', () => {
+                isHovered = true;
+                playCardSound(520, 0.04, 'sine');
+                card.style.zIndex = '50';
+            });
+
+            card.addEventListener('mouseleave', () => {
+                isHovered = false;
+                if (isDragging) return;
+                inner.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1) translateY(0px)';
+                shadow.style.transform = 'translate3d(0px, 0px, 0px) scale(1)';
+                card.style.zIndex = index;
+            });
+
+            // DRAG & VELOCITY ROTATION (SPRING OSCILLATOR)
+            const onPointerDown = (e) => {
+                isDragging = true;
+                lastX = e.clientX || e.touches[0].clientX;
+                lastY = e.clientY || e.touches[0].clientY;
+                card.style.zIndex = '100';
+                card.setPointerCapture(e.pointerId);
+            };
+
+            const onPointerMove = (e) => {
+                if (!isDragging) return;
+                const curX = e.clientX || e.touches[0].clientX;
+                const curY = e.clientY || e.touches[0].clientY;
+
+                // Calculate instantaneous velocity
+                velX = curX - lastX;
+                velY = curY - lastY;
+
+                posX += velX;
+                posY += velY;
+
+                lastX = curX;
+                lastY = curY;
+
+                // Tilt based on horizontal velocity
+                const tiltFromVelocity = Math.max(-25, Math.min(25, velX * 1.5));
+                
+                card.style.transform = `translate3d(${base.translateX + posX}px, ${base.translateY + posY}px, 0px) rotate(${base.rot + tiltFromVelocity}deg)`;
+            };
+
+            const onPointerUp = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                
+                // Return card back to origin with elastic spring feel
+                card.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                posX = 0;
+                posY = 0;
+                card.style.transform = `translate3d(${base.translateX}px, ${base.translateY}px, 0px) rotate(${base.rot}deg)`;
+                
+                setTimeout(() => { 
+                    card.style.transition = '';
+                    card.style.zIndex = index;
+                }, 500);
+            };
+
+            card.addEventListener('pointerdown', onPointerDown);
+            card.addEventListener('pointermove', onPointerMove);
+            card.addEventListener('pointerup', onPointerUp);
+
+            // CLICK TO TRIGGER DISSOLVE BURN SHADER
+            card.addEventListener('click', (e) => {
+                // If it was a heavy drag, ignore click
+                if (Math.abs(velX) > 3 || Math.abs(velY) > 3) return;
+                triggerDissolveEffect(card);
+            });
+        }
+
+        // --- 6. BURN / DISSOLVE SHADER EFFECT ---
+        function triggerDissolveEffect(card) {
+            const canvas = card.querySelector('.dissolve-canvas');
+            const inner = card.querySelector('.card-inner');
+            const dCtx = canvas.getContext('2d');
+
+            canvas.width = card.offsetWidth;
+            canvas.height = card.offsetHeight;
+            canvas.style.opacity = '1';
+
+            playCardSound(180, 0.3, 'sawtooth');
+
+            let progress = 0;
+            const duration = 700; // ms
+            const startTime = performance.now();
+
+            function animateDissolve(now) {
+                const elapsed = now - startTime;
+                progress = Math.min(elapsed / duration, 1.0);
+
+                dCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Pixel Noise Burn Overlay
+                const w = canvas.width;
+                const h = canvas.height;
+                const imgData = dCtx.createImageData(w, h);
+                const data = imgData.data;
+
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const idx = (y * w + x) * 4;
+                        // Simulating noise threshold map
+                        const noiseVal = Math.sin(x * 0.05) * Math.cos(y * 0.05) + (Math.random() * 0.4);
+                        const threshold = progress * 1.4;
+
+                        if (noiseVal < threshold) {
+                            // Burning Ember Edge (Orange / Gold glow)
+                            if (noiseVal > threshold - 0.15) {
+                                data[idx] = 255;       // R
+                                data[idx + 1] = 140;   // G
+                                data[idx + 2] = 20;    // B
+                                data[idx + 3] = 255;   // A
+                            } else {
+                                // Destroyed / Translucent Hole
+                                data[idx + 3] = 0;
+                            }
+                        } else {
+                            data[idx + 3] = 0; // Not burned yet
+                        }
+                    }
+                }
+
+                dCtx.putImageData(imgData, 0, 0);
+                inner.style.opacity = (1 - progress * 0.8).toString();
+
+                if (progress < 1.0) {
+                    requestAnimationFrame(animateDissolve);
+                } else {
+                    // Remove card element upon dissolve completion
+                    card.style.transition = 'transform 0.3s opacity 0.3s';
+                    card.style.transform += ' scale(0)';
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                }
+            }
+
+            requestAnimationFrame(animateDissolve);
+        }
+
+        // --- 7. CARDS WAVE SINE ANIMATION (Idle Hand Wave) ---
+        let waveTime = 0;
+        function animateHandWave() {
+            waveTime += 0.04;
+            const cards = cardHandContainer.querySelectorAll('.card-container');
+            
+            cards.forEach((card, idx) => {
+                // Ignore wave if currently dragging
+                if (card.style.zIndex === '100') return;
+
+                const waveOffsetY = Math.sin(waveTime + idx * 0.6) * 6;
+                const currentTransform = card.style.transform;
+
+                // Update Y offset smoothly without replacing standard base translation
+                if (!card.style.transition) {
+                    card.style.transform = currentTransform.replace(/translate3d\(([^,]+),\s*([^,]+)/, (match, p1, p2) => {
+                        const baseTranslateY = parseFloat(p2);
+                        return `translate3d(${p1}, ${baseTranslateY + Math.sin(waveTime + idx * 0.1) * 0.15}`;
+                    });
+                }
+            });
+
+            requestAnimationFrame(animateHandWave);
+        }
+        animateHandWave();
+
+        // --- 8. UI CONTROLS & EVENT LISTENERS ---
+        document.getElementById('drawBtn').addEventListener('click', () => {
+            playCardSound(600, 0.1, 'square');
+            drawHand(6);
+        });
+
+        const crtLayer = document.getElementById('crtLayer');
+        const toggleCrtBtn = document.getElementById('toggleCrtBtn');
+        
+        toggleCrtBtn.addEventListener('click', () => {
+            crtEnabled = !crtEnabled;
+            crtLayer.style.opacity = crtEnabled ? '1' : '0';
+            toggleCrtBtn.innerHTML = crtEnabled 
+                ? '<i class="fa-solid font-bold fa-tv"></i> CRT Filter: ON' 
+                : '<i class="fa-solid font-bold fa-tv"></i> CRT Filter: OFF';
+            toggleCrtBtn.classList.toggle('bg-indigo-600');
+            toggleCrtBtn.classList.toggle('bg-slate-700');
+        });
+
+        // Initialize First Hand on load
+        window.onload = () => {
+            drawHand(6);
+        };
+    </script>
+</body>
+</html>
