@@ -1,3 +1,5 @@
+插件名字：Quick Drag & Drop | Level Placer
+商店链接：https://assetstore.unity.com/packages/slug/351352
 贴图下载网站：https://ambientcg.com/
 HDR、模型、贴图素材：https://polyhaven.com/
 素材、参考：https://pixabay.com/
