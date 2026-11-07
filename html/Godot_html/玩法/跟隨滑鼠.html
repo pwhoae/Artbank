@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色跟隨滑鼠移動 (Mouse Tracking Character)</title>
+    <!-- 使用 Tailwind CSS 進行流暢佈局 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* 角色微幅浮動動畫 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* 光暈效果 */
+        .glow {
+            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-between p-6 select-none">
+
+    <!-- 頂部標題說明 -->
+    <header class="text-center mt-6 z-10 pointer-events-none">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mb-2">
+            互動角色跟隨效果
+        </h1>
+        <p class="text-slate-400 text-sm md:text-base">
+            移動您的滑鼠（或在手機上觸控螢幕），觀察角色的眼珠與身體動作
+        </p>
+    </header>
+
+    <!-- 主舞台區域 -->
+    <main class="relative flex-1 w-full flex items-center justify-center">
+        <!-- 跟隨滑鼠移動的角色容器 -->
+        <div id="character" class="absolute transition-transform duration-75 ease-out glow rounded-full">
+            <div class="floating relative w-44 h-44 md:w-56 md:h-56 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex flex-col items-center justify-center border-4 border-white/20 backdrop-blur-md">
+                
+                <!-- 可愛貓耳/小角飾品 -->
+                <div class="absolute -top-4 left-6 w-8 h-8 bg-indigo-600 rounded-tl-2xl transform -rotate-12"></div>
+                <div class="absolute -top-4 right-6 w-8 h-8 bg-pink-600 rounded-tr-2xl transform rotate-12"></div>
+
+                <!-- 眼睛容器 -->
+                <div class="flex gap-6 md:gap-8 mb-2 z-10">
+                    <!-- 左眼 -->
+                    <div class="eye w-12 h-14 md:w-14 md:h-16 bg-white rounded-full flex items-center justify-center relative shadow-inner overflow-hidden">
+                        <!-- 左眼珠 -->
+                        <div class="pupil w-6 h-6 md:w-7 md:h-7 bg-slate-900 rounded-full relative flex items-start justify-end p-1 transition-transform duration-75">
+                            <!-- 眼珠反光點 -->
+                            <div class="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- 右眼 -->
+                    <div class="eye w-12 h-14 md:w-14 md:h-16 bg-white rounded-full flex items-center justify-center relative shadow-inner overflow-hidden">
+                        <!-- 右眼珠 -->
+                        <div class="pupil w-6 h-6 md:w-7 md:h-7 bg-slate-900 rounded-full relative flex items-start justify-end p-1 transition-transform duration-75">
+                            <!-- 眼珠反光點 -->
+                            <div class="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 腮紅 -->
+                <div class="absolute top-24 left-6 w-6 h-3 bg-pink-300/40 rounded-full blur-xs"></div>
+                <div class="absolute top-24 right-6 w-6 h-3 bg-pink-300/40 rounded-full blur-xs"></div>
+
+                <!-- 嘴巴 -->
+                <div id="mouth" class="w-6 h-3 border-b-4 border-slate-900 rounded-b-full transition-all duration-300"></div>
+                
+                <!-- 影子 -->
+                <div class="absolute -bottom-10 w-32 h-6 bg-black/40 rounded-full blur-md -z-10"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部控制與提示 -->
+    <footer class="mb-4 z-10 flex gap-4">
+        <button id="toggleSpeedBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-lg border border-slate-700 transition">
+            追蹤速度: 正常
+        </button>
+    </footer>
+
+    <script>
+        // 獲取 DOM 元素
+        const character = document.getElementById('character');
+        const pupils = document.querySelectorAll('.pupil');
+        const mouth = document.getElementById('mouth');
+        const toggleSpeedBtn = document.getElementById('toggleSpeedBtn');
+
+        // 目標位置與當前位置 (用於平滑插值緩動效果 Lerp)
+        let targetX = window.innerWidth / 2;
+        let targetY = window.innerHeight / 2;
+        let currentX = window.innerWidth / 2;
+        let currentY = window.innerHeight / 2;
+
+        // 追蹤緩動係數 (越小越慢/越平滑)
+        let ease = 0.08;
+
+        // 更新滑鼠/觸控目標位置
+        function updateTargetPos(x, y) {
+            targetX = x;
+            targetY = y;
+        }
+
+        // 滑鼠移動事件 Listeners
+        window.addEventListener('mousemove', (e) => {
+            updateTargetPos(e.clientX, e.clientY);
+        });
+
+        // 支援移動設備觸控
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                updateTargetPos(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        });
+
+        // 點擊時角色的互動表情變化
+        window.addEventListener('mousedown', () => {
+            mouth.classList.remove('w-6', 'h-3', 'border-b-4', 'rounded-b-full');
+            mouth.classList.add('w-5', 'h-5', 'bg-slate-900', 'rounded-full'); // 變成驚訝的大嘴巴 O
+        });
+
+        window.addEventListener('mouseup', () => {
+            mouth.classList.remove('w-5', 'h-5', 'bg-slate-900', 'rounded-full');
+            mouth.classList.add('w-6', 'h-3', 'border-b-4', 'rounded-b-full');
+        });
+
+        // 動畫循環主程序
+        function render() {
+            // 1. 計算角色的平滑位置 (Linear Interpolation)
+            currentX += (targetX - currentX) * ease;
+            currentY += (targetY - currentY) * ease;
+
+            // 移動角色容器 (將中心點對準座標)
+            const charRect = character.getBoundingClientRect();
+            const charCenterX = currentX - charRect.width / 2;
+            const charCenterY = currentY - charRect.height / 2;
+
+            // 計算移動傾斜角度（速度快時增加彈性傾斜感）
+            const deltaX = targetX - currentX;
+            const tiltAngle = Math.max(Math.min(deltaX * 0.05, 15), -15);
+
+            character.style.transform = `translate3d(${charCenterX}px, ${charCenterY}px, 0) rotate(${tiltAngle}deg)`;
+
+            // 2. 計算眼珠轉動邏輯
+            pupils.forEach((pupil) => {
+                const eye = pupil.parentElement;
+                const eyeRect = eye.getBoundingClientRect();
+                
+                // 眼球中心座標
+                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+
+                // 計算滑鼠相對於眼睛的角度與距離
+                const angle = Math.atan2(targetY - eyeCenterY, targetX - eyeCenterX);
+                
+                // 限制眼珠最大移動半徑
+                const maxDistance = 12; 
+                const distance = Math.min(
+                    Math.hypot(targetX - eyeCenterX, targetY - eyeCenterY) / 10, 
+                    maxDistance
+                );
+
+                const pupilX = Math.cos(angle) * distance;
+                const pupilY = Math.sin(angle) * distance;
+
+                pupil.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+            });
+
+            requestAnimationFrame(render);
+        }
+
+        // 切換追蹤速度按鈕
+        let isFast = false;
+        toggleSpeedBtn.addEventListener('click', () => {
+            isFast = !isFast;
+            if (isFast) {
+                ease = 0.25;
+                toggleSpeedBtn.textContent = '追蹤速度: 快速';
+                toggleSpeedBtn.classList.replace('bg-slate-800', 'bg-indigo-600');
+            } else {
+                ease = 0.08;
+                toggleSpeedBtn.textContent = '追蹤速度: 正常';
+                toggleSpeedBtn.classList.replace('bg-indigo-600', 'bg-slate-800');
+            }
+        });
+
+        // 當視窗縮放時調整初始位置
+        window.addEventListener('resize', () => {
+            targetX = window.innerWidth / 2;
+            targetY = window.innerHeight / 2;
+        });
+
+        // 啟動動畫
+        render();
+    </script>
+</body>
+</html>

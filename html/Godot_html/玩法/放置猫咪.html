@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cats Organized Neatly - Puzzle Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Fredoka', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        /* Wooden Floor Texture */
+        .wood-floor {
+            background-color: #e5a76c;
+            background-image: 
+                linear-gradient(90deg, rgba(165, 105, 42, 0.25) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(165, 105, 42, 0.15) 1px, transparent 1px);
+            background-size: 80px 300px, 100% 20px;
+            box-shadow: inset 0 0 100px rgba(100, 50, 0, 0.2);
+        }
+
+        /* Sunbeam Effect overlay */
+        .sunbeam {
+            background: linear-gradient(135deg, rgba(255, 245, 200, 0.45) 0%, rgba(255, 235, 170, 0.15) 45%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        /* Pink Chevron Pattern Mat */
+        .chevron-rug {
+            background-color: #ffb3c6;
+            background-image: 
+                linear-gradient(135deg, #ff8fab 25%, transparent 25%), 
+                linear-gradient(225deg, #ff8fab 25%, transparent 25%), 
+                linear-gradient(315deg, #ff8fab 25%, transparent 25%), 
+                linear-gradient(45deg, #ff8fab 25%, transparent 25%);
+            background-position: -20px 0, -20px 0, 0 0, 0 0;
+            background-size: 40px 40px;
+            box-shadow: 0 15px 35px rgba(150, 40, 70, 0.3), inset 0 0 0 8px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Grid Slots */
+        .grid-slot {
+            background-color: rgba(255, 255, 255, 0.35);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+
+        .grid-slot.valid-hover {
+            background-color: rgba(144, 238, 144, 0.5);
+            border-color: #4CAF50;
+        }
+
+        .grid-slot.invalid-hover {
+            background-color: rgba(255, 99, 71, 0.5);
+            border-color: #FF6347;
+        }
+
+        /* Draggable Cat Styling */
+        .cat-piece {
+            touch-action: none;
+            cursor: grab;
+            transition: transform 0.15s ease, filter 0.2s ease;
+            filter: drop-shadow(3px 5px 6px rgba(0, 0, 0, 0.25));
+        }
+
+        .cat-piece:active {
+            cursor: grabbing;
+            filter: drop-shadow(6px 12px 12px rgba(0, 0, 0, 0.35)) brightness(1.05);
+            z-index: 100 !important;
+        }
+
+        .cat-piece.selected {
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9)) drop-shadow(4px 8px 8px rgba(0,0,0,0.3));
+        }
+
+        /* Zzz floating animation */
+        @keyframes floatZzz {
+            0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(15px, -35px) scale(1.2); opacity: 0; }
+        }
+
+        .zzz-particle {
+            position: absolute;
+            animation: floatZzz 3s infinite ease-out;
+            font-weight: bold;
+            color: #60a5fa;
+            pointer-events: none;
+        }
+
+        /* Soft pulsing glow for target slots */
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.7; }
+        }
+        .pulse-bg {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="wood-floor w-screen h-screen flex flex-col justify-between items-center relative overflow-hidden select-none">
+
+    <!-- Sunbeam Lighting Overlay -->
+    <div class="sunbeam absolute inset-0 z-0"></div>
+
+    <!-- Header UI Bar -->
+    <header class="relative z-10 w-full max-w-4xl px-6 pt-4 flex justify-between items-center">
+        <div class="bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-lg border-2 border-amber-200 flex items-center gap-3">
+            <span class="text-3xl">🐾</span>
+            <div>
+                <h1 class="text-xl font-bold text-amber-900 leading-tight">Cats Organized Neatly</h1>
+                <p class="text-xs font-semibold text-amber-700">Fit all cute sleepy cats onto the rug grid!</p>
+            </div>
+        </div>
+
+        <!-- Level Controls & Reset -->
+        <div class="flex items-center gap-3">
+            <div id="level-indicator" class="bg-amber-100/90 border-2 border-amber-300 text-amber-800 font-bold px-4 py-2 rounded-xl shadow-sm text-sm">
+                Level 1 / 3
+            </div>
+            <button id="btn-rotate-hint" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold px-4 py-2 rounded-xl shadow-md transition flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-rotate-right"></i> Rotate
+            </button>
+            <button id="btn-reset" class="bg-rose-400 hover:bg-rose-500 active:scale-95 text-white font-bold p-2.5 rounded-xl shadow-md transition" title="Reset Level">
+                <i class="fa-solid fa-arrow-rotate-left"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Board Container -->
+    <main class="relative z-10 flex-1 w-full max-w-5xl flex flex-col items-center justify-center p-4">
+        
+        <!-- Chevron Rug Area -->
+        <div class="chevron-rug rounded-3xl p-6 sm:p-8 border-4 border-white/60 relative flex flex-col items-center justify-center min-w-[320px]">
+            
+            <!-- Grid Board -->
+            <div id="grid-container" class="grid gap-1.5 relative p-2 bg-white/30 rounded-2xl border-2 border-white/80 shadow-inner">
+                <!-- Grid Cells dynamically generated in JS -->
+            </div>
+
+            <!-- Decorative Floor Elements -->
+            <div class="absolute -top-6 -right-6 text-4xl transform rotate-12 opacity-90 drop-shadow">🌿</div>
+            <div class="absolute -bottom-5 -left-5 text-3xl transform -rotate-12 opacity-80 drop-shadow">🧶</div>
+        </div>
+
+    </main>
+
+    <!-- Tray for Unplaced Cats -->
+    <footer class="relative z-10 w-full max-w-4xl pb-6 px-4">
+        <div class="bg-white/60 backdrop-blur-md border-2 border-white/80 rounded-3xl p-4 shadow-xl flex flex-wrap items-center justify-center gap-6 min-h-[140px]" id="cat-tray">
+            <!-- Unplaced cat pieces render here -->
+        </div>
+    </footer>
+
+    <!-- Victory Modal -->
+    <div id="victory-modal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-gradient-to-b from-amber-50 to-orange-100 p-8 rounded-3xl border-4 border-white shadow-2xl max-w-sm w-full text-center transform scale-90 transition-transform duration-300" id="victory-card">
+            <div class="text-6xl mb-2 animate-bounce">🎉 😸 🎉</div>
+            <h2 class="text-2xl font-extrabold text-amber-900 mb-2">Purr-fectly Placed!</h2>
+            <p class="text-amber-700 text-sm mb-6">All cats are cozy and tucked neatly in their spots.</p>
+            <button id="btn-next-level" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg hover:shadow-xl transition transform active:scale-95 text-lg">
+                Next Puzzle <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Tooltip -->
+    <div id="instruction-tip" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 bg-amber-900/80 text-white text-xs px-4 py-1.5 rounded-full pointer-events-none opacity-80 shadow">
+        💡 Drag cats onto grid. Double-click or click Rotate button to turn them!
+    </div>
+
+    <script>
+        /**
+         * CAT PUZZLE ENGINE & SVG GENERATOR
+         */
+
+        const TILE_SIZE = 64; // Pixel size per grid cell
+
+        // Audio Effects Synth
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playPop() {
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+            playRotate() {
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(250, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+            playWin() {
+                this.init();
+                if (!this.ctx) return;
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + i * 0.1);
+                    osc.stop(this.ctx.currentTime + i * 0.1 + 0.3);
+                });
+            }
+        }
+        const sound = new SoundFX();
+
+        // Level Definitions
+        const LEVELS = [
+            {
+                cols: 4,
+                rows: 3,
+                cats: ['calico', 'fluffy_grey', 'long_black', 'orange_small']
+            },
+            {
+                cols: 4,
+                rows: 4,
+                cats: ['calico', 'fluffy_grey', 'long_black', 'dark_lounger', 'orange_small']
+            },
+            {
+                cols: 5,
+                rows: 4,
+                cats: ['calico', 'fluffy_grey', 'long_black', 'dark_lounger', 'orange_small', 'fat_tabby']
+            }
+        ];
+
+        // Definitions of Cat Shapes (Polyominoes on grid matrix [r, c])
+        const CAT_DEFINITIONS = {
+            'calico': {
+                name: 'Calico with Fish',
+                color: '#fcf8f2',
+                shape: [
+                    [1, 1],
+                    [1, 0],
+                    [1, 0]
+                ], // L-like shape
+                render: (w, h) => `
+                    <svg width="${w}" height="${h}" viewBox="0 0 128 192" class="w-full h-full">
+                        <!-- Body -->
+                        <path d="M 20,20 C 60,10 110,20 110,60 C 110,90 70,80 60,110 L 60,170 C 60,185 10,185 10,140 C 10,100 20,40 20,20 Z" fill="#F7F3E9" stroke="#333" stroke-width="4" stroke-linejoin="round"/>
+                        <!-- Calico Patches -->
+                        <path d="M 70,25 C 100,20 105,50 85,65 Z" fill="#D97724" />
+                        <path d="M 15,60 C 40,70 30,110 15,100 Z" fill="#2C2C2C" />
+                        <path d="M 20,150 C 45,150 55,175 30,180 Z" fill="#D97724" />
+                        <!-- Head Details -->
+                        <polygon points="30,15 45,35 20,35" fill="#E8998D" stroke="#333" stroke-width="3"/>
+                        <polygon points="90,15 105,35 80,35" fill="#E8998D" stroke="#333" stroke-width="3"/>
+                        <!-- Sleeping Face -->
+                        <path d="M 40,45 Q 48,52 56,45" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M 72,45 Q 80,52 88,45" fill="none" stroke="#333" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="64" cy="53" r="3.5" fill="#E8998D"/>
+                        <!-- Blue Fish Toy -->
+                        <g transform="translate(42, 60) rotate(-15)">
+                            <path d="M 0,10 Q 15,0 30,10 Q 15,20 0,10 Z" fill="#60A5FA" stroke="#1D4ED8" stroke-width="2"/>
+                            <polygon points="30,10 40,3 40,17" fill="#60A5FA" stroke="#1D4ED8" stroke-width="2"/>
+                            <circle cx="8" cy="8" r="1.5" fill="#fff"/>
+                        </g>
+                    </svg>
+                `
+            },
+            'fluffy_grey': {
+                name: 'Fluffy Grey',
+                color: '#e2e8f0',
+                shape: [
+                    [1, 1],
+                    [1, 1]
+                ], // 2x2 Square
+                render: (w, h) => `
+                    <svg width="${w}" height="${h}" viewBox="0 0 128 128" class="w-full h-full">
+                        <!-- Fluffy Body -->
+                        <rect x="8" y="8" width="112" height="112" rx="35" fill="#E2E8F0" stroke="#475569" stroke-width="4"/>
+                        <!-- Fur Texture Waves -->
+                        <path d="M 20,40 Q 30,30 40,40 Q 50,30 60,40" fill="none" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M 30,80 Q 45,70 60,80 Q 75,70 90,80" fill="none" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+                        <!-- Ears -->
+                        <polygon points="20,12 38,32 12,32" fill="#F472B6" stroke="#475569" stroke-width="3"/>
+                        <polygon points="108,12 116,32 90,32" fill="#F472B6" stroke="#475569" stroke-width="3"/>
+                        <!-- Curly Tail inside -->
+                        <path d="M 95,95 C 115,70 90,40 75,55 C 65,65 80,75 85,65" fill="none" stroke="#94A3B8" stroke-width="7" stroke-linecap="round"/>
+                        <!-- Sleeping Eyes -->
+                        <path d="M 35,55 Q 43,62 51,55" fill="none" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M 65,55 Q 73,62 81,55" fill="none" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+                        <polygon points="58,64 62,68 54,68" fill="#F472B6"/>
+                        <!-- Pink Paws -->
+                        <ellipse cx="35" cy="95" rx="10" ry="7" fill="#fff" stroke="#475569" stroke-width="2"/>
+                        <ellipse cx="60" cy="95" rx="10" ry="7" fill="#fff" stroke="#475569" stroke-width="2"/>
+                    </svg>
+                `
+            },
+            'long_black': {
+                name: 'Long Black Cat',
+                color: '#1e293b',
+                shape: [
+                    [1],
+                    [1],
+                    [1]
+                ], // 1x3 Long Strip
+                render: (w, h) => `
+                    <svg width="${w}" height="${h}" viewBox="0 0 64 192" class="w-full h-full">
+                        <!-- Long Sleek Body -->
+                        <rect x="8" y="8" width="48" height="176" rx="24" fill="#1E293B" stroke="#0F172A" stroke-width="4"/>
+                        <!-- Big Yellow Eyes (Surprised/Curious) -->
+                        <circle cx="22" cy="36" r="8" fill="#FACC15"/>
+                        <circle cx="42" cy="36" r="8" fill="#FACC15"/>
+                        <circle cx="22" cy="36" r="3" fill="#000"/>
+                        <circle cx="42" cy="36" r="3" fill="#000"/>
+                        <!-- Ears -->
+                        <polygon points="12,10 22,24 8,24" fill="#1E293B" stroke="#0F172A" stroke-width="2"/>
+                        <polygon points="52,10 56,24 42,24" fill="#1E293B" stroke="#0F172A" stroke-width="2"/>
+                        <!-- Nose and Whiskers -->
+                        <polygon points="32,44 35,48 29,48" fill="#F472B6"/>
+                        <line x1="6" y1="42" x2="18" y2="44" stroke="#64748B" stroke-width="2"/>
+                        <line x1="6" y1="48" x2="18" y2="48" stroke="#64748B" stroke-width="2"/>
+                        <line x1="58" y1="42" x2="46" y2="44" stroke="#64748B" stroke-width="2"/>
+                        <line x1="58" y1="48" x2="46" y2="48" stroke="#64748B" stroke-width="2"/>
+                        <!-- Paws at bottom -->
+                        <ellipse cx="22" cy="172" rx="6" ry="4" fill="#334155"/>
+                        <ellipse cx="42" cy="172" rx="6" ry="4" fill="#334155"/>
+                    </svg>
+                `
+            },
+            'dark_lounger': {
+                name: 'Lounging Dark Grey',
+                color: '#374151',
+                shape: [
+                    [1, 1, 1],
+                    [0, 0, 1]
+                ], // Horizontal L
+                render: (w, h) => `
+                    <svg width="${w}" height="${h}" viewBox="0 0 192 128" class="w-full h-full">
+                        <!-- Curved Lounging Body -->
+                        <path d="M 20,30 C 20,10 160,10 170,30 C 180,50 180,100 160,110 C 140,115 130,70 120,70 C 100,70 50,80 20,60 Z" fill="#374151" stroke="#1F2937" stroke-width="4"/>
+                        <!-- Big Curly Tail -->
+                        <path d="M 160,95 C 185,95 185,55 165,55 C 150,55 155,75 165,75" fill="none" stroke="#1F2937" stroke-width="8" stroke-linecap="round"/>
+                        <!-- Head Details -->
+                        <polygon points="25,20 35,35 15,35" fill="#F472B6"/>
+                        <polygon points="65,20 75,35 55,35" fill="#F472B6"/>
+                        <!-- Sleeping Eyes -->
+                        <path d="M 30,42 Q 38,48 44,42" fill="none" stroke="#9CA3AF" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M 52,42 Q 60,48 66,42" fill="none" stroke="#9CA3AF" stroke-width="3" stroke-linecap="round"/>
+                        <!-- Pink Toe Paws -->
+                        <circle cx="140" cy="95" r="4" fill="#F472B6"/>
+                        <circle cx="148" cy="98" r="3" fill="#F472B6"/>
+                    </svg>
+                `
+            },
+            'orange_small': {
+                name: 'Tiny Orange Tabby',
+                color: '#f97316',
+                shape: [
+                    [1]
+                ], // 1x1 Single Square
+                render: (w, h) => `
+                    <svg width="${w}" height="${h}" viewBox="0 0 64 64" class="w-full h-full">
+                        <circle cx="32" cy="32" r="26" fill="#F97316" stroke="#C2410C" stroke-width="3"/>
+                        <!-- Stripes -->
+                        <path d="M 24,12 L 32,20 L 40,12" fill="none" stroke="#EA580C" stroke-width="3" stroke-linecap="round"/>
+                        <!-- Ears -->
+                        <polygon points="14,14 24,24 10,26" fill="#FDBA74" stroke="#C2410C" stroke-width="2"/>
+                        <polygon points="50,14 54,26 40,24" fill="#FDBA74" stroke="#C2410C" stroke-width="2"/>
+                        <!-- Sleeping eyes -->
+                        <path d="M 20,34 Q 26,40 30,34" fill="none" stroke="#7C2D12" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M 34,34 Q 38,40 44,34" fill="none" stroke="#7C2D12" stroke-width="3" stroke-linecap="round"/>
+                        <circle cx="32" cy="40" r="2" fill="#7C2D12"/>
+                    </svg>
+                `
+            },
+            'fat_tabby': {
+                name: 'Chonky Tabby',
+                color: '#eab308',
+                shape: [
+                    [1, 1],
+                    [1, 0]
+                ], // Small L shape
+                render: (w, h) => `
+                    <svg width="${w}" height="${h}" viewBox="0 0 128 128" class="w-full h-full">
+                        <path d="M 20,20 L 110,20 C 115,50 115,60 70,60 L 70,110 C 30,115 15,90 20,20 Z" fill="#EAB308" stroke="#CA8A04" stroke-width="4" stroke-linejoin="round"/>
+                        <!-- Tabby Stripes -->
+                        <path d="M 40,20 L 45,35 M 60,20 L 65,35 M 80,20 L 85,35" stroke="#A16207" stroke-width="4" stroke-linecap="round"/>
+                        <!-- Face -->
+                        <circle cx="45" cy="42" r="3" fill="#422006"/>
+                        <circle cx="75" cy="42" r="3" fill="#422006"/>
+                        <path d="M 55,48 Q 60,53 65,48" fill="none" stroke="#422006" stroke-width="2"/>
+                    </svg>
+                `
+            }
+        };
+
+        // State variables
+        let currentLevelIndex = 0;
+        let gridMatrix = []; // 2D array tracking placed cat IDs
+        let catState = {};   // Stores position, rotation, placed status for each cat piece
+        let selectedCatId = null;
+        let draggedCatId = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        // DOM Elements
+        const gridContainer = document.getElementById('grid-container');
+        const catTray = document.getElementById('cat-tray');
+        const victoryModal = document.getElementById('victory-modal');
+        const victoryCard = document.getElementById('victory-card');
+        const btnNextLevel = document.getElementById('btn-next-level');
+        const btnReset = document.getElementById('btn-reset');
+        const btnRotateHint = document.getElementById('btn-rotate-hint');
+        const levelIndicator = document.getElementById('level-indicator');
+
+        // Matrix Rotation Helper (90deg clockwise)
+        function rotateMatrix(matrix) {
+            const rows = matrix.length;
+            const cols = matrix[0].length;
+            const rotated = Array.from({ length: cols }, () => Array(rows).fill(0));
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    rotated[c][rows - 1 - r] = matrix[r][c];
+                }
+            }
+            return rotated;
+        }
+
+        // Initialize Level
+        function loadLevel(index) {
+            currentLevelIndex = index % LEVELS.length;
+            const level = LEVELS[currentLevelIndex];
+            
+            levelIndicator.textContent = `Level ${currentLevelIndex + 1} / ${LEVELS.length}`;
+            
+            // Build Grid Matrix
+            gridMatrix = Array.from({ length: level.rows }, () => Array(level.cols).fill(null));
+            
+            // Render Grid DOM
+            gridContainer.style.gridTemplateColumns = `repeat(${level.cols}, ${TILE_SIZE}px)`;
+            gridContainer.style.gridTemplateRows = `repeat(${level.rows}, ${TILE_SIZE}px)`;
+            gridContainer.innerHTML = '';
+
+            for (let r = 0; r < level.rows; r++) {
+                for (let c = 0; c < level.cols; c++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'grid-slot rounded-xl flex items-center justify-center';
+                    slot.dataset.row = r;
+                    slot.dataset.col = c;
+                    gridContainer.appendChild(slot);
+                }
+            }
+
+            // Clear & Initialize Cats State
+            catState = {};
+            catTray.innerHTML = '';
+
+            // Remove existing DOM elements for cats
+            document.querySelectorAll('.cat-piece').forEach(el => el.remove());
+
+            level.cats.forEach((typeKey, idx) => {
+                const id = `cat-${idx}-${typeKey}`;
+                const def = CAT_DEFINITIONS[typeKey];
+                
+                catState[id] = {
+                    id: id,
+                    type: typeKey,
+                    shape: def.shape,
+                    rotation: 0, // 0, 90, 180, 270
+                    isPlaced: false,
+                    gridPos: null, // { r, c }
+                    element: null
+                };
+
+                createCatElement(catState[id]);
+            });
+
+            victoryModal.classList.add('hidden');
+            victoryModal.classList.remove('opacity-100');
+            selectedCatId = null;
+        }
+
+        // Create HTML Element for a Cat Piece
+        function createCatElement(catObj) {
+            const def = CAT_DEFINITIONS[catObj.type];
+            const el = document.createElement('div');
+            el.id = catObj.id;
+            el.className = 'cat-piece absolute flex items-center justify-center select-none';
+            
+            updateCatElementDimensions(el, catObj);
+            
+            // Inner Zzz floating effect
+            const zzz = document.createElement('div');
+            zzz.className = 'zzz-particle';
+            zzz.style.top = '10%';
+            zzz.style.right = '15%';
+            zzz.textContent = 'Zzz';
+            el.appendChild(zzz);
+
+            catObj.element = el;
+
+            // Attach Interaction Listeners
+            attachDragListeners(el, catObj);
+
+            // Double Click to Rotate
+            el.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                rotateCat(catObj.id);
+            });
+
+            // Put into Tray initially
+            catTray.appendChild(el);
+            positionCatInTray(catObj);
+        }
+
+        function updateCatElementDimensions(el, catObj) {
+            const shape = catObj.shape;
+            const rows = shape.length;
+            const cols = shape[0].length;
+            
+            const width = cols * TILE_SIZE;
+            const height = rows * TILE_SIZE;
+
+            el.style.width = `${width}px`;
+            el.style.height = `${height}px`;
+
+            const def = CAT_DEFINITIONS[catObj.type];
+            
+            // Preserve Zzz element when replacing inner HTML
+            const zzzHtml = `<div class="zzz-particle" style="top:10%; right:15%;">Zzz</div>`;
+            el.innerHTML = def.render(width, height) + zzzHtml;
+        }
+
+        function positionCatInTray(catObj) {
+            const el = catObj.element;
+            el.style.position = 'relative';
+            el.style.left = '0px';
+            el.style.top = '0px';
+            catTray.appendChild(el);
+        }
+
+        // Drag & Drop Mechanics
+        function attachDragListeners(el, catObj) {
+            const onPointerDown = (e) => {
+                e.preventDefault();
+                sound.playPop();
+
+                selectCat(catObj.id);
+                draggedCatId = catObj.id;
+
+                const rect = el.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+
+                // Move element to document body during drag for smooth positioning over all UI
+                document.body.appendChild(el);
+                el.style.position = 'absolute';
+                moveAt(e.clientX, e.clientY);
+
+                // Lift off grid if previously placed
+                if (catObj.isPlaced) {
+                    removeCatFromGrid(catObj);
+                }
+
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp);
+            };
+
+            const moveAt = (pageX, pageY) => {
+                el.style.left = `${pageX - dragOffset.x}px`;
+                el.style.top = `${pageY - dragOffset.y}px`;
+                highlightGridSlots(pageX, pageY, catObj);
+            };
+
+            const onPointerMove = (e) => {
+                if (draggedCatId === catObj.id) {
+                    moveAt(e.clientX, e.clientY);
+                }
+            };
+
+            const onPointerUp = (e) => {
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+
+                if (draggedCatId === catObj.id) {
+                    draggedCatId = null;
+                    clearGridHighlights();
+
+                    // Check drop position relative to Grid
+                    const gridRect = gridContainer.getBoundingClientRect();
+                    const dropX = e.clientX - dragOffset.x + TILE_SIZE / 2;
+                    const dropY = e.clientY - dragOffset.y + TILE_SIZE / 2;
+
+                    const col = Math.floor((dropX - gridRect.left) / TILE_SIZE);
+                    const row = Math.floor((dropY - gridRect.top) / TILE_SIZE);
+
+                    if (canPlaceCat(catObj, row, col)) {
+                        placeCatOnGrid(catObj, row, col);
+                        checkWinCondition();
+                    } else {
+                        // Snap back to tray
+                        positionCatInTray(catObj);
+                    }
+                }
+            };
+
+            el.addEventListener('pointerdown', onPointerDown);
+        }
+
+        // Rotate Cat 90 degrees
+        function rotateCat(id) {
+            const catObj = catState[id];
+            if (!catObj) return;
+
+            sound.playRotate();
+            catObj.shape = rotateMatrix(catObj.shape);
+            catObj.rotation = (catObj.rotation + 90) % 360;
+
+            // If currently placed on grid, try keeping it placed or remove if invalid
+            if (catObj.isPlaced) {
+                const { r, c } = catObj.gridPos;
+                removeCatFromGrid(catObj);
+                updateCatElementDimensions(catObj.element, catObj);
+
+                if (canPlaceCat(catObj, r, c)) {
+                    placeCatOnGrid(catObj, r, c);
+                } else {
+                    positionCatInTray(catObj);
+                }
+            } else {
+                updateCatElementDimensions(catObj.element, catObj);
+            }
+
+            checkWinCondition();
+        }
+
+        // Grid Collision & Validation Logic
+        function canPlaceCat(catObj, startRow, startCol) {
+            const level = LEVELS[currentLevelIndex];
+            const shape = catObj.shape;
+            const rows = shape.length;
+            const cols = shape[0].length;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (shape[r][c] === 1) {
+                        const targetR = startRow + r;
+                        const targetC = startCol + c;
+
+                        // Bounds check
+                        if (targetR < 0 || targetR >= level.rows || targetC < 0 || targetC >= level.cols) {
+                            return false;
+                        }
+
+                        // Overlap check
+                        if (gridMatrix[targetR][targetC] !== null && gridMatrix[targetR][targetC] !== catObj.id) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        function placeCatOnGrid(catObj, startRow, startCol) {
+            const shape = catObj.shape;
+            const gridRect = gridContainer.getBoundingClientRect();
+
+            // Mark Grid Matrix
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        gridMatrix[startRow + r][startCol + c] = catObj.id;
+                    }
+                }
+            }
+
+            catObj.isPlaced = true;
+            catObj.gridPos = { r: startRow, c: startCol };
+
+            // Position Element visually snapped over grid
+            const el = catObj.element;
+            gridContainer.appendChild(el);
+            el.style.position = 'absolute';
+            el.style.left = `${startCol * TILE_SIZE + 8}px`; // 8px padding adjustment
+            el.style.top = `${startRow * TILE_SIZE + 8}px`;
+        }
+
+        function removeCatFromGrid(catObj) {
+            if (!catObj.isPlaced) return;
+
+            for (let r = 0; r < gridMatrix.length; r++) {
+                for (let c = 0; c < gridMatrix[0].length; c++) {
+                    if (gridMatrix[r][c] === catObj.id) {
+                        gridMatrix[r][c] = null;
+                    }
+                }
+            }
+            catObj.isPlaced = false;
+            catObj.gridPos = null;
+        }
+
+        // Hover Highlight Logic during Drag
+        function highlightGridSlots(pageX, pageY, catObj) {
+            clearGridHighlights();
+
+            const gridRect = gridContainer.getBoundingClientRect();
+            const dropX = pageX - dragOffset.x + TILE_SIZE / 2;
+            const dropY = pageY - dragOffset.y + TILE_SIZE / 2;
+
+            const col = Math.floor((dropX - gridRect.left) / TILE_SIZE);
+            const row = Math.floor((dropY - gridRect.top) / TILE_SIZE);
+
+            const isValid = canPlaceCat(catObj, row, col);
+            const shape = catObj.shape;
+
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const targetR = row + r;
+                        const targetC = col + c;
+
+                        const slot = gridContainer.querySelector(`[data-row="${targetR}"][data-col="${targetC}"]`);
+                        if (slot) {
+                            slot.classList.add(isValid ? 'valid-hover' : 'invalid-hover');
+                        }
+                    }
+                }
+            }
+        }
+
+        function clearGridHighlights() {
+            document.querySelectorAll('.grid-slot').forEach(slot => {
+                slot.classList.remove('valid-hover', 'invalid-hover');
+            });
+        }
+
+        // Selection Management
+        function selectCat(id) {
+            selectedCatId = id;
+            document.querySelectorAll('.cat-piece').forEach(el => {
+                el.classList.toggle('selected', el.id === id);
+            });
+        }
+
+        // Win Condition Check
+        function checkWinCondition() {
+            const level = LEVELS[currentLevelIndex];
+            
+            // Check if every slot in matrix is filled
+            for (let r = 0; r < level.rows; r++) {
+                for (let c = 0; c < level.cols; c++) {
+                    if (gridMatrix[r][c] === null) {
+                        return false;
+                    }
+                }
+            }
+
+            // All slots filled -> Trigger Victory
+            setTimeout(() => {
+                sound.playWin();
+                victoryModal.classList.remove('hidden');
+                setTimeout(() => {
+                    victoryModal.classList.add('opacity-100');
+                    victoryCard.classList.remove('scale-90');
+                }, 10);
+            }, 250);
+        }
+
+        // Event Listeners
+        btnRotateHint.addEventListener('click', () => {
+            if (selectedCatId) {
+                rotateCat(selectedCatId);
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            sound.playPop();
+            loadLevel(currentLevelIndex);
+        });
+
+        btnNextLevel.addEventListener('click', () => {
+            sound.playPop();
+            loadLevel(currentLevelIndex + 1);
+        });
+
+        // Click outside cat deselects
+        document.addEventListener('pointerdown', (e) => {
+            if (!e.target.closest('.cat-piece') && !e.target.closest('#btn-rotate-hint')) {
+                selectedCatId = null;
+                document.querySelectorAll('.cat-piece').forEach(el => el.classList.remove('selected'));
+            }
+        });
+
+        // Initialize First Level on Load
+        window.onload = () => {
+            loadLevel(0);
+        };
+    </script>
+</body>
+</html>

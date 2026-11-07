@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4位數字猜謎遊戲 (Bulls & Cows)</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Styles & Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f5f5f0;
+            color: #2b2b2b;
+            user-select: none;
+        }
+
+        /* Custom scrollbar for game history */
+        .history-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .history-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Number Keypad & Button active effects */
+        .key-btn {
+            transition: all 0.1s ease;
+            box-shadow: 0 2px 0 #1e3a8a;
+        }
+        .key-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #1e3a8a;
+        }
+
+        .action-btn {
+            transition: all 0.15 ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .action-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6">
+
+    <!-- Game Outer Wrapper Container -->
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl border-4 border-slate-700 p-4 sm:p-6 flex flex-col gap-4">
+        
+        <!-- Header & Rules Section -->
+        <div class="border-b-2 border-slate-200 pb-3 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-800">
+                    <span class="text-amber-500 text-lg">★</span>
+                    <span>數字和位置都正確</span>
+                </div>
+                <div class="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-800">
+                    <span class="text-slate-800 text-lg">●</span>
+                    <span>數字正確但位置錯誤</span>
+                </div>
+                <p class="text-xs text-slate-500 pl-6">
+                    (★ ● ○ 均不提示位置，從左到右按數量顯示)
+                </p>
+            </div>
+
+            <!-- Rules / Mode Settings Switch -->
+            <div class="flex items-center gap-2 bg-slate-100 p-2 rounded-lg border border-slate-300 self-end md:self-center">
+                <input type="checkbox" id="allowDuplicates" class="w-4 h-4 accent-blue-600 rounded cursor-pointer">
+                <label for="allowDuplicates" class="text-xs sm:text-sm font-semibold text-slate-700 cursor-pointer">
+                    允許重複數字
+                </label>
+            </div>
+        </div>
+
+        <!-- Main Gameplay Section (Split Left / Right) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            
+            <!-- Left Side: History Log (4 cols on desktop) -->
+            <div class="md:col-span-5 border-2 border-slate-800 rounded-xl p-3 bg-slate-50 flex flex-col h-[320px]">
+                <div class="text-center font-bold border-b border-slate-300 pb-1 mb-2 text-slate-700 text-sm">
+                    歷史猜測紀錄
+                </div>
+                <!-- History Scroll Container -->
+                <div id="historyList" class="history-scroll flex-1 overflow-y-auto space-y-2 pr-1 font-mono">
+                    <!-- History rows injected dynamically -->
+                    <div class="text-center text-slate-400 text-sm py-10">尚無猜測紀錄</div>
+                </div>
+            </div>
+
+            <!-- Right Side: Counter & Keypad (7 cols on desktop) -->
+            <div class="md:col-span-7 flex flex-col justify-between space-y-4">
+                
+                <!-- Attempt Counter Box -->
+                <div class="flex justify-end">
+                    <div class="bg-slate-500 text-white px-5 py-2 rounded-lg text-center shadow-inner">
+                        <div class="text-xs font-semibold tracking-wider">輸入次數</div>
+                        <div class="text-2xl font-black tracking-widest" id="attemptCount">0 / 20</div>
+                    </div>
+                </div>
+
+                <!-- Current Code Display Screen -->
+                <div class="space-y-1">
+                    <div class="text-xs font-bold text-center text-slate-500">輸入4位數字</div>
+                    <div id="inputDisplay" class="h-14 border-2 border-blue-800 rounded-lg flex items-center justify-center space-x-3 bg-white text-2xl font-black tracking-widest text-blue-900 shadow-inner">
+                        <span class="w-8 text-center border-b-2 border-slate-300 inline-block text-slate-300">_</span>
+                        <span class="w-8 text-center border-b-2 border-slate-300 inline-block text-slate-300">_</span>
+                        <span class="w-8 text-center border-b-2 border-slate-300 inline-block text-slate-300">_</span>
+                        <span class="w-8 text-center border-b-2 border-slate-300 inline-block text-slate-300">_</span>
+                    </div>
+                </div>
+
+                <!-- Digital Keypad Grid -->
+                <div class="grid grid-cols-6 gap-2">
+                    <!-- Numbers 0 - 4 -->
+                    <button onclick="pressDigit(0)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">0</button>
+                    <button onclick="pressDigit(1)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">1</button>
+                    <button onclick="pressDigit(2)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">2</button>
+                    <button onclick="pressDigit(3)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">3</button>
+                    <button onclick="pressDigit(4)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">4</button>
+                    <!-- Submit / Confirm Button -->
+                    <button onclick="submitGuess()" class="key-btn border-2 border-blue-800 bg-blue-50 hover:bg-blue-100 text-blue-900 font-black text-base py-3 rounded-lg">確定</button>
+
+                    <!-- Numbers 5 - 9 -->
+                    <button onclick="pressDigit(5)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">5</button>
+                    <button onclick="pressDigit(6)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">6</button>
+                    <button onclick="pressDigit(7)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">7</button>
+                    <button onclick="pressDigit(8)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">8</button>
+                    <button onclick="pressDigit(9)" class="key-btn border-2 border-blue-800 bg-white hover:bg-blue-50 text-slate-800 font-bold text-xl py-3 rounded-lg">9</button>
+                    <!-- Delete / Backspace Button -->
+                    <button onclick="deleteDigit()" class="key-btn border-2 border-blue-800 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-base py-3 rounded-lg">刪除</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom Action Buttons matching the screenshot design -->
+        <div class="grid grid-cols-2 gap-4 pt-2">
+            <!-- Reset / Restart Button -->
+            <button onclick="resetGame()" class="action-btn bg-red-500 hover:bg-red-600 text-white font-black text-xl py-3 rounded-xl tracking-wider text-center">
+                不同意 (重來)
+            </button>
+            <!-- Start / New Game Button -->
+            <button onclick="startNewGame()" class="action-btn bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xl py-3 rounded-xl tracking-wider text-center">
+                同意 (新遊戲)
+            </button>
+        </div>
+
+        <!-- Custom Notification Message Box -->
+        <div id="toastMessage" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-semibold px-6 py-3 rounded-full shadow-2xl transition-all z-50">
+            訊息提示
+        </div>
+
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Game State Variables
+        const MAX_ATTEMPTS = 20;
+        let secretCode = [];
+        let currentInput = [];
+        let attemptsCount = 0;
+        let isGameOver = false;
+
+        // Elements
+        const historyListEl = document.getElementById('historyList');
+        const attemptCountEl = document.getElementById('attemptCount');
+        const inputDisplayEl = document.getElementById('inputDisplay');
+        const allowDuplicatesCheckbox = document.getElementById('allowDuplicates');
+
+        // Initialize game on window load
+        window.onload = function() {
+            startNewGame();
+            
+            // Allow keyboard typing
+            window.addEventListener('keydown', handleKeyboardInput);
+        };
+
+        // Generate Random 4-digit code based on duplicate rule
+        function generateSecretCode() {
+            const allowDuplicates = allowDuplicatesCheckbox.checked;
+            const code = [];
+
+            if (allowDuplicates) {
+                for (let i = 0; i < 4; i++) {
+                    code.push(Math.floor(Math.random() * 10));
+                }
+            } else {
+                const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+                for (let i = 0; i < 4; i++) {
+                    const randomIndex = Math.floor(Math.random() * digits.length);
+                    code.push(digits[randomIndex]);
+                    digits.splice(randomIndex, 1);
+                }
+            }
+            return code;
+        }
+
+        // Start / Reset Game
+        function startNewGame() {
+            secretCode = generateSecretCode();
+            currentInput = [];
+            attemptsCount = 0;
+            isGameOver = false;
+
+            // Debug log to browser console (uncomment if needed)
+            // console.log("Secret Code:", secretCode.join(''));
+
+            updateInputDisplay();
+            updateAttemptDisplay();
+            historyListEl.innerHTML = '<div class="text-center text-slate-400 text-sm py-10">尚無猜測紀錄</div>';
+            showToast("新遊戲已開始！請輸入4位數字。");
+        }
+
+        function resetGame() {
+            startNewGame();
+        }
+
+        // Input Handling
+        function pressDigit(digit) {
+            if (isGameOver) return;
+            if (currentInput.length < 4) {
+                // If duplicates not allowed, check duplicate
+                const allowDuplicates = allowDuplicatesCheckbox.checked;
+                if (!allowDuplicates && currentInput.includes(digit)) {
+                    showToast("設定為「不重複數字」，請輸入其他數字");
+                    return;
+                }
+                currentInput.push(digit);
+                updateInputDisplay();
+            }
+        }
+
+        function deleteDigit() {
+            if (isGameOver) return;
+            if (currentInput.length > 0) {
+                currentInput.pop();
+                updateInputDisplay();
+            }
+        }
+
+        // Render current 4-digit user input
+        function updateInputDisplay() {
+            let html = '';
+            for (let i = 0; i < 4; i++) {
+                if (i < currentInput.length) {
+                    html += `<span class="w-8 text-center border-b-2 border-blue-700 text-blue-900 inline-block font-black">${currentInput[i]}</span>`;
+                } else {
+                    html += `<span class="w-8 text-center border-b-2 border-slate-300 text-slate-300 inline-block font-black">_</span>`;
+                }
+            }
+            inputDisplayEl.innerHTML = html;
+        }
+
+        function updateAttemptDisplay() {
+            attemptCountEl.textContent = `${attemptsCount} / ${MAX_ATTEMPTS}`;
+        }
+
+        // Submit and evaluate user guess
+        function submitGuess() {
+            if (isGameOver) {
+                showToast("遊戲已結束，請點擊「同意 (新遊戲)」啟動新局");
+                return;
+            }
+
+            if (currentInput.length !== 4) {
+                showToast("請先輸入滿 4 位數字！");
+                return;
+            }
+
+            attemptsCount++;
+            updateAttemptDisplay();
+
+            // Calculate Bulls (★) and Cows (●)
+            const evaluation = evaluateGuess(currentInput, secretCode);
+            
+            // Render result to history log
+            appendHistory(attemptsCount, currentInput.join(''), evaluation);
+
+            // Check Win Condition
+            if (evaluation.bulls === 4) {
+                isGameOver = true;
+                showToast(`🎉 恭喜答對！正確答案是 ${secretCode.join('')}`);
+            } else if (attemptsCount >= MAX_ATTEMPTS) {
+                isGameOver = true;
+                showToast(`❌ 次數已滿！正確答案是 ${secretCode.join('')}`);
+            }
+
+            // Clear input for next turn
+            currentInput = [];
+            updateInputDisplay();
+        }
+
+        // Core Game Algorithm: Bulls & Cows evaluation
+        function evaluateGuess(guess, secret) {
+            let bulls = 0;
+            let cows = 0;
+
+            const secretVisited = Array(4).fill(false);
+            const guessVisited = Array(4).fill(false);
+
+            // First pass: Check exact matches (★ / Bulls)
+            for (let i = 0; i < 4; i++) {
+                if (guess[i] === secret[i]) {
+                    bulls++;
+                    secretVisited[i] = true;
+                    guessVisited[i] = true;
+                }
+            }
+
+            // Second pass: Check value matches in wrong positions (● / Cows)
+            for (let i = 0; i < 4; i++) {
+                if (!guessVisited[i]) {
+                    for (let j = 0; j < 4; j++) {
+                        if (!secretVisited[j] && guess[i] === secret[j]) {
+                            cows++;
+                            secretVisited[j] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const emptyCount = 4 - (bulls + cows);
+            return { bulls, cows, emptyCount };
+        }
+
+        // Append item to Left Panel history list
+        function appendHistory(index, guessStr, evalObj) {
+            // Remove empty placeholder
+            if (attemptsCount === 1) {
+                historyListEl.innerHTML = '';
+            }
+
+            // Generate symbol string: ★ -> ● -> ○
+            let symbolsHTML = '';
+            for (let i = 0; i < evalObj.bulls; i++) {
+                symbolsHTML += '<span class="text-amber-500 font-bold">★</span>';
+            }
+            for (let i = 0; i < evalObj.cows; i++) {
+                symbolsHTML += '<span class="text-slate-900">●</span>';
+            }
+            for (let i = 0; i < evalObj.emptyCount; i++) {
+                symbolsHTML += '<span class="text-slate-400">○</span>';
+            }
+
+            const row = document.createElement('div');
+            row.className = 'flex flex-col border-b border-slate-200 pb-1.5 pt-1 text-slate-800 text-base font-semibold';
+            row.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-500 font-mono text-sm">#${index}</span>
+                    <span class="font-mono tracking-wider font-bold text-slate-900">${guessStr}</span>
+                </div>
+                <div class="text-lg tracking-widest pl-1 leading-tight">
+                    ${symbolsHTML}
+                </div>
+            `;
+
+            historyListEl.appendChild(row);
+            // Scroll to bottom automatically
+            historyListEl.scrollTop = historyListEl.scrollHeight;
+        }
+
+        // Physical Keyboard Support
+        function handleKeyboardInput(e) {
+            if (e.key >= '0' && e.key <= '9') {
+                pressDigit(parseInt(e.key));
+            } else if (e.key === 'Backspace') {
+                deleteDigit();
+            } else if (e.key === 'Enter') {
+                submitGuess();
+            }
+        }
+
+        // Toast message banner
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
