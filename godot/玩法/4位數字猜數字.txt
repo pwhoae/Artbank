@@ -1,0 +1,194 @@
+這是一個根據圖片中的「4位數字猜數字遊戲（Bulls & Cows / 幾A幾B遊戲機制）」所撰寫的 Godot 4 完整 GDScript 程式碼與架構說明。
+
+1. 場景節點結構 (Scene Tree)
+請在 Godot 的 Scene 頁籤中建立如下結構（使用 Control 作為根節點）：
+
+Plaintext
+Game (Control)
+ ├── Background (ColorRect)
+ ├── HBoxContainer
+ │    ├── LeftPanel (PanelContainer / ScrollContainer)
+ │    │    └── HistoryList (VBoxContainer)  <-- 用來顯示猜測歷史歷史紀錄
+ │    └── RightPanel (VBoxContainer)
+ │         ├── RulesLabel (Label)            <-- 規則說明 (★/●/○)
+ │         ├── CounterLabel (Label)          <-- 輸入次數 7/20
+ │         ├── InputDisplay (Label)          <-- 顯示目前已輸入的 4 位數字
+ │         └── Keypad (GridContainer - 6列)  <-- 數字按鍵 0-9、確定、刪除
+ └── BottomButtons (HBoxContainer)
+      ├── DisagreeBtn (Button)               <-- 不同意 (重新開始 / 放棄)
+      └── AgreeBtn (Button)                  <-- 同意 (確認猜測 / 開始)
+2. GDScript 程式碼 (GuessGame.gd)
+將以下程式碼附加到根節點 Game 上：
+
+GDScript
+extends Control
+
+# --- 遊戲設定 ---
+const MAX_ATTEMPTS: int = 20
+const CODE_LENGTH: int = 4
+const ALLOW_DUPLICATES: bool = false # 是否允許重複數字
+
+# --- 遊戲狀態 ---
+var secret_code: String = ""
+var current_input: String = ""
+var attempts: int = 0
+var game_over: bool = false
+
+# --- 節點引用 ---
+@onready var history_list: VBoxContainer = $HBoxContainer/LeftPanel/HistoryList
+@onready var counter_label: Label = $HBoxContainer/RightPanel/CounterLabel
+@onready var input_display: Label = $HBoxContainer/RightPanel/InputDisplay
+@onready var disagree_btn: Button = $BottomButtons/DisagreeBtn
+@onready var agree_btn: Button = $BottomButtons/AgreeBtn
+
+func _ready() -> void:
+	# 連接底部按鈕訊號
+	disagree_btn.pressed.connect(_on_disagree_pressed)
+	agree_btn.pressed.connect(_on_agree_pressed)
+	
+	# 初始化遊戲
+	start_new_game()
+
+# 啟動/重置遊戲
+func start_new_game() -> void:
+	attempts = 0
+	game_over = false
+	current_input = ""
+	secret_code = generate_secret_code()
+	
+	# 清空歷史紀錄
+	for child in history_list.get_children():
+		child.queue_free()
+		
+	update_ui()
+	print("答案秘密代碼 (除錯用):", secret_code)
+
+# 產生不重複（或可重複）的4位數字答案
+func generate_secret_code() -> String:
+	var digits: Array = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+	digits.shuffle()
+	
+	if ALLOW_DUPLICATES:
+		var res = ""
+		for i in range(CODE_LENGTH):
+			res += str(randi_range(0, 9))
+		return res
+	else:
+		return "".join(digits.slice(0, CODE_LENGTH))
+
+# 處理數字鍵盤輸入
+func _on_digit_pressed(digit_str: String) -> void:
+	if game_over:
+		return
+	if current_input.length() < CODE_LENGTH:
+		# 若設定不重複數字，可在此阻擋重複點擊
+		if not ALLOW_DUPLICATES and digit_str in current_input:
+			return
+		current_input += digit_str
+		update_ui()
+
+# 刪除按鈕功能
+func _on_delete_pressed() -> void:
+	if game_over:
+		return
+	if current_input.length() > 0:
+		current_input = current_input.substr(0, current_input.length() - 1)
+		update_ui()
+
+# 確定按鈕 (提交猜測)
+func _on_agree_pressed() -> void:
+	if game_over:
+		start_new_game()
+		return
+		
+	if current_input.length() != CODE_LENGTH:
+		print("請輸入滿 4 位數字！")
+		return
+		
+	submit_guess(current_input)
+	current_input = ""
+	update_ui()
+
+# 不同意按鈕 (重置遊戲/放棄)
+func _on_disagree_pressed() -> void:
+	print("重置遊戲")
+	start_new_game()
+
+# 計算猜測結果並記錄
+func submit_guess(guess: String) -> void:
+	attempts += 1
+	var result = evaluate_guess(guess, secret_code)
+	
+	# 新增紀錄到左側列表 (#7  6756 \n ★★★★)
+	add_history_entry(attempts, guess, result.stars, result.dots, result.circles)
+	
+	if result.stars == CODE_LENGTH:
+		game_over = true
+		input_display.text = "恭喜答對！"
+	elif attempts >= MAX_ATTEMPTS:
+		game_over = true
+		input_display.text = "失敗！答案是: " + secret_code
+
+# 判定 ★ (數字位置正確)、● (數字正確位置錯)、○ (錯誤)
+func evaluate_guess(guess: String, code: String) -> Dictionary:
+	var stars: int = 0
+	var dots: int = 0
+	
+	var code_flags = [false, false, false, false]
+	var guess_flags = [false, false, false, false]
+	
+	# 1. 優先計算 位置和數字都正確 (★)
+	for i in range(CODE_LENGTH):
+		if guess[i] == code[i]:
+			stars += 1
+			code_flags[i] = true
+			guess_flags[i] = true
+			
+	# 2. 再計算 數字正確但位置錯誤 (●)
+	for i in range(CODE_LENGTH):
+		if not guess_flags[i]:
+			for j in range(CODE_LENGTH):
+				if not code_flags[j] and guess[i] == code[j]:
+					dots += 1
+					code_flags[j] = true
+					break
+					
+	var circles: int = CODE_LENGTH - (stars + dots)
+	return {"stars": stars, "dots": dots, "circles": circles}
+
+# 將紀錄添加到左邊 ScrollView 列表
+func add_history_entry(num: int, guess: String, stars: int, dots: int, circles: int) -> void:
+	var entry_label = Label.new()
+	
+	# 組合符號字串 (按照 ★ -> ● -> ○ 排序顯示)
+	var symbols = ""
+	for i in range(stars):
+		symbols += "★"
+	for i in range(dots):
+		symbols += "●"
+	for i in range(circles):
+		symbols += "○"
+		
+	entry_label.text = "#%d  %s\n%s" % [num, guess, symbols]
+	
+	# 將最新的猜測加到最上方
+	history_list.add_child(entry_label)
+	history_list.move_child(entry_label, 0)
+
+# 更新介面標籤顯示
+func update_ui() -> void:
+	counter_label.text = "輸入次數\n%d/%d" % [attempts, MAX_ATTEMPTS]
+	if not game_over:
+		input_display.text = current_input.pad_zeros(0)
+3. 鍵盤按鍵設定教學
+為讓畫面的 0~9、確定、刪除 按鈕生效，可在 UI 按鈕設定時綁定 Signal 或是透過程式碼生成按鈕：
+
+GDScript
+# 在 Keypad 節點上建立按鈕後，綁定點擊事件的範例：
+func _setup_keypad_buttons() -> void:
+	for i in range(10):
+		var btn = get_node("Keypad/Btn_" + str(i))
+		btn.pressed.connect(_on_digit_pressed.bind(str(i)))
+		
+	$Keypad/DeleteBtn.pressed.connect(_on_delete_pressed)
+	$Keypad/EnterBtn.pressed.connect(_on_agree_pressed)
