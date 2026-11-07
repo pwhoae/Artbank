@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D Boss 战 - 魂系动作游戏 Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050508;
+            font-family: 'Cinzel', 'Trajan Pro', 'Georgia', serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        /* 暗黑魂系 UI 风格 */
+        .boss-hp-bg {
+            background: rgba(10, 10, 15, 0.85);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 0 0 15px rgba(0,0,0,0.9);
+        }
+        .hp-fill-boss {
+            background: linear-gradient(90deg, #880606 0%, #dc2626 50%, #f87171 100%);
+            transition: width 0.1s linear;
+        }
+        .hp-fill-player {
+            background: linear-gradient(90deg, #15803d 0%, #22c55e 100%);
+            transition: width 0.15s ease-out;
+        }
+        .sp-fill-player {
+            background: linear-gradient(90deg, #b45309 0%, #fbbf24 100%);
+            transition: width 0.1s linear;
+        }
+        .touch-btn {
+            background: rgba(20, 20, 30, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            backdrop-filter: blur(6px);
+            color: #e2e8f0;
+        }
+        .touch-btn:active {
+            background: rgba(212, 175, 55, 0.3);
+            transform: scale(0.92);
+        }
+        /* Vignette 效果 */
+        .vignette {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.8) 100%);
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-white overflow-hidden">
+
+    <!-- 3D Canvas 容器 -->
+    <div id="canvas-container"></div>
+    <div class="vignette"></div>
+
+    <!-- UI Overlay / HUD -->
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-8">
+        
+        <!-- 顶部 Boss 巨型血条 (3A大作风格) -->
+        <div class="w-full max-w-4xl mx-auto flex flex-col items-center mt-2">
+            <div class="flex justify-between w-full mb-1 items-end px-2">
+                <span class="text-xl md:text-2xl font-black tracking-widest text-red-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    MALAKOR, THE ABYSSAL KNIGHT
+                </span>
+                <span id="boss-phase-text" class="text-xs md:text-sm font-bold tracking-widest text-amber-400 uppercase">PHASE 1</span>
+            </div>
+            <div class="w-full h-4 md:h-5 boss-hp-bg rounded-sm p-0.5 relative overflow-hidden">
+                <div id="boss-hp-bar" class="hp-fill-boss h-full w-full"></div>
+            </div>
+        </div>
+
+        <!-- 中间提示 (BOSS 技能名称/提示/连击) -->
+        <div class="flex-1 flex flex-col items-center justify-center relative">
+            <div id="combo-box" class="opacity-0 transition-opacity duration-200 text-center transform -translate-y-6">
+                <div id="combo-count" class="text-5xl md:text-7xl font-black italic text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]">
+                    5 <span class="text-2xl md:text-3xl">HITS</span>
+                </div>
+            </div>
+
+            <div id="game-msg" class="absolute hidden text-3xl md:text-6xl font-black italic tracking-widest text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.9)] uppercase">
+                YOU DIED
+            </div>
+        </div>
+
+        <!-- 底部玩家状态 (左下角魂系 UI) -->
+        <div class="w-full max-w-md mb-2 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-xs font-bold text-amber-200 tracking-wider">
+                <span>ASSHEN ONE (PLAYER)</span>
+                <span id="player-hp-text">100 / 100</span>
+            </div>
+            <!-- HP 条 -->
+            <div class="w-full h-3 boss-hp-bg rounded-sm p-0.5">
+                <div id="player-hp-bar" class="hp-fill-player h-full w-full"></div>
+            </div>
+            <!-- SP 能量条 -->
+            <div class="w-full h-2 boss-hp-bg rounded-sm p-0.5">
+                <div id="player-sp-bar" class="sp-fill-player h-full w-0"></div>
+            </div>
+        </div>
+
+        <!-- 键盘按键提示 (桌面端) -->
+        <div class="hidden md:flex justify-between items-center text-xs text-amber-100/60 bg-black/60 p-3 rounded border border-amber-900/40">
+            <div><span class="text-amber-400 font-bold">移动:</span> A / D &nbsp;|&nbsp; <span class="text-amber-400 font-bold">跳跃:</span> W &nbsp;|&nbsp; <span class="text-amber-400 font-bold">精准格挡:</span> S</div>
+            <div><span class="text-amber-400 font-bold">轻斩:</span> J &nbsp;|&nbsp; <span class="text-amber-400 font-bold">重斩:</span> K &nbsp;|&nbsp; <span class="text-amber-400 font-bold">无敌翻滚:</span> Space / L</div>
+        </div>
+
+        <!-- 移动端虚拟按键 -->
+        <div class="md:hidden pointer-events-auto flex justify-between items-end pb-2">
+            <div class="grid grid-cols-3 gap-2 w-32 h-32">
+                <div></div>
+                <button id="btn-up" class="touch-btn rounded flex items-center justify-center text-lg">▲</button>
+                <div></div>
+                <button id="btn-left" class="touch-btn rounded flex items-center justify-center text-lg">◀</button>
+                <button id="btn-down" class="touch-btn rounded flex items-center justify-center text-lg">▼</button>
+                <button id="btn-right" class="touch-btn rounded flex items-center justify-center text-lg">▶</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 w-36 h-36">
+                <button id="btn-light" class="touch-btn rounded-full text-amber-300 font-bold text-xs flex items-center justify-center">轻斩 J</button>
+                <button id="btn-heavy" class="touch-btn rounded-full text-red-400 font-bold text-xs flex items-center justify-center">重斩 K</button>
+                <button id="btn-roll" class="touch-btn rounded-full text-blue-300 font-bold text-xs flex items-center justify-center col-span-2">翻滚 Space</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结算遮罩 -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center hidden z-50">
+        <h1 id="winner-title" class="text-6xl md:text-8xl font-black italic mb-4 text-red-600 tracking-widest drop-shadow-[0_0_30px_rgba(220,38,38,0.8)]">
+            YOU DIED
+        </h1>
+        <p id="winner-sub" class="text-gray-400 text-lg mb-8 tracking-widest">深渊吞噬了一切...</p>
+        <button id="restart-btn" class="pointer-events-auto px-8 py-3 bg-gradient-to-r from-amber-700 to-amber-500 hover:from-amber-600 hover:to-amber-400 text-black font-black rounded shadow-lg transform hover:scale-105 transition active:scale-95 text-lg tracking-widest">
+            再次挑战
+        </button>
+    </div>
+
+    <script>
+        // --- 游戏配置 ---
+        const CONFIG = {
+            STAGE_WIDTH: 32,
+            GRAVITY: 0.012,
+            PLAYER_SPEED: 0.13,
+            JUMP_FORCE: 0.28,
+            ROLL_SPEED: 0.32,
+            PLAYER_HP: 1000,
+            BOSS_HP: 100
+        };
+
+        let scene, camera, renderer;
+        let player, boss;
+        let particles = [];
+        let gameState = 'START';
+        let hitstopFrames = 0;
+        let cameraShake = 0;
+
+        const keys = { KeyA: false, KeyD: false, KeyW: false, KeyS: false, KeyJ: false, KeyK: false, Space: false, KeyL: false };
+        const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+        // --- 角色与 Boss 材质/模型构建 ---
+        class Character {
+            constructor(isBoss = false) {
+                this.isBoss = isBoss;
+                this.hp = isBoss ? CONFIG.BOSS_HP : CONFIG.PLAYER_HP;
+                this.maxHp = this.hp;
+                this.sp = 0;
+                this.position = new THREE.Vector3(isBoss ? 5 : -5, 0, 0);
+                this.velocity = new THREE.Vector3();
+                this.facing = isBoss ? -1 : 1;
+
+                this.isGrounded = true;
+                this.isAttacking = false;
+                this.isRolling = false; // 无敌翻滚
+                this.isParrying = false;
+                this.isHit = false;
+                this.isDead = false;
+                this.phase = 1;
+
+                this.attackFrame = 0;
+                this.attackType = null;
+                this.comboCount = 0;
+                this.comboTimer = 0;
+
+                this.mesh = new THREE.Group();
+                this.buildModel();
+                this.mesh.position.copy(this.position);
+
+                this.aiTimer = 0;
+            }
+
+            buildModel() {
+                if (this.isBoss) {
+                    // --- 巨型 Boss (深渊骑士 Malakor) ---
+                    const armorMat = new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.2, metalness: 0.9 });
+                    const glowMat = new THREE.MeshBasicMaterial({ color: 0xff1100 });
+
+                    // 躯干 (加庞大)
+                    this.torso = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 1.0), armorMat);
+                    this.torso.position.y = 2.8;
+                    this.torso.castShadow = true;
+                    this.mesh.add(this.torso);
+
+                    // 头部
+                    this.head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), armorMat);
+                    this.head.position.set(0, 1.6, 0);
+                    this.torso.add(this.head);
+
+                    // 眼睛红光
+                    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.2), glowMat);
+                    eye.position.set(0, 0.1, 0.42);
+                    this.head.add(eye);
+
+                    // 手臂与巨剑
+                    this.rightArm = new THREE.Group();
+                    this.rightArm.position.set(1.1, 0.8, 0);
+                    const rArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.5, 0.5), armorMat);
+                    rArmMesh.position.y = -0.6;
+                    this.rightArm.add(rArmMesh);
+                    this.torso.add(this.rightArm);
+
+                    // 巨剑 Greatsword
+                    this.sword = new THREE.Group();
+                    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.35, 3.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.9, roughness: 0.1 }));
+                    blade.position.y = 1.8;
+                    const bladeEdge = new THREE.Mesh(new THREE.BoxGeometry(0.4, 3.2, 0.05), glowMat);
+                    bladeEdge.position.y = 1.8;
+                    this.sword.add(blade);
+                    this.sword.add(bladeEdge);
+                    this.sword.position.set(0, -1.2, 0.3);
+                    this.rightArm.add(this.sword);
+
+                    // 左臂
+                    this.leftArm = new THREE.Group();
+                    this.leftArm.position.set(-1.1, 0.8, 0);
+                    const lArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.5, 0.5), armorMat);
+                    lArmMesh.position.y = -0.6;
+                    this.leftArm.add(lArmMesh);
+                    this.torso.add(this.leftArm);
+
+                } else {
+                    // --- 玩家 (灰烬骑士) ---
+                    const knightMat = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.3, metalness: 0.7 });
+                    const capeMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46 });
+
+                    this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.3, 0.5), knightMat);
+                    this.torso.position.y = 1.6;
+                    this.torso.castShadow = true;
+                    this.mesh.add(this.torso);
+
+                    // 斗篷
+                    const cape = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.4, 0.1), capeMat);
+                    cape.position.set(0, -0.1, -0.3);
+                    this.torso.add(cape);
+
+                    this.head = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), knightMat);
+                    this.head.position.set(0, 0.9, 0);
+                    this.torso.add(this.head);
+
+                    this.rightArm = new THREE.Group();
+                    this.rightArm.position.set(0.6, 0.4, 0);
+                    const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.3), knightMat);
+                    rArm.position.y = -0.4;
+                    this.rightArm.add(rArm);
+                    this.torso.add(this.rightArm);
+
+                    // 玩家大剑
+                    this.sword = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.2, 0.06), new THREE.MeshStandardMaterial({ color: 0xe4e4e7, metalness: 0.9 }));
+                    this.sword.position.set(0, -0.8, 0.4);
+                    this.sword.rotation.x = Math.PI / 3;
+                    this.rightArm.add(this.sword);
+
+                    this.leftArm = new THREE.Group();
+                    this.leftArm.position.set(-0.6, 0.4, 0);
+                    const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.3), knightMat);
+                    lArm.position.y = -0.4;
+                    this.leftArm.add(lArm);
+                    this.torso.add(this.leftArm);
+                }
+            }
+
+            update(opponent) {
+                if (this.isDead) return;
+
+                // 连击计时
+                if (this.comboTimer > 0) {
+                    this.comboTimer--;
+                    if (this.comboTimer <= 0) hideComboUI();
+                }
+
+                // 面向目标
+                if (!this.isAttacking && !this.isRolling) {
+                    this.facing = opponent.position.x > this.position.x ? 1 : -1;
+                }
+                this.mesh.rotation.y = this.facing === 1 ? Math.PI / 2 : -Math.PI / 2;
+
+                // 重力与移动
+                this.velocity.y -= CONFIG.GRAVITY;
+                this.position.add(this.velocity);
+
+                if (this.position.y <= 0) {
+                    this.position.y = 0;
+                    this.velocity.y = 0;
+                    this.isGrounded = true;
+                    if (this.isHit) this.isHit = false;
+                }
+
+                this.position.x = clamp(this.position.x, -CONFIG.STAGE_WIDTH / 2, CONFIG.STAGE_WIDTH / 2);
+                this.velocity.x *= 0.85;
+
+                // 攻击逻辑与招式碰撞
+                this.handleAttacks(opponent);
+
+                // 动态姿势
+                this.animatePose();
+
+                this.mesh.position.copy(this.position);
+            }
+
+            // 动作指令
+            lightAttack() {
+                if (this.canAct()) {
+                    this.isAttacking = true;
+                    this.attackType = 'light';
+                    this.attackFrame = 0;
+                    this.hasHit = false;
+                }
+            }
+
+            heavyAttack() {
+                if (this.canAct()) {
+                    if (this.sp >= 30 || this.isBoss) {
+                        if (!this.isBoss) this.sp = Math.max(0, this.sp - 30);
+                        this.isAttacking = true;
+                        this.attackType = 'heavy';
+                        this.attackFrame = 0;
+                        this.hasHit = false;
+                    }
+                }
+            }
+
+            roll() {
+                if (this.canAct() && this.isGrounded) {
+                    this.isRolling = true;
+                    this.velocity.x = this.facing * CONFIG.ROLL_SPEED;
+                    setTimeout(() => { this.isRolling = false; }, 350); // 350ms 无敌帧翻滚
+                }
+            }
+
+            jump() {
+                if (this.canAct() && this.isGrounded) {
+                    this.velocity.y = CONFIG.JUMP_FORCE;
+                    this.isGrounded = false;
+                }
+            }
+
+            canAct() {
+                return !this.isAttacking && !this.isHit && !this.isRolling && !this.isDead;
+            }
+
+            handleAttacks(opponent) {
+                if (!this.isAttacking) return;
+                this.attackFrame++;
+
+                const maxFrames = this.isBoss ? (this.attackType === 'heavy' ? 50 : 35) : (this.attackType === 'heavy' ? 30 : 20);
+                const hitFrame = this.isBoss ? (this.attackType === 'heavy' ? 25 : 15) : (this.attackType === 'heavy' ? 14 : 8);
+
+                if (this.attackFrame === hitFrame && !this.hasHit) {
+                    // 攻击判定范围
+                    const hitRange = this.isBoss ? 4.0 : 2.2;
+                    const dist = Math.abs(this.position.x - opponent.position.x);
+
+                    if (dist < hitRange) {
+                        this.hasHit = true;
+                        const baseDmg = this.isBoss ? (this.attackType === 'heavy' ? 35 : 20) : (this.attackType === 'heavy' ? 30 : 12);
+                        
+                        opponent.takeDamage(baseDmg, this.attackType, this.facing);
+
+                        if (!this.isBoss) {
+                            this.sp = Math.min(100, this.sp + 15);
+                            this.comboCount++;
+                            this.comboTimer = 80;
+                            showComboUI(this.comboCount);
+                        }
+
+                        // 打击停顿与镜头震动
+                        hitstopFrames = this.attackType === 'heavy' ? 8 : 4;
+                        cameraShake = this.attackType === 'heavy' ? 0.4 : 0.2;
+
+                        createSlashParticles(opponent.position.clone().add(new THREE.Vector3(0, 1.5, 0)), this.isBoss);
+                    }
+                }
+
+                if (this.attackFrame >= maxFrames) {
+                    this.isAttacking = false;
+                    this.attackType = null;
+                }
+            }
+
+            takeDamage(amount, type, attackerFacing) {
+                if (this.isRolling) return; // 翻滚无敌帧
+
+                if (this.isParrying) {
+                    // 精准招架反击
+                    amount = 0;
+                    createSpark(this.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+                    return;
+                }
+
+                this.isHit = true;
+                this.isAttacking = false;
+                this.hp = Math.max(0, this.hp - amount);
+
+                // 击退
+                this.velocity.x = attackerFacing * (type === 'heavy' ? 0.3 : 0.15);
+
+                // Boss 阶段转换 (二阶段狂暴)
+                if (this.isBoss && this.hp < CONFIG.BOSS_HP * 0.5 && this.phase === 1) {
+                    this.phase = 2;
+                    document.getElementById('boss-phase-text').innerText = 'PHASE 2 (ENRAGED)';
+                    document.getElementById('boss-phase-text').className = 'text-xs md:text-sm font-black tracking-widest text-red-500 animate-pulse';
+                    cameraShake = 0.6;
+                }
+
+                if (this.hp <= 0) {
+                    this.isDead = true;
+                }
+            }
+
+            // 骨骼姿态动画
+            animatePose() {
+                const time = Date.now() * 0.008;
+
+                if (this.isDead) {
+                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, -Math.PI / 2 * this.facing, 0.1);
+                    return;
+                }
+
+                if (this.isRolling) {
+                    this.torso.rotation.x = time * 5;
+                    return;
+                } else {
+                    this.torso.rotation.x = 0;
+                }
+
+                if (this.isAttacking) {
+                    if (this.attackType === 'light') {
+                        this.rightArm.rotation.z = -Math.PI / 2;
+                        this.rightArm.rotation.x = Math.sin(this.attackFrame * 0.2) * 2.0;
+                    } else {
+                        this.rightArm.rotation.z = -Math.PI * 0.8;
+                        this.rightArm.rotation.x = -Math.sin(this.attackFrame * 0.15) * 2.5;
+                    }
+                    return;
+                }
+
+                // 待机呼吸姿势
+                this.rightArm.rotation.set(-0.4 + Math.sin(time) * 0.05, 0, 0);
+                this.leftArm.rotation.set(-0.2, 0, 0);
+            }
+
+            // Boss AI (3A 招式判定)
+            updateAI(player) {
+                if (this.isDead || !this.canAct()) return;
+
+                const dist = Math.abs(this.position.x - player.position.x);
+                this.aiTimer++;
+
+                if (this.aiTimer > (this.phase === 2 ? 18 : 30)) {
+                    this.aiTimer = 0;
+
+                    if (dist > 4.5) {
+                        this.velocity.x = this.facing * CONFIG.PLAYER_SPEED * (this.phase === 2 ? 1.3 : 1.0);
+                    } else if (dist <= 4.5 && dist > 1.8) {
+                        // 随机释放重斩/突进
+                        if (Math.random() < 0.6) {
+                            this.heavyAttack();
+                        } else {
+                            this.velocity.x = this.facing * CONFIG.PLAYER_SPEED * 1.5;
+                        }
+                    } else {
+                        // 近身三连斩或连招
+                        if (Math.random() < 0.7) {
+                            this.lightAttack();
+                        } else {
+                            this.heavyAttack();
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- 3A 暗黑风格神殿竞技场 ---
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x040406);
+            scene.fog = new THREE.FogExp2(0x040406, 0.025);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 4, 14);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 灯光：暗黑哥特风点光源与红/金氛围光
+            const ambient = new THREE.AmbientLight(0x222233, 0.6);
+            scene.add(ambient);
+
+            const bossLight = new THREE.PointLight(0xff2200, 2, 25);
+            bossLight.position.set(0, 8, 0);
+            scene.add(bossLight);
+
+            const rimLight = new THREE.DirectionalLight(0xffb703, 0.8);
+            rimLight.position.set(-10, 15, -10);
+            scene.add(rimLight);
+
+            // 竞技场地表 (大理石反光质感)
+            const floorGeo = new THREE.BoxGeometry(CONFIG.STAGE_WIDTH + 8, 0.5, 12);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0a10, roughness: 0.1, metalness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.y = -0.25;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // 远景柱子与神殿墙壁
+            for (let x = -CONFIG.STAGE_WIDTH / 2 - 2; x <= CONFIG.STAGE_WIDTH / 2 + 2; x += 6) {
+                const pillar = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.6, 0.8, 12, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.8 })
+                );
+                pillar.position.set(x, 6, -5);
+                scene.add(pillar);
+            }
+
+            // 初始化角色与 Boss
+            player = new Character(false);
+            boss = new Character(true);
+
+            scene.add(player.mesh);
+            scene.add(boss.mesh);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // --- 打击粒子特效 ---
+        function createSlashParticles(pos, isBoss) {
+            const count = isBoss ? 20 : 12;
+            const colorHex = isBoss ? 0xff0022 : 0xfbbf24;
+
+            for (let i = 0; i < count; i++) {
+                const pGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                const pMat = new THREE.MeshBasicMaterial({ color: colorHex });
+                const p = new THREE.Mesh(pGeo, pMat);
+                p.position.copy(pos);
+
+                const vel = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.4,
+                    Math.random() * 0.3,
+                    (Math.random() - 0.5) * 0.4
+                );
+
+                scene.add(p);
+                particles.push({ mesh: p, vel: vel, life: 1.0 });
+            }
+        }
+
+        function createSpark(pos) {
+            createSlashParticles(pos, false);
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.mesh.position.add(p.vel);
+                p.life -= 0.04;
+                p.mesh.scale.multiplyScalar(0.92);
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // --- 画面与镜头控制 ---
+        function updateCamera() {
+            const midX = (player.position.x + boss.position.x) / 2;
+            const dist = Math.abs(player.position.x - boss.position.x);
+
+            const targetX = clamp(midX, -6, 6);
+            const targetZ = clamp(11 + dist * 0.2, 10, 16);
+
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.05);
+            camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.05);
+
+            if (cameraShake > 0) {
+                camera.position.x += (Math.random() - 0.5) * cameraShake;
+                camera.position.y = 4 + (Math.random() - 0.5) * cameraShake;
+                cameraShake *= 0.88;
+            } else {
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 4, 0.05);
+            }
+
+            camera.lookAt(midX, 2.0, 0);
+        }
+
+        // --- 输入监听 ---
+        function setupInputs() {
+            window.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+                if (gameState !== 'PLAYING') return;
+
+                if (e.code === 'KeyW') player.jump();
+                if (e.code === 'KeyJ') player.lightAttack();
+                if (e.code === 'KeyK') player.heavyAttack();
+                if (e.code === 'Space' || e.code === 'KeyL') player.roll();
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+            });
+
+            // 移动端绑定
+            bindTouch('btn-up', () => player.jump());
+            bindTouch('btn-light', () => player.lightAttack());
+            bindTouch('btn-heavy', () => player.heavyAttack());
+            bindTouch('btn-roll', () => player.roll());
+
+            const bL = document.getElementById('btn-left');
+            const bR = document.getElementById('btn-right');
+            const bD = document.getElementById('btn-down');
+
+            bL.addEventListener('touchstart', (e) => { e.preventDefault(); keys.KeyA = true; });
+            bL.addEventListener('touchend', () => keys.KeyA = false);
+            bR.addEventListener('touchstart', (e) => { e.preventDefault(); keys.KeyD = true; });
+            bR.addEventListener('touchend', () => keys.KeyD = false);
+            bD.addEventListener('touchstart', (e) => { e.preventDefault(); keys.KeyS = true; });
+            bD.addEventListener('touchend', () => keys.KeyS = false);
+
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+        }
+
+        function bindTouch(id, action) {
+            const btn = document.getElementById(id);
+            if (btn) btn.addEventListener('touchstart', (e) => { e.preventDefault(); action(); });
+        }
+
+        function handleInput() {
+            if (gameState !== 'PLAYING' || !player.canAct()) return;
+
+            player.isParry = keys.KeyS;
+
+            if (keys.KeyA) player.velocity.x = -CONFIG.PLAYER_SPEED;
+            else if (keys.KeyD) player.velocity.x = CONFIG.PLAYER_SPEED;
+        }
+
+        // --- UI 更新与结算 ---
+        function updateUI() {
+            document.getElementById('boss-hp-bar').style.width = `${(boss.hp / boss.maxHp) * 100}%`;
+            document.getElementById('player-hp-bar').style.width = `${(player.hp / player.maxHp) * 100}%`;
+            document.getElementById('player-sp-bar').style.width = `${(player.sp / 100) * 100}%`;
+            document.getElementById('player-hp-text').innerText = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+        }
+
+        function showComboUI(count) {
+            if (count < 2) return;
+            const box = document.getElementById('combo-box');
+            document.getElementById('combo-count').innerHTML = `${count} <span class="text-2xl md:text-3xl">HITS</span>`;
+            box.style.opacity = '1';
+        }
+
+        function hideComboUI() {
+            document.getElementById('combo-box').style.opacity = '0';
+        }
+
+        function checkWinner() {
+            if (player.hp <= 0 || boss.hp <= 0) {
+                gameState = 'GAMEOVER';
+                const modal = document.getElementById('game-over-modal');
+                const title = document.getElementById('winner-title');
+                const sub = document.getElementById('winner-sub');
+
+                modal.classList.remove('hidden');
+
+                if (boss.hp <= 0) {
+                    title.innerText = 'VICTORY ACHIEVED';
+                    title.className = "text-5xl md:text-7xl font-black italic mb-4 text-amber-400 tracking-widest drop-shadow-[0_0_30px_rgba(251,191,36,0.8)]";
+                    sub.innerText = '你弑杀了深渊骑士，传说将永世流传！';
+                } else {
+                    title.innerText = 'YOU DIED';
+                    title.className = "text-6xl md:text-8xl font-black italic mb-4 text-red-600 tracking-widest drop-shadow-[0_0_30px_rgba(220,38,38,0.8)]";
+                    sub.innerText = '深渊吞噬了一切...';
+                }
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('game-over-modal').classList.add('hidden');
+
+            player.hp = CONFIG.PLAYER_HP;
+            player.sp = 0;
+            player.position.set(-5, 0, 0);
+            player.isDead = false;
+
+            boss.hp = CONFIG.BOSS_HP;
+            boss.phase = 1;
+            boss.position.set(5, 0, 0);
+            boss.isDead = false;
+
+            document.getElementById('boss-phase-text').innerText = 'PHASE 1';
+            document.getElementById('boss-phase-text').className = 'text-xs md:text-sm font-bold tracking-widest text-amber-400 uppercase';
+
+            gameState = 'PLAYING';
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 主 Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (hitstopFrames > 0) {
+                hitstopFrames--;
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (gameState === 'PLAYING') {
+                handleInput();
+
+                player.update(boss);
+                boss.update(player);
+                boss.updateAI(player);
+
+                checkWinner();
+            }
+
+            updateParticles();
+            updateCamera();
+            updateUI();
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            initScene();
+            setupInputs();
+            gameState = 'PLAYING';
+            animate();
+        };
+    </script>
+</body>
+</html>

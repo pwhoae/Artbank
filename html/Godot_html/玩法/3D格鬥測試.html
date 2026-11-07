@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D 格斗动作游戏 Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        /* 炫酷科技感 HUD 样式 */
+        .hud-glass {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .bar-container {
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+        }
+        .hp-fill {
+            transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sp-fill {
+            transition: width 0.2s ease-out;
+        }
+        /* 虚拟按键样式 */
+        .touch-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+            active-bg: rgba(255, 255, 255, 0.4);
+        }
+        .touch-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0.95);
+        }
+        /* 冲击波动画 */
+        @keyframes hit-flash {
+            0% { opacity: 0.8; transform: scale(0.8); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-white overflow-hidden">
+
+    <!-- 3D 渲染 Canvas 容器 -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay / HUD -->
+    <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6">
+        
+        <!-- 顶部血条 & 比分 HUD -->
+        <div class="w-full max-w-5xl mx-auto flex items-center justify-between gap-4">
+            <!-- 玩家 1 (P1) 状态 -->
+            <div class="flex-1 hud-glass p-3 rounded-xl border-l-4 border-cyan-500 shadow-lg">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-black italic text-cyan-400 tracking-wider text-sm md:text-base">PLAYER (P1)</span>
+                    <span id="p1-hp-text" class="text-xs font-mono font-bold text-cyan-200">100 / 100</span>
+                </div>
+                <!-- P1 HP 条 -->
+                <div class="w-full h-4 bar-container rounded-full overflow-hidden mb-1.5 p-0.5">
+                    <div id="p1-hp-bar" class="hp-fill h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full w-full"></div>
+                </div>
+                <!-- P1 SP 能量条 -->
+                <div class="w-full h-2 bar-container rounded-full overflow-hidden p-0.5">
+                    <div id="p1-sp-bar" class="sp-fill h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full w-0"></div>
+                </div>
+            </div>
+
+            <!-- VS & 计时器 -->
+            <div class="flex flex-col items-center justify-center px-2">
+                <div id="timer" class="text-3xl md:text-5xl font-black text-amber-400 tracking-tight drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">60</div>
+                <div class="text-xs font-black text-gray-400 tracking-widest mt-0.5">ROUND 1</div>
+            </div>
+
+            <!-- AI 敌人 (P2) 状态 -->
+            <div class="flex-1 hud-glass p-3 rounded-xl border-r-4 border-red-500 shadow-lg text-right">
+                <div class="flex justify-between items-center mb-1 flex-row-reverse">
+                    <span class="font-black italic text-red-400 tracking-wider text-sm md:text-base">ENEMY (AI)</span>
+                    <span id="p2-hp-text" class="text-xs font-mono font-bold text-red-200">100 / 100</span>
+                </div>
+                <!-- P2 HP 条 -->
+                <div class="w-full h-4 bar-container rounded-full overflow-hidden mb-1.5 p-0.5 flex justify-end">
+                    <div id="p2-hp-bar" class="hp-fill h-full bg-gradient-to-l from-red-600 to-red-400 rounded-full w-full"></div>
+                </div>
+                <!-- P2 SP 能量条 -->
+                <div class="w-full h-2 bar-container rounded-full overflow-hidden p-0.5 flex justify-end">
+                    <div id="p2-sp-bar" class="sp-fill h-full bg-gradient-to-l from-purple-600 to-pink-400 rounded-full w-0"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 连击 & 浮动信息提示 -->
+        <div class="flex-1 flex flex-col items-center justify-center relative">
+            <div id="combo-box" class="opacity-0 transition-opacity duration-200 text-center transform -translate-y-8">
+                <div id="combo-count" class="text-6xl md:text-8xl font-black italic text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]">
+                    3 <span class="text-3xl md:text-4xl">HITS!</span>
+                </div>
+                <div id="combo-title" class="text-lg md:text-2xl font-bold tracking-widest text-orange-400 uppercase">GREAT COMBO</div>
+            </div>
+
+            <div id="game-msg" class="absolute hidden text-4xl md:text-7xl font-black italic tracking-widest text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] uppercase">
+                READY
+            </div>
+        </div>
+
+        <!-- 底部控制提示与操作说明 (桌面端) -->
+        <div class="hidden md:flex justify-between items-end text-xs text-gray-400 hud-glass p-3 rounded-lg">
+            <div>
+                <span class="text-cyan-400 font-bold">移动:</span> A / D &nbsp;|&nbsp; 
+                <span class="text-cyan-400 font-bold">跃起/跳跃:</span> W &nbsp;|&nbsp; 
+                <span class="text-cyan-400 font-bold">防御:</span> S
+            </div>
+            <div>
+                <span class="text-yellow-400 font-bold">轻攻击 (Light):</span> J &nbsp;|&nbsp; 
+                <span class="text-orange-400 font-bold">重攻击 (Heavy):</span> K &nbsp;|&nbsp; 
+                <span class="text-purple-400 font-bold">闪避 (Dash):</span> L
+            </div>
+        </div>
+
+        <!-- 移动端虚拟按键 (仅在触控屏/小屏显示) -->
+        <div class="md:hidden pointer-events-auto flex justify-between items-end pb-2 px-2">
+            <!-- 方向摇杆/按键 -->
+            <div class="grid grid-cols-3 gap-2 w-36 h-36">
+                <div></div>
+                <button id="btn-up" class="touch-btn rounded-xl flex items-center justify-center text-xl font-bold">▲</button>
+                <div></div>
+                <button id="btn-left" class="touch-btn rounded-xl flex items-center justify-center text-xl font-bold">◀</button>
+                <button id="btn-down" class="touch-btn rounded-xl flex items-center justify-center text-xl font-bold">▼</button>
+                <button id="btn-right" class="touch-btn rounded-xl flex items-center justify-center text-xl font-bold">▶</button>
+            </div>
+            <!-- 动作按键 -->
+            <div class="grid grid-cols-2 gap-3 w-40 h-40">
+                <button id="btn-light" class="touch-btn bg-yellow-500/20 border-yellow-400/50 rounded-full text-yellow-300 font-extrabold text-sm flex items-center justify-center">轻击<br>J</button>
+                <button id="btn-heavy" class="touch-btn bg-orange-500/20 border-orange-400/50 rounded-full text-orange-300 font-extrabold text-sm flex items-center justify-center">重击<br>K</button>
+                <button id="btn-dash" class="touch-btn bg-purple-500/20 border-purple-400/50 rounded-full text-purple-300 font-extrabold text-sm flex items-center justify-center col-span-2">闪避 L</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 重新开始 / 结算遮罩层 -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center hidden z-50">
+        <h1 id="winner-title" class="text-5xl md:text-7xl font-black italic mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-red-500 tracking-wider">
+            YOU WIN!
+        </h1>
+        <p id="winner-sub" class="text-gray-300 text-lg mb-8">精彩的对决！</p>
+        <button id="restart-btn" class="pointer-events-auto px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-full shadow-lg shadow-cyan-500/50 transform hover:scale-105 transition active:scale-95 text-lg">
+            再来一局
+        </button>
+    </div>
+
+    <!-- 游戏核心逻辑脚本 -->
+    <script>
+        // --- 游戏全局配置与变量 ---
+        const CONFIG = {
+            STAGE_WIDTH: 24,
+            GRAVITY: 0.012,
+            PLAYER_SPEED: 0.12,
+            JUMP_FORCE: 0.28,
+            DASH_SPEED: 0.35,
+            MAX_HP: 100,
+            MAX_SP: 100
+        };
+
+        let scene, camera, renderer;
+        let p1, p2; // 玩家与敌人角色实例
+        let particles = [];
+        let hitEffects = [];
+        let gameTime = 60;
+        let timerInterval = null;
+        let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER'
+        let hitstopFrames = 0; // 击中停顿帧数
+
+        // 键盘输入监听状态
+        const keys = {
+            KeyA: false, KeyD: false, KeyW: false, KeyS: false,
+            KeyJ: false, KeyK: false, KeyL: false
+        };
+
+        // --- 辅助数学工具 ---
+        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+
+        // --- 3D 角色模型类 (关节骨骼拼接与简易骨骼动画) ---
+        class Fighter {
+            constructor(isAI = false, color = 0x00f0ff) {
+                this.isAI = isAI;
+                this.color = color;
+                
+                // 属性状态
+                this.hp = CONFIG.MAX_HP;
+                this.sp = 0;
+                this.position = new THREE.Vector3(isAI ? 4 : -4, 0, 0);
+                this.velocity = new THREE.Vector3();
+                this.facing = isAI ? -1 : 1; // 1 右, -1 左
+                
+                this.isGrounded = true;
+                this.isBlocking = false;
+                this.isDashing = false;
+                this.isAttacking = false;
+                this.isHit = false;
+                this.isDead = false;
+                
+                this.attackType = null; // 'light', 'heavy'
+                this.attackFrame = 0;
+                this.attackDuration = 0;
+                this.hasHit = false; // 当前攻击动作是否已造成伤害
+                this.comboCount = 0;
+                this.comboTimer = 0;
+
+                // 创建模型容器
+                this.mesh = new THREE.Group();
+                this.buildModel();
+                this.mesh.position.copy(this.position);
+
+                // AI 专属控制参数
+                this.aiTimer = 0;
+                this.aiAction = 'IDLE';
+            }
+
+            // 使用 Three.js 基本几何体构建类似 3D 人偶的模型
+            buildModel() {
+                const matMain = new THREE.MeshStandardMaterial({ 
+                    color: this.color, 
+                    roughness: 0.3, 
+                    metalness: 0.4,
+                    flatShading: true 
+                });
+                const matJoint = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
+                const matGlow = new THREE.MeshBasicMaterial({ color: this.color });
+
+                // 身体 torso
+                this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.5), matMain);
+                this.torso.position.y = 1.6;
+                this.torso.castShadow = true;
+                this.mesh.add(this.torso);
+
+                // 头部 Head
+                this.head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), matMain);
+                this.head.position.set(0, 0.9, 0);
+                this.head.castShadow = true;
+                this.torso.add(this.head);
+
+                // 发光发饰/眼睛 Visor
+                const visor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.1), matGlow);
+                visor.position.set(0, 0.05, 0.26);
+                this.head.add(visor);
+
+                // 左臂 Left Arm
+                this.leftArm = new THREE.Group();
+                this.leftArm.position.set(-0.55, 0.4, 0);
+                const lArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), matMain);
+                lArmMesh.position.y = -0.3;
+                lArmMesh.castShadow = true;
+                this.leftArm.add(lArmMesh);
+                this.torso.add(this.leftArm);
+
+                // 右臂 Right Arm (主要攻击手臂)
+                this.rightArm = new THREE.Group();
+                this.rightArm.position.set(0.55, 0.4, 0);
+                const rArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), matMain);
+                rArmMesh.position.y = -0.3;
+                rArmMesh.castShadow = true;
+                this.rightArm.add(rArmMesh);
+                this.torso.add(this.rightArm);
+
+                // 攻击拳套/拳头特效组件
+                this.fistHitbox = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.25, 8, 8), 
+                    new THREE.MeshBasicMaterial({ color: 0xffaa00, wireframe: true, visible: false })
+                );
+                this.fistHitbox.position.set(0, -0.7, 0);
+                this.rightArm.add(this.fistHitbox);
+
+                // 左腿 Left Leg
+                this.leftLeg = new THREE.Group();
+                this.leftLeg.position.set(-0.25, -0.6, 0);
+                const lLegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.0, 0.32), matJoint);
+                lLegMesh.position.y = -0.5;
+                lLegMesh.castShadow = true;
+                this.leftLeg.add(lLegMesh);
+                this.torso.add(this.leftLeg);
+
+                // 右腿 Right Leg
+                this.rightLeg = new THREE.Group();
+                this.rightLeg.position.set(0.25, -0.6, 0);
+                const rLegMesh = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.0, 0.32), matJoint);
+                rLegMesh.position.y = -0.5;
+                rLegMesh.castShadow = true;
+                this.rightLeg.add(rLegMesh);
+                this.torso.add(this.rightLeg);
+            }
+
+            // 更新角色逻辑
+            update(opponent) {
+                if (this.isDead) return;
+
+                // 连击倒计时处理
+                if (this.comboTimer > 0) {
+                    this.comboTimer--;
+                    if (this.comboTimer <= 0) {
+                        this.comboCount = 0;
+                        if (!this.isAI) hideComboUI();
+                    }
+                }
+
+                // 朝向始终面向对手
+                if (!this.isAttacking && !this.isDashing) {
+                    this.facing = opponent.position.x > this.position.x ? 1 : -1;
+                }
+                this.mesh.rotation.y = this.facing === 1 ? Math.PI / 2 : -Math.PI / 2;
+
+                // 应用重力与位置更新
+                this.velocity.y -= CONFIG.GRAVITY;
+                this.position.add(this.velocity);
+
+                // 地面碰撞
+                if (this.position.y <= 0) {
+                    this.position.y = 0;
+                    this.velocity.y = 0;
+                    this.isGrounded = true;
+                    if (this.isHit) this.isHit = false;
+                }
+
+                // 边界限制
+                this.position.x = clamp(this.position.x, -CONFIG.STAGE_WIDTH / 2, CONFIG.STAGE_WIDTH / 2);
+
+                // 阻尼摩擦力
+                this.velocity.x *= 0.82;
+
+                // 更新攻击判定与动画
+                this.handleAttacks(opponent);
+
+                // 更新骨骼姿态动画
+                this.animatePose();
+
+                // 同步 3D 坐标
+                this.mesh.position.copy(this.position);
+            }
+
+            // 执行轻攻击
+            lightAttack() {
+                if (this.canAct()) {
+                    this.isAttacking = true;
+                    this.attackType = 'light';
+                    this.attackFrame = 0;
+                    this.attackDuration = 18; // 18 帧 (约 0.3 秒)
+                    this.hasHit = false;
+                }
+            }
+
+            // 执行重攻击
+            heavyAttack() {
+                if (this.canAct()) {
+                    if (this.sp >= 30 || this.isAI) { // 消耗 SP
+                        if (!this.isAI) this.sp = Math.max(0, this.sp - 30);
+                        this.isAttacking = true;
+                        this.attackType = 'heavy';
+                        this.attackFrame = 0;
+                        this.attackDuration = 32; // 32 帧
+                        this.hasHit = false;
+                    }
+                }
+            }
+
+            // 执行闪避
+            dash() {
+                if (this.canAct() && this.isGrounded) {
+                    this.isDashing = true;
+                    this.velocity.x = this.facing * CONFIG.DASH_SPEED;
+                    setTimeout(() => { this.isDashing = false; }, 200);
+                }
+            }
+
+            // 跳跃
+            jump() {
+                if (this.canAct() && this.isGrounded) {
+                    this.velocity.y = CONFIG.JUMP_FORCE;
+                    this.isGrounded = false;
+                }
+            }
+
+            // 能否执行新动作
+            canAct() {
+                return !this.isAttacking && !this.isHit && !this.isDashing && !this.isDead;
+            }
+
+            // 处理攻击判定过程
+            handleAttacks(opponent) {
+                if (!this.isAttacking) return;
+
+                this.attackFrame++;
+
+                // 轻攻击与重攻击的打击生效帧区间 (Active Frames)
+                const hitStart = this.attackType === 'light' ? 5 : 12;
+                const hitEnd = this.attackType === 'light' ? 12 : 24;
+
+                if (this.attackFrame >= hitStart && this.attackFrame <= hitEnd && !this.hasHit) {
+                    // 计算出拳的绝对世界坐标
+                    const fistWorldPos = new THREE.Vector3();
+                    this.fistHitbox.getWorldPosition(fistWorldPos);
+
+                    // 简易距离判定 (包围球碰撞)
+                    const dist = fistWorldPos.distanceTo(opponent.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+
+                    if (dist < 1.4) {
+                        this.hasHit = true;
+                        const damage = this.attackType === 'light' ? 8 : 18;
+                        opponent.takeDamage(damage, this.attackType, this.facing);
+
+                        // 增加能量
+                        this.sp = Math.min(CONFIG.MAX_SP, this.sp + (this.attackType === 'light' ? 10 : 20));
+
+                        // 触发连击
+                        this.comboCount++;
+                        this.comboTimer = 90; // 1.5s 内续连击
+                        if (!this.isAI) showComboUI(this.comboCount);
+
+                        // 打击感：顿帧 (Hitstop) 与 镜头震动
+                        hitstopFrames = this.attackType === 'light' ? 4 : 8;
+                        triggerCameraShake(this.attackType === 'light' ? 0.15 : 0.35);
+
+                        // 生成火花特效
+                        createHitEffect(fistWorldPos, this.attackType);
+                    }
+                }
+
+                if (this.attackFrame >= this.attackDuration) {
+                    this.isAttacking = false;
+                    this.attackType = null;
+                }
+            }
+
+            // 受击处理
+            takeDamage(amount, type, attackerFacing) {
+                if (this.isDashing) return; // 闪避无敌帧
+
+                if (this.isBlocking) {
+                    amount *= 0.2; // 防御减伤 80%
+                    createSpark(this.position.clone().add(new THREE.Vector3(0, 1.2, 0)), 0x00ffff);
+                } else {
+                    this.isHit = true;
+                    this.isAttacking = false;
+                    // 击退力
+                    const pushForce = type === 'light' ? 0.12 : 0.28;
+                    this.velocity.x = attackerFacing * pushForce;
+                    if (type === 'heavy') this.velocity.y = 0.12; // 浮空效果
+                }
+
+                this.hp = Math.max(0, this.hp - amount);
+
+                if (this.hp <= 0) {
+                    this.isDead = true;
+                    this.velocity.x = attackerFacing * 0.2;
+                    this.velocity.y = 0.2;
+                }
+            }
+
+            // 动态 procedural 姿态动画控制
+            animatePose() {
+                const time = Date.now() * 0.008;
+
+                // 死亡倒地
+                if (this.isDead) {
+                    this.mesh.rotation.z = THREE.MathUtils.lerp(this.mesh.rotation.z, -Math.PI / 2 * this.facing, 0.1);
+                    this.torso.position.y = 0.4;
+                    return;
+                }
+
+                // 1. 被击中
+                if (this.isHit) {
+                    this.torso.rotation.z = -0.3 * this.facing;
+                    this.rightArm.rotation.x = -1.2;
+                    this.leftArm.rotation.x = -1.2;
+                    return;
+                }
+
+                // 2. 攻击动作动画
+                if (this.isAttacking) {
+                    if (this.attackType === 'light') {
+                        // 出拳动作
+                        const progress = this.attackFrame / this.attackDuration;
+                        this.rightArm.rotation.x = -Math.PI / 2;
+                        this.rightArm.rotation.z = Math.sin(progress * Math.PI) * -1.2;
+                        this.torso.rotation.y = Math.sin(progress * Math.PI) * 0.5 * this.facing;
+                    } else if (this.attackType === 'heavy') {
+                        // 蓄力重击蓄力动作
+                        const progress = this.attackFrame / this.attackDuration;
+                        this.rightArm.rotation.x = -Math.PI * 0.8;
+                        this.rightArm.rotation.y = Math.sin(progress * Math.PI) * 1.5;
+                        this.torso.rotation.y = Math.sin(progress * Math.PI) * 0.8 * this.facing;
+                    }
+                    return;
+                }
+
+                // 恢复默认姿态
+                this.torso.rotation.set(0, 0, 0);
+                this.rightArm.rotation.set(0, 0, 0);
+                this.leftArm.rotation.set(0, 0, 0);
+
+                // 3. 防御姿势
+                if (this.isBlocking) {
+                    this.rightArm.rotation.x = -1.4;
+                    this.leftArm.rotation.x = -1.4;
+                    this.rightArm.rotation.y = -0.4;
+                    this.leftArm.rotation.y = 0.4;
+                    return;
+                }
+
+                // 4. 移动/待机 呼吸姿态
+                if (Math.abs(this.velocity.x) > 0.02) {
+                    // 跑步摆臂
+                    this.rightArm.rotation.x = Math.sin(time * 2) * 0.8;
+                    this.leftArm.rotation.x = -Math.sin(time * 2) * 0.8;
+                    this.rightLeg.rotation.x = -Math.sin(time * 2) * 0.8;
+                    this.leftLeg.rotation.x = Math.sin(time * 2) * 0.8;
+                } else {
+                    // 待机格斗姿势
+                    this.torso.position.y = 1.6 + Math.sin(time) * 0.04;
+                    this.rightArm.rotation.x = -0.6 + Math.sin(time) * 0.05;
+                    this.leftArm.rotation.x = -0.6 - Math.sin(time) * 0.05;
+                    this.rightLeg.rotation.x = 0.2;
+                    this.leftLeg.rotation.x = -0.2;
+                }
+            }
+
+            // 简单 AI 决策逻辑
+            updateAI(opponent) {
+                if (this.isDead || !this.canAct()) return;
+
+                const dist = Math.abs(this.position.x - opponent.position.x);
+
+                this.aiTimer++;
+                if (this.aiTimer > 20) { // 每 20 帧评估一次
+                    this.aiTimer = 0;
+
+                    // AI 距离逻辑
+                    if (dist > 3.0) {
+                        this.velocity.x = this.facing * CONFIG.PLAYER_SPEED * 0.8;
+                    } else if (dist < 1.2) {
+                        // 近距离：随机轻重击或防御
+                        const rand = Math.random();
+                        if (rand < 0.5) {
+                            this.lightAttack();
+                        } else if (rand < 0.75) {
+                            this.heavyAttack();
+                        } else {
+                            this.isBlocking = true;
+                            setTimeout(() => { this.isBlocking = false; }, 600);
+                        }
+                    } else {
+                        // 中距离：随机冲刺/跳跃或靠近
+                        if (Math.random() < 0.4) {
+                            this.velocity.x = this.facing * CONFIG.PLAYER_SPEED;
+                        } else if (Math.random() < 0.2) {
+                            this.dash();
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- 场景与灯光初始化 ---
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. 场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e17);
+            scene.fog = new THREE.FogExp2(0x0a0e17, 0.03);
+
+            // 2. 摄像机
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3.5, 11);
+
+            // 3. 渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 4. 灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            // 主赛场聚光灯
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 12, 8);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            // 霓虹背景补光 (Cyan & Red)
+            const lightLeft = new THREE.PointLight(0x00f0ff, 2, 20);
+            lightLeft.position.set(-10, 4, -2);
+            scene.add(lightLeft);
+
+            const lightRight = new THREE.PointLight(0xff0055, 2, 20);
+            lightRight.position.set(10, 4, -2);
+            scene.add(lightRight);
+
+            // 5. 擂台竞技场 (Arena Floor)
+            buildStage();
+
+            // 6. 创建玩家与 AI 角色
+            p1 = new Fighter(false, 0x00f0ff); // 蓝/青色 Player
+            p2 = new Fighter(true, 0xff0055);  // 红/粉色 AI
+            scene.add(p1.mesh);
+            scene.add(p2.mesh);
+
+            // 窗口尺寸变化自适应
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // 构建赛场 3D 环境
+        function buildStage() {
+            // 地板网格
+            const floorGeo = new THREE.BoxGeometry(CONFIG.STAGE_WIDTH + 4, 0.5, 8);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: 0x111827, 
+                roughness: 0.2, 
+                metalness: 0.8 
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.y = -0.25;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // 网格发光边线
+            const gridHelper = new THREE.GridHelper(CONFIG.STAGE_WIDTH + 4, 20, 0x00f0ff, 0x1f2937);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+
+            // 背景赛场围栏/发光柱
+            for (let x = -CONFIG.STAGE_WIDTH / 2; x <= CONFIG.STAGE_WIDTH / 2; x += 4) {
+                const pillarGeo = new THREE.CylinderGeometry(0.1, 0.1, 6);
+                const pillarMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+                const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+                pillar.position.set(x, 3, -3.5);
+                scene.add(pillar);
+            }
+        }
+
+        // --- 视觉粒子与打击特效 ---
+        function createHitEffect(pos, type) {
+            const count = type === 'light' ? 12 : 25;
+            const color = type === 'light' ? 0xffea00 : 0xff3300;
+
+            for (let i = 0; i < count; i++) {
+                const pGeo = new THREE.SphereGeometry(Math.random() * 0.08 + 0.04, 4, 4);
+                const pMat = new THREE.MeshBasicMaterial({ color: color });
+                const p = new THREE.Mesh(pGeo, pMat);
+                p.position.copy(pos);
+
+                const vel = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.3,
+                    (Math.random() - 0.5) * 0.3,
+                    (Math.random() - 0.5) * 0.3
+                );
+
+                scene.add(p);
+                particles.push({ mesh: p, vel: vel, life: 1.0 });
+            }
+        }
+
+        function createSpark(pos, colorHex) {
+            // 防御等闪光粒子
+            createHitEffect(pos, 'light');
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.mesh.position.add(p.vel);
+                p.life -= 0.05;
+                p.mesh.scale.multiplyScalar(0.92);
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // 镜头震动控制
+        let shakeIntensity = 0;
+        function triggerCameraShake(intensity) {
+            shakeIntensity = intensity;
+        }
+
+        function updateCamera() {
+            // 动态镜头跟踪：取两角色中间点
+            const midX = (p1.position.x + p2.position.x) / 2;
+            const dist = Math.abs(p1.position.x - p2.position.x);
+
+            const targetCamX = clamp(midX, -4, 4);
+            const targetCamZ = clamp(10 + dist * 0.25, 9, 15);
+
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
+            camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, 0.05);
+
+            // 应用震动偏移
+            if (shakeIntensity > 0) {
+                camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.y = 3.5 + (Math.random() - 0.5) * shakeIntensity;
+                shakeIntensity *= 0.85;
+                if (shakeIntensity < 0.01) shakeIntensity = 0;
+            } else {
+                camera.position.y = THREE.MathUtils.lerp(camera.position.y, 3.5, 0.05);
+            }
+
+            camera.lookAt(midX, 1.5, 0);
+        }
+
+        // --- 玩家输入控制绑定 ---
+        function setupInputs() {
+            // 键盘按下
+            window.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+
+                if (gameState !== 'PLAYING') return;
+
+                // 快捷触发单次动作
+                if (e.code === 'KeyW') p1.jump();
+                if (e.code === 'KeyJ') p1.lightAttack();
+                if (e.code === 'KeyK') p1.heavyAttack();
+                if (e.code === 'KeyL') p1.dash();
+            });
+
+            // 键盘松开
+            window.addEventListener('keyup', (e) => {
+                if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+            });
+
+            // 移动端虚拟按键监听
+            bindTouchBtn('btn-up', () => p1.jump());
+            bindTouchBtn('btn-light', () => p1.lightAttack());
+            bindTouchBtn('btn-heavy', () => p1.heavyAttack());
+            bindTouchBtn('btn-dash', () => p1.dash());
+
+            // 虚拟左右与下按键持续侦测
+            const btnLeft = document.getElementById('btn-left');
+            const btnRight = document.getElementById('btn-right');
+            const btnDown = document.getElementById('btn-down');
+
+            btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.KeyA = true; });
+            btnLeft.addEventListener('touchend', () => keys.KeyA = false);
+            btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.KeyD = true; });
+            btnRight.addEventListener('touchend', () => keys.KeyD = false);
+            btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); keys.KeyS = true; });
+            btnDown.addEventListener('touchend', () => keys.KeyS = false);
+
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+        }
+
+        function bindTouchBtn(id, action) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'PLAYING') action();
+            });
+        }
+
+        // 处理持续按键输入 (WASD)
+        function handleContinuousInput() {
+            if (gameState !== 'PLAYING' || !p1.canAct()) return;
+
+            p1.isBlocking = keys.KeyS;
+
+            if (!p1.isBlocking) {
+                if (keys.KeyA) {
+                    p1.velocity.x = -CONFIG.PLAYER_SPEED;
+                } else if (keys.KeyD) {
+                    p1.velocity.x = CONFIG.PLAYER_SPEED;
+                }
+            }
+        }
+
+        // --- UI 更新与连击展示 ---
+        function updateUI() {
+            // P1 状态
+            document.getElementById('p1-hp-bar').style.width = `${(p1.hp / CONFIG.MAX_HP) * 100}%`;
+            document.getElementById('p1-sp-bar').style.width = `${(p1.sp / CONFIG.MAX_SP) * 100}%`;
+            document.getElementById('p1-hp-text').innerText = `${Math.ceil(p1.hp)} / ${CONFIG.MAX_HP}`;
+
+            // P2 状态
+            document.getElementById('p2-hp-bar').style.width = `${(p2.hp / CONFIG.MAX_HP) * 100}%`;
+            document.getElementById('p2-sp-bar').style.width = `${(p2.sp / CONFIG.MAX_SP) * 100}%`;
+            document.getElementById('p2-hp-text').innerText = `${Math.ceil(p2.hp)} / ${CONFIG.MAX_HP}`;
+        }
+
+        let comboTimeout;
+        function showComboUI(count) {
+            if (count < 2) return;
+            const box = document.getElementById('combo-box');
+            const countEl = document.getElementById('combo-count');
+            
+            countEl.innerHTML = `${count} <span class="text-3xl md:text-4xl">HITS!</span>`;
+            box.style.opacity = '1';
+            box.style.transform = 'translateY(0)';
+
+            clearTimeout(comboTimeout);
+            comboTimeout = setTimeout(hideComboUI, 1200);
+        }
+
+        function hideComboUI() {
+            const box = document.getElementById('combo-box');
+            box.style.opacity = '0';
+            box.style.transform = 'translateY(-20px)';
+        }
+
+        function showMessage(text, duration = 1000) {
+            const msgEl = document.getElementById('game-msg');
+            msgEl.innerText = text;
+            msgEl.classList.remove('hidden');
+            setTimeout(() => {
+                msgEl.classList.add('hidden');
+            }, duration);
+        }
+
+        // --- 游戏流程与倒计时 ---
+        function startGame() {
+            gameState = 'PLAYING';
+            showMessage('FIGHT!', 1000);
+
+            gameTime = 60;
+            document.getElementById('timer').innerText = gameTime;
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (gameState === 'PLAYING') {
+                    gameTime--;
+                    document.getElementById('timer').innerText = gameTime;
+                    if (gameTime <= 0) {
+                        checkWinner(true);
+                    }
+                }
+            }, 1000);
+        }
+
+        function checkWinner(timeOut = false) {
+            if (p1.hp <= 0 || p2.hp <= 0 || timeOut) {
+                gameState = 'GAMEOVER';
+                clearInterval(timerInterval);
+
+                const modal = document.getElementById('game-over-modal');
+                const title = document.getElementById('winner-title');
+                const sub = document.getElementById('winner-sub');
+
+                modal.classList.remove('hidden');
+
+                if (p1.hp > p2.hp) {
+                    title.innerText = 'YOU WIN!';
+                    title.className = "text-5xl md:text-7xl font-black italic mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-cyan-400 tracking-wider";
+                    sub.innerText = '你成功击败了对手！';
+                } else if (p2.hp > p1.hp) {
+                    title.innerText = 'YOU LOSE';
+                    title.className = "text-5xl md:text-7xl font-black italic mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500 tracking-wider";
+                    sub.innerText = '再接再厉，挑战自我！';
+                } else {
+                    title.innerText = 'DRAW';
+                    sub.innerText = '势均力敌的平局！';
+                }
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('game-over-modal').classList.add('hidden');
+
+            // 重置玩家
+            p1.hp = CONFIG.MAX_HP;
+            p1.sp = 0;
+            p1.position.set(-4, 0, 0);
+            p1.isDead = false;
+
+            // 重置 AI
+            p2.hp = CONFIG.MAX_HP;
+            p2.sp = 0;
+            p2.position.set(4, 0, 0);
+            p2.isDead = false;
+
+            updateUI();
+            startGame();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- 主游戏 Loop 循环 ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 击中顿帧处理 (Hitstop)
+            if (hitstopFrames > 0) {
+                hitstopFrames--;
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (gameState === 'PLAYING') {
+                handleContinuousInput();
+
+                p1.update(p2);
+                p2.update(p1);
+                p2.updateAI(p1);
+
+                checkWinner();
+            }
+
+            updateParticles();
+            updateCamera();
+            updateUI();
+
+            renderer.render(scene, camera);
+        }
+
+        // 页面加载完成后启动
+        window.onload = function() {
+            initScene();
+            setupInputs();
+            animate();
+            startGame();
+        };
+    </script>
+</body>
+</html>
