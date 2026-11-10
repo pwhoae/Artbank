@@ -1,4 +1,13 @@
-知名手工up:https://space.bilibili.com/90967813?
+Artstation（A站）
+GGAC
+站酷：
+Behance：
+
+Pinterest：花瓣：Pixabay：Airpano：
+
+Bridge：虛幻商城：PBRMax：Texture：Sketchfab：PolyHaven：IES Library：PNGTree：
+
+80Level：ExperiencePoint：PolyCount：知名手工up:https://space.bilibili.com/90967813?
 
 插件名字：Quick Drag & Drop | Level Placer
 商店链接：https://assetstore.unity.com/packages/slug/351352
