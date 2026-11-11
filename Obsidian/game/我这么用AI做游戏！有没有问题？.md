@@ -1,10 +1,10 @@
 ---
 title: "我这么用AI做游戏！有没有问题？"
-source: "https://www.bilibili.com/video/BV1jauR6GE9f/?"
+source: "https://www.bilibili.com/video/BV1jauR6GE9f/?spm_id_from=333.1245.0.0"
 author:
   - "[[潘大帅在减肥]]"
 published: 2026-08-10
-created: 2026-10-25
+created: 2026-11-11
 description: "我这么用AI做游戏！有没有问题？"
 tags:
   - "clippings"
