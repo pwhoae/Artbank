@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微型城市 Weather City - 香港 & 上海</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Outfit:wght@400;600;800&display=swap');
+        body {
+            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        canvas {
+            outline: none;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .glass-btn.active {
+            background: rgba(59, 130, 246, 0.6);
+            border-color: rgba(147, 197, 253, 0.8);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .neon-text-hk {
+            text-shadow: 0 0 8px #ff0055, 0 0 16px #ff0055;
+        }
+        .neon-text-sh {
+            text-shadow: 0 0 8px #00f0ff, 0 0 16px #00f0ff;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white w-screen h-screen relative">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+    <!-- UI Overlay Header -->
+    <header class="absolute top-4 left-4 right-4 flex flex-wrap justify-between items-center pointer-events-none z-10 gap-4">
+        <!-- Brand / City Switcher -->
+        <div class="glass-panel rounded-2xl p-2 px-4 flex items-center gap-3 pointer-events-auto shadow-2xl">
+            <div class="flex items-center gap-2 mr-2">
+                <i class="fa-solid font-bold text-xl text-amber-400 fa-city"></i>
+                <span class="font-extrabold text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-orange-400 to-rose-500">
+                    MINI METROPOLIS
+                </span>
+            </div>
+            
+            <div class="h-6 w-px bg-white/20 mx-1"></div>
+
+            <button id="btn-city-hk" onclick="switchCity('hk')" class="glass-btn active px-4 py-1.5 rounded-xl font-bold flex items-center gap-2 text-sm">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
+                香港 Hong Kong
+            </button>
+
+            <button id="btn-city-sh" onclick="switchCity('sh')" class="glass-btn px-4 py-1.5 rounded-xl font-bold flex items-center gap-2 text-sm">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
+                上海 Shanghai
+            </button>
+        </div>
+
+        <!-- Weather Status Card -->
+        <div class="glass-panel rounded-2xl p-3 px-5 flex items-center gap-4 pointer-events-auto shadow-2xl">
+            <div id="weather-icon-container" class="text-3xl text-amber-400 animate-pulse">
+                <i class="fa-solid fa-sun"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 id="city-title" class="font-bold text-lg leading-none">香港 Victoria Harbour</h2>
+                    <span id="temp-badge" class="bg-amber-500/20 text-amber-300 text-xs px-2 py-0.5 rounded-md font-mono border border-amber-500/30">28°C</span>
+                </div>
+                <p id="weather-desc" class="text-xs text-slate-300 mt-1 flex items-center gap-3">
+                    <span><i class="fa-solid fa-droplet text-blue-400 mr-1"></i>濕度: <strong id="val-humidity">65%</strong></span>
+                    <span><i class="fa-solid fa-wind text-teal-300 mr-1"></i>風速: <strong id="val-wind">12 km/h</strong></span>
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Weather Controls Overlay (Bottom Center) -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel rounded-2xl p-2 px-3 flex items-center gap-2 z-10 pointer-events-auto shadow-2xl max-w-[95vw] overflow-x-auto">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 px-2 flex items-center gap-1">
+            <i class="fa-solid fa-sliders text-indigo-400"></i> 天氣實時模擬:
+        </span>
+
+        <button id="btn-w-sunny" onclick="setWeather('sunny')" class="glass-btn active px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-sun text-amber-400 text-base"></i> 晴朗 Sunny
+        </button>
+
+        <button id="btn-w-rain" onclick="setWeather('rain')" class="glass-btn px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-cloud-showers-heavy text-blue-400 text-base"></i> 大雨 Rainstorm
+        </button>
+
+        <button id="btn-w-fog" onclick="setWeather('fog')" class="glass-btn px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-smog text-teal-300 text-base"></i> 薄霧/起霧 Foggy
+        </button>
+
+        <button id="btn-w-night" onclick="setWeather('night')" class="glass-btn px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-moon text-indigo-300 text-base"></i> 璀璨夜景 Night
+        </button>
+    </div>
+
+    <!-- Controls & Info Panel (Right Floating) -->
+    <div class="absolute top-24 right-4 glass-panel rounded-2xl p-4 w-64 text-xs z-10 pointer-events-auto hidden md:block shadow-2xl space-y-3">
+        <h3 class="font-bold text-sm text-slate-200 border-b border-white/10 pb-2 flex items-center justify-between">
+            <span><i class="fa-solid fa-location-dot text-rose-400 mr-1.5"></i>城市地標簡介</span>
+            <span id="landmark-tag" class="text-[10px] bg-rose-500/30 text-rose-300 px-1.5 py-0.5 rounded">HK</span>
+        </h3>
+        <p id="city-info-text" class="text-slate-300 leading-relaxed">
+            香港模型包含：維多利亞港、中銀大廈、中環廣場、天星小輪水上行駛、山頂纜車及特色廣東話霓虹燈牌。
+        </p>
+
+        <div class="pt-2 border-t border-white/10">
+            <h4 class="font-semibold text-slate-300 mb-1.5"><i class="fa-solid fa-hand-pointer text-amber-400 mr-1"></i>操作指南</h4>
+            <ul class="text-slate-400 space-y-1 text-[11px]">
+                <li><i class="fa-solid fa-rotate mr-1"></i>拖拽左鍵：旋轉 3D 視角</li>
+                <li><i class="fa-solid fa-arrows-up-down-left-right mr-1"></i>拖拽右鍵：平移鏡頭</li>
+                <li><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>滾輪：放大/縮小微型景觀</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Interactive 3D Script -->
+    <script>
+        // --- Globals & State ---
+        let scene, camera, renderer;
+        let currentCity = 'hk'; // 'hk' or 'sh'
+        let currentWeather = 'sunny'; // 'sunny', 'rain', 'fog', 'night'
+        
+        let hkGroup = new THREE.Group();
+        let shGroup = new THREE.Group();
+        
+        let rainParticles, rainGeo, rainCount = 1800;
+        let cloudGroup = new THREE.Group();
+        let animables = []; // Objects to animate (ferries, trams, lights)
+        let lights = {};
+
+        // Lighting colors per weather
+        const weatherPresets = {
+            sunny: {
+                bg: 0x87ceeb,
+                fog: 0x87ceeb,
+                fogDensity: 0.008,
+                sunIntensity: 1.4,
+                sunColor: 0xffffff,
+                ambientColor: 0xffffff,
+                ambientIntensity: 0.7,
+                temp: '29°C',
+                humidity: '58%',
+                wind: '10 km/h',
+                icon: '<i class="fa-solid fa-sun text-amber-400"></i>'
+            },
+            rain: {
+                bg: 0x334155,
+                fog: 0x475569,
+                fogDensity: 0.025,
+                sunIntensity: 0.3,
+                sunColor: 0x94a3b8,
+                ambientColor: 0x64748b,
+                ambientIntensity: 0.5,
+                temp: '22°C',
+                humidity: '95%',
+                wind: '38 km/h',
+                icon: '<i class="fa-solid fa-cloud-showers-heavy text-blue-400"></i>'
+            },
+            fog: {
+                bg: 0xcbd5e1,
+                fog: 0xcbd5e1,
+                fogDensity: 0.045,
+                sunIntensity: 0.6,
+                sunColor: 0xffedd5,
+                ambientColor: 0x94a3b8,
+                ambientIntensity: 0.8,
+                temp: '19°C',
+                humidity: '88%',
+                wind: '5 km/h',
+                icon: '<i class="fa-solid fa-smog text-teal-300"></i>'
+            },
+            night: {
+                bg: 0x050b14,
+                fog: 0x070f1e,
+                fogDensity: 0.012,
+                sunIntensity: 0.1,
+                sunColor: 0x3b82f6,
+                ambientColor: 0x1e1b4b,
+                ambientIntensity: 0.4,
+                temp: '24°C',
+                humidity: '70%',
+                wind: '14 km/h',
+                icon: '<i class="fa-solid fa-moon text-indigo-300"></i>'
+            }
+        };
+
+        // Custom Orbit Controls implementation (no external dependency needed)
+        let isDragging = false;
+        let isPan = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraTarget = new THREE.Vector3(0, 5, 0);
+        let spherical = { radius: 60, phi: Math.PI / 3.5, theta: Math.PI / 4 };
+
+        // Initialize App
+        window.onload = function() {
+            initScene();
+            buildHongKong();
+            buildShanghai();
+            createRain();
+            createClouds();
+            setupEvents();
+            
+            // Set initial state
+            switchCity('hk');
+            setWeather('sunny');
+
+            // Start Render Loop
+            animate();
+        };
+
+        // --- Scene & Renderer Setup ---
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            container.appendChild(renderer.domElement);
+
+            // Add Scene Lighting
+            lights.ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(lights.ambient);
+
+            lights.sun = new THREE.DirectionalLight(0xffffff, 1.4);
+            lights.sun.position.set(30, 50, 20);
+            lights.sun.castShadow = true;
+            lights.sun.shadow.mapSize.width = 2048;
+            lights.sun.shadow.mapSize.height = 2048;
+            lights.sun.shadow.camera.near = 0.5;
+            lights.sun.shadow.camera.far = 150;
+            const d = 35;
+            lights.sun.shadow.camera.left = -d;
+            lights.sun.shadow.camera.right = d;
+            lights.sun.shadow.camera.top = d;
+            lights.sun.shadow.camera.bottom = -d;
+            scene.add(lights.sun);
+
+            // Blueish Rim Light for atmosphere
+            lights.rim = new THREE.DirectionalLight(0x38bdf8, 0.3);
+            lights.rim.position.set(-30, 20, -30);
+            scene.add(lights.rim);
+
+            scene.add(hkGroup);
+            scene.add(shGroup);
+            scene.add(cloudGroup);
+        }
+
+        // --- Helper Material Creators ---
+        function createGlassMat(color = 0x88ccee, opacity = 0.6) {
+            return new THREE.MeshPhysicalMaterial({
+                color: color,
+                transparent: true,
+                opacity: opacity,
+                roughness: 0.1,
+                metalness: 0.1,
+                transmission: 0.6,
+                ior: 1.5
+            });
+        }
+
+        function createNeonMat(colorHex) {
+            return new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 1.8,
+                roughness: 0.2
+            });
+        }
+
+        // --- 1. BUILD HONG KONG MODEL ---
+        function buildHongKong() {
+            // Base Ground / Island
+            const baseGeo = new THREE.CylinderGeometry(24, 26, 2, 40);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = -1;
+            base.receiveShadow = true;
+            hkGroup.add(base);
+
+            // Victoria Harbour Water Body
+            const waterGeo = new THREE.PlaneGeometry(48, 48);
+            const waterMat = new THREE.MeshStandardMaterial({
+                color: 0x0f4c81,
+                roughness: 0.1,
+                metalness: 0.8,
+                transparent: true,
+                opacity: 0.85
+            });
+            const water = new THREE.Mesh(waterGeo, waterMat);
+            water.rotation.x = -Math.PI / 2;
+            water.position.y = 0.05;
+            hkGroup.add(water);
+
+            // Island Terrain (Victoria Peak)
+            const peakGeo = new THREE.ConeGeometry(12, 10, 6);
+            const landMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.9 });
+            const peak = new THREE.Mesh(peakGeo, landMat);
+            peak.position.set(-6, 4, -8);
+            peak.castShadow = true;
+            peak.receiveShadow = true;
+            hkGroup.add(peak);
+
+            // Buildings - Central & Wan Chai Skyline
+            // Bank of China Tower (Iconic Prism)
+            const bocGroup = new THREE.Group();
+            const bocMat = createGlassMat(0x38bdf8, 0.7);
+            const bocFrameMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8 });
+            
+            for(let i=0; i<4; i++) {
+                const height = 12 - i*2.5;
+                const segGeo = new THREE.BoxGeometry(2.2, height, 2.2);
+                const seg = new THREE.Mesh(segGeo, bocMat);
+                seg.position.y = height / 2;
+                seg.position.x = (i % 2 === 0 ? 0.4 : -0.4);
+                seg.position.z = (i < 2 ? 0.4 : -0.4);
+                seg.castShadow = true;
+                bocGroup.add(seg);
+            }
+            // Spire
+            const spireGeo = new THREE.CylinderGeometry(0.05, 0.2, 4);
+            const spire = new THREE.Mesh(spireGeo, bocFrameMat);
+            spire.position.set(0, 13, 0);
+            bocGroup.add(spire);
+            bocGroup.position.set(-2, 1, -2);
+            hkGroup.add(bocGroup);
+
+            // Two IFC (Tall Rectangular Landmark)
+            const ifcGeo = new THREE.BoxGeometry(3.5, 18, 3.5);
+            const ifcMat = createGlassMat(0x0284c7, 0.8);
+            const ifc = new THREE.Mesh(ifcGeo, ifcMat);
+            ifc.position.set(4, 9, -3);
+            ifc.castShadow = true;
+            hkGroup.add(ifc);
+
+            // Crown for IFC
+            const crownGeo = new THREE.BoxGeometry(3, 1, 3);
+            const crown = new THREE.Mesh(crownGeo, createNeonMat(0x38bdf8));
+            crown.position.set(4, 18.2, -3);
+            hkGroup.add(crown);
+
+            // Central Plaza (Pyramid Top)
+            const cpGeo = new THREE.BoxGeometry(3, 13, 3);
+            const cpMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5, roughness: 0.2 });
+            const cp = new THREE.Mesh(cpGeo, cpMat);
+            cp.position.set(-7, 6.5, 1);
+            cp.castShadow = true;
+            
+            const cpPyrGeo = new THREE.ConeGeometry(2.2, 3, 4);
+            const cpPyr = new THREE.Mesh(cpPyrGeo, createNeonMat(0xf43f5e));
+            cpPyr.position.set(-7, 14.5, 1);
+            cpPyr.rotation.y = Math.PI / 4;
+            hkGroup.add(cp);
+            hkGroup.add(cpPyr);
+
+            // HKCEC (Convention Center - Turtle Shell Roof)
+            const hkcecGeo = new THREE.SphereGeometry(4, 16, 16, 0, Math.PI * 2, 0, Math.PI / 3);
+            const hkcecMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+            const hkcec = new THREE.Mesh(hkcecGeo, hkcecMat);
+            hkcec.scale.set(1.5, 0.4, 1);
+            hkcec.position.set(0, 1.2, 3);
+            hkcec.castShadow = true;
+            hkGroup.add(hkcec);
+
+            // Dense City Grid (Generic Skyscrapers)
+            const buildingColors = [0x334155, 0x475569, 0x1e293b, 0x0f172a, 0x0284c7];
+            for (let i = 0; i < 28; i++) {
+                const h = 4 + Math.random() * 9;
+                const w = 1.5 + Math.random() * 1.5;
+                const d = 1.5 + Math.random() * 1.5;
+                const bGeo = new THREE.BoxGeometry(w, h, d);
+                const color = buildingColors[Math.floor(Math.random() * buildingColors.length)];
+                const bMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3 });
+                const b = new THREE.Mesh(bGeo, bMat);
+
+                // Position on Hong Kong Island side
+                const angle = Math.random() * Math.PI * 0.8 + Math.PI * 0.6;
+                const dist = 3 + Math.random() * 10;
+                b.position.x = Math.cos(angle) * dist - 2;
+                b.position.z = Math.sin(angle) * dist - 2;
+                b.position.y = h / 2 + 0.5;
+                b.castShadow = true;
+                hkGroup.add(b);
+
+                // Add glowing windows / neon signs to some
+                if (Math.random() > 0.5) {
+                    const winGeo = new THREE.BoxGeometry(w + 0.05, h * 0.7, d + 0.05);
+                    const winMat = createNeonMat(Math.random() > 0.5 ? 0x06b6d4 : 0xf43f5e);
+                    const win = new THREE.Mesh(winGeo, winMat);
+                    win.position.copy(b.position);
+                    hkGroup.add(win);
+                }
+            }
+
+            // Star Ferry (Boats moving across harbour)
+            const ferryGroup = new THREE.Group();
+            const hullGeo = new THREE.BoxGeometry(1.8, 0.5, 0.8);
+            const hullMat = new THREE.MeshStandardMaterial({ color: 0x15803d }); // HK Green
+            const hull = new THREE.Mesh(hullGeo, hullMat);
+            const roofGeo = new THREE.BoxGeometry(1.4, 0.3, 0.7);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 0.4;
+            ferryGroup.add(hull, roof);
+            ferryGroup.position.set(-6, 0.25, 4);
+            hkGroup.add(ferryGroup);
+
+            // Animate Star Ferry
+            animables.push({
+                obj: ferryGroup,
+                update: (time) => {
+                    ferryGroup.position.x = Math.sin(time * 0.5) * 8;
+                    ferryGroup.position.z = 4 + Math.cos(time * 0.5) * 2;
+                    ferryGroup.rotation.y = Math.cos(time * 0.5) * 0.5 + Math.PI / 2;
+                }
+            });
+
+            // Peak Tram (Mini Cable Car scaling the mountain)
+            const tramGeo = new THREE.BoxGeometry(0.8, 0.4, 0.4);
+            const tramMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c }); // Crimson Red
+            const tram = new THREE.Mesh(tramGeo, tramMat);
+            hkGroup.add(tram);
+
+            animables.push({
+                obj: tram,
+                update: (time) => {
+                    const progress = (Math.sin(time * 0.8) + 1) / 2; // 0 to 1
+                    tram.position.x = -6 + progress * 3;
+                    tram.position.y = 1.5 + progress * 5;
+                    tram.position.z = -4 - progress * 3;
+                    tram.rotation.z = -0.4;
+                }
+            });
+        }
+
+        // --- 2. BUILD SHANGHAI MODEL ---
+        function buildShanghai() {
+            // Base Island Platform
+            const baseGeo = new THREE.CylinderGeometry(24, 26, 2, 40);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = -1;
+            base.receiveShadow = true;
+            shGroup.add(base);
+
+            // Huangpu River (S-Curve shape visually represented by water plane)
+            const riverGeo = new THREE.PlaneGeometry(48, 48);
+            const riverMat = new THREE.MeshStandardMaterial({
+                color: 0x1e3a8a,
+                roughness: 0.2,
+                metalness: 0.7,
+                transparent: true,
+                opacity: 0.85
+            });
+            const river = new THREE.Mesh(riverGeo, riverMat);
+            river.rotation.x = -Math.PI / 2;
+            river.position.y = 0.05;
+            shGroup.add(river);
+
+            // --- Lujiazui Landmark Skyscrapers ---
+
+            // 1. Oriental Pearl Tower (东方明珠)
+            const opGroup = new THREE.Group();
+            const opMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8, roughness: 0.2 });
+            const sphereMat = createNeonMat(0xec4899); // Glowing Pink
+
+            // 3 Main Legs
+            for (let i = 0; i < 3; i++) {
+                const legGeo = new THREE.CylinderGeometry(0.2, 0.4, 8);
+                const leg = new THREE.Mesh(legGeo, opMat);
+                const angle = (i * Math.PI * 2) / 3;
+                leg.position.set(Math.cos(angle) * 1.2, 4, Math.sin(angle) * 1.2);
+                leg.rotation.z = Math.cos(angle) * -0.15;
+                leg.rotation.x = Math.sin(angle) * 0.15;
+                opGroup.add(leg);
+            }
+
+            // Lower Large Sphere
+            const botSphere = new THREE.Mesh(new THREE.SphereGeometry(1.8, 16, 16), sphereMat);
+            botSphere.position.y = 7;
+            opGroup.add(botSphere);
+
+            // Middle Shaft
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 7), opMat);
+            shaft.position.y = 11;
+            opGroup.add(shaft);
+
+            // Top Sphere
+            const topSphere = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 16), sphereMat);
+            topSphere.position.y = 14.5;
+            opGroup.add(topSphere);
+
+            // Antenna Spire
+            const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.3, 5), opMat);
+            antenna.position.y = 17.5;
+            opGroup.add(antenna);
+
+            opGroup.position.set(0, 0, 1);
+            shGroup.add(opGroup);
+
+            // 2. Shanghai Tower (上海中心大厦 - Twisted Skyscraper)
+            const stGroup = new THREE.Group();
+            const stLevels = 14;
+            for (let i = 0; i < stLevels; i++) {
+                const rad = 2.4 * (1 - i * 0.04);
+                const stGeo = new THREE.CylinderGeometry(rad * 0.9, rad, 1.4, 3);
+                const stMat = createGlassMat(0x06b6d4, 0.75);
+                const seg = new THREE.Mesh(stGeo, stMat);
+                seg.position.y = i * 1.35 + 1;
+                seg.rotation.y = (i * Math.PI) / 12; // Spiral Twist Effect
+                seg.castShadow = true;
+                stGroup.add(seg);
+            }
+            stGroup.position.set(-6, 0, -4);
+            shGroup.add(stGroup);
+
+            // 3. Shanghai World Financial Center (开瓶器 - Bottle Opener Tower)
+            const swfcGroup = new THREE.Group();
+            const swfcBodyGeo = new THREE.BoxGeometry(3, 17, 2);
+            const swfcMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6, roughness: 0.2 });
+            const swfcBody = new THREE.Mesh(swfcBodyGeo, swfcMat);
+            swfcBody.position.y = 8.5;
+            swfcGroup.add(swfcBody);
+
+            // Trapezoid Cutout at Top
+            const holeGeo = new THREE.BoxGeometry(1.8, 2.5, 2.2);
+            const holeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a }); // Cutout illusion
+            const hole = new THREE.Mesh(holeGeo, holeMat);
+            hole.position.y = 15;
+            swfcGroup.add(hole);
+
+            swfcGroup.position.set(-2, 0, -7);
+            shGroup.add(swfcGroup);
+
+            // 4. Jin Mao Tower (金茂大厦 - Traditional Pagoda Style Layers)
+            const jmGroup = new THREE.Group();
+            const jmLayers = 9;
+            for(let i=0; i<jmLayers; i++) {
+                const w = 3 - i * 0.25;
+                const h = 1.6;
+                const jmGeo = new THREE.BoxGeometry(w, h, w);
+                const jmMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7, roughness: 0.3 });
+                const layer = new THREE.Mesh(jmGeo, jmMat);
+                layer.position.y = i * 1.5 + 1;
+                layer.castShadow = true;
+                jmGroup.add(layer);
+            }
+            jmGroup.position.set(3, 0, -5);
+            shGroup.add(jmGroup);
+
+            // The Bund Waterfront Heritage Buildings (West side of river)
+            for(let i = -5; i <= 5; i += 2.2) {
+                const bGeo = new THREE.BoxGeometry(1.8, 2.5 + Math.random()*1.5, 2);
+                const bMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7 }); // Classic European Granite tone
+                const b = new THREE.Mesh(bGeo, bMat);
+                b.position.set(i, 1.25, 8);
+                b.castShadow = true;
+                shGroup.add(b);
+            }
+
+            // Cruise Ships on Huangpu River
+            const shipGroup = new THREE.Group();
+            const shipHull = new THREE.Mesh(new THREE.BoxGeometry(3, 0.6, 1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            const shipNeon = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.4, 0.9), createNeonMat(0x38bdf8));
+            shipNeon.position.y = 0.4;
+            shipGroup.add(shipHull, shipNeon);
+            shipGroup.position.set(5, 0.25, 4);
+            shGroup.add(shipGroup);
+
+            animables.push({
+                obj: shipGroup,
+                update: (time) => {
+                    shipGroup.position.x = Math.cos(time * 0.4) * 7;
+                    shipGroup.position.z = 3.5 + Math.sin(time * 0.4) * 1.5;
+                    shipGroup.rotation.y = -Math.sin(time * 0.4) * 0.6 - Math.PI / 2;
+                }
+            });
+        }
+
+        // --- Weather Systems ---
+        function createRain() {
+            rainGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(rainCount * 3);
+            const velocities = new Float32Array(rainCount);
+
+            for (let i = 0; i < rainCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 50;
+                positions[i + 1] = Math.random() * 40;
+                positions[i + 2] = (Math.random() - 0.5) * 50;
+                velocities[i / 3] = 0.5 + Math.random() * 0.5;
+            }
+
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const rainMat = new THREE.PointsMaterial({
+                color: 0x93c5fd,
+                size: 0.25,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            rainParticles = new THREE.Points(rainGeo, rainMat);
+            rainParticles.visible = false;
+            scene.add(rainParticles);
+        }
+
+        function updateRain() {
+            if (!rainParticles.visible) return;
+            const positions = rainGeo.attributes.position.array;
+            for (let i = 1; i < rainCount * 3; i += 3) {
+                positions[i] -= 0.8;
+                if (positions[i] < 0) positions[i] = 40;
+            }
+            rainGeo.attributes.position.needsUpdate = true;
+        }
+
+        function createClouds() {
+            const cloudMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 1,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            for (let i = 0; i < 6; i++) {
+                const cloudPuffGroup = new THREE.Group();
+                for (let j = 0; j < 5; j++) {
+                    const puff = new THREE.Mesh(new THREE.SphereGeometry(2 + Math.random() * 2, 8, 8), cloudMat);
+                    puff.position.set(j * 1.5, Math.random() * 1, Math.random() * 1.5);
+                    cloudPuffGroup.add(puff);
+                }
+                cloudPuffGroup.position.set((Math.random() - 0.5) * 40, 18 + Math.random() * 5, (Math.random() - 0.5) * 40);
+                cloudGroup.add(cloudPuffGroup);
+            }
+        }
+
+        // --- Interaction & City/Weather Controls ---
+        function switchCity(city) {
+            currentCity = city;
+            
+            // Toggle visibility
+            hkGroup.visible = (city === 'hk');
+            shGroup.visible = (city === 'sh');
+
+            // Update UI buttons
+            document.getElementById('btn-city-hk').classList.toggle('active', city === 'hk');
+            document.getElementById('btn-city-sh').classList.toggle('active', city === 'sh');
+
+            // Update Info text
+            const titleEl = document.getElementById('city-title');
+            const infoEl = document.getElementById('city-info-text');
+            const tagEl = document.getElementById('landmark-tag');
+
+            if (city === 'hk') {
+                titleEl.textContent = '香港 Victoria Harbour';
+                tagEl.textContent = 'HK';
+                infoEl.textContent = '香港微型景觀包含：維多利亞港海峽、中銀大廈、國際金融中心 (Two IFC)、天星小輪動態巡航、山頂纜車及摩天大樓霓虹燈光。';
+            } else {
+                titleEl.textContent = '上海 Lujiazui Skyline';
+                tagEl.textContent = 'SH';
+                infoEl.textContent = '上海微型景觀包含：陸家嘴三大神器（上海中心大廈、環球金融中心、金茂大廈）、東方明珠廣播電視塔、黃浦江遊船及外灘萬國建築群。';
+            }
+        }
+
+        function setWeather(type) {
+            currentWeather = type;
+            const config = weatherPresets[type];
+
+            // UI Button state update
+            ['sunny', 'rain', 'fog', 'night'].forEach(w => {
+                document.getElementById(`btn-w-${w}`).classList.toggle('active', w === type);
+            });
+
+            // Update Weather Details UI
+            document.getElementById('temp-badge').textContent = config.temp;
+            document.getElementById('val-humidity').textContent = config.humidity;
+            document.getElementById('val-wind').textContent = config.wind;
+            document.getElementById('weather-icon-container').innerHTML = config.icon;
+
+            // Scene Lighting & Fog Updates
+            scene.background = new THREE.Color(config.bg);
+            scene.fog.color.setHex(config.fog);
+            scene.fog.density = config.fogDensity;
+
+            lights.sun.intensity = config.sunIntensity;
+            lights.sun.color.setHex(config.sunColor);
+            lights.ambient.intensity = config.ambientIntensity;
+            lights.ambient.color.setHex(config.ambientColor);
+
+            // Rain particle visibility
+            rainParticles.visible = (type === 'rain');
+            cloudGroup.visible = (type === 'rain' || type === 'fog');
+        }
+
+        // --- Custom Orbit Controls Implementation ---
+        function updateCameraPosition() {
+            camera.position.x = cameraTarget.x + spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+            camera.position.y = cameraTarget.y + spherical.radius * Math.cos(spherical.phi);
+            camera.position.z = cameraTarget.z + spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+            camera.lookAt(cameraTarget);
+        }
+
+        function setupEvents() {
+            const container = document.getElementById('canvas-container');
+
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                isPan = (e.button === 2); // Right click pan
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                if (isPan) {
+                    cameraTarget.x -= deltaX * 0.03;
+                    cameraTarget.z += deltaY * 0.03;
+                } else {
+                    spherical.theta -= deltaX * 0.008;
+                    spherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, spherical.phi - deltaY * 0.008));
+                }
+
+                updateCameraPosition();
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+            container.addEventListener('contextmenu', e => e.preventDefault());
+
+            // Zoom
+            container.addEventListener('wheel', (e) => {
+                spherical.radius = Math.max(15, Math.min(90, spherical.radius + e.deltaY * 0.04));
+                updateCameraPosition();
+            });
+
+            // Touch events for mobile responsiveness
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+                spherical.theta -= deltaX * 0.008;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, spherical.phi - deltaY * 0.008));
+
+                updateCameraPosition();
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            });
+
+            container.addEventListener('touchend', () => isDragging = false);
+
+            // Responsive Window Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // --- Animation Loop ---
+        function animate(time = 0) {
+            requestAnimationFrame(animate);
+
+            const sec = time * 0.001;
+
+            // Update animated scene objects
+            animables.forEach(item => item.update(sec));
+
+            // Rain particle animation
+            updateRain();
+
+            // Cloud drifting
+            cloudGroup.children.forEach((cloud, idx) => {
+                cloud.position.x += 0.02 * (idx % 2 === 0 ? 1 : -1);
+                if (cloud.position.x > 30) cloud.position.x = -30;
+                if (cloud.position.x < -30) cloud.position.x = 30;
+            });
+
+            // Subtle city floating / water reflection effect animation
+            if (currentWeather === 'night') {
+                // Random subtle lightning or window flickering effect
+                lights.sun.intensity = 0.1 + Math.sin(sec * 3) * 0.05;
+            }
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

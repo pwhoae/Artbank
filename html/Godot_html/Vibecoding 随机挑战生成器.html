@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibecoding 随机挑战生成器</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Celebration Effects -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-border {
+            position: relative;
+            background: #1e1e2e;
+            border-radius: 1rem;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 1.1rem;
+            background: linear-gradient(135deg, #a855f7, #ec4899, #3b82f6);
+            z-index: -1;
+            opacity: 0.75;
+            transition: opacity 0.3s ease;
+        }
+        .gradient-border:hover::before {
+            opacity: 1;
+        }
+        @keyframes slotRoll {
+            0% { transform: translateY(-20px); opacity: 0; filter: blur(4px); }
+            50% { transform: translateY(10px); opacity: 0.5; filter: blur(2px); }
+            100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+        }
+        .animate-slot {
+            animation: slotRoll 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        /* Glassmorphism effects */
+        .glass-panel {
+            background: rgba(30, 30, 46, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #11111b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #313244;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #45475a;
+        }
+    </style>
+</head>
+<body class="bg-[#0f0f17] text-slate-100 min-h-full flex flex-col justify-between selection:bg-pink-500 selection:text-white">
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 flex items-center gap-3 bg-slate-800 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-xl"></i>
+        <span id="toast-msg" class="font-medium">提示信息</span>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800/80 bg-[#11111b]/80 backdrop-filter blur-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        <span>Vibecoding</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">AI 纯靠感觉编程</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">零手动代码，全靠 Prompt & 氛围搞定挑战！</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="toggleConfigModal()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2 text-sm font-medium">
+                    <i class="fa-solid fa-sliders text-purple-400"></i>
+                    <span>管理选项库</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-5xl mx-auto px-4 py-8 w-full flex-grow flex flex-col justify-center">
+
+        <!-- Hero & Controls Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-pink-400 text-xs font-semibold uppercase tracking-wider mb-3">
+                <i class="fa-solid fa-bolt"></i> 随机极速挑战
+            </div>
+            <h2 class="text-3xl md:text-5xl font-extrabold gradient-text mb-3">
+                放手让 AI 去写，你只负责 Vibe
+            </h2>
+            <p class="text-slate-400 max-w-xl mx-auto text-sm md:text-base">
+                点击生成按钮，组合你的专属 Vibecoding 限制与目标！你可以随时自定义添加更多奇葩规则。
+            </p>
+        </div>
+
+        <!-- Main Slots Display Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            
+            <!-- Category 1: Project Target -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:border-purple-500/50 transition duration-300">
+                <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <span class="flex items-center gap-1.5 text-purple-400">
+                        <i class="fa-solid fa-laptop-code"></i> 项目主题
+                    </span>
+                    <button onclick="openAddModal('target')" class="hover:text-purple-300 transition" title="添加新主题">
+                        <i class="fa-solid fa-circle-plus"></i>
+                    </button>
+                </div>
+                <div class="my-auto py-3">
+                    <div id="slot-target" class="text-lg md:text-xl font-bold text-white leading-snug">
+                        点击下方按钮生成
+                    </div>
+                </div>
+                <div class="text-xs text-slate-500 flex items-center justify-between border-t border-slate-800/80 pt-3">
+                    <span>你要搞个啥？</span>
+                    <span id="count-target" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0 项</span>
+                </div>
+            </div>
+
+            <!-- Category 2: AI Tool / Mode -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:border-pink-500/50 transition duration-300">
+                <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <span class="flex items-center gap-1.5 text-pink-400">
+                        <i class="fa-solid fa-robot"></i> AI 工具 & 模式
+                    </span>
+                    <button onclick="openAddModal('tool')" class="hover:text-pink-300 transition" title="添加新工具">
+                        <i class="fa-solid fa-circle-plus"></i>
+                    </button>
+                </div>
+                <div class="my-auto py-3">
+                    <div id="slot-tool" class="text-lg md:text-xl font-bold text-white leading-snug">
+                        点击下方按钮生成
+                    </div>
+                </div>
+                <div class="text-xs text-slate-500 flex items-center justify-between border-t border-slate-800/80 pt-3">
+                    <span>用什么主力 AI？</span>
+                    <span id="count-tool" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0 项</span>
+                </div>
+            </div>
+
+            <!-- Category 3: Vibe Constraint -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:border-blue-500/50 transition duration-300">
+                <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <span class="flex items-center gap-1.5 text-blue-400">
+                        <i class="fa-solid fa-handcuffs"></i> 趣味限制条件
+                    </span>
+                    <button onclick="openAddModal('constraint')" class="hover:text-blue-300 transition" title="添加新限制">
+                        <i class="fa-solid fa-circle-plus"></i>
+                    </button>
+                </div>
+                <div class="my-auto py-3">
+                    <div id="slot-constraint" class="text-lg md:text-xl font-bold text-white leading-snug">
+                        点击下方按钮生成
+                    </div>
+                </div>
+                <div class="text-xs text-slate-500 flex items-center justify-between border-t border-slate-800/80 pt-3">
+                    <span>戴着镣铐跳舞</span>
+                    <span id="count-constraint" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0 项</span>
+                </div>
+            </div>
+
+            <!-- Category 4: Aesthetic & Theme -->
+            <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/50 transition duration-300">
+                <div class="flex items-center justify-between mb-3 text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <span class="flex items-center gap-1.5 text-emerald-400">
+                        <i class="fa-solid fa-palette"></i> 视觉/氛围风格
+                    </span>
+                    <button onclick="openAddModal('style')" class="hover:text-emerald-300 transition" title="添加新风格">
+                        <i class="fa-solid fa-circle-plus"></i>
+                    </button>
+                </div>
+                <div class="my-auto py-3">
+                    <div id="slot-style" class="text-lg md:text-xl font-bold text-white leading-snug">
+                        点击下方按钮生成
+                    </div>
+                </div>
+                <div class="text-xs text-slate-500 flex items-center justify-between border-t border-slate-800/80 pt-3">
+                    <span>UI/UX 的灵魂</span>
+                    <span id="count-style" class="bg-slate-800 px-2 py-0.5 rounded-full text-[10px]">0 项</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Action Buttons Bar -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <button id="generate-btn" onclick="generateChallenge()" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white font-bold text-lg shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-3 group">
+                <i class="fa-solid fa-dice text-2xl group-hover:rotate-180 transition duration-500"></i>
+                <span>随机生成 Vibecoding 挑战！</span>
+            </button>
+
+            <button onclick="copyChallengeResult()" class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-base transition flex items-center justify-center gap-2 shadow-lg">
+                <i class="fa-regular fa-copy text-pink-400"></i>
+                <span>复制全套 Prompt</span>
+            </button>
+        </div>
+
+        <!-- Generated Result Card (Prompt Card) -->
+        <div id="result-card" class="glass-panel p-6 rounded-2xl border border-slate-700/60 hidden">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-slate-200 flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-terminal text-purple-400"></i>
+                    可以直接发给 AI 的开局 Prompt:
+                </h3>
+                <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-full font-mono">Ready to Vibe</span>
+            </div>
+            <div class="bg-[#0b0b12] p-4 rounded-xl border border-slate-800/80 font-mono text-xs md:text-sm text-slate-300 leading-relaxed relative group">
+                <p id="prompt-output" class="whitespace-pre-wrap select-all"></p>
+                <button onclick="copyChallengeResult()" class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg transition text-xs flex items-center gap-1 border border-slate-700">
+                    <i class="fa-regular fa-copy"></i> 复制
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-[#0b0b12] py-6 text-center text-xs text-slate-500">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p>Vibecoding Philosophy: <span class="text-slate-400">No syntax errors, only happy accidents. 🚀</span></p>
+            <div class="flex items-center gap-4">
+                <span>Made for AI Creators</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: Add New Choice Modal -->
+    <div id="add-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-[#181825] border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl p-6 relative animate-slot">
+            <button onclick="closeAddModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-9 h-9 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">添加新的自定义 Choice</h3>
+            </div>
+            
+            <form onsubmit="handleAddNewChoice(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">选择所属分类</label>
+                    <select id="modal-category-select" class="w-full bg-[#0f0f17] border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="target">🎯 项目主题 (Target)</option>
+                        <option value="tool">🤖 AI 工具/模式 (Tool)</option>
+                        <option value="constraint">🔗 趣味限制条件 (Constraint)</option>
+                        <option value="style">🎨 视觉/氛围风格 (Style)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">选项内容 (Choice)</label>
+                    <input type="text" id="modal-choice-input" required placeholder="例如：只能用像素画风格 / 限制对话不能超过 5 轮..." class="w-full bg-[#0f0f17] border border-slate-700 rounded-xl px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500">
+                </div>
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">取消</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold shadow-lg shadow-purple-600/30 transition">保存新选项</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Full Options Manager Modal -->
+    <div id="config-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-[#181825] border border-slate-700 w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-slot overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-[#11111b]">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-sliders text-purple-400 text-xl"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">管理 Vibecoding 选项库</h3>
+                        <p class="text-xs text-slate-400">您可以随意增加、删除或重置各类随机元素</p>
+                    </div>
+                </div>
+                <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-white p-2 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="flex border-b border-slate-800 bg-[#141420] px-4 pt-2 overflow-x-auto">
+                <button onclick="switchTab('target')" id="tab-target" class="px-4 py-2.5 text-xs font-bold border-b-2 border-purple-500 text-purple-400 whitespace-nowrap transition">🎯 项目主题</button>
+                <button onclick="switchTab('tool')" id="tab-tool" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition">🤖 AI 工具</button>
+                <button onclick="switchTab('constraint')" id="tab-constraint" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition">🔗 限制条件</button>
+                <button onclick="switchTab('style')" id="tab-style" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition">🎨 视觉风格</button>
+            </div>
+
+            <!-- Category Items Content -->
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
+                <!-- Add inline input inside manager -->
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="quick-add-input" placeholder="在当前分类快速添加新选项..." class="flex-grow bg-[#0f0f17] border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500">
+                    <button onclick="handleQuickAdd()" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-semibold transition shrink-0 flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus"></i> 添加
+                    </button>
+                </div>
+
+                <!-- Items list -->
+                <div id="manager-items-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Dynamic rendering -->
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-800 bg-[#11111b] flex items-center justify-between">
+                <button onclick="resetDefaultChoices()" class="text-xs text-rose-400 hover:text-rose-300 font-medium flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-rose-500/10 transition">
+                    <i class="fa-solid fa-rotate-left"></i> 恢复默认预设库
+                </button>
+                <button onclick="toggleConfigModal()" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium transition">
+                    完成
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Default presets for Vibecoding challenge categories
+        const DEFAULT_DATA = {
+            target: [
+                "赛博朋克风格的迷你时钟工具",
+                "极简风番茄钟 + 随机猫咪赞美语",
+                "怀旧复古风 ASCII 代码编辑器",
+                "根据心情推荐代码 API 的单页应用",
+                "支持音效的蒸汽波风格扫雷游戏",
+                "打字音效生成器 (Typing ASMR)",
+                "AI Prompt 提示词调酒师工具",
+                "只用一个 HTML 文件实现的弹幕游戏",
+                "程序员解压捏捏乐网业版",
+                "随机玄学程序员卜卦占卜机"
+            ],
+            tool: [
+                "Claude 3.7 Sonnet (Thinking 思考模式)",
+                "Cursor + Auto-apply 连点模式",
+                "v0.dev + 一句话直接生成 UI",
+                "ChatGPT o3-mini (只用一轮 Prompt)",
+                "Windsurf Cascade 智能流式写代码",
+                "GitHub Copilot Workspace 自动化流程",
+                "Gemini 2.5 Pro (要求一次性生成完整应用)",
+                "Bolt.new 一键部署与原型生成"
+            ],
+            constraint: [
+                "全程双手离开键盘，100% 语音输入指令",
+                "完全不看任何生成的代码，生成啥就部署啥",
+                "项目必须在 15 分钟内完成并交付",
+                "必须包含至少 3 种搞笑的 CSS 动画",
+                "代码行数不能多于 150 行 (极简代码)",
+                "每让 AI 修改一次 Bug 必须惩罚深蹲 3 个",
+                "只允许向 AI 发送 3 次 Prompt 对话",
+                "必须加入 8-Bit 像素音效与复古色彩"
+            ],
+            style: [
+                "赛博荧光 (Cyberpunk Neon)",
+                "极简包豪斯 (Minimalist Bauhaus)",
+                "怀旧 90 年代 Windows 95 风格",
+                "暗黑极光 (Dark Aurora Glassmorphism)",
+                "漫画手绘风 (Neubrutalism 新粗犷主义)",
+                "马卡龙柔和渐变色",
+                "Terminal 终端绿字复古风",
+                "蒸汽波 (Vaporwave Retrowave)"
+            ]
+        };
+
+        // Application State loaded from localStorage or initialized with defaults
+        let challengeData = {
+            target: [],
+            tool: [],
+            constraint: [],
+            style: []
+        };
+
+        let currentActiveTab = 'target';
+        let currentChallenge = {
+            target: '',
+            tool: '',
+            constraint: '',
+            style: ''
+        };
+
+        // Initialize App on DOM Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            updateCounts();
+            // Automatically roll initial challenge
+            generateChallenge();
+        });
+
+        // Load data from LocalStorage or Default
+        function loadData() {
+            const saved = localStorage.getItem('vibecoding_challenges_data');
+            if (saved) {
+                try {
+                    challengeData = JSON.parse(saved);
+                } catch (e) {
+                    challengeData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                }
+            } else {
+                challengeData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            }
+        }
+
+        // Save data to LocalStorage
+        function saveData() {
+            localStorage.setItem('vibecoding_challenges_data', JSON.stringify(challengeData));
+            updateCounts();
+        }
+
+        // Update option counts in cards
+        function updateCounts() {
+            document.getElementById('count-target').innerText = `${challengeData.target.length} 项`;
+            document.getElementById('count-tool').innerText = `${challengeData.tool.length} 项`;
+            document.getElementById('count-constraint').innerText = `${challengeData.constraint.length} 项`;
+            document.getElementById('count-style').innerText = `${challengeData.style.length} 项`;
+        }
+
+        // Helper to get random item from array
+        function getRandomItem(arr) {
+            if (!arr || arr.length === 0) return '尚无可选项，请在库中添加';
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        // Generate challenge slot roll
+        function generateChallenge() {
+            const btn = document.getElementById('generate-btn');
+            btn.classList.add('scale-95', 'opacity-90');
+            setTimeout(() => btn.classList.remove('scale-95', 'opacity-90'), 200);
+
+            const categories = ['target', 'tool', 'constraint', 'style'];
+            
+            categories.forEach((cat) => {
+                const el = document.getElementById(`slot-${cat}`);
+                const selected = getRandomItem(challengeData[cat]);
+                currentChallenge[cat] = selected;
+
+                // Trigger smooth slot animation
+                el.classList.remove('animate-slot');
+                void el.offsetWidth; // Force reflow
+                el.classList.add('animate-slot');
+                el.innerText = selected;
+            });
+
+            // Update Prompt Output Card
+            updatePromptOutput();
+
+            // Trigger light festive confetti
+            try {
+                confetti({
+                    particleCount: 25,
+                    spread: 60,
+                    origin: { y: 0.8 },
+                    colors: ['#a855f7', '#ec4899', '#3b82f6']
+                });
+            } catch(e) {}
+        }
+
+        // Update the prompt preview block
+        function updatePromptOutput() {
+            const resultCard = document.getElementById('result-card');
+            const promptOutput = document.getElementById('prompt-output');
+            
+            resultCard.classList.remove('hidden');
+
+            const promptText = `你好！我要开启一次 Vibecoding 随机挑战。请帮我实现以下项目：
+🎯 [项目目标]: ${currentChallenge.target}
+🤖 [推荐/指定 AI 模式]: ${currentChallenge.tool}
+🔗 [趣味限制条件]: ${currentChallenge.constraint}
+🎨 [视觉与 UI 风格]: ${currentChallenge.style}
+
+请遵循以上视觉风格与限制，直接帮我写出完整、漂亮、可直接运行的单文件 HTML/Web 代码！准备好我们就开始！`;
+
+            promptOutput.innerText = promptText;
+        }
+
+        // Copy Prompt to Clipboard
+        function copyChallengeResult() {
+            const promptText = document.getElementById('prompt-output').innerText;
+            if (!promptText) return;
+
+            // Use execCommand for reliable copying within frame environments
+            const tempInput = document.createElement('textarea');
+            tempInput.value = promptText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast('已成功复制完整 Prompt 到剪贴板！', 'success');
+            } catch (err) {
+                showToast('复制失败，请手动选择复制', 'error');
+            } finally {
+                document.body.removeChild(tempInput);
+            }
+        }
+
+        // Show Toast Notification
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = msg;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-xl';
+            } else {
+                toastIcon.className = 'fa-solid fa-triangle-exclamation text-rose-400 text-xl';
+            }
+
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+            }, 3000);
+        }
+
+        // Open Add Choice Modal
+        function openAddModal(category = 'target') {
+            document.getElementById('modal-category-select').value = category;
+            document.getElementById('modal-choice-input').value = '';
+            document.getElementById('add-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('modal-choice-input').focus(), 100);
+        }
+
+        // Close Add Choice Modal
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+        }
+
+        // Handle Form Submit for Adding Choice
+        function handleAddNewChoice(e) {
+            e.preventDefault();
+            const category = document.getElementById('modal-category-select').value;
+            const text = document.getElementById('modal-choice-input').value.trim();
+
+            if (!text) return;
+
+            challengeData[category].push(text);
+            saveData();
+            closeAddModal();
+            showToast(`成功在【${getCategoryName(category)}】中添加了新选项！`);
+            
+            // If in config modal, refresh list
+            if (!document.getElementById('config-modal').classList.contains('hidden')) {
+                renderManagerItems();
+            }
+        }
+
+        // Toggle Option Config Modal
+        function toggleConfigModal() {
+            const modal = document.getElementById('config-modal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                switchTab(currentActiveTab);
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Switch Category Tab in Option Manager Modal
+        function switchTab(category) {
+            currentActiveTab = category;
+            const tabs = ['target', 'tool', 'constraint', 'style'];
+            
+            tabs.forEach(t => {
+                const tabBtn = document.getElementById(`tab-${t}`);
+                if (t === category) {
+                    tabBtn.className = "px-4 py-2.5 text-xs font-bold border-b-2 border-purple-500 text-purple-400 whitespace-nowrap transition";
+                } else {
+                    tabBtn.className = "px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 whitespace-nowrap transition";
+                }
+            });
+
+            renderManagerItems();
+        }
+
+        // Render Manager Items
+        function renderManagerItems() {
+            const container = document.getElementById('manager-items-list');
+            const items = challengeData[currentActiveTab] || [];
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-500 text-sm">该分类下暂无任何选项，快在上方添加吧！</div>`;
+                return;
+            }
+
+            container.innerHTML = items.map((item, index) => `
+                <div class="bg-[#0f0f17] border border-slate-800 p-3 rounded-xl flex items-center justify-between group hover:border-slate-700 transition">
+                    <span class="text-xs md:text-sm text-slate-300 pr-2 break-all">${escapeHtml(item)}</span>
+                    <button onclick="deleteChoice('${currentActiveTab}', ${index})" class="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg transition shrink-0" title="删除该项">
+                        <i class="fa-regular fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Handle Quick Add inside Config Modal
+        function handleQuickAdd() {
+            const input = document.getElementById('quick-add-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            challengeData[currentActiveTab].push(text);
+            saveData();
+            input.value = '';
+            renderManagerItems();
+            showToast('已添加新选项！');
+        }
+
+        // Delete Choice
+        function deleteChoice(category, index) {
+            challengeData[category].splice(index, 1);
+            saveData();
+            renderManagerItems();
+            showToast('已删除该选项', 'error');
+        }
+
+        // Reset to Default Presets
+        function resetDefaultChoices() {
+            if (confirm('确定要恢复默认预设库吗？您自定义添加的选项将被清空。')) {
+                challengeData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+                saveData();
+                renderManagerItems();
+                generateChallenge();
+                showToast('已成功恢复为默认预设库！');
+            }
+        }
+
+        // Category Code to Name mapping
+        function getCategoryName(cat) {
+            const names = {
+                target: '项目主题',
+                tool: 'AI 工具',
+                constraint: '趣味限制',
+                style: '视觉风格'
+            };
+            return names[cat] || cat;
+        }
+
+        // HTML Escape Helper
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

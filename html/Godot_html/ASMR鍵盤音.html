@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing ASMR - Windows 95 Edition</title>
+    <!-- Tailwind CSS for rapid structural utility -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Modern CSS Reset & Win95 Theme Styles */
+        @font-family {
+            font-family: 'Pixelated MS Sans Serif';
+            src: local('MS Sans Serif'), local('Tahoma');
+        }
+
+        body {
+            font-family: 'Tahoma', 'Segoe UI', Geneva, Verdana, sans-serif;
+            background-color: #008080; /* Classic Win95 Teal */
+            color: #000;
+            user-select: none;
+            overflow-x: hidden;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Windows 95 Bevel Utilities */
+        .win-outset {
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #808080;
+            background-color: #c0c0c0;
+        }
+
+        .win-inset {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            box-shadow: inset 1px 1px 0px #000000, inset -1px -1px 0px #dfdfdf;
+            background-color: #ffffff;
+        }
+
+        .win-button {
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            box-shadow: inset 1px 1px 0px #dfdfdf, inset -1px -1px 0px #808080;
+            background-color: #c0c0c0;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .win-button:active, .win-button.active {
+            border-top: 2px solid #000000;
+            border-left: 2px solid #000000;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            box-shadow: inset 1px 1px 0px #808080, inset -1px -1px 0px #dfdfdf;
+            padding: 1px -1px -1px 1px;
+        }
+
+        .win-titlebar {
+            background: linear-gradient(90deg, #000080, #1084d0);
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3px 4px;
+        }
+
+        .win-titlebar.inactive {
+            background: linear-gradient(90deg, #808080, #b5b5b5);
+        }
+
+        /* Custom Scrollbar for Win95 Feel */
+        ::-webkit-scrollbar {
+            width: 16px;
+            height: 16px;
+            background-color: #c0c0c0;
+        }
+        ::-webkit-scrollbar-button {
+            background-color: #c0c0c0;
+            border: 2px solid #ffffff;
+            border-right-color: #000;
+            border-bottom-color: #000;
+            width: 16px;
+            height: 16px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+        }
+
+        /* Scanline effect optional toggle */
+        .scanlines {
+            position: relative;
+        }
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.08) 50%);
+            background-size: 100% 4px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* CRT Glow */
+        .crt-screen {
+            text-shadow: 0 0 2px rgba(0,255,65,0.4);
+        }
+
+        /* LED Indicator */
+        .led-green {
+            width: 8px;
+            height: 8px;
+            background-color: #00ff00;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        .led-off {
+            width: 8px;
+            height: 8px;
+            background-color: #444;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 select-none">
+
+    <!-- Desktop Area -->
+    <div class="flex-1 flex flex-col md:flex-row gap-4 items-start justify-center max-w-6xl mx-auto w-full mb-12">
+        
+        <!-- Left Side: Main Text Editor Window -->
+        <div class="win-outset w-full md:w-2/3 flex flex-col shadow-2xl rounded-none">
+            <!-- Title Bar -->
+            <div class="win-titlebar">
+                <div class="flex items-center gap-2 text-xs sm:text-sm">
+                    <i class="fa-solid fa-file-lines text-yellow-300"></i>
+                    <span>Notepad - [TypingASMR_v1.0.txt]</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button class="win-button px-2 py-0 text-xs font-bold" onclick="minimizeWin()">_</button>
+                    <button class="win-button px-2 py-0 text-xs font-bold" onclick="maximizeWin()">☐</button>
+                    <button class="win-button px-2 py-0 text-xs font-bold bg-red-400 hover:bg-red-500" onclick="resetText()">X</button>
+                </div>
+            </div>
+
+            <!-- Menu Bar -->
+            <div class="flex gap-4 text-xs bg-[#c0c0c0] px-2 py-1 border-b border-[#808080]">
+                <span class="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onclick="triggerAudioPreset('typewriter')"><u>F</u>ile</span>
+                <span class="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onclick="clearText()"><u>E</u>dit</span>
+                <span class="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onclick="toggleCRT()"><u>V</u>iew (CRT)</span>
+                <span class="hover:bg-[#000080] hover:text-white px-1 cursor-pointer" onclick="showHelp()"><u>H</u>elp</span>
+            </div>
+
+            <!-- Main Editor Area -->
+            <div id="editor-wrapper" class="p-2 bg-[#c0c0c0]">
+                <textarea id="typing-area" 
+                    class="win-inset w-full h-80 sm:h-96 p-3 text-base sm:text-lg font-mono resize-none focus:outline-none text-black bg-white leading-relaxed" 
+                    placeholder="在此输入任意文字，体验 90 年代 Windows 95 复古打字音效 ASMR..."
+                    spellcheck="false"
+                    autofocus></textarea>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="win-inset m-1 p-1 flex justify-between items-center text-xs text-gray-700 bg-[#c0c0c0]">
+                <div class="flex gap-4">
+                    <span>字数: <strong id="char-count">0</strong></span>
+                    <span>词数: <strong id="word-count">0</strong></span>
+                    <span>WPM: <strong id="wpm-count">0</strong></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="sound-status">音效引擎: 就绪</span>
+                    <div id="led-indicator" class="led-green"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: ASMR Control Panel Window -->
+        <div class="win-outset w-full md:w-1/3 flex flex-col shadow-2xl">
+            <!-- Title Bar -->
+            <div class="win-titlebar">
+                <div class="flex items-center gap-2 text-xs sm:text-sm">
+                    <i class="fa-solid fa-sliders text-green-300"></i>
+                    <span>Sound Control Panel</span>
+                </div>
+                <button class="win-button px-2 py-0 text-xs font-bold" onclick="togglePanel()">?</button>
+            </div>
+
+            <div class="p-3 space-y-4 text-xs">
+                
+                <!-- Switch Sound Type -->
+                <fieldset class="win-outset p-2.5">
+                    <legend class="px-1 font-bold text-gray-800">键盘轴体 / 音效样式</legend>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <button class="win-button p-2 text-left flex items-center gap-2 active-style-btn active" onclick="setSoundProfile('blue', this)">
+                            <i class="fa-solid fa-keyboard text-blue-700"></i> 机械青轴 (Clicky)
+                        </button>
+                        <button class="win-button p-2 text-left flex items-center gap-2 active-style-btn" onclick="setSoundProfile('red', this)">
+                            <i class="fa-solid fa-keyboard text-red-600"></i> 机械红轴 (Linear)
+                        </button>
+                        <button class="win-button p-2 text-left flex items-center gap-2 active-style-btn" onclick="setSoundProfile('typewriter', this)">
+                            <i class="fa-solid fa-print text-amber-800"></i> 复古打字机 (Typewriter)
+                        </button>
+                        <button class="win-button p-2 text-left flex items-center gap-2 active-style-btn" onclick="setSoundProfile('vintage', this)">
+                            <i class="fa-solid fa-desktop text-gray-700"></i> 90s IBM 键盘
+                        </button>
+                        <button class="win-button p-2 text-left flex items-center gap-2 active-style-btn" onclick="setSoundProfile('bubble', this)">
+                            <i class="fa-solid fa-soap text-pink-500"></i> 解压泡泡音 (Bubble)
+                        </button>
+                        <button class="win-button p-2 text-left flex items-center gap-2 active-style-btn" onclick="setSoundProfile('8bit', this)">
+                            <i class="fa-solid fa-gamepad text-purple-600"></i> 8-Bit 像素音
+                        </button>
+                    </div>
+                </fieldset>
+
+                <!-- Sound Controls -->
+                <fieldset class="win-outset p-2.5 space-y-3">
+                    <legend class="px-1 font-bold text-gray-800">声音细致调节</legend>
+                    
+                    <!-- Volume -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label for="vol-slider">主音量 (Volume):</label>
+                            <span id="vol-val" class="font-mono">80%</span>
+                        </div>
+                        <input id="vol-slider" type="range" min="0" max="100" value="80" class="w-full h-2 bg-gray-300 accent-blue-800 cursor-pointer" oninput="updateVolume(this.value)">
+                    </div>
+
+                    <!-- Pitch / Tone -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label for="pitch-slider">音调/随机度 (Pitch Variations):</label>
+                            <span id="pitch-val" class="font-mono">中等</span>
+                        </div>
+                        <input id="pitch-slider" type="range" min="1" max="5" value="3" class="w-full h-2 bg-gray-300 accent-blue-800 cursor-pointer" oninput="updatePitch(this.value)">
+                    </div>
+
+                    <!-- Room Reverb -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label for="reverb-slider">空间混响 ASMR (Reverb):</label>
+                            <span id="reverb-val" class="font-mono">轻微</span>
+                        </div>
+                        <input id="reverb-slider" type="range" min="0" max="100" value="25" class="w-full h-2 bg-gray-300 accent-blue-800 cursor-pointer" oninput="updateReverb(this.value)">
+                    </div>
+                </fieldset>
+
+                <!-- Ambient Noise Player -->
+                <fieldset class="win-outset p-2.5">
+                    <legend class="px-1 font-bold text-gray-800">背景白噪音 (Ambient)</legend>
+                    <div class="flex items-center justify-between gap-2 mt-1">
+                        <select id="ambient-type" class="win-inset p-1 text-xs w-2/3 focus:outline-none" onchange="changeAmbientType(this.value)">
+                            <option value="none">关闭 (Off)</option>
+                            <option value="rain">窗外细雨 (Soft Rain)</option>
+                            <option value="cafe">90s 咖啡馆 (Cafe Hum)</option>
+                            <option value="fan">老旧风扇声 (Vintage Fan)</option>
+                            <option value="tape">磁带底噪 (Tape Hiss)</option>
+                        </select>
+                        <button id="ambient-btn" class="win-button px-3 py-1 text-xs font-bold flex-1" onclick="toggleAmbient()">
+                            播放 <i class="fa-solid fa-play text-green-700 ml-1"></i>
+                        </button>
+                    </div>
+                </fieldset>
+
+                <!-- Quick Presets -->
+                <div class="flex justify-between gap-2 pt-1">
+                    <button class="win-button flex-1 py-1 text-xs" onclick="triggerSpaceSound()">
+                        测试 Enter 键音效
+                    </button>
+                    <button class="win-button flex-1 py-1 text-xs" onclick="toggleMute()">
+                        <i id="mute-icon" class="fa-solid fa-volume-high"></i> 静音
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Windows 95 Taskbar -->
+    <div class="fixed bottom-0 left-0 right-0 h-10 win-outset flex items-center justify-between px-1 z-50 bg-[#c0c0c0]">
+        <!-- Start Button -->
+        <div class="flex items-center gap-1">
+            <button class="win-button flex items-center gap-1.5 px-2 py-1 font-bold text-xs" onclick="toggleStartMenu()">
+                <img src="https://win95.ajf.me/win95.png" alt="win95" class="w-4 h-4" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 16 16\'><rect width=\'7\' height=\'7\' fill=\'%23f25022\'/><rect x=\'8\' width=\'7\' height=\'7\' fill=\'%237fba00\'/><rect y=\'8\' width=\'7\' height=\'7\' fill=\'%2300a4ef\'/><rect x=\'8\' y=\'8\' width=\'7\' height=\'7\' fill=\'%23ffb900\'/></svg>'">
+                <span>Start</span>
+            </button>
+            <div class="h-6 w-0.5 border-l border-gray-400 border-r border-white mx-1"></div>
+            <!-- Active Task -->
+            <button class="win-button active flex items-center gap-1 px-3 py-1 text-xs font-semibold max-w-[150px] truncate">
+                <i class="fa-solid fa-file-lines text-blue-800"></i>
+                Typing ASMR
+            </button>
+        </div>
+
+        <!-- System Tray -->
+        <div class="win-inset px-2 py-1 flex items-center gap-2 text-xs bg-[#c0c0c0]">
+            <i class="fa-solid fa-volume-high text-gray-700"></i>
+            <span id="win-clock">12:00 PM</span>
+        </div>
+    </div>
+
+    <!-- Start Menu Modal -->
+    <div id="start-menu" class="hidden fixed bottom-10 left-1 w-56 win-outset z-50 p-1 flex">
+        <div class="bg-[#000080] w-7 flex items-end justify-center py-2">
+            <span class="text-white font-bold tracking-widest -rotate-90 whitespace-nowrap text-sm">Windows95</span>
+        </div>
+        <div class="flex-1 py-1 text-xs space-y-1 bg-[#c0c0c0]">
+            <div class="hover:bg-[#000080] hover:text-white px-3 py-1 flex items-center gap-2 cursor-pointer" onclick="showHelp()">
+                <i class="fa-solid fa-circle-question text-blue-600"></i> 帮助与使用指南
+            </div>
+            <div class="hover:bg-[#000080] hover:text-white px-3 py-1 flex items-center gap-2 cursor-pointer" onclick="clearText()">
+                <i class="fa-solid fa-trash text-red-500"></i> 清空文本编辑器
+            </div>
+            <hr class="border-gray-400 my-1">
+            <div class="hover:bg-[#000080] hover:text-white px-3 py-1 flex items-center gap-2 cursor-pointer" onclick="alert('系统提示：你正处于完整的 90 年代 Vibecoding 氛围中！')">
+                <i class="fa-solid fa-power-off text-red-600"></i> 关机 (Shut Down...)
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Engine & Interactive Logic -->
+    <script>
+        // Web Audio API Synthesis Engine
+        let audioCtx = null;
+        let masterGain = null;
+        let isMuted = false;
+        let volumeLevel = 0.8;
+        let pitchVariation = 3; // 1-5 scale
+        let reverbLevel = 0.25;
+        let currentProfile = 'blue';
+
+        // Ambient noise state
+        let ambientNode = null;
+        let ambientGain = null;
+        let isAmbientPlaying = false;
+
+        // Statistics Variables
+        let startTime = null;
+        let totalTypedChars = 0;
+
+        // Initialize Audio Context on first interaction
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+
+                masterGain = audioCtx.createGain();
+                masterGain.gain.setValueAtTime(volumeLevel, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Sound Profile Generators using Procedural Synthesis
+        function playKeySound(keyType = 'normal') {
+            initAudio();
+            if (isMuted || !audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            
+            // Random Pitch Offset based on variation slider
+            const pitchRandomness = (Math.random() - 0.5) * (pitchVariation * 0.08);
+
+            switch (currentProfile) {
+                case 'blue': // Clicky Mechanical (Blue Switch)
+                    createMechanicalClick(now, 1200 + pitchRandomness * 200, keyType);
+                    break;
+                case 'red': // Linear Mechanical (Red Switch - Thocky)
+                    createRedSwitchThock(now, 400 + pitchRandomness * 100, keyType);
+                    break;
+                case 'typewriter': // Vintage Typewriter Metallic & Clack
+                    createTypewriterClack(now, keyType);
+                    break;
+                case 'vintage': // IBM Model M / Old Membrane
+                    createVintageMembrane(now, keyType);
+                    break;
+                case 'bubble': // Bubble Pop sound
+                    createBubblePop(now, pitchRandomness);
+                    break;
+                case '8bit': // Retro Arcade Chiptune Key
+                    create8BitKey(now, pitchRandomness);
+                    break;
+            }
+        }
+
+        // 1. Mechanical Blue Switch (Crisp Click + Bottom Out)
+        function createMechanicalClick(now, freq, keyType) {
+            // High pitch metallic click
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.2, now + 0.03);
+
+            gain.gain.setValueAtTime(0.4 * volumeLevel, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 0.03);
+
+            // Lower frequency bottom-out sound
+            const subOsc = audioCtx.createOscillator();
+            const subGain = audioCtx.createGain();
+            subOsc.type = 'sine';
+            const baseFreq = keyType === 'space' || keyType === 'enter' ? 120 : 220;
+            subOsc.frequency.setValueAtTime(baseFreq, now);
+            subOsc.frequency.exponentialRampToValueAtTime(40, now + 0.05);
+
+            subGain.gain.setValueAtTime(0.6 * volumeLevel, now);
+            subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+            subOsc.connect(subGain);
+            subGain.connect(masterGain);
+
+            subOsc.start(now);
+            subOsc.stop(now + 0.05);
+        }
+
+        // 2. Red Switch (Thocky Linear Impact)
+        function createRedSwitchThock(now, freq, keyType) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            const isSpecial = keyType === 'space' || keyType === 'enter';
+            const baseFreq = isSpecial ? 180 : 280;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq, now);
+            osc.frequency.exponentialRampToValueAtTime(60, now + 0.06);
+
+            gain.gain.setValueAtTime(0.7 * volumeLevel, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 0.06);
+        }
+
+        // 3. Vintage Typewriter
+        function createTypewriterClack(now, keyType) {
+            // Noise burst for key impact
+            const bufferSize = audioCtx.sampleRate * 0.04;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = keyType === 'enter' ? 800 : 2200;
+
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.8 * volumeLevel, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+
+            noise.start(now);
+
+            // Ring bell sound if Enter key is pressed
+            if (keyType === 'enter') {
+                const bell = audioCtx.createOscillator();
+                const bellGain = audioCtx.createGain();
+                bell.type = 'sine';
+                bell.frequency.setValueAtTime(1760, now + 0.02); // A6 bell
+                bellGain.gain.setValueAtTime(0.5 * volumeLevel, now + 0.02);
+                bellGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+                bell.connect(bellGain);
+                bellGain.connect(masterGain);
+                bell.start(now + 0.02);
+                bell.stop(now + 0.62);
+            }
+        }
+
+        // 4. Vintage 90s IBM Membrane
+        function createVintageMembrane(now, keyType) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(keyType === 'space' ? 150 : 350, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.04);
+
+            gain.gain.setValueAtTime(0.3 * volumeLevel, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 0.04);
+        }
+
+        // 5. Bubble Pop Sound
+        function createBubblePop(now, pitchRandomness) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            const startFreq = 400 + pitchRandomness * 300;
+            const endFreq = startFreq + 400;
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(startFreq, now);
+            osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.05);
+
+            gain.gain.setValueAtTime(0.6 * volumeLevel, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 0.05);
+        }
+
+        // 6. 8-Bit Retro Chiptune
+        function create8BitKey(now, pitchRandomness) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            const freqs = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00];
+            const chosenFreq = freqs[Math.floor(Math.random() * freqs.length)];
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(chosenFreq, now);
+
+            gain.gain.setValueAtTime(0.2 * volumeLevel, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 0.08);
+        }
+
+        // Ambient Noise Generator (Procedural White/Pink Noise)
+        function toggleAmbient() {
+            initAudio();
+            if (isAmbientPlaying) {
+                stopAmbient();
+            } else {
+                startAmbient();
+            }
+        }
+
+        function startAmbient() {
+            const type = document.getElementById('ambient-type').value;
+            if (type === 'none') return;
+
+            stopAmbient();
+
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+
+            // Generate Soft Rain or Fan Noise Pattern
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            ambientNode = audioCtx.createBufferSource();
+            ambientNode.buffer = buffer;
+            ambientNode.loop = true;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = type === 'rain' ? 'lowpass' : 'bandpass';
+            filter.frequency.value = type === 'rain' ? 800 : 400;
+
+            ambientGain = audioCtx.createGain();
+            ambientGain.gain.setValueAtTime(0.15 * volumeLevel, audioCtx.currentTime);
+
+            ambientNode.connect(filter);
+            filter.connect(ambientGain);
+            ambientGain.connect(masterGain);
+
+            ambientNode.start();
+            isAmbientPlaying = true;
+
+            document.getElementById('ambient-btn').innerHTML = '停止 <i class="fa-solid fa-stop text-red-600 ml-1"></i>';
+        }
+
+        function stopAmbient() {
+            if (ambientNode) {
+                ambientNode.stop();
+                ambientNode.disconnect();
+                ambientNode = null;
+            }
+            isAmbientPlaying = false;
+            document.getElementById('ambient-btn').innerHTML = '播放 <i class="fa-solid fa-play text-green-700 ml-1"></i>';
+        }
+
+        function changeAmbientType(type) {
+            if (isAmbientPlaying) {
+                startAmbient();
+            }
+        }
+
+        // UI Event Listeners and Text Processing
+        const textarea = document.getElementById('typing-area');
+        const charCountEl = document.getElementById('char-count');
+        const wordCountEl = document.getElementById('word-count');
+        const wpmCountEl = document.getElementById('wpm-count');
+
+        textarea.addEventListener('keydown', (e) => {
+            if (!startTime) startTime = new Date();
+
+            let keyType = 'normal';
+            if (e.code === 'Space') keyType = 'space';
+            if (e.code === 'Enter') keyType = 'enter';
+            if (e.code === 'Backspace' || e.code === 'Delete') keyType = 'backspace';
+
+            playKeySound(keyType);
+            totalTypedChars++;
+            updateStats();
+        });
+
+        function updateStats() {
+            const text = textarea.value;
+            charCountEl.innerText = text.length;
+
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+            wordCountEl.innerText = words.length;
+
+            if (startTime) {
+                const elapsedMinutes = (new Date() - startTime) / 60000;
+                if (elapsedMinutes > 0) {
+                    const wpm = Math.round((words.length) / elapsedMinutes);
+                    wpmCountEl.innerText = isNaN(wpm) ? 0 : wpm;
+                }
+            }
+        }
+
+        // Settings Controllers
+        function setSoundProfile(profile, btn) {
+            currentProfile = profile;
+            document.querySelectorAll('.active-style-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            playKeySound('normal');
+        }
+
+        function updateVolume(val) {
+            volumeLevel = val / 100;
+            document.getElementById('vol-val').innerText = val + '%';
+            if (masterGain && audioCtx) {
+                masterGain.gain.setValueAtTime(volumeLevel, audioCtx.currentTime);
+            }
+        }
+
+        function updatePitch(val) {
+            pitchVariation = parseInt(val);
+            const labels = ['极低', '较低', '中等', '较高', '极高'];
+            document.getElementById('pitch-val').innerText = labels[pitchVariation - 1];
+        }
+
+        function updateReverb(val) {
+            reverbLevel = val / 100;
+            document.getElementById('reverb-val').innerText = val > 50 ? '深邃' : (val > 20 ? '轻微' : '无');
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('mute-icon');
+            const led = document.getElementById('led-indicator');
+            const status = document.getElementById('sound-status');
+
+            if (isMuted) {
+                icon.className = 'fa-solid fa-volume-xmark text-red-600';
+                led.className = 'led-off';
+                status.innerText = '音效引擎: 静音';
+            } else {
+                icon.className = 'fa-solid fa-volume-high';
+                led.className = 'led-green';
+                status.innerText = '音效引擎: 就绪';
+                playKeySound('normal');
+            }
+        }
+
+        // Menu Bar and UI Utilities
+        function clearText() {
+            textarea.value = '';
+            startTime = null;
+            updateStats();
+            textarea.focus();
+        }
+
+        function resetText() {
+            if (confirm('是否确定要清空编辑器并恢复默认状态？')) {
+                clearText();
+            }
+        }
+
+        function toggleCRT() {
+            const wrapper = document.getElementById('editor-wrapper');
+            wrapper.classList.toggle('scanlines');
+            textarea.classList.toggle('crt-screen');
+        }
+
+        function triggerSpaceSound() {
+            playKeySound('enter');
+        }
+
+        function triggerAudioPreset(preset) {
+            setSoundProfile(preset, document.querySelectorAll('.active-style-btn')[2]);
+        }
+
+        function showHelp() {
+            alert("🎯 Typing ASMR - Windows 95 Edition\n\n1. 在文本框中任意打字，即可触发实时 Web Audio 音效合成；\n2. 可在右侧控制面板中自由切换轴体（青轴/红轴/打字机/泡泡音等）；\n3. 调节 Pitch 随机度可以模拟真实机械键盘微弱的声音差异；\n4. 开启背景白噪音获得极致沉浸 ASMR 体验！");
+        }
+
+        function toggleStartMenu() {
+            const menu = document.getElementById('start-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function togglePanel() {
+            alert('Typing ASMR 声音控制面板 v1.0\n专为沉浸式写作与打字放松设计。');
+        }
+
+        function minimizeWin() {
+            const wrapper = document.getElementById('editor-wrapper');
+            wrapper.style.display = wrapper.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function maximizeWin() {
+            alert('页面已全屏适配，享受极致 90 年代 Vibecoding 打字乐趣！');
+        }
+
+        // Win95 Clock
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            document.getElementById('win-clock').innerText = `${hours}:${minutes} ${ampm}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Close start menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const startMenu = document.getElementById('start-menu');
+            const startBtn = e.target.closest('button');
+            if (!startMenu.contains(e.target) && (!startBtn || !startBtn.innerText.includes('Start'))) {
+                startMenu.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

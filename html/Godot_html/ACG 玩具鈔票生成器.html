@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACG 玩具鈔票生成器 (日元 / 港幣 / 人民幣)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas 用於匯出高清晰度圖片 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts: 引入標題與復古鈔票風格字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@600;900&family=Noto+Serif+JP:wght@600;900&family=Noto+Serif+SC:wght@600;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 圖標庫 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        /* 鈔票紋理防偽底紋背景樣式 */
+        .guilloche-bg {
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 60%),
+                repeating-radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0, rgba(0, 0, 0, 0.05) 2px, transparent 2px, transparent 8px),
+                repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.03) 0, rgba(0, 0, 0, 0.03) 1px, transparent 1px, transparent 6px),
+                repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 0, rgba(0, 0, 0, 0.03) 1px, transparent 1px, transparent 6px);
+        }
+
+        /* 日元特有經典底色 */
+        .theme-jpy {
+            background-color: #f3efe0;
+            color: #2b261f;
+            border-color: #8c7b65;
+        }
+        .theme-jpy .banknote-border {
+            border: 6px double #6e5e49;
+        }
+        .theme-jpy .accent-text { color: #8a2be2; }
+
+        /* 港幣特有璀璨底色 (獅子山/螢光質感) */
+        .theme-hkd {
+            background-color: #e6f4f8;
+            color: #1a365d;
+            border-color: #2b6cb0;
+        }
+        .theme-hkd .banknote-border {
+            border: 6px double #1a365d;
+        }
+
+        /* 人民幣經典紅色 */
+        .theme-cny {
+            background-color: #fce8e8;
+            color: #742a2a;
+            border-color: #9b2c2c;
+        }
+        .theme-cny .banknote-border {
+            border: 6px double #9b2c2c;
+        }
+
+        /* 自訂浮雕水印質感 */
+        .watermark-effect {
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 50%, rgba(0,0,0,0.3) 100%);
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 50%, rgba(0,0,0,0.3) 100%);
+        }
+
+        /* 全息防偽條閃爍效果 */
+        .hologram-strip {
+            background: linear-gradient(135deg, 
+                rgba(255,0,0,0.4) 0%, 
+                rgba(255,154,0,0.4) 10%, 
+                rgba(208,222,33,0.4) 20%, 
+                rgba(79,220,74,0.4) 30%, 
+                rgba(63,218,216,0.4) 40%, 
+                rgba(47,201,226,0.4) 50%, 
+                rgba(28,127,238,0.4) 60%, 
+                rgba(95,21,242,0.4) 70%, 
+                rgba(186,12,248,0.4) 80%, 
+                rgba(251,7,217,0.4) 90%, 
+                rgba(255,0,0,0.4) 100%);
+            background-size: 200% 200%;
+            animation: hologramMove 5s ease infinite;
+        }
+
+        @keyframes hologramMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 鈔票數字專用字體 */
+        .currency-num {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        /* 印章視覺樣式 */
+        .stamp-seal {
+            border: 3px solid #c53030;
+            color: #c53030;
+            border-radius: 50%;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transform: rotate(-12deg);
+            opacity: 0.85;
+            box-shadow: 0 0 2px rgba(197, 48, 48, 0.4);
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        /* 自訂滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header 頂部欄 -->
+    <header class="bg-slate-900 border-b border-slate-800 py-4 px-6 mb-8 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 text-slate-950 p-2.5 rounded-xl text-2xl font-bold shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid font-bold fa-money-bill-wave"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">ACG 玩具鈔票生成器</h1>
+                    <p class="text-xs text-slate-400">二次元 / 自訂角色專屬日元・港幣・人民幣紀念鈔設計</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 text-sm">
+                <span class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    <i class="fa-solid fa-sparkles text-amber-400 mr-1.5"></i>高清匯出 3000px
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區域 -->
+    <main class="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- 左側面板：設定選項 (5 欄) -->
+        <section class="lg:col-span-5 bg-slate-800/80 backdrop-blur border border-slate-700 p-6 rounded-2xl shadow-2xl flex flex-col gap-6">
+            <h2 class="text-lg font-bold text-amber-400 border-b border-slate-700 pb-3 flex items-center gap-2">
+                <i class="fa-solid fa-sliders"></i> 鈔票參數設定
+            </h2>
+
+            <!-- 1. 貨幣版本選擇 -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">選擇貨幣版本</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button type="button" onclick="setCurrency('JPY')" id="btn-JPY" class="currency-btn py-2.5 px-3 rounded-xl border border-amber-500/50 bg-amber-500/10 text-amber-300 font-bold text-sm flex flex-col items-center gap-1 transition-all">
+                        <span>日元 JPY</span>
+                        <span class="text-xs font-normal opacity-75">日本銀行券</span>
+                    </button>
+                    <button type="button" onclick="setCurrency('HKD')" id="btn-HKD" class="currency-btn py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900/50 text-slate-400 font-bold text-sm flex flex-col items-center gap-1 transition-all">
+                        <span>港幣 HKD</span>
+                        <span class="text-xs font-normal opacity-75">香港發行券</span>
+                    </button>
+                    <button type="button" onclick="setCurrency('CNY')" id="btn-CNY" class="currency-btn py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900/50 text-slate-400 font-bold text-sm flex flex-col items-center gap-1 transition-all">
+                        <span>人民幣 CNY</span>
+                        <span class="text-xs font-normal opacity-75">動漫玩家券</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. 上傳角色圖片與調整 -->
+            <div class="space-y-3">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">上傳肖像圖片</label>
+                <div class="flex items-center gap-4">
+                    <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-600 hover:border-amber-400 bg-slate-900/40 rounded-xl p-4 cursor-pointer transition-colors group">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400 group-hover:text-amber-400 mb-1"></i>
+                        <span class="text-xs text-slate-300 group-hover:text-amber-300 font-medium">點擊選擇圖片檔案</span>
+                        <span class="text-[10px] text-slate-500 mt-0.5">支援 PNG, JPG, WEBP</span>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    </label>
+                </div>
+
+                <!-- 圖片調整滑桿 -->
+                <div class="grid grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 text-xs">
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>縮放比例</span>
+                            <span id="zoomVal">100%</span>
+                        </div>
+                        <input type="range" id="zoomRange" min="50" max="250" value="100" class="w-full accent-amber-500" oninput="updateImageTransform()">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>左右位移</span>
+                            <span id="posXVal">0px</span>
+                        </div>
+                        <input type="range" id="posXRange" min="-150" max="150" value="0" class="w-full accent-amber-500" oninput="updateImageTransform()">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>上下位移</span>
+                            <span id="posYVal">0px</span>
+                        </div>
+                        <input type="range" id="posYRange" min="-150" max="150" value="0" class="w-full accent-amber-500" oninput="updateImageTransform()">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-slate-400 mb-1">
+                            <span>相片濾鏡</span>
+                            <span id="filterVal">彩色</span>
+                        </div>
+                        <select id="filterSelect" onchange="updateImageFilter()" class="w-full bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-xs text-slate-200">
+                            <option value="none">原色</option>
+                            <option value="sepia">復古棕褐</option>
+                            <option value="grayscale">黑白雕版</option>
+                            <option value="contrast">高對比漫畫</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 文字內容編輯 -->
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">面額數字</label>
+                        <input type="text" id="inputDenomination" value="10000" oninput="renderBanknote()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">角色姓名 (肖像旁)</label>
+                        <input type="text" id="inputCharacter" value="初音未來" oninput="renderBanknote()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">發行機構 / 銀行名稱</label>
+                        <input type="text" id="inputIssuer" value="萌界中央銀行" oninput="renderBanknote()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">印章文字</label>
+                        <input type="text" id="inputStamp" value="萌總裁印" oninput="renderBanknote()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">自訂冠字號碼 (Serial No.)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="inputSerial" value="OTK 393939 M" oninput="renderBanknote()" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-amber-400 focus:outline-none focus:border-amber-500">
+                        <button type="button" onclick="generateRandomSerial()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-xs rounded-lg transition-colors">隨機生成</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 配色風格調整 -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">主題配色調整</label>
+                <div class="flex items-center gap-3">
+                    <input type="color" id="inputColorTheme" value="#d4af37" onchange="applyCustomColor()" class="h-9 w-14 rounded border-0 bg-transparent cursor-pointer">
+                    <span class="text-xs text-slate-400">自訂防偽花紋主色調</span>
+                    <button type="button" onclick="resetColorTheme()" class="ml-auto text-xs text-slate-400 hover:text-amber-400 underline">恢復預設</button>
+                </div>
+            </div>
+
+            <!-- 下載按鈕組 -->
+            <div class="pt-2 grid grid-cols-2 gap-3">
+                <button type="button" onclick="downloadBanknote()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold py-3 px-4 rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all">
+                    <i class="fa-solid fa-download"></i> 下載高清圖 (PNG)
+                </button>
+                <button type="button" onclick="window.print()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all">
+                    <i class="fa-solid fa-print"></i> 列印鈔票
+                </button>
+            </div>
+        </section>
+
+        <!-- 右側面板：鈔票即時預覽區 (7 欄) -->
+        <section class="lg:col-span-7 flex flex-col items-center justify-start gap-4">
+            
+            <div class="w-full bg-slate-900/60 p-4 rounded-2xl border border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-eye text-amber-400"></i> 即時視覺預覽 (比例 2:1)</span>
+                <span class="bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700 text-slate-300">玩具專用 / 僅供娛樂交流</span>
+            </div>
+
+            <!-- 鈔票容器外殼 (維持經典紙鈔長寬比) -->
+            <div class="w-full overflow-x-auto p-2 flex justify-center">
+                
+                <!-- 鈔票主體 DOM Element -->
+                <div id="banknote" class="theme-jpy guilloche-bg relative w-[680px] h-[340px] rounded-lg shadow-2xl overflow-hidden border-box select-none transition-all duration-300">
+
+                    <!-- 外圍經典複線邊框 -->
+                    <div class="banknote-border absolute inset-2 rounded pointer-events-none z-20"></div>
+
+                    <!-- 全息防偽條 (Hologram Strip) -->
+                    <div id="hologramStrip" class="hologram-strip absolute top-0 bottom-0 left-[110px] w-[26px] z-10 opacity-70 border-r border-l border-white/30"></div>
+
+                    <!-- 四角面額數字 -->
+                    <div class="absolute top-4 left-5 font-bold text-xl currency-num leading-none z-10" id="numTL">10000</div>
+                    <div class="absolute top-4 right-5 font-bold text-xl currency-num leading-none z-10" id="numTR">10000</div>
+                    <div class="absolute bottom-4 left-5 font-bold text-xl currency-num leading-none z-10" id="numBL">10000</div>
+                    <div class="absolute bottom-4 right-5 font-bold text-xl currency-num leading-none z-10" id="numBR">10000</div>
+
+                    <!-- 冠字號碼 (Serial Number) - 兩處 -->
+                    <div class="absolute top-5 left-[150px] font-mono text-xs tracking-widest z-10 font-bold" id="serialTop">OTK 393939 M</div>
+                    <div class="absolute bottom-5 right-[240px] font-mono text-xs tracking-widest z-10 font-bold" id="serialBottom">OTK 393939 M</div>
+
+                    <!-- 中央發行機構名稱 -->
+                    <div class="absolute top-6 left-1/2 -translate-x-1/2 text-center z-10">
+                        <div class="text-xs tracking-widest font-semibold opacity-80" id="subIssuerHeader">SAMPLE BANKNOTE</div>
+                        <div class="text-2xl font-black tracking-widest" id="displayIssuer">萌界中央銀行</div>
+                    </div>
+
+                    <!-- 左側浮雕水印背景圓圈 -->
+                    <div class="absolute top-1/2 left-[70px] -translate-y-1/2 w-[140px] h-[140px] rounded-full border border-current opacity-20 flex items-center justify-center">
+                        <div class="w-[110px] h-[110px] rounded-full border border-dashed border-current opacity-40"></div>
+                    </div>
+
+                    <!-- 角色肖像展示區域 (右側主圖) -->
+                    <div class="absolute top-1/2 right-[45px] -translate-y-1/2 w-[185px] h-[225px] rounded-lg border-2 border-slate-900/30 overflow-hidden bg-slate-200/20 shadow-inner z-10">
+                        <img id="portraitImg" src="https://placehold.co/400x500/e2e8f0/475569?text=Upload+Character" class="w-full h-full object-cover transition-transform" alt="Character Portrait">
+                    </div>
+
+                    <!-- 角色姓名文字標籤 (肖像下方/旁邊) -->
+                    <div class="absolute bottom-11 right-[45px] w-[185px] text-center z-20">
+                        <span id="displayCharacter" class="bg-black/60 text-white text-xs px-3 py-0.5 rounded-full backdrop-blur-sm tracking-wider font-bold">初音未來</span>
+                    </div>
+
+                    <!-- 中央巨大面額背景與大字 -->
+                    <div class="absolute top-1/2 left-[42%] -translate-x-1/2 -translate-y-1/2 text-center z-10">
+                        <div class="text-6xl font-black currency-num tracking-tighter opacity-90 drop-shadow-sm" id="displayDenomination">10000</div>
+                        <div class="text-xs font-bold tracking-widest mt-1 opacity-75" id="displayCurrencyName">日本銀行券 • 萬円</div>
+                    </div>
+
+                    <!-- 官方紅印章 (右下角或左下角) -->
+                    <div class="stamp-seal absolute bottom-7 left-[260px] w-[54px] h-[54px] text-[10px] leading-tight z-10" id="displayStamp">
+                        萌總<br>裁印
+                    </div>
+
+                    <!-- 裝飾性幾何花紋 / 微縮文字條 -->
+                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-[8px] opacity-40 tracking-widest uppercase font-mono">
+                        Toy Banknote Specimen • Not Legal Tender • Anime Collectible
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 使用說明與提示小貼士 -->
+            <div class="w-full bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 text-xs text-slate-400 space-y-2">
+                <div class="font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> 使用與列印建議：
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-slate-300">
+                    <li>點擊<b>「上傳肖像圖片」</b>可換成您喜歡的動漫角色、個人照片或寵物圖。</li>
+                    <li>使用縮放與位移滑桿，微調肖像在鈔票框內的最佳呈現角度。</li>
+                    <li><b>列印提示：</b>下載高解像度 PNG 後，建議使用 160g-200g 磅數的相紙或亮面紙進行雙面列印，質感更佳。</li>
+                </ul>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- JavaScript 邏輯控制庫 -->
+    <script>
+        // 全局狀態控制
+        let currentCurrency = 'JPY';
+        let uploadedImageSrc = null;
+
+        // 初始化
+        window.onload = function() {
+            renderBanknote();
+        };
+
+        // 切換貨幣版本 (JPY / HKD / CNY)
+        function setCurrency(type) {
+            currentCurrency = type;
+
+            // 更新按鈕樣式
+            document.querySelectorAll('.currency-btn').forEach(btn => {
+                btn.classList.remove('border-amber-500/50', 'bg-amber-500/10', 'text-amber-300');
+                btn.classList.add('border-slate-700', 'bg-slate-900/50', 'text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`btn-${type}`);
+            activeBtn.classList.remove('border-slate-700', 'bg-slate-900/50', 'text-slate-400');
+            activeBtn.classList.add('border-amber-500/50', 'bg-amber-500/10', 'text-amber-300');
+
+            // 預設參數對應表
+            const banknote = document.getElementById('banknote');
+            banknote.className = `guilloche-bg relative w-[680px] h-[340px] rounded-lg shadow-2xl overflow-hidden border-box select-none transition-all duration-300 theme-${type.toLowerCase()}`;
+
+            if (type === 'JPY') {
+                document.getElementById('inputDenomination').value = '10000';
+                document.getElementById('inputIssuer').value = '日本萌界銀行';
+                document.getElementById('displayCurrencyName').innerText = '日本銀行券 • 萬円';
+                document.getElementById('subIssuerHeader').innerText = 'NIPPON GINKO';
+            } else if (type === 'HKD') {
+                document.getElementById('inputDenomination').value = '1000';
+                document.getElementById('inputIssuer').value = '香港二次元發行銀行';
+                document.getElementById('displayCurrencyName').innerText = '港幣 • 拾佰元';
+                document.getElementById('subIssuerHeader').innerText = 'HONG KONG ANIME BANK';
+            } else if (type === 'CNY') {
+                document.getElementById('inputDenomination').value = '100';
+                document.getElementById('inputIssuer').value = '二次元人民銀行';
+                document.getElementById('displayCurrencyName').innerText = 'ACG人民幣 • 壹佰圓';
+                document.getElementById('subIssuerHeader').innerText = 'PEOPLE\'S ANIME BANK';
+            }
+
+            renderBanknote();
+        }
+
+        // 處理圖片上傳
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImageSrc = e.target.result;
+                    const portraitImg = document.getElementById('portraitImg');
+                    portraitImg.src = uploadedImageSrc;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 調整圖片 Transform (縮放與平移)
+        function updateImageTransform() {
+            const zoom = document.getElementById('zoomRange').value;
+            const posX = document.getElementById('posXRange').value;
+            const posY = document.getElementById('posYRange').value;
+
+            document.getElementById('zoomVal').innerText = `${zoom}%`;
+            document.getElementById('posXVal').innerText = `${posX}px`;
+            document.getElementById('posYVal').innerText = `${posY}px`;
+
+            const portraitImg = document.getElementById('portraitImg');
+            portraitImg.style.transform = `scale(${zoom / 100}) translate(${posX / (zoom / 50)}px, ${posY / (zoom / 50)}px)`;
+        }
+
+        // 調整圖片濾鏡效果
+        function updateImageFilter() {
+            const filter = document.getElementById('filterSelect').value;
+            const portraitImg = document.getElementById('portraitImg');
+            
+            const filterLabel = {
+                'none': '原色',
+                'sepia': '復古棕褐',
+                'grayscale': '黑白雕版',
+                'contrast': '高對比漫畫'
+            };
+            document.getElementById('filterVal').innerText = filterLabel[filter];
+
+            if (filter === 'sepia') {
+                portraitImg.style.filter = 'sepia(0.8) contrast(1.2)';
+            } else if (filter === 'grayscale') {
+                portraitImg.style.filter = 'grayscale(1) contrast(1.3)';
+            } else if (filter === 'contrast') {
+                portraitImg.style.filter = 'contrast(1.6) brightness(1.05)';
+            } else {
+                portraitImg.style.filter = 'none';
+            }
+        }
+
+        // 隨機生成冠字號碼
+        function generateRandomSerial() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const randomPrefix = letters.charAt(Math.floor(Math.random() * letters.length)) + letters.charAt(Math.floor(Math.random() * letters.length));
+            const randomSuffix = letters.charAt(Math.floor(Math.random() * letters.length));
+            const randomNum = Math.floor(100000 + Math.random() * 900000);
+            
+            const serialStr = `${randomPrefix} ${randomNum} ${randomSuffix}`;
+            document.getElementById('inputSerial').value = serialStr;
+            renderBanknote();
+        }
+
+        // 渲染鈔票文字內容
+        function renderBanknote() {
+            const denom = document.getElementById('inputDenomination').value || '10000';
+            const character = document.getElementById('inputCharacter').value || '角色名稱';
+            const issuer = document.getElementById('inputIssuer').value || '萌界銀行';
+            const stamp = document.getElementById('inputStamp').value || '印章';
+            const serial = document.getElementById('inputSerial').value || 'AA 000000 Z';
+
+            // 更新四角與中央數字
+            document.getElementById('numTL').innerText = denom;
+            document.getElementById('numTR').innerText = denom;
+            document.getElementById('numBL').innerText = denom;
+            document.getElementById('numBR').innerText = denom;
+            document.getElementById('displayDenomination').innerText = denom;
+
+            // 更新文字內容
+            document.getElementById('displayCharacter').innerText = character;
+            document.getElementById('displayIssuer').innerText = issuer;
+            document.getElementById('serialTop').innerText = serial;
+            document.getElementById('serialBottom').innerText = serial;
+
+            // 格式化印章文字（自動換行/四字格）
+            if (stamp.length === 4) {
+                document.getElementById('displayStamp').innerHTML = `${stamp.substring(0,2)}<br>${stamp.substring(2,4)}`;
+            } else {
+                document.getElementById('displayStamp').innerText = stamp;
+            }
+        }
+
+        // 自訂顏色主題
+        function applyCustomColor() {
+            const color = document.getElementById('inputColorTheme').value;
+            const banknote = document.getElementById('banknote');
+            banknote.style.borderColor = color;
+        }
+
+        function resetColorTheme() {
+            const banknote = document.getElementById('banknote');
+            banknote.style.borderColor = '';
+            document.getElementById('inputColorTheme').value = '#d4af37';
+        }
+
+        // 匯出圖片下載
+        function downloadBanknote() {
+            const banknoteDom = document.getElementById('banknote');
+
+            // 提示生成中
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 正在高畫質渲染...`;
+            btn.disabled = true;
+
+            // 使用 html2canvas 生成高清圖片
+            html2canvas(banknoteDom, {
+                scale: 3, // 3倍超高解析度
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const image = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                const characterName = document.getElementById('inputCharacter').value || 'character';
+                link.download = `Toy_Banknote_${currentCurrency}_${characterName}.png`;
+                link.href = image;
+                link.click();
+
+                // 恢復按鈕狀態
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error('Canvas Export Error:', err);
+                alert('圖片匯出失敗，請重試！');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
