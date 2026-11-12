@@ -3,6 +3,7 @@
 **必須清楚回答「我到底為什麼要開發這款遊戲？我最想從中獲得什麼？」<br> 唯獨「開發初衷」是無法繞過的根本動力。**
 5 秒驚豔（5-Second Wow）
 <hr>
+自己知道怎麼做讓別人體驗
 
 TDD:教程驅動+var+func+application
 机制（Mechanics，M）动态（Dynamics，D）美学（Aesthetics，A）
