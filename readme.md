@@ -104,12 +104,10 @@ HDR、模型、贴图素材：https://polyhaven.com/
 | **ShotDeck** | 電影畫面與鏡頭參考資料庫 | [shotdeck.com](https://shotdeck.com/welcome/trial) |
 | **trace.moe（幀找動畫）** | 透過動畫截圖反向搜尋作品 | [trace.moe](https://trace.moe/) |
 
-### 🧰 其他工具與資料
+### 🧰 絕區零
 
 | 工具 / 資源 | 用途 / 備註 | 連結 |
 | :--- | :--- | :--- |
-| **SMC Automation** | 青年就業通相關自動化項目 | — |
-| **青年就業通** | 就業資訊 | — |
 | **嘉音門票** | Facebook 貼文 / 門票資訊 | [Facebook 貼文](https://www.facebook.com/story.php?story_fbid=633852002634156&id=100080280857737&mibextid=wwXIfr&rdid=zP6ndOPdOCVd5J7I) |
 
 ### 💡 設計觀察與工作流備忘
