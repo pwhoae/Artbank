@@ -1,3 +1,8 @@
+| Auto-Rig Pro | 角色骨骼綁定與蒙皮 |
+| HungryProton Scatter | 資產散佈／排布插件 |
+| Terrain 3D | Godot 地形插件 |
+| Easy Build System | Unity 建造系統插件（非 Godot 原生工具） |
+
 絕區零:https://github.com/m4urlclo0/ZZZ-Assets
 
 各種動漫進度追縱工具:https://home.gamer.com.tw/artwork.php?sn=6053423
