@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能音訊視覺化生成器 (9種設計)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #09090b;
+            color: #f4f4f5;
+            overflow: hidden;
+        }
+        /* 自訂捲軸樣式 */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between relative select-none">
+
+    <!-- 全螢幕視覺化畫布 -->
+    <div class="absolute inset-0 z-0">
+        <canvas id="visualizerCanvas"></canvas>
+    </div>
+
+    <!-- 頂部控制列 -->
+    <header class="relative z-10 p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none">
+        <div class="pointer-events-auto flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">音訊視覺化實驗室</h1>
+                <p id="statusText" class="text-xs text-zinc-400">請選擇音源開始體驗（目前為待機模擬波紋）</p>
+            </div>
+        </div>
+
+        <!-- 音源輸入按鈕群 -->
+        <div class="pointer-events-auto flex flex-wrap items-center gap-2 sm:gap-3">
+            <!-- 內建節拍生成器 -->
+            <button id="btnDemo" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition text-xs sm:text-sm font-medium text-white shadow-lg shadow-indigo-600/30 flex items-center gap-2 cursor-pointer">
+                <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                <span>內建節拍音效</span>
+            </button>
+
+            <!-- 麥克風收音 -->
+            <button id="btnMic" class="px-3.5 py-2 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 border border-zinc-700 active:scale-95 transition text-xs sm:text-sm font-medium text-zinc-100 flex items-center gap-2 cursor-pointer">
+                <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+                <span>麥克風</span>
+            </button>
+
+            <!-- 上傳音訊或 MP4 檔案 (僅提取音頻) -->
+            <label class="px-3.5 py-2 rounded-xl bg-zinc-800/90 hover:bg-zinc-700 border border-zinc-700 active:scale-95 transition text-xs sm:text-sm font-medium text-zinc-100 flex items-center gap-2 cursor-pointer">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                <span>上傳音訊 / MP4</span>
+                <input type="file" id="audioUpload" accept="audio/*,video/mp4,.mp4,.m4a" class="hidden">
+            </label>
+        </div>
+    </header>
+
+    <!-- 隱藏的原生音訊播放器（上傳音樂時顯示） -->
+    <div id="playerContainer" class="relative z-10 mx-auto hidden pointer-events-auto bg-zinc-900/90 backdrop-blur-md border border-zinc-800 px-4 py-2 rounded-2xl shadow-2xl">
+        <audio id="audioPlayer" controls class="h-8 w-64 sm:w-80"></audio>
+    </div>
+
+    <!-- 錯誤提示訊息框 (取代 alert) -->
+    <div id="toastBox" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden bg-rose-500/95 text-white px-4 py-2.5 rounded-xl shadow-xl text-sm font-medium backdrop-blur-sm transition-all">
+        <span id="toastMessage">訊息內容</span>
+    </div>
+
+    <!-- 底部樣式選擇器 (9種設計) -->
+    <footer class="relative z-10 p-4 sm:p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none">
+        <div class="max-w-6xl mx-auto pointer-events-auto">
+            <div class="flex items-center justify-between mb-2.5 px-1">
+                <span class="text-xs font-semibold uppercase tracking-wider text-zinc-400">選擇視覺化風格 (9 種設計)</span>
+                <span id="currentStyleLabel" class="text-xs font-medium text-cyan-400">1. 霓虹環形雲朵 (圖片同款)</span>
+            </div>
+            
+            <!-- 橫向捲動樣式卡片列 -->
+            <div id="styleSelector" class="flex gap-2.5 overflow-x-auto pb-2">
+                <!-- 由 JavaScript 動態生成按鈕 -->
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * 音訊視覺化核心應用程式
+         * 包含 9 種不同演算法的 Canvas 2D 渲染引擎與 Web Audio API 整合
+         */
+
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('statusText');
+        const currentStyleLabel = document.getElementById('currentStyleLabel');
+        const styleSelector = document.getElementById('styleSelector');
+        const playerContainer = document.getElementById('playerContainer');
+        const audioPlayer = document.getElementById('audioPlayer');
+
+        // 視覺化設計清單 (9 種風格)
+        const VISUALIZER_STYLES = [
+            { id: 0, name: '霓虹環形雲朵', desc: '發光漸層圓環與像素雲朵中心（經典同款）' },
+            { id: 1, name: '經典鏡像頻譜', desc: '上下對稱的動態漸層頻率長條柱' },
+            { id: 2, name: '示波器正弦波', desc: '多層次流體發光時域聲波曲線' },
+            { id: 3, name: '賽博龐克雷達', desc: '旋轉掃描線與極座標同心圓頻譜' },
+            { id: 4, name: '超新星粒子爆發', desc: '隨重低音節拍向外噴發的星塵粒子' },
+            { id: 5, name: '復古像素等化器', desc: '8-Bit LED 燈格與峰值掉落指示器' },
+            { id: 6, name: 'DNA 雙螺旋律動', desc: '隨音頻交織跳動的分子雙螺旋結構' },
+            { id: 7, name: '黑洞引力波', desc: '中心黑洞吸積盤與空間扭曲環' },
+            { id: 8, name: '極光多邊形萬花筒', desc: '對稱幾何多邊形與霓虹光暈' }
+        ];
+
+        let currentStyle = 0;
+        let audioCtx = null;
+        let analyser = null;
+        let sourceNode = null;
+        let mediaElementSource = null;
+        let micStream = null;
+        let demoInterval = null;
+        let isDemoPlaying = false;
+        let audioMode = 'idle'; // 'idle' | 'demo' | 'mic' | 'file'
+
+        // FFT 數據緩衝區
+        const FFT_SIZE = 512;
+        let freqData = new Uint8Array(FFT_SIZE / 2);
+        let timeData = new Uint8Array(FFT_SIZE / 2);
+
+        // 動畫狀態變數
+        let animationFrameId = null;
+        let tick = 0;
+        let particles = [];
+        let peakDrops = new Array(64).fill(0);
+
+        /**
+         * 顯示自訂提示訊息框 (替代 alert)
+         */
+        function showToast(msg) {
+            const toastBox = document.getElementById('toastBox');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = msg;
+            toastBox.classList.remove('hidden');
+            setTimeout(() => {
+                toastBox.classList.add('hidden');
+            }, 3500);
+        }
+
+        /**
+         * 初始化底部 9 種視覺化風格切換按鈕
+         */
+        function initStyleButtons() {
+            styleSelector.innerHTML = '';
+            VISUALIZER_STYLES.forEach((style) => {
+                const btn = document.createElement('button');
+                const isActive = style.id === currentStyle;
+                btn.className = `shrink-0 px-3.5 py-2.5 rounded-xl border text-left transition cursor-pointer ${
+                    isActive
+                        ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-lg shadow-cyan-500/15'
+                        : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                }`;
+                btn.innerHTML = `
+                    <div class="text-xs font-semibold">${style.id + 1}. ${style.name}</div>
+                    <div class="text-[11px] opacity-75 truncate max-w-[170px]">${style.desc}</div>
+                `;
+                btn.addEventListener('click', () => {
+                    currentStyle = style.id;
+                    currentStyleLabel.textContent = `${style.id + 1}. ${style.name}`;
+                    initStyleButtons();
+                });
+                styleSelector.appendChild(btn);
+            });
+        }
+
+        /**
+         * 調整畫布解析度以適應高 DPI 螢幕與視窗大小
+         */
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        /**
+         * 3. 上傳本地音樂或 MP4 檔案（僅提取並播放音訊軌道）
+         */
+        document.getElementById('audioUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            stopCurrentAudioSource();
+            ensureAudioContext();
+
+            const fileURL = URL.createObjectURL(file);
+            // HTML5 <audio> 元素可直接讀取 MP4 容器中的音訊串流並忽略影像軌道
+            audioPlayer.src = fileURL;
+            playerContainer.classList.remove('hidden');
+
+            if (!mediaElementSource) {
+                mediaElementSource = audioCtx.createMediaElementSource(audioPlayer);
+            }
+            mediaElementSource.connect(analyser);
+            analyser.connect(audioCtx.destination);
+
+            audioPlayer.play().catch(err => {
+                console.error(err);
+                showToast('無法播放此檔案的音訊，請確認檔案包含有效音軌。');
+            });
+            audioMode = 'file';
+            const isMp4 = file.name.toLowerCase().endsWith('.mp4') || file.type === 'video/mp4';
+            statusText.textContent = isMp4 
+                ? `正在提取 MP4 音頻播放：${file.name}` 
+                : `正在播放音訊檔案：${file.name}`;
+        });
+
+        /**
+         * 更新音訊數據（若無音源則生成柔和的待機呼吸模擬波紋）
+         */
+        function updateAudioData() {
+            tick += 0.03;
+            if (audioMode !== 'idle' && analyser) {
+                analyser.getByteFrequencyData(freqData);
+                analyser.getByteTimeDomainData(timeData);
+            } else {
+                // 待機動態模擬波形，確保畫面隨時生動
+                for (let i = 0; i < freqData.length; i++) {
+                    const wave1 = Math.sin(i * 0.08 + tick * 2) * 35;
+                    const wave2 = Math.cos(i * 0.15 - tick * 1.5) * 25;
+                    const bassBoost = i < 20 ? Math.abs(Math.sin(tick * 2.5)) * 75 : 0;
+                    freqData[i] = Math.max(5, Math.min(255, 45 + wave1 + wave2 + bassBoost));
+                    timeData[i] = 128 + Math.sin(i * 0.12 + tick * 3) * 25;
+                }
+            }
+        }
+
+        /**
+         * 計算低音能量平均值 (0 ~ 1)
+         */
+        function getBassEnergy() {
+            let sum = 0;
+            const bassBins = 16;
+            for (let i = 0; i < bassBins; i++) {
+                sum += freqData[i];
+            }
+            return sum / (bassBins * 255);
+        }
+
+        /* =========================================================================
+           以下為 9 種獨立的音訊視覺化渲染器
+           ========================================================================= */
+
+        /**
+         * 設計 1：霓虹環形雲朵 (仿照上傳圖片的發光漸層圓環 + 像素風雲朵圖標)
+         */
+        function drawStyle0_NeonCloudCircle(w, h) {
+            const cx = w / 2;
+            const cy = h / 2 - 15;
+            const bass = getBassEnergy();
+            const baseRadius = Math.min(w, h) * 0.22 + bass * 22;
+
+            // 外圍柔光光暈
+            const glowGrad = ctx.createRadialGradient(cx, cy, baseRadius * 0.85, cx, cy, baseRadius * 1.45);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            glowGrad.addColorStop(0.45, 'rgba(168, 85, 247, 0.35)');
+            glowGrad.addColorStop(0.75, 'rgba(6, 182, 212, 0.2)');
+            glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseRadius * 1.45, 0, Math.PI * 2);
+            ctx.fillStyle = glowGrad;
+            ctx.fill();
+
+            // 繪製環形頻譜刻度條 (青藍 -> 紫 -> 粉紅漸層)
+            const bars = 160;
+            for (let i = 0; i < bars; i++) {
+                // 對稱映射頻率，讓底部與兩側都有豐富跳動
+                const freqIndex = Math.floor(Math.abs(((i / bars) * 2 - 1)) * (freqData.length * 0.65));
+                const val = freqData[freqIndex] / 255;
+                const barHeight = 4 + Math.pow(val, 1.5) * 68;
+
+                // 從正下方開始順時針分佈
+                const angle = (i / bars) * Math.PI * 2 + Math.PI / 2;
+                const x1 = cx + Math.cos(angle) * baseRadius;
+                const y1 = cy + Math.sin(angle) * baseRadius;
+                const x2 = cx + Math.cos(angle) * (baseRadius + barHeight);
+                const y2 = cy + Math.sin(angle) * (baseRadius + barHeight);
+
+                // 色彩從青色(190)漸變到洋紅(330)
+                const progress = i / bars;
+                const hue = 190 + Math.sin(progress * Math.PI) * 145;
+                ctx.strokeStyle = `hsl(${hue}, 95%, 60%)`;
+                ctx.lineWidth = 2.8;
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            // 中心發光純白圓盤
+            ctx.save();
+            ctx.shadowColor = 'rgba(217, 70, 239, 0.65)';
+            ctx.shadowBlur = 28;
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+
+            // 繪製中心像素風格雲朵 (Pixel Art Cloud)
+            const px = Math.max(3, Math.floor(baseRadius / 28)); // 像素單位大小
+            ctx.save();
+            ctx.translate(cx - px * 11, cy - px * 7 + Math.sin(tick * 2) * 3);
+            ctx.fillStyle = '#18181b';
+
+            // 像素雲朵點陣圖 (1 = 黑色邊框)
+            const cloudGrid = [
+                "0000001111000011100000",
+                "0000010000100100010000",
+                "0000100000011000001000",
+                "0011000000000000000100",
+                "0100000001111100000100",
+                "1000000010000010001000",
+                "1000000100000001110000",
+                "0111111000000000001000",
+                "0000001000000000000100",
+                "0000001000000000000100",
+                "0000000111111111111000"
+            ];
+
+            for (let r = 0; r < cloudGrid.length; r++) {
+                for (let c = 0; c < cloudGrid[r].length; c++) {
+                    if (cloudGrid[r][c] === '1') {
+                        ctx.fillRect(c * px, r * px, px, px);
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        /**
+         * 設計 2：經典鏡像頻譜 (上下對稱漸層長條柱)
+         */
+        function drawStyle1_MirrorBars(w, h) {
+            const cy = h / 2;
+            const barCount = 80;
+            const totalWidth = Math.min(w * 0.85, 1100);
+            const startX = (w - totalWidth) / 2;
+            const step = totalWidth / barCount;
+            const barWidth = step * 0.65;
+
+            for (let i = 0; i < barCount; i++) {
+                const freqIdx = Math.floor((i / barCount) * (freqData.length * 0.7));
+                const val = freqData[freqIdx] / 255;
+                const barH = Math.max(4, Math.pow(val, 1.3) * (h * 0.34));
+
+                const hue = 170 + (i / barCount) * 140;
+                const grad = ctx.createLinearGradient(0, cy - barH, 0, cy + barH);
+                grad.addColorStop(0, `hsla(${hue}, 95%, 65%, 0.95)`);
+                grad.addColorStop(0.5, `hsla(${hue + 30}, 95%, 55%, 0.6)`);
+                grad.addColorStop(1, `hsla(${hue}, 95%, 65%, 0.95)`);
+
+                ctx.fillStyle = grad;
+                const x = startX + i * step;
+
+                // 上半部圓角柱
+                ctx.beginPath();
+                ctx.roundRect(x, cy - barH - 2, barWidth, barH, 4);
+                ctx.fill();
+
+                // 下半部鏡像倒影
+                ctx.beginPath();
+                ctx.roundRect(x, cy + 2, barWidth, barH * 0.85, 4);
+                ctx.fill();
+            }
+        }
+
+        /**
+         * 設計 3：示波器正弦波 (多層次發光流體曲線)
+         */
+        function drawStyle2_Oscilloscope(w, h) {
+            const cy = h / 2;
+            const layers = [
+                { color: '#06b6d4', amp: 1.3, offset: 0, width: 3.5 },
+                { color: '#d946ef', amp: 0.95, offset: 0.5, width: 2.5 },
+                { color: '#6366f1', amp: 0.65, offset: 1.0, width: 2 }
+            ];
+
+            layers.forEach(layer => {
+                ctx.save();
+                ctx.strokeStyle = layer.color;
+                ctx.shadowColor = layer.color;
+                ctx.shadowBlur = 15;
+                ctx.lineWidth = layer.width;
+                ctx.beginPath();
+
+                const sliceWidth = w / timeData.length;
+                let x = 0;
+
+                for (let i = 0; i < timeData.length; i++) {
+                    const v = (timeData[i] - 128) / 128.0;
+                    const envelope = Math.sin((i / timeData.length) * Math.PI); // 兩端收斂
+                    const y = cy + v * (h * 0.35) * layer.amp * envelope + Math.sin(i * 0.05 + tick * 2 + layer.offset) * 12 * envelope;
+
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                    x += sliceWidth;
+                }
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        /**
+         * 設計 4：賽博龐克雷達 (旋轉掃描與同心圓極座標)
+         */
+        function drawStyle3_CyberRadar(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = Math.min(w, h) * 0.36;
+
+            // 繪製同心圓網格
+            ctx.strokeStyle = 'rgba(16, 185, 129, 0.2)';
+            ctx.lineWidth = 1;
+            for (let r = 1; r <= 4; r++) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, (maxR / 4) * r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // 旋轉掃描光束
+            const scanAngle = tick * 1.5;
+            const scanGrad = ctx.createConicGradient(scanAngle, cx, cy);
+            scanGrad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+            scanGrad.addColorStop(0.15, 'rgba(16, 185, 129, 0)');
+            scanGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+            ctx.fillStyle = scanGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 雷達多邊形頻譜連線
+            ctx.beginPath();
+            const points = 90;
+            for (let i = 0; i <= points; i++) {
+                const idx = i % points;
+                const val = freqData[idx] / 255;
+                const r = maxR * 0.25 + val * (maxR * 0.75);
+                const angle = (idx / points) * Math.PI * 2 - Math.PI / 2;
+                const px = cx + Math.cos(angle) * r;
+                const py = cy + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+            ctx.fill();
+        }
+
+        /**
+         * 設計 5：超新星粒子爆發 (隨重低音噴發星塵)
+         */
+        function drawStyle4_SupernovaParticles(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const bass = getBassEnergy();
+
+            // 根據低音強度生成新粒子
+            const spawnCount = Math.floor(bass * 12) + 2;
+            for (let i = 0; i < spawnCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1.5 + bass * 8 + Math.random() * 2;
+                particles.push({
+                    x: cx,
+                    y: cy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 1.5 + Math.random() * 3.5,
+                    hue: 260 + Math.random() * 90,
+                    life: 1.0
+                });
+            }
+
+            // 中心發光核心
+            const coreR = 25 + bass * 45;
+            const coreGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, coreR * 2);
+            coreGrad.addColorStop(0, '#ffffff');
+            coreGrad.addColorStop(0.4, 'rgba(244, 63, 94, 0.8)');
+            coreGrad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+            ctx.fillStyle = coreGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreR * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 更新並繪製粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.015;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.fillStyle = `hsla(${p.hue}, 95%, 65%, ${p.life})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        /**
+         * 設計 6：復古像素等化器 (8-Bit LED 燈格 + 峰值掉落指示條)
+         */
+        function drawStyle5_RetroPixelEQ(w, h) {
+            const cols = 32;
+            const rows = 20;
+            const totalW = Math.min(w * 0.85, 960);
+            const totalH = Math.min(h * 0.55, 420);
+            const startX = (w - totalW) / 2;
+            const startY = (h - totalH) / 2 + totalH;
+
+            const cellW = (totalW / cols) * 0.78;
+            const gapX = totalW / cols;
+            const cellH = (totalH / rows) * 0.72;
+            const gapY = totalH / rows;
+
+            for (let c = 0; c < cols; c++) {
+                const freqIdx = Math.floor((c / cols) * (freqData.length * 0.65));
+                const val = freqData[freqIdx] / 255;
+                const activeRows = Math.round(val * rows);
+
+                // 更新峰值掉落邏輯
+                if (activeRows >= peakDrops[c]) {
+                    peakDrops[c] = activeRows;
+                } else {
+                    peakDrops[c] = Math.max(0, peakDrops[c] - 0.25);
+                }
+
+                const x = startX + c * gapX;
+
+                for (let r = 0; r < rows; r++) {
+                    const y = startY - (r + 1) * gapY;
+                    if (r < activeRows) {
+                        // 綠 -> 黃 -> 紅 經典音響燈色
+                        if (r > rows * 0.75) ctx.fillStyle = '#f43f5e';
+                        else if (r > rows * 0.45) ctx.fillStyle = '#facc15';
+                        else ctx.fillStyle = '#10b981';
+                    } else {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+                    }
+                    ctx.fillRect(x, y, cellW, cellH);
+                }
+
+                // 繪製白色峰值指示帽
+                const peakY = startY - (Math.floor(peakDrops[c]) + 1) * gapY;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x, peakY, cellW, cellH * 0.6);
+            }
+        }
+
+        /**
+         * 設計 7：DNA 雙螺旋律動
+         */
+        function drawStyle6_DNAHelix(w, h) {
+            const cy = h / 2;
+            const nodes = 48;
+            const spanW = Math.min(w * 0.85, 1100);
+            const startX = (w - spanW) / 2;
+            const stepX = spanW / nodes;
+
+            for (let i = 0; i < nodes; i++) {
+                const freqIdx = Math.floor((i / nodes) * (freqData.length * 0.6));
+                const val = freqData[freqIdx] / 255;
+                const amplitude = 35 + val * (h * 0.24);
+                const phase = i * 0.28 + tick * 2.2;
+
+                const x = startX + i * stepX;
+                const y1 = cy + Math.sin(phase) * amplitude;
+                const y2 = cy + Math.sin(phase + Math.PI) * amplitude;
+
+                // 連接雙螺旋的橫向鹼基對線條
+                ctx.strokeStyle = `rgba(148, 163, 184, ${0.2 + val * 0.5})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x, y2);
+                ctx.stroke();
+
+                // 螺旋鏈 A 節點 (青色)
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(x, y1, 4 + val * 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 螺旋鏈 B 節點 (粉紫色)
+                ctx.fillStyle = '#e879f9';
+                ctx.beginPath();
+                ctx.arc(x, y2, 4 + val * 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        /**
+         * 設計 8：黑洞引力波 (中心黑洞吸積盤與空間扭曲環)
+         */
+        function drawStyle7_BlackHole(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const bass = getBassEnergy();
+            const holeRadius = Math.min(w, h) * 0.14 + bass * 15;
+
+            // 多層扭曲引力環
+            for (let ring = 0; ring < 5; ring++) {
+                ctx.beginPath();
+                const ringR = holeRadius + 15 + ring * 24;
+                const segments = 100;
+                for (let i = 0; i <= segments; i++) {
+                    const idx = i % segments;
+                    const val = freqData[idx] / 255;
+                    const angle = (idx / segments) * Math.PI * 2 + tick * (ring % 2 === 0 ? 0.8 : -0.8);
+                    const distortion = Math.sin(angle * 4 + tick * 3) * (8 + val * 28);
+                    const r = ringR + distortion;
+                    const px = cx + Math.cos(angle) * r;
+                    const py = cy + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.strokeStyle = `hsla(${25 + ring * 12}, 95%, 60%, ${0.85 - ring * 0.14})`;
+                ctx.lineWidth = 3 - ring * 0.4;
+                ctx.stroke();
+            }
+
+            // 中心事件視界黑洞
+            ctx.save();
+            ctx.shadowColor = '#f97316';
+            ctx.shadowBlur = 35;
+            ctx.beginPath();
+            ctx.arc(cx, cy, holeRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#fdba74';
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * 設計 9：極光多邊形萬花筒
+         */
+        function drawStyle8_Kaleidoscope(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = Math.min(w, h) * 0.34;
+            const layers = 6;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+
+            for (let l = 0; l < layers; l++) {
+                const freqIdx = l * 14;
+                const val = freqData[freqIdx] / 255;
+                const radius = (maxR / layers) * (l + 1) * (0.75 + val * 0.55);
+                const sides = 6 + (l % 3) * 2;
+                const rotation = tick * (l % 2 === 0 ? 0.6 : -0.6) + l * 0.5;
+
+                ctx.save();
+                ctx.rotate(rotation);
+                ctx.beginPath();
+                for (let s = 0; s <= sides; s++) {
+                    const angle = (s / sides) * Math.PI * 2;
+                    const px = Math.cos(angle) * radius;
+                    const py = Math.sin(angle) * radius;
+                    if (s === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+
+                const hue = (tick * 30 + l * 45) % 360;
+                ctx.strokeStyle = `hsla(${hue}, 90%, 62%, 0.9)`;
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.fillStyle = `hsla(${hue}, 90%, 55%, 0.08)`;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * 主動畫渲染迴圈
+         */
+        function animate() {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            // 拖影殘像清除背景（增強動感）
+            ctx.fillStyle = currentStyle === 4 ? 'rgba(9, 9, 11, 0.25)' : 'rgba(9, 9, 11, 0.88)';
+            ctx.fillRect(0, 0, w, h);
+
+            updateAudioData();
+
+            switch (currentStyle) {
+                case 0: drawStyle0_NeonCloudCircle(w, h); break;
+                case 1: drawStyle1_MirrorBars(w, h); break;
+                case 2: drawStyle2_Oscilloscope(w, h); break;
+                case 3: drawStyle3_CyberRadar(w, h); break;
+                case 4: drawStyle4_SupernovaParticles(w, h); break;
+                case 5: drawStyle5_RetroPixelEQ(w, h); break;
+                case 6: drawStyle6_DNAHelix(w, h); break;
+                case 7: drawStyle7_BlackHole(w, h); break;
+                case 8: drawStyle8_Kaleidoscope(w, h); break;
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        // 啟動應用程式
+        window.onload = function () {
+            resizeCanvas();
+            initStyleButtons();
+            animate();
+        };
+    </script>
+</body>
+</html>

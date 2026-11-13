@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音訊與 MP4 視覺化工作室 | 10種特效引擎</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 引入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #09090b;
+            color: #f4f4f5;
+            overflow-x: hidden;
+        }
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+        /* 自定義 Range 滑桿 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #3f3f46;
+            border-radius: 2px;
+        }
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+
+    <!-- 頂部導航列 -->
+    <header class="glass-panel sticky top-0 z-30 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
+                <i class="fa-solid fa-wave-square text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+                    SonicVision Studio
+                </h1>
+                <p class="text-[11px] text-zinc-400 hidden sm:block">10 種即時音訊視覺化引擎 • 支援 MP4 影片 & 音訊</p>
+            </div>
+        </div>
+
+        <!-- 媒體來源控制區 -->
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- 檔案上傳按鈕 -->
+            <label for="mediaUpload" class="cursor-pointer px-3.5 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-zinc-950 font-semibold text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-sky-500/20">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>上傳 MP4 / 音訊</span>
+            </label>
+            <input type="file" id="mediaUpload" accept="video/mp4,video/webm,audio/*" class="hidden">
+
+            <!-- 內建測試合成器音樂 -->
+            <button id="demoSynthBtn" class="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs sm:text-sm transition flex items-center gap-2 border border-zinc-700">
+                <i class="fa-solid fa-music text-indigo-400"></i>
+                <span id="demoBtnText">內建節拍測試</span>
+            </button>
+
+            <!-- 麥克風輸入 -->
+            <button id="micBtn" class="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs sm:text-sm transition flex items-center gap-2 border border-zinc-700" title="使用麥克風">
+                <i class="fa-solid fa-microphone text-rose-400"></i>
+                <span class="hidden md:inline">麥克風</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主要工作區 -->
+    <main class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+        
+        <!-- 左側/上方：畫布顯示區 -->
+        <div class="flex-1 relative flex flex-col bg-black min-h-[55vh] lg:min-h-0" id="canvasContainer">
+            <!-- 隱藏或背景播放的 Video 元素 (支援 MP4 畫面與聲音) -->
+            <video id="videoPlayer" playsinline crossorigin="anonymous" class="absolute inset-0 w-full h-full object-contain opacity-35 pointer-events-none transition-opacity duration-300 hidden"></video>
+            
+            <!-- 主視覺化 Canvas -->
+            <canvas id="visualizerCanvas" class="w-full h-full block z-10"></canvas>
+
+            <!-- 狀態提示覆蓋層 (初始提示) -->
+            <div id="welcomeOverlay" class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center bg-zinc-950/60 backdrop-blur-sm transition-opacity duration-300">
+                <div class="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4 shadow-2xl">
+                    <i class="fa-solid fa-film text-2xl text-sky-400"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">準備好體驗視覺震撼了嗎？</h2>
+                <p class="text-zinc-400 text-sm max-w-md mb-6">
+                    請點擊右上角上傳您的 <span class="text-sky-400 font-medium">MP4 影片</span> 或 <span class="text-sky-400 font-medium">MP3/WAV 音訊</span>，或直接點擊「內建節拍測試」立即體驗 10 種視覺特效！
+                </p>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <button onclick="document.getElementById('mediaUpload').click()" class="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-zinc-950 font-semibold text-sm transition">
+                        選擇本地檔案 (MP4/音訊)
+                    </button>
+                    <button onclick="document.getElementById('demoSynthBtn').click()" class="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-sm transition border border-zinc-700">
+                        播放內建電子節拍
+                    </button>
+                </div>
+            </div>
+
+            <!-- 底部媒體播放控制列 (當載入檔案時顯示) -->
+            <div id="mediaControls" class="hidden absolute bottom-4 left-4 right-4 z-20 glass-panel rounded-2xl p-3 flex flex-col gap-2 shadow-2xl">
+                <div class="flex items-center justify-between text-xs text-zinc-400 px-1">
+                    <span id="fileNameDisplay" class="truncate max-w-[200px] sm:max-w-xs font-medium text-zinc-200">未載入檔案</span>
+                    <div class="flex items-center gap-3">
+                        <span id="timeDisplay">00:00 / 00:00</span>
+                        <button id="fullscreenBtn" class="hover:text-white transition" title="全螢幕切換">
+                            <i class="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="playPauseBtn" class="w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-400 text-zinc-950 flex items-center justify-center transition shrink-0">
+                        <i class="fa-solid fa-play text-xs ml-0.5" id="playPauseIcon"></i>
+                    </button>
+                    <input type="range" id="seekBar" value="0" min="0" max="100" step="0.1" class="flex-1">
+                    <div class="flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-volume-high text-zinc-400 text-xs" id="volumeIcon"></i>
+                        <input type="range" id="volumeBar" value="1" min="0" max="1" step="0.05" class="w-16 sm:w-20">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側/下方：10 種視覺設計選擇與參數面板 -->
+        <aside class="w-full lg:w-80 xl:w-96 glass-panel border-t lg:border-t-0 lg:border-l border-zinc-800 flex flex-col z-20 max-h-[45vh] lg:max-h-[calc(100vh-61px)] overflow-y-auto">
+            
+            <!-- 區塊 1：10 種視覺設計選擇 -->
+            <div class="p-4 border-b border-zinc-800/80">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-sky-400"></i>
+                        選擇視覺設計 (10種)
+                    </h3>
+                    <span id="currentPresetBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">1 / 10</span>
+                </div>
+
+                <!-- 10 個視覺效果網格按鈕 -->
+                <div class="grid grid-cols-2 gap-2" id="presetGrid">
+                    <!-- 由 JS 動態生成 10 個按鈕 -->
+                </div>
+            </div>
+
+            <!-- 區塊 2：色彩主題與參數微調 -->
+            <div class="p-4 flex flex-col gap-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i>
+                    視覺與 MP4 混合設定
+                </h3>
+
+                <!-- 色彩主題 -->
+                <div>
+                    <label class="text-xs text-zinc-300 block mb-2">色彩主題</label>
+                    <div class="grid grid-cols-5 gap-2" id="themeSelector">
+                        <button data-theme="cyber" class="theme-btn h-7 rounded-lg bg-gradient-to-r from-cyan-400 to-fuchsia-500 ring-2 ring-white transition" title="賽博霓虹"></button>
+                        <button data-theme="sunset" class="theme-btn h-7 rounded-lg bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600 opacity-70 hover:opacity-100 transition" title="日落熔岩"></button>
+                        <button data-theme="matrix" class="theme-btn h-7 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-600 opacity-70 hover:opacity-100 transition" title="駭客綠光"></button>
+                        <button data-theme="ocean" class="theme-btn h-7 rounded-lg bg-gradient-to-r from-blue-400 to-indigo-600 opacity-70 hover:opacity-100 transition" title="深海極光"></button>
+                        <button data-theme="mono" class="theme-btn h-7 rounded-lg bg-gradient-to-r from-zinc-100 to-zinc-500 opacity-70 hover:opacity-100 transition" title="純淨極簡"></button>
+                    </div>
+                </div>
+
+                <!-- 靈敏度 / 振幅倍率 -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-zinc-300">音訊靈敏度 (增益)</span>
+                        <span id="sensitivityVal" class="text-sky-400 font-mono">1.2x</span>
+                    </div>
+                    <input type="range" id="sensitivitySlider" min="0.5" max="2.5" step="0.1" value="1.2" class="w-full">
+                </div>
+
+                <!-- MP4 背景影片透明度 (僅當播放影片時有感) -->
+                <div id="videoOpacityControl">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-zinc-300">MP4 原片背景亮度</span>
+                        <span id="videoOpacityVal" class="text-sky-400 font-mono">35%</span>
+                    </div>
+                    <input type="range" id="videoOpacitySlider" min="0" max="1" step="0.05" value="0.35" class="w-full">
+                </div>
+
+                <!-- 粒子與線條發光特效開關 -->
+                <div class="flex items-center justify-between pt-1">
+                    <span class="text-xs text-zinc-300">霓虹輝光效果 (Glow)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="glowToggle" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+
+                <!-- 鏡像對稱開關 -->
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-zinc-300">畫面動態殘影 (Motion Trail)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="trailToggle" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 自定義提示訊息框 (取代 alert) -->
+    <div id="toastBox" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="glass-panel border-l-4 border-sky-500 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm text-white">
+            <i class="fa-solid fa-circle-info text-sky-400"></i>
+            <span id="toastMessage">訊息內容</span>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 音訊與 MP4 視覺化工作室核心邏輯
+         * 包含：Web Audio API 音訊解析、MP4 Video 音軌擷取、內建節拍合成器、10種 Canvas 視覺演算法
+         */
+
+        // --- 1. DOM 元素取得 ---
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const mediaUpload = document.getElementById('mediaUpload');
+        const demoSynthBtn = document.getElementById('demoSynthBtn');
+        const demoBtnText = document.getElementById('demoBtnText');
+        const micBtn = document.getElementById('micBtn');
+        const welcomeOverlay = document.getElementById('welcomeOverlay');
+        const mediaControls = document.getElementById('mediaControls');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const seekBar = document.getElementById('seekBar');
+        const volumeBar = document.getElementById('volumeBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const presetGrid = document.getElementById('presetGrid');
+        const currentPresetBadge = document.getElementById('currentPresetBadge');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const sensitivityVal = document.getElementById('sensitivityVal');
+        const videoOpacitySlider = document.getElementById('videoOpacitySlider');
+        const videoOpacityVal = document.getElementById('videoOpacityVal');
+        const glowToggle = document.getElementById('glowToggle');
+        const trailToggle = document.getElementById('trailToggle');
+
+        // --- 2. 全域狀態與配置 ---
+        let audioCtx = null;
+        let analyser = null;
+        let dataArray = null;
+        let timeDataArray = null;
+        let mediaSourceNode = null;
+        let micStream = null;
+        let micSourceNode = null;
+        let isDemoPlaying = false;
+        let demoInterval = null;
+        let currentMode = 0; // 0 ~ 9 對應 10 種視覺設計
+        let currentTheme = 'cyber';
+        let sensitivity = 1.2;
+        let enableGlow = true;
+        let enableTrail = true;
+        let animationId = null;
+        let frameCount = 0;
+
+        // 10 種視覺設計清單
+        const VISUAL_PRESETS = [
+            { id: 0, name: '鏡像霓虹頻譜', icon: 'fa-chart-bar' },
+            { id: 1, name: '星環脈衝圓盤', icon: 'fa-circle-notch' },
+            { id: 2, name: '多層流體聲波', icon: 'fa-water' },
+            { id: 3, name: '超新星粒子爆發', icon: 'fa-bahai' },
+            { id: 4, name: 'DNA 雙螺旋音軌', icon: 'fa-dna' },
+            { id: 5, name: '賽博龐克地平線', icon: 'fa-road' },
+            { id: 6, name: '萬花筒幾何萬象', icon: 'fa-snowflake' },
+            { id: 7, name: '復古 LED 矩陣牆', icon: 'fa-table-cells' },
+            { id: 8, name: '黑洞引力波紋', icon: 'fa-hurricane' },
+            { id: 9, name: '雷射光束舞台', icon: 'fa-bolt' }
+        ];
+
+        // 色彩主題定義
+        const THEMES = {
+            cyber: ['#22d3ee', '#818cf8', '#e879f9', '#f43f5e'],
+            sunset: ['#fbbf24', '#f97316', '#ef4444', '#a855f7'],
+            matrix: ['#4ade80', '#10b981', '#059669', '#a7f3d0'],
+            ocean: ['#38bdf8', '#3b82f6', '#6366f1', '#2dd4bf'],
+            mono: ['#ffffff', '#d4d4d8', '#a1a1aa', '#71717a']
+        };
+
+        // 粒子系統陣列 (供模式 3 與 模式 8 使用)
+        let particles = [];
+        const MAX_PARTICLES = 160;
+
+        // --- 3. 提示訊息工具 (取代 alert) ---
+        function showToast(msg) {
+            const toastBox = document.getElementById('toastBox');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = msg;
+            toastBox.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toastBox.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // --- 4. 初始化 UI 按鈕 ---
+        function initPresetButtons() {
+            presetGrid.innerHTML = '';
+            VISUAL_PRESETS.forEach((preset, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `preset-btn flex items-center gap-2 p-2.5 rounded-xl text-left text-xs font-medium transition border ${
+                    idx === currentMode
+                        ? 'bg-sky-500/20 border-sky-500 text-white shadow-inner'
+                        : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                }`;
+                btn.innerHTML = `
+                    <i class="fa-solid ${preset.icon} w-4 text-center ${idx === currentMode ? 'text-sky-400' : 'text-zinc-500'}"></i>
+                    <span class="truncate">${idx + 1}. ${preset.name}</span>
+                `;
+                btn.onclick = () => selectPreset(idx);
+                presetGrid.appendChild(btn);
+            });
+        }
+
+        function selectPreset(index) {
+            currentMode = index;
+            currentPresetBadge.textContent = `${index + 1} / 10`;
+            // 切換模式時清除畫布殘影
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            initPresetButtons();
+        }
+
+        // --- 5. Canvas 響應式尺寸調整 ---
+        function resizeCanvas() {
+            const rect = canvasContainer.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- 6. Web Audio API 初始化 ---
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 512; // 256 個頻率數據點，兼顧精細度與效能
+                analyser.smoothingTimeConstant = 0.82;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                timeDataArray = new Uint8Array(bufferLength);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // --- 7. 停止所有正在進行的音源 ---
+        function stopAllSources() {
+            // 停止內建合成器
+            if (isDemoPlaying) {
+                isDemoPlaying = false;
+                clearInterval(demoInterval);
+                demoBtnText.textContent = '內建節拍測試';
+                demoSynthBtn.classList.remove('border-sky-500', 'text-sky-400');
+            }
+            // 停止麥克風
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop());
+                micStream = null;
+                micBtn.classList.remove('border-rose-500', 'text-rose-400');
+            }
+            // 暫停影片/音訊播放器
+            if (!videoPlayer.paused) {
+                videoPlayer.pause();
+            }
+        }
+
+        // --- 8. 處理 MP4 影片與音訊檔案上傳 ---
+        mediaUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            stopAllSources();
+            initAudioContext();
+
+            const fileURL = URL.createObjectURL(file);
+            const isVideo = file.type.startsWith('video/');
+
+            videoPlayer.src = fileURL;
+            videoPlayer.load();
+
+            // 綁定 MediaElementSource (僅能綁定一次)
+            if (!mediaSourceNode) {
+                try {
+                    mediaSourceNode = audioCtx.createMediaElementSource(videoPlayer);
+                    mediaSourceNode.connect(analyser);
+                    analyser.connect(audioCtx.destination);
+                } catch (err) {
+                    console.error('音訊節點連接錯誤:', err);
+                }
+            }
+
+            // 顯示/隱藏影片畫面層
+            if (isVideo) {
+                videoPlayer.classList.remove('hidden');
+                videoPlayer.style.opacity = videoOpacitySlider.value;
+                showToast(`已載入 MP4 影片：${file.name}`);
+            } else {
+                videoPlayer.classList.add('hidden');
+                showToast(`已載入音訊檔案：${file.name}`);
+            }
+
+            welcomeOverlay.classList.add('opacity-0', 'pointer-events-none');
+            mediaControls.classList.remove('hidden');
+            fileNameDisplay.textContent = file.name;
+
+            videoPlayer.play().then(() => {
+                updatePlayPauseIcon(true);
+            }).catch(err => {
+                console.warn('自動播放受阻，請點擊播放按鈕:', err);
+                updatePlayPauseIcon(false);
+            });
+        });
+
+        // --- 9. 媒體播放器控制事件 ---
+        playPauseBtn.addEventListener('click', () => {
+            initAudioContext();
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                updatePlayPauseIcon(true);
+            } else {
+                videoPlayer.pause();
+                updatePlayPauseIcon(false);
+            }
+        });
+
+        function updatePlayPauseIcon(isPlaying) {
+            playPauseIcon.className = isPlaying ? 'fa-solid fa-pause text-xs' : 'fa-solid fa-play text-xs ml-0.5';
+        }
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (!videoPlayer.duration) return;
+            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            seekBar.value = progress;
+            timeDisplay.textContent = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+        });
+
+        videoPlayer.addEventListener('ended', () => {
+            updatePlayPauseIcon(false);
+        });
+
+        seekBar.addEventListener('input', () => {
+            if (!videoPlayer.duration) return;
+            videoPlayer.currentTime = (seekBar.value / 100) * videoPlayer.duration;
+        });
+
+        volumeBar.addEventListener('input', () => {
+            videoPlayer.volume = volumeBar.value;
+            const volIcon = document.getElementById('volumeIcon');
+            if (videoPlayer.volume == 0) volIcon.className = 'fa-solid fa-volume-xmark text-zinc-400 text-xs';
+            else if (videoPlayer.volume < 0.5) volIcon.className = 'fa-solid fa-volume-low text-zinc-400 text-xs';
+            else volIcon.className = 'fa-solid fa-volume-high text-zinc-400 text-xs';
+        });
+
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                canvasContainer.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        function formatTime(sec) {
+            if (isNaN(sec)) return '00:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // --- 10. 內建電子節拍合成器 (無需外部檔案即可測試) ---
+        demoSynthBtn.addEventListener('click', () => {
+            if (isDemoPlaying) {
+                stopAllSources();
+                return;
+            }
+
+            stopAllSources();
+            initAudioContext();
+
+            isDemoPlaying = true;
+            welcomeOverlay.classList.add('opacity-0', 'pointer-events-none');
+            mediaControls.classList.add('hidden');
+            videoPlayer.classList.add('hidden');
+            demoBtnText.textContent = '停止節拍測試';
+            demoSynthBtn.classList.add('border-sky-500', 'text-sky-400');
+            showToast('正在播放內建電子合成器節拍...');
+
+            let step = 0;
+            const bassNotes = [55, 55, 65.41, 49, 55, 55, 73.42, 65.41]; // A1, C2, G1, D2
+            const leadNotes = [440, 523.25, 659.25, 587.33, 440, 783.99, 659.25, 523.25];
+
+            const triggerBeat = () => {
+                if (!isDemoPlaying) return;
+                const now = audioCtx.currentTime;
+
+                // 1. 大鼓 Kick (每 2 步一次)
+                if (step % 2 === 0) {
+                    const kickOsc = audioCtx.createOscillator();
+                    const kickGain = audioCtx.createGain();
+                    kickOsc.type = 'sine';
+                    kickOsc.frequency.setValueAtTime(140, now);
+                    kickOsc.frequency.exponentialRampToValueAtTime(35, now + 0.18);
+                    kickGain.gain.setValueAtTime(0.9, now);
+                    kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    kickOsc.connect(kickGain);
+                    kickGain.connect(analyser);
+                    kickGain.connect(audioCtx.destination);
+                    kickOsc.start(now);
+                    kickOsc.stop(now + 0.26);
+                }
+
+                // 2. 貝斯 Bassline
+                const bassOsc = audioCtx.createOscillator();
+                const bassGain = audioCtx.createGain();
+                bassOsc.type = 'sawtooth';
+                bassOsc.frequency.setValueAtTime(bassNotes[step % bassNotes.length], now);
+                
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(450, now);
+                filter.frequency.exponentialRampToValueAtTime(120, now + 0.2);
+
+                bassGain.gain.setValueAtTime(0.35, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+                bassOsc.connect(filter);
+                filter.connect(bassGain);
+                bassGain.connect(analyser);
+                bassGain.connect(audioCtx.destination);
+                bassOsc.start(now);
+                bassOsc.stop(now + 0.23);
+
+                // 3. 高音合成器旋律 Arpeggio
+                const leadOsc = audioCtx.createOscillator();
+                const leadGain = audioCtx.createGain();
+                leadOsc.type = 'triangle';
+                leadOsc.frequency.setValueAtTime(leadNotes[step % leadNotes.length] * (step % 4 === 3 ? 1.5 : 1), now);
+                leadGain.gain.setValueAtTime(0.2, now);
+                leadGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                leadOsc.connect(leadGain);
+                leadGain.connect(analyser);
+                leadGain.connect(audioCtx.destination);
+                leadOsc.start(now);
+                leadOsc.stop(now + 0.19);
+
+                step++;
+            };
+
+            triggerBeat();
+            demoInterval = setInterval(triggerBeat, 230); // 約 130 BPM
+        });
+
+        // --- 11. 麥克風即時收音 ---
+        micBtn.addEventListener('click', async () => {
+            if (micStream) {
+                stopAllSources();
+                showToast('已關閉麥克風收音');
+                return;
+            }
+            try {
+                stopAllSources();
+                initAudioContext();
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                micSourceNode = audioCtx.createMediaStreamSource(micStream);
+                micSourceNode.connect(analyser);
+                // 注意：麥克風不要連到 audioCtx.destination 避免回授嘯叫
+
+                welcomeOverlay.classList.add('opacity-0', 'pointer-events-none');
+                mediaControls.classList.add('hidden');
+                videoPlayer.classList.add('hidden');
+                micBtn.classList.add('border-rose-500', 'text-rose-400');
+                showToast('麥克風已開啟，請發出聲音測試！');
+            } catch (err) {
+                showToast('無法存取麥克風，請檢查瀏覽器權限設定。');
+            }
+        });
+
+        // --- 12. 參數控制監聽 ---
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.theme-btn').forEach(b => {
+                    b.classList.remove('ring-2', 'ring-white', 'opacity-100');
+                    b.classList.add('opacity-70');
+                });
+                btn.classList.add('ring-2', 'ring-white', 'opacity-100');
+                btn.classList.remove('opacity-70');
+                currentTheme = btn.dataset.theme;
+            });
+        });
+
+        sensitivitySlider.addEventListener('input', (e) => {
+            sensitivity = parseFloat(e.target.value);
+            sensitivityVal.textContent = `${sensitivity.toFixed(1)}x`;
+        });
+
+        videoOpacitySlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            videoPlayer.style.opacity = val;
+            videoOpacityVal.textContent = `${Math.round(val * 100)}%`;
+        });
+
+        glowToggle.addEventListener('change', (e) => enableGlow = e.target.checked);
+        trailToggle.addEventListener('change', (e) => enableTrail = e.target.checked);
+
+        // --- 13. 輔助繪圖函式 ---
+        function getThemeColors() {
+            return THEMES[currentTheme] || THEMES.cyber;
+        }
+
+        function createLinearGradient(x0, y0, x1, y1) {
+            const colors = getThemeColors();
+            const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+            colors.forEach((c, idx) => {
+                grad.addColorStop(idx / (colors.length - 1), c);
+            });
+            return grad;
+        }
+
+        function getBassEnergy() {
+            if (!dataArray) return 0;
+            let sum = 0;
+            for (let i = 0; i < 16; i++) sum += dataArray[i];
+            return (sum / 16 / 255) * sensitivity;
+        }
+
+        // --- 14. 10 種視覺化特效引擎 ---
+
+        // 設計 1：鏡像霓虹頻譜 (Mirrored Neon Bars)
+        function drawPreset0_MirroredBars(w, h) {
+            const bars = 80;
+            const barWidth = (w / 2) / bars;
+            const centerX = w / 2;
+            const grad = createLinearGradient(0, h, 0, h * 0.2);
+
+            ctx.fillStyle = grad;
+            for (let i = 0; i < bars; i++) {
+                const val = (dataArray[i] / 255) * sensitivity;
+                const barHeight = Math.min(h * 0.85, val * h * 0.75);
+                const xOffset = i * barWidth;
+
+                // 右側
+                ctx.fillRect(centerX + xOffset + 1, h - barHeight, Math.max(1, barWidth - 2), barHeight);
+                // 左側鏡像
+                ctx.fillRect(centerX - xOffset - barWidth + 1, h - barHeight, Math.max(1, barWidth - 2), barHeight);
+            }
+        }
+
+        // 設計 2：星環脈衝圓盤 (Radial Pulse Ring)
+        function drawPreset1_RadialRing(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const bass = getBassEnergy();
+            const baseRadius = Math.min(w, h) * 0.18 + bass * 35;
+            const colors = getThemeColors();
+            const bars = 120;
+
+            ctx.lineWidth = 3;
+            for (let i = 0; i < bars; i++) {
+                const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+                const val = (dataArray[i % 128] / 255) * sensitivity;
+                const len = val * Math.min(w, h) * 0.28;
+
+                const x1 = cx + Math.cos(angle) * baseRadius;
+                const y1 = cy + Math.sin(angle) * baseRadius;
+                const x2 = cx + Math.cos(angle) * (baseRadius + len);
+                const y2 = cy + Math.sin(angle) * (baseRadius + len);
+
+                ctx.strokeStyle = colors[i % colors.length];
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            // 內圈光環
+            ctx.beginPath();
+            ctx.arc(cx, cy, baseRadius * 0.88, 0, Math.PI * 2);
+            ctx.strokeStyle = colors[0];
+            ctx.lineWidth = 2 + bass * 4;
+            ctx.stroke();
+        }
+
+        // 設計 3：多層流體聲波 (Fluid Oscilloscope Waves)
+        function drawPreset2_FluidWaves(w, h) {
+            const colors = getThemeColors();
+            const layers = 4;
+
+            for (let l = 0; l < layers; l++) {
+                ctx.beginPath();
+                ctx.strokeStyle = colors[l % colors.length];
+                ctx.lineWidth = 3 - l * 0.4;
+
+                const sliceWidth = w / timeDataArray.length;
+                let x = 0;
+
+                for (let i = 0; i < timeDataArray.length; i++) {
+                    const v = (timeDataArray[i] - 128) / 128.0;
+                    const freqBoost = (dataArray[i % 128] / 255) * sensitivity;
+                    const waveOffset = Math.sin(i * 0.05 + frameCount * 0.04 + l) * 25 * freqBoost;
+                    const y = (h / 2) + (v * h * 0.35 * sensitivity * (1 - l * 0.15)) + waveOffset;
+
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                    x += sliceWidth;
+                }
+                ctx.stroke();
+            }
+        }
+
+        // 設計 4：超新星粒子爆發 (Supernova Particles)
+        function drawPreset3_ParticleBurst(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const bass = getBassEnergy();
+            const colors = getThemeColors();
+
+            // 補充粒子
+            while (particles.length < MAX_PARTICLES) {
+                const angle = Math.random() * Math.PI * 2;
+                particles.push({
+                    x: cx,
+                    y: cy,
+                    vx: Math.cos(angle) * (1 + Math.random() * 2),
+                    vy: Math.sin(angle) * (1 + Math.random() * 2),
+                    size: 1.5 + Math.random() * 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 1
+                });
+            }
+
+            // 更新並繪製粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                const speedBoost = 1 + bass * 6;
+                p.x += p.vx * speedBoost;
+                p.y += p.vy * speedBoost;
+                p.life -= 0.008;
+
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.life);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * (1 + bass), 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.life <= 0 || p.x < 0 || p.x > w || p.y < 0 || p.y > h) {
+                    particles.splice(i, 1);
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            // 中心能量核心
+            const coreRadius = 20 + bass * 60;
+            const radGrad = ctx.createRadialGradient(cx, cy, 2, cx, cy, coreRadius);
+            radGrad.addColorStop(0, '#ffffff');
+            radGrad.addColorStop(0.4, colors[0]);
+            radGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = radGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 設計 5：DNA 雙螺旋音軌 (DNA Double Helix)
+        function drawPreset4_DNAHelix(w, h) {
+            const colors = getThemeColors();
+            const nodes = 48;
+            const spacing = w / (nodes + 2);
+
+            for (let i = 0; i < nodes; i++) {
+                const x = (i + 1) * spacing;
+                const val = (dataArray[i * 2] / 255) * sensitivity;
+                const phase = i * 0.25 + frameCount * 0.05;
+                const amp = (h * 0.18) + val * (h * 0.22);
+
+                const y1 = h / 2 + Math.sin(phase) * amp;
+                const y2 = h / 2 + Math.sin(phase + Math.PI) * amp;
+
+                // 連接兩條螺旋的鹼基橫桿
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x, y2);
+                ctx.stroke();
+
+                // 螺旋節點 A
+                ctx.fillStyle = colors[0];
+                ctx.beginPath();
+                ctx.arc(x, y1, 4 + val * 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 螺旋節點 B
+                ctx.fillStyle = colors[2];
+                ctx.beginPath();
+                ctx.arc(x, y2, 4 + val * 6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 設計 6：賽博龐克地平線 (Synthwave Horizon Grid)
+        function drawPreset5_SynthwaveGrid(w, h) {
+            const colors = getThemeColors();
+            const horizonY = h * 0.52;
+            const bass = getBassEnergy();
+
+            // 1. 復古落日
+            const sunRadius = Math.min(w, h) * 0.18 + bass * 20;
+            const sunGrad = ctx.createLinearGradient(0, horizonY - sunRadius, 0, horizonY);
+            sunGrad.addColorStop(0, colors[0]);
+            sunGrad.addColorStop(1, colors[2]);
+            ctx.fillStyle = sunGrad;
+            ctx.beginPath();
+            ctx.arc(w / 2, horizonY, sunRadius, Math.PI, 0);
+            ctx.fill();
+
+            // 2. 地平線後方山脈頻譜
+            ctx.strokeStyle = colors[1];
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            const steps = 64;
+            for (let i = 0; i <= steps; i++) {
+                const x = (i / steps) * w;
+                const distFromCenter = Math.abs(i - steps / 2) / (steps / 2);
+                const val = (dataArray[i] / 255) * sensitivity * (0.4 + distFromCenter);
+                const y = horizonY - val * (h * 0.35);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 3. 透視地面網格
+            ctx.strokeStyle = colors[0];
+            ctx.lineWidth = 1.2;
+            // 放射直線
+            for (let i = -10; i <= 10; i++) {
+                ctx.beginPath();
+                ctx.moveTo(w / 2 + i * 30, horizonY);
+                ctx.lineTo(w / 2 + i * 180, h);
+                ctx.stroke();
+            }
+            // 動態橫線
+            const speed = (frameCount * (2 + bass * 6)) % 40;
+            for (let y = horizonY; y < h; y += 25) {
+                const perspectiveY = y + (speed * ((y - horizonY) / (h - horizonY)));
+                if (perspectiveY < h) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, perspectiveY);
+                    ctx.lineTo(w, perspectiveY);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // 設計 7：萬花筒幾何萬象 (Kaleidoscope Symmetry)
+        function drawPreset6_Kaleidoscope(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const colors = getThemeColors();
+            const slices = 8; // 8 面對稱
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(frameCount * 0.008);
+
+            for (let s = 0; s < slices; s++) {
+                ctx.save();
+                ctx.rotate((s * Math.PI * 2) / slices);
+
+                for (let i = 0; i < 20; i++) {
+                    const val = (dataArray[i * 4] / 255) * sensitivity;
+                    const dist = 30 + i * (Math.min(w, h) * 0.02);
+                    const size = 5 + val * 25;
+
+                    ctx.strokeStyle = colors[i % colors.length];
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.rect(dist, -size / 2, size, size);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        // 設計 8：復古 LED 矩陣牆 (Retro LED Matrix)
+        function drawPreset7_LEDMatrix(w, h) {
+            const cols = 32;
+            const rows = 20;
+            const cellW = w / cols;
+            const cellH = h / rows;
+            const colors = getThemeColors();
+
+            for (let c = 0; c < cols; c++) {
+                const val = (dataArray[c * 3] / 255) * sensitivity;
+                const activeRows = Math.min(rows, Math.floor(val * rows));
+
+                for (let r = 0; r < rows; r++) {
+                    const rowFromBottom = rows - 1 - r;
+                    if (rowFromBottom < activeRows) {
+                        const ratio = rowFromBottom / rows;
+                        if (ratio > 0.75) ctx.fillStyle = colors[3] || '#f43f5e';
+                        else if (ratio > 0.45) ctx.fillStyle = colors[2];
+                        else ctx.fillStyle = colors[0];
+                    } else {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                    }
+
+                    ctx.fillRect(
+                        c * cellW + 2,
+                        r * cellH + 2,
+                        Math.max(2, cellW - 4),
+                        Math.max(2, cellH - 4)
+                    );
+                }
+            }
+        }
+
+        // 設計 9：黑洞引力波紋 (Black Hole Gravity Ripples)
+        function drawPreset8_GravityRipples(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const colors = getThemeColors();
+            const rings = 14;
+            const maxR = Math.min(w, h) * 0.45;
+
+            for (let r = 0; r < rings; r++) {
+                const baseR = ((r + 1) / rings) * maxR;
+                ctx.beginPath();
+                ctx.strokeStyle = colors[r % colors.length];
+                ctx.lineWidth = 2.5;
+
+                const points = 72;
+                for (let p = 0; p <= points; p++) {
+                    const angle = (p / points) * Math.PI * 2;
+                    const freqIdx = (r * 6 + p) % 128;
+                    const val = (dataArray[freqIdx] / 255) * sensitivity;
+                    const distortion = Math.sin(angle * 4 + frameCount * 0.05 + r) * (val * 28);
+                    const radius = baseR + distortion;
+
+                    const x = cx + Math.cos(angle) * radius;
+                    const y = cy + Math.sin(angle) * radius;
+                    if (p === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+
+        // 設計 10：雷射光束舞台 (Concert Laser Stage)
+        function drawPreset9_ConcertLasers(w, h) {
+            const colors = getThemeColors();
+            const emitters = 5;
+            const bass = getBassEnergy();
+
+            for (let e = 0; e < emitters; e++) {
+                const originX = ((e + 0.5) / emitters) * w;
+                const originY = h;
+                const val = (dataArray[e * 15] / 255) * sensitivity;
+                const sweepAngle = -Math.PI / 2 + Math.sin(frameCount * 0.03 + e * 1.2) * (0.5 + bass * 0.4);
+
+                const beamLength = Math.max(w, h) * 1.2;
+                const endX = originX + Math.cos(sweepAngle) * beamLength;
+                const endY = originY + Math.sin(sweepAngle) * beamLength;
+
+                // 繪製寬光錐
+                const grad = ctx.createLinearGradient(originX, originY, endX, endY);
+                grad.addColorStop(0, colors[e % colors.length]);
+                grad.addColorStop(1, 'transparent');
+
+                ctx.fillStyle = grad;
+                ctx.globalAlpha = 0.25 + val * 0.45;
+                ctx.beginPath();
+                ctx.moveTo(originX, originY);
+                ctx.lineTo(endX - 40 - val * 60, endY);
+                ctx.lineTo(endX + 40 + val * 60, endY);
+                ctx.closePath();
+                ctx.fill();
+
+                // 繪製高亮度中心雷射線
+                ctx.globalAlpha = 0.9;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5 + val * 3;
+                ctx.beginPath();
+                ctx.moveTo(originX, originY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // --- 15. 主動畫渲染迴圈 ---
+        function renderLoop() {
+            animationId = requestAnimationFrame(renderLoop);
+            frameCount++;
+
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 如果啟用殘影，使用半透明覆蓋；否則完全清除（保持背景 MP4 影片清晰可見）
+            if (enableTrail && videoPlayer.classList.contains('hidden')) {
+                ctx.fillStyle = 'rgba(9, 9, 11, 0.22)';
+                ctx.fillRect(0, 0, w, h);
+            } else {
+                ctx.clearRect(0, 0, w, h);
+            }
+
+            // 取得即時音訊數據（若尚未啟動音訊則產生待機微幅呼吸波形）
+            if (analyser && dataArray && timeDataArray) {
+                analyser.getByteFrequencyData(dataArray);
+                analyser.getByteTimeDomainData(timeDataArray);
+            } else {
+                if (!dataArray) {
+                    dataArray = new Uint8Array(256);
+                    timeDataArray = new Uint8Array(256);
+                }
+                for (let i = 0; i < 256; i++) {
+                    dataArray[i] = 25 + Math.sin(i * 0.1 + frameCount * 0.04) * 20;
+                    timeDataArray[i] = 128 + Math.sin(i * 0.15 + frameCount * 0.05) * 15;
+                }
+            }
+
+            // 設定霓虹輝光效果
+            if (enableGlow) {
+                const colors = getThemeColors();
+                ctx.shadowBlur = 16;
+                ctx.shadowColor = colors[0];
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
+            // 根據當前選擇的模式呼叫對應的視覺化引擎
+            switch (currentMode) {
+                case 0: drawPreset0_MirroredBars(w, h); break;
+                case 1: drawPreset1_RadialRing(w, h); break;
+                case 2: drawPreset2_FluidWaves(w, h); break;
+                case 3: drawPreset3_ParticleBurst(w, h); break;
+                case 4: drawPreset4_DNAHelix(w, h); break;
+                case 5: drawPreset5_SynthwaveGrid(w, h); break;
+                case 6: drawPreset6_Kaleidoscope(w, h); break;
+                case 7: drawPreset7_LEDMatrix(w, h); break;
+                case 8: drawPreset8_GravityRipples(w, h); break;
+                case 9: drawPreset9_ConcertLasers(w, h); break;
+            }
+
+            // 重置陰影避免影響後續繪製
+            ctx.shadowBlur = 0;
+        }
+
+        // --- 16. 啟動初始化 ---
+        window.onload = function() {
+            resizeCanvas();
+            initPresetButtons();
+            renderLoop();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicFlow - Audio Visualizer Studio</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 圖標 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #090814;
+            color: #e2e8f0;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* 自訂捲軸 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #110f24;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b2d71;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6d28d9;
+        }
+
+        /* 霓虹發光效果 */
+        .neon-border {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3), inset 0 0 10px rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(167, 139, 250, 0.4);
+        }
+        .neon-glow-btn {
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.5);
+            transition: all 0.2s ease;
+        }
+        .neon-glow-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 25px rgba(236, 72, 153, 0.6);
+        }
+        .neon-glow-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* 自訂滑桿樣式 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #a855f7;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 8px #a855f7;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #27224d;
+            border-radius: 2px;
+        }
+
+        /* 玻璃擬態卡片 */
+        .glass-panel {
+            background: rgba(19, 17, 41, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* 風格卡片選中狀態 */
+        .style-card.active {
+            border-color: #a855f7;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#080712]">
+
+    <!-- 1. 頂部導航列 (Top Navigation) -->
+    <header class="h-14 glass-panel border-b border-indigo-950/60 px-4 flex items-center justify-between sticky top-0 z-40">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                <i class="fa-solid fa-wave-square text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-cyan-200">MusicFlow</h1>
+                <p class="text-[10px] text-indigo-300/70 -mt-1">Audio Visualizer Studio</p>
+            </div>
+        </div>
+
+        <!-- 中央分頁切換 (桌面版) -->
+        <nav class="hidden md:flex items-center bg-[#121026] p-1 rounded-full border border-indigo-900/50">
+            <button onclick="switchNav(this)" class="nav-pill active px-4 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md flex items-center gap-1.5">
+                <i class="fa-solid fa-house text-[11px]"></i> 創作
+            </button>
+            <button onclick="switchNav(this)" class="nav-pill px-4 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-layer-group text-[11px]"></i> 模板
+            </button>
+            <button onclick="document.getElementById('bgUpload').click()" class="nav-pill px-4 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-regular fa-image text-[11px]"></i> 換背景圖
+            </button>
+            <button onclick="triggerAutoPreset()" class="nav-pill px-4 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                <i class="fa-solid fa-wand-magic-sparkles text-cyan-400 text-[11px]"></i> AI 隨機靈感
+            </button>
+        </nav>
+
+        <!-- 右側工具與音訊上傳 -->
+        <div class="flex items-center gap-2.5">
+            <label for="audioUpload" class="cursor-pointer px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/50 text-xs font-medium text-cyan-300 flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-music"></i>
+                <span class="hidden sm:inline">載入音樂</span>
+            </label>
+            <input type="file" id="audioUpload" accept="audio/*" class="hidden">
+            <input type="file" id="bgUpload" accept="image/*" class="hidden">
+
+            <button onclick="toggleDemoSynth()" id="synthBtn" class="px-3 py-1.5 rounded-lg bg-purple-900/60 hover:bg-purple-800/80 border border-purple-500/40 text-xs font-medium text-purple-200 flex items-center gap-1.5 transition" title="使用內建電子節拍測試">
+                <i class="fa-solid fa-bolt text-yellow-400"></i>
+                <span class="hidden sm:inline">內建節拍</span>
+            </button>
+
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 p-0.5 cursor-pointer" title="創作者帳號">
+                <div class="w-full h-full rounded-full bg-[#131129] flex items-center justify-center text-xs font-bold text-pink-300">
+                    MF
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主工作區 (Main Workspace) -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+        <!-- 2. 左側功能面板 (Left Sidebar) -->
+        <aside class="w-full lg:w-56 glass-panel border-b lg:border-b-0 lg:border-r border-indigo-950/60 p-3 flex lg:flex-col justify-between gap-2 shrink-0 overflow-x-auto">
+            <div class="flex lg:flex-col gap-2 w-full">
+                <button onclick="triggerAutoPreset()" class="flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r from-purple-900/60 to-indigo-900/40 border border-purple-500/40 text-left hover:brightness-110 transition shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-purple-600/30 flex items-center justify-center text-purple-300">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-white">快速創作</div>
+                        <div class="text-[10px] text-purple-300/70">一鍵生成視覺化</div>
+                    </div>
+                </button>
+
+                <button onclick="document.getElementById('audioUpload').click()" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 text-left transition shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-950/60 flex items-center justify-center text-cyan-400">
+                        <i class="fa-solid fa-file-audio"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium text-slate-200">匯入音訊檔</div>
+                        <div class="text-[10px] text-slate-400">MP3 / WAV / OGG</div>
+                    </div>
+                </button>
+
+                <button onclick="document.getElementById('bgUpload').click()" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 text-left transition shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-pink-950/60 flex items-center justify-center text-pink-400">
+                        <i class="fa-solid fa-image"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium text-slate-200">自訂背景封面</div>
+                        <div class="text-[10px] text-slate-400">支援動漫/風景圖</div>
+                    </div>
+                </button>
+
+                <button onclick="toggleMicInput()" id="micBtn" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 text-left transition shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-950/60 flex items-center justify-center text-emerald-400">
+                        <i class="fa-solid fa-microphone"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium text-slate-200">麥克風收音</div>
+                        <div class="text-[10px] text-slate-400">即時環境音反應</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 左下角裝飾與提示卡片 (桌面版顯示) -->
+            <div class="hidden lg:block mt-auto space-y-3">
+                <div class="p-3 rounded-xl bg-gradient-to-br from-indigo-950/90 to-purple-950/70 border border-purple-500/30 relative overflow-hidden">
+                    <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold mb-1">
+                        <i class="fa-solid fa-crown"></i> 提示與技巧
+                    </div>
+                    <p class="text-[11px] text-indigo-200/80 leading-relaxed">
+                        點擊右上角「內建節拍」或「載入音樂」，即可即時預覽 60FPS 霓虹頻譜動態！
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 3. 中央預覽與時間軸區 (Center Preview & Timeline) -->
+        <main class="flex-1 flex flex-col p-3 lg:p-4 gap-3 overflow-y-auto">
+            
+            <!-- 畫布預覽容器 -->
+            <div id="canvasContainer" class="relative w-full aspect-video max-h-[54vh] bg-[#0d0b1e] rounded-2xl neon-border overflow-hidden flex items-center justify-center shadow-2xl">
+                <!-- 主視覺 Canvas -->
+                <canvas id="visualizerCanvas" class="w-full h-full block"></canvas>
+
+                <!-- 左上角畫質標籤 -->
+                <div class="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
+                    <span class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[10px] font-bold tracking-wider">HD</span>
+                    <span class="px-2 py-0.5 rounded bg-black/50 backdrop-blur-md text-slate-200 text-[10px] font-mono">60 FPS</span>
+                    <span id="audioSourceBadge" class="px-2.5 py-0.5 rounded-full bg-purple-600/40 border border-purple-400/40 text-purple-200 text-[10px]">待機中 - 請點擊播放</span>
+                </div>
+
+                <!-- 右上角時間顯示 -->
+                <div class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-black/50 backdrop-blur-md text-xs font-mono text-slate-200 pointer-events-none">
+                    <span id="timeDisplay">00:00 / 00:00</span>
+                </div>
+
+                <!-- 中央懸浮播放按鈕 (暫停時顯示) -->
+                <button id="centerPlayOverlay" onclick="handlePlayPause()" class="w-16 h-16 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 flex items-center justify-center text-white text-2xl shadow-2xl transition transform hover:scale-105">
+                    <i class="fa-solid fa-play ml-1"></i>
+                </button>
+            </div>
+
+            <!-- 播放控制列 -->
+            <div class="glass-panel rounded-xl px-4 py-2 flex items-center gap-3">
+                <button onclick="handlePlayPause()" id="playPauseBtn" class="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-play text-xs"></i>
+                </button>
+                <button onclick="stopAudio()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 flex items-center justify-center transition" title="停止">
+                    <i class="fa-solid fa-stop text-xs"></i>
+                </button>
+
+                <span id="currentTimeSmall" class="text-xs font-mono text-slate-400 w-12">00:00</span>
+
+                <!-- 進度條 -->
+                <div class="flex-1 flex items-center">
+                    <input type="range" id="seekBar" value="0" min="0" max="100" step="0.1" class="w-full">
+                </div>
+
+                <span id="durationSmall" class="text-xs font-mono text-slate-400 w-12 text-right">00:00</span>
+
+                <!-- 音量與全螢幕 -->
+                <div class="hidden sm:flex items-center gap-2 ml-2 border-l border-white/10 pl-3">
+                    <i class="fa-solid fa-volume-high text-xs text-slate-400"></i>
+                    <input type="range" id="volumeBar" value="80" min="0" max="100" class="w-16">
+                </div>
+                <button onclick="toggleFullscreen()" class="w-8 h-8 rounded-lg hover:bg-white/10 text-slate-300 flex items-center justify-center transition" title="全螢幕預覽">
+                    <i class="fa-solid fa-expand text-xs"></i>
+                </button>
+            </div>
+
+            <!-- 多軌時間軸 (Multi-Track Timeline) -->
+            <div class="glass-panel rounded-xl p-3 space-y-2">
+                <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                    <span class="font-medium text-indigo-300"><i class="fa-solid fa-timeline mr-1"></i> 多軌動態時間軸</span>
+                    <span id="trackFileName" class="truncate max-w-[200px] text-cyan-300">尚未載入音訊 (可使用內建節拍)</span>
+                </div>
+
+                <!-- 軌道 1: 視覺特效 -->
+                <div class="flex items-center gap-2">
+                    <div class="w-24 text-[11px] text-slate-400 flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-sparkles text-purple-400"></i> 視覺特效
+                    </div>
+                    <div class="flex-1 h-6 bg-[#100e24] rounded-md p-0.5 relative overflow-hidden border border-white/5">
+                        <div class="h-full w-4/5 rounded bg-gradient-to-r from-purple-600/80 to-indigo-500/80 flex items-center justify-between px-2 text-[10px] text-white">
+                            <span>◆ 動態頻譜同步</span>
+                            <span>◆</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 軌道 2: 音訊頻譜波形 -->
+                <div class="flex items-center gap-2">
+                    <div class="w-24 text-[11px] text-slate-400 flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-chart-simple text-cyan-400"></i> 音訊頻譜
+                    </div>
+                    <div class="flex-1 h-7 bg-[#100e24] rounded-md border border-white/5 overflow-hidden">
+                        <canvas id="timelineWaveCanvas" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+
+                <!-- 軌道 3: 背景圖層 -->
+                <div class="flex items-center gap-2">
+                    <div class="w-24 text-[11px] text-slate-400 flex items-center gap-1.5 shrink-0">
+                        <i class="fa-regular fa-image text-pink-400"></i> 圖片/背景
+                    </div>
+                    <div class="flex-1 h-6 bg-[#100e24] rounded-md p-0.5 border border-white/5">
+                        <div class="h-full w-full rounded bg-gradient-to-r from-pink-900/50 via-purple-900/50 to-cyan-900/50 flex items-center px-2 text-[10px] text-pink-200/80">
+                            賽博霓虹動漫夜景圖層 (可自訂上傳替換)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部推薦模板快捷列 -->
+            <div class="glass-panel rounded-xl p-3">
+                <div class="flex items-center gap-2 mb-2.5 overflow-x-auto pb-1">
+                    <span class="px-2.5 py-1 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 text-white text-[11px] font-bold shrink-0">
+                        <i class="fa-solid fa-fire mr-1"></i> 熱門推薦
+                    </span>
+                    <button onclick="applyPreset('cyberRing')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs text-slate-300 shrink-0 transition">霓虹光環</button>
+                    <button onclick="applyPreset('animeWave')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs text-slate-300 shrink-0 transition">動漫雙層頻譜</button>
+                    <button onclick="applyPreset('starParticles')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs text-slate-300 shrink-0 transition">星空粒子脈衝</button>
+                    <button onclick="applyPreset('cyberGrid')" class="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-xs text-slate-300 shrink-0 transition">賽博幾何三角</button>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div onclick="applyPreset('cyberRing')" class="cursor-pointer group relative h-16 rounded-lg overflow-hidden border border-purple-500/40 bg-gradient-to-br from-indigo-950 via-purple-900 to-cyan-900 p-2 flex flex-col justify-end">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-60 group-hover:scale-110 transition">
+                            <div class="w-10 h-10 rounded-full border-2 border-dashed border-cyan-400"></div>
+                        </div>
+                        <span class="relative z-10 text-[11px] font-bold text-white drop-shadow">核心圓環 + 底部頻譜</span>
+                    </div>
+
+                    <div onclick="applyPreset('animeWave')" class="cursor-pointer group relative h-16 rounded-lg overflow-hidden border border-pink-500/40 bg-gradient-to-br from-fuchsia-950 via-purple-950 to-indigo-900 p-2 flex flex-col justify-end">
+                        <div class="absolute inset-0 flex items-end justify-center gap-1 pb-4 opacity-60 group-hover:scale-110 transition">
+                            <div class="w-1.5 h-6 bg-pink-400 rounded-t"></div>
+                            <div class="w-1.5 h-9 bg-purple-400 rounded-t"></div>
+                            <div class="w-1.5 h-5 bg-cyan-400 rounded-t"></div>
+                            <div class="w-1.5 h-8 bg-pink-400 rounded-t"></div>
+                        </div>
+                        <span class="relative z-10 text-[11px] font-bold text-white drop-shadow">鏡像音波律動</span>
+                    </div>
+
+                    <div onclick="applyPreset('starParticles')" class="cursor-pointer group relative h-16 rounded-lg overflow-hidden border border-cyan-500/40 bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 p-2 flex flex-col justify-end">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-70 group-hover:scale-110 transition">
+                            <i class="fa-solid fa-atom text-2xl text-cyan-300"></i>
+                        </div>
+                        <span class="relative z-10 text-[11px] font-bold text-white drop-shadow">星雲粒子風暴</span>
+                    </div>
+
+                    <div onclick="applyPreset('cyberGrid')" class="cursor-pointer group relative h-16 rounded-lg overflow-hidden border border-amber-500/40 bg-gradient-to-br from-purple-950 via-rose-950 to-amber-950 p-2 flex flex-col justify-end">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-70 group-hover:scale-110 transition">
+                            <i class="fa-solid fa-play -rotate-90 text-2xl text-pink-400"></i>
+                        </div>
+                        <span class="relative z-10 text-[11px] font-bold text-white drop-shadow">稜鏡光束矩陣</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 4. 右側參數調整面板 (Right Inspector Panel) -->
+        <aside class="w-full lg:w-72 glass-panel border-t lg:border-t-0 lg:border-l border-indigo-950/60 p-4 flex flex-col justify-between gap-4 shrink-0 overflow-y-auto">
+            <div class="space-y-4">
+                <!-- 頂部標籤切換 -->
+                <div class="grid grid-cols-3 gap-1 bg-[#110f24] p-1 rounded-xl border border-white/5">
+                    <button class="py-1.5 rounded-lg bg-purple-600 text-white text-xs font-medium shadow">視覺效果</button>
+                    <button onclick="triggerAutoPreset()" class="py-1.5 rounded-lg text-slate-400 hover:text-white text-xs font-medium transition">隨機配色</button>
+                    <button onclick="resetSettings()" class="py-1.5 rounded-lg text-slate-400 hover:text-white text-xs font-medium transition">重置參數</button>
+                </div>
+
+                <!-- 視覺風格網格 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">視覺呈現模式</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setVisualMode('ring_bars')" data-mode="ring_bars" class="style-card active p-2 rounded-xl bg-[#161332] border border-white/10 text-left transition">
+                            <div class="text-xs font-bold text-cyan-300"><i class="fa-regular fa-circle-dot mr-1"></i>動漫光環</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">圓環 + 底部頻譜</div>
+                        </button>
+                        <button onclick="setVisualMode('dual_bars')" data-mode="dual_bars" class="style-card p-2 rounded-xl bg-[#161332] border border-white/10 text-left transition">
+                            <div class="text-xs font-bold text-pink-300"><i class="fa-solid fa-bars-staggered mr-1"></i>賽博頻譜</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">對稱霓虹音柱</div>
+                        </button>
+                        <button onclick="setVisualMode('particles')" data-mode="particles" class="style-card p-2 rounded-xl bg-[#161332] border border-white/10 text-left transition">
+                            <div class="text-xs font-bold text-purple-300"><i class="fa-solid fa-bahai mr-1"></i>星空粒子</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">重低音能量爆發</div>
+                        </button>
+                        <button onclick="setVisualMode('triangle')" data-mode="triangle" class="style-card p-2 rounded-xl bg-[#161332] border border-white/10 text-left transition">
+                            <div class="text-xs font-bold text-amber-300"><i class="fa-solid fa-shapes mr-1"></i>霓虹稜鏡</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">幾何光束律動</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 配色方案選擇 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-semibold text-slate-300">配色方案</label>
+                        <span id="themeNameLabel" class="text-[11px] text-purple-300">霓虹動漫紫</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="setColorTheme('neonAnime', '霓虹動漫紫')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 via-purple-500 to-pink-500 ring-2 ring-white transition transform hover:scale-110" title="霓虹動漫紫"></button>
+                        <button onclick="setColorTheme('cyberGold', '賽博龐克金')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 transition transform hover:scale-110" title="賽博龐克金"></button>
+                        <button onclick="setColorTheme('auroraMint', '極光冰川藍')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-400 via-teal-500 to-blue-600 transition transform hover:scale-110" title="極光冰川藍"></button>
+                        <button onclick="setColorTheme('crimsonNight', '緋紅魅影')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-red-500 via-pink-600 to-indigo-800 transition transform hover:scale-110" title="緋紅魅影"></button>
+                    </div>
+                </div>
+
+                <!-- 特效強度滑桿 -->
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">特效靈敏度</span>
+                        <span id="intensityVal" class="text-cyan-300 font-mono">85%</span>
+                    </div>
+                    <input type="range" id="intensitySlider" min="20" max="150" value="85" class="w-full">
+                </div>
+
+                <!-- 粒子數量 / 反應模式 -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1.5">音頻反應疊加</label>
+                    <select id="particleToggle" class="w-full bg-[#121026] border border-indigo-900/70 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="true">頻譜 + 漂浮光粒子 (推薦)</option>
+                        <option value="false">僅顯示純淨頻譜</option>
+                    </select>
+                </div>
+
+                <!-- 背景設定 -->
+                <div class="pt-2 border-t border-white/10 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-slate-300">背景設定</label>
+                        <button onclick="document.getElementById('bgUpload').click()" class="text-[11px] text-cyan-400 hover:underline">
+                            <i class="fa-solid fa-upload mr-1"></i>更換圖片
+                        </button>
+                    </div>
+
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">背景模糊度</span>
+                        <span id="blurVal" class="text-slate-300 font-mono">2px</span>
+                    </div>
+                    <input type="range" id="blurSlider" min="0" max="15" value="2" class="w-full">
+
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">背景亮度</span>
+                        <span id="brightnessVal" class="text-slate-300 font-mono">75%</span>
+                    </div>
+                    <input type="range" id="brightnessSlider" min="20" max="120" value="75" class="w-full">
+                </div>
+            </div>
+
+            <!-- 5. 右下角匯出與分享區 -->
+            <div class="pt-3 border-t border-white/10 space-y-2">
+                <button onclick="exportSnapshot()" class="w-full py-2.5 rounded-xl neon-glow-btn text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-camera"></i> 擷取高畫質封面圖
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="toggleRecording()" id="recordBtn" class="py-2 rounded-lg bg-[#161332] hover:bg-purple-900/40 border border-purple-500/30 text-xs font-medium text-purple-200 flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-record-vinyl text-rose-500"></i> <span id="recordBtnText">錄製影片</span>
+                    </button>
+                    <button onclick="shareProject()" class="py-2 rounded-lg bg-[#161332] hover:bg-cyan-900/40 border border-cyan-500/30 text-xs font-medium text-cyan-200 flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-share-nodes"></i> 分享設定
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 自訂通知提示框 (Toast Message Box) -->
+    <div id="toastBox" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="glass-panel border border-purple-500/50 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <i id="toastIcon" class="fa-solid fa-circle-info text-cyan-400"></i>
+            <span id="toastMessage" class="text-xs font-medium text-white">提示訊息</span>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * MusicFlow Audio Visualizer Studio 核心引擎
+         * 包含 Web Audio API 頻譜分析、內建節拍合成器、Canvas 2D 霓虹粒子與動態渲染、影片錄製匯出
+         */
+
+        // --- 全域狀態管理 ---
+        const state = {
+            isPlaying: false,
+            isSynthPlaying: false,
+            isMicActive: false,
+            visualMode: 'ring_bars', // ring_bars, dual_bars, particles, triangle
+            colorTheme: 'neonAnime',
+            intensity: 0.85,
+            showParticles: true,
+            bgBlur: 2,
+            bgBrightness: 0.75,
+            rotationAngle: 0,
+            bassPulse: 0
+        };
+
+        // 配色主題庫
+        const themes = {
+            neonAnime: {
+                primary: '#38bdf8',   // 霓虹藍
+                secondary: '#a855f7', // 魅惑紫
+                accent: '#f43f5e',    // 櫻花粉紅
+                glow: 'rgba(168, 85, 247, 0.7)'
+            },
+            cyberGold: {
+                primary: '#fbbf24',   // 賽博金
+                secondary: '#f43f5e', // 霓虹紅
+                accent: '#8b5cf6',    // 電光紫
+                glow: 'rgba(251, 191, 36, 0.7)'
+            },
+            auroraMint: {
+                primary: '#34d399',   // 極光綠
+                secondary: '#06b6d4', // 冰川青
+                accent: '#3b82f6',    // 深海藍
+                glow: 'rgba(52, 211, 153, 0.7)'
+            },
+            crimsonNight: {
+                primary: '#fb7185',   // 薔薇粉
+                secondary: '#e11d48', // 緋紅
+                accent: '#6366f1',    // 靛藍
+                glow: 'rgba(225, 29, 72, 0.7)'
+            }
+        };
+
+        // --- DOM 元素 ---
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        const waveCanvas = document.getElementById('timelineWaveCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+
+        // --- 音訊系統初始化 ---
+        let audioCtx = null;
+        let analyser = null;
+        let dataArray = null;
+        let bufferLength = 0;
+        let audioElement = new Audio();
+        audioElement.crossOrigin = "anonymous";
+        let mediaSource = null;
+        let micStream = null;
+        let synthInterval = null;
+
+        // 粒子陣列
+        let particles = [];
+        const PARTICLE_COUNT = 65;
+
+        // 背景圖物件 (預設生成程序化賽博動漫夜景)
+        let customBgImage = null;
+        let defaultBgCanvas = document.createElement('canvas');
+
+        // --- 初始化程序化預設賽博動漫夜景圖 ---
+        function generateDefaultCyberBackground() {
+            defaultBgCanvas.width = 1280;
+            defaultBgCanvas.height = 720;
+            const bctx = defaultBgCanvas.getContext('2d');
+
+            // 夜空漸層
+            const skyGrad = bctx.createLinearGradient(0, 0, 0, 720);
+            skyGrad.addColorStop(0, '#07051a');
+            skyGrad.addColorStop(0.5, '#190f3c');
+            skyGrad.addColorStop(1, '#2e1065');
+            bctx.fillStyle = skyGrad;
+            bctx.fillRect(0, 0, 1280, 720);
+
+            // 霓虹滿月
+            const moonGrad = bctx.createRadialGradient(920, 220, 10, 920, 220, 140);
+            moonGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+            moonGrad.addColorStop(0.3, 'rgba(192, 132, 252, 0.5)');
+            moonGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            bctx.fillStyle = moonGrad;
+            bctx.beginPath();
+            bctx.arc(920, 220, 140, 0, Math.PI * 2);
+            bctx.fill();
+
+            // 遠處星星
+            bctx.fillStyle = '#ffffff';
+            for (let i = 0; i < 90; i++) {
+                const x = Math.random() * 1280;
+                const y = Math.random() * 450;
+                const r = Math.random() * 1.8;
+                bctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                bctx.beginPath();
+                bctx.arc(x, y, r, 0, Math.PI * 2);
+                bctx.fill();
+            }
+            bctx.globalAlpha = 1;
+
+            // 賽博城市剪影建築群
+            const buildings = [
+                {x: 40, w: 90, h: 280}, {x: 140, w: 110, h: 360}, {x: 260, w: 80, h: 240},
+                {x: 360, w: 130, h: 310}, {x: 520, w: 70, h: 210}, {x: 780, w: 95, h: 290},
+                {x: 890, w: 60, h: 410}, {x: 970, w: 120, h: 330}, {x: 1110, w: 140, h: 270}
+            ];
+            buildings.forEach(b => {
+                bctx.fillStyle = '#0d0924';
+                bctx.fillRect(b.x, 720 - b.h, b.w, b.h);
+                // 霓虹建築邊線
+                bctx.strokeStyle = 'rgba(139, 92, 246, 0.35)';
+                bctx.lineWidth = 2;
+                bctx.strokeRect(b.x, 720 - b.h, b.w, b.h);
+
+                // 窗戶光點
+                for (let wy = 720 - b.h + 20; wy < 680; wy += 24) {
+                    for (let wx = b.x + 12; wx < b.x + b.w - 15; wx += 18) {
+                        if (Math.random() > 0.45) {
+                            bctx.fillStyle = Math.random() > 0.5 ? 'rgba(56, 189, 248, 0.5)' : 'rgba(244, 114, 182, 0.5)';
+                            bctx.fillRect(wx, wy, 6, 10);
+                        }
+                    }
+                }
+            });
+
+            // 櫻花花瓣剪影裝飾
+            for (let i = 0; i < 35; i++) {
+                bctx.fillStyle = 'rgba(244, 114, 182, 0.45)';
+                bctx.beginPath();
+                bctx.ellipse(Math.random() * 600, Math.random() * 500, 6, 3, Math.random() * Math.PI, 0, Math.PI * 2);
+                bctx.fill();
+            }
+        }
+
+        // --- 初始化粒子系統 ---
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 1.2,
+                    speedY: -Math.random() * 1.5 - 0.3,
+                    alpha: Math.random() * 0.7 + 0.3
+                });
+            }
+        }
+
+        // --- 確保 AudioContext 啟動 ---
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.82;
+                bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // --- 顯示提示訊息 (Toast) ---
+        let toastTimer = null;
+        function showToast(msg, iconClass = 'fa-circle-info text-cyan-400') {
+            const box = document.getElementById('toastBox');
+            document.getElementById('toastMessage').textContent = msg;
+            document.getElementById('toastIcon').className = `fa-solid ${iconClass}`;
+            
+            box.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- 載入本地音訊檔案 ---
+        document.getElementById('audioUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            stopAllSources();
+            initAudioContext();
+
+            const fileURL = URL.createObjectURL(file);
+            audioElement.src = fileURL;
+            audioElement.volume = document.getElementById('volumeBar').value / 100;
+
+            if (!mediaSource) {
+                mediaSource = audioCtx.createMediaElementSource(audioElement);
+                mediaSource.connect(analyser);
+                analyser.connect(audioCtx.destination);
+            }
+
+            document.getElementById('trackFileName').textContent = file.name;
+            document.getElementById('audioSourceBadge').textContent = `正在播放: ${file.name.slice(0, 18)}...`;
+            
+            audioElement.play().then(() => {
+                state.isPlaying = true;
+                updatePlayUI(true);
+                showToast(`已載入音訊：${file.name}`, 'fa-music text-purple-400');
+            }).catch(err => {
+                showToast('請點擊播放按鈕開始視覺化', 'fa-play text-cyan-400');
+            });
+        });
+
+        // --- 載入自訂背景圖片 ---
+        document.getElementById('bgUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    customBgImage = img;
+                    showToast('已更新自訂視覺背景圖！', 'fa-image text-pink-400');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --- 內建電子節拍合成器 (免音檔即時體驗) ---
+        function toggleDemoSynth() {
+            if (state.isSynthPlaying) {
+                stopAllSources();
+                showToast('已停止內建節拍演示', 'fa-stop text-slate-400');
+                return;
+            }
+
+            stopAllSources();
+            initAudioContext();
+
+            state.isSynthPlaying = true;
+            state.isPlaying = true;
+            updatePlayUI(true);
+            document.getElementById('audioSourceBadge').textContent = 'AI 內建電子合成節拍 (128 BPM)';
+            document.getElementById('trackFileName').textContent = 'Cyber_Anime_Synth_128BPM.synth';
+            document.getElementById('synthBtn').classList.add('ring-2', 'ring-yellow-400');
+
+            let step = 0;
+            const notes = [261.63, 311.13, 392.00, 523.25, 466.16, 392.00, 311.13, 349.23]; // C小調五聲音階
+
+            function playBeatStep() {
+                if (!state.isSynthPlaying) return;
+                const now = audioCtx.currentTime;
+
+                // 1. Kick 重低音鼓 (每4步)
+                if (step % 4 === 0) {
+                    const kickOsc = audioCtx.createOscillator();
+                    const kickGain = audioCtx.createGain();
+                    kickOsc.type = 'sine';
+                    kickOsc.frequency.setValueAtTime(140, now);
+                    kickOsc.frequency.exponentialRampToValueAtTime(38, now + 0.18);
+
+                    kickGain.gain.setValueAtTime(0.7, now);
+                    kickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                    kickOsc.connect(kickGain);
+                    kickGain.connect(analyser);
+                    kickGain.connect(audioCtx.destination);
+
+                    kickOsc.start(now);
+                    kickOsc.stop(now + 0.25);
+                }
+
+                // 2. 霓虹琶音旋律
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = step % 2 === 0 ? 'sawtooth' : 'triangle';
+                const freq = notes[step % notes.length] * (step % 8 === 7 ? 2 : 1);
+                osc.frequency.setValueAtTime(freq, now);
+
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.005, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(analyser);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.2);
+
+                step++;
+            }
+
+            playBeatStep();
+            synthInterval = setInterval(playBeatStep, 230);
+            showToast('已啟動內建電子節拍！享受即時頻譜律動', 'fa-bolt text-yellow-400');
+        }
+
+        // --- 麥克風即時收音 ---
+        async function toggleMicInput() {
+            if (state.isMicActive) {
+                stopAllSources();
+                showToast('已關閉麥克風收音', 'fa-microphone-slash text-slate-400');
+                return;
+            }
+
+            try {
+                stopAllSources();
+                initAudioContext();
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const micSource = audioCtx.createMediaStreamSource(micStream);
+                micSource.connect(analyser);
+
+                state.isMicActive = true;
+                state.isPlaying = true;
+                updatePlayUI(true);
+                document.getElementById('audioSourceBadge').textContent = '麥克風即時收音中...';
+                document.getElementById('micBtn').classList.add('bg-emerald-900/40', 'border-emerald-500/50');
+                showToast('麥克風已連接！對著麥克風說話或播放音樂試試看', 'fa-microphone text-emerald-400');
+            } catch (err) {
+                showToast('無法存取麥克風，請確認瀏覽器權限', 'fa-triangle-exclamation text-rose-400');
+            }
+        }
+
+        // --- 停止所有音訊來源 ---
+        function stopAllSources() {
+            audioElement.pause();
+            if (synthInterval) {
+                clearInterval(synthInterval);
+                synthInterval = null;
+            }
+            if (micStream) {
+                micStream.getTracks().forEach(t => t.stop());
+                micStream = null;
+            }
+            state.isPlaying = false;
+            state.isSynthPlaying = false;
+            state.isMicActive = false;
+            document.getElementById('synthBtn').classList.remove('ring-2', 'ring-yellow-400');
+            document.getElementById('micBtn').classList.remove('bg-emerald-900/40', 'border-emerald-500/50');
+            updatePlayUI(false);
+        }
+
+        // --- 播放/暫停切換 ---
+        function handlePlayPause() {
+            if (state.isSynthPlaying || state.isMicActive) {
+                stopAllSources();
+                document.getElementById('audioSourceBadge').textContent = '已暫停';
+                return;
+            }
+
+            if (audioElement.src) {
+                initAudioContext();
+                if (audioElement.paused) {
+                    audioElement.play();
+                    state.isPlaying = true;
+                    updatePlayUI(true);
+                } else {
+                    audioElement.pause();
+                    state.isPlaying = false;
+                    updatePlayUI(false);
+                }
+            } else {
+                // 若尚未載入音檔，自動啟動內建節拍讓使用者立即有回饋
+                toggleDemoSynth();
+            }
+        }
+
+        function stopAudio() {
+            stopAllSources();
+            if (audioElement.src) {
+                audioElement.currentTime = 0;
+            }
+            document.getElementById('audioSourceBadge').textContent = '已停止';
+        }
+
+        function updatePlayUI(playing) {
+            const btnIcon = document.querySelector('#playPauseBtn i');
+            const centerOverlay = document.getElementById('centerPlayOverlay');
+            if (playing) {
+                btnIcon.className = 'fa-solid fa-pause text-xs';
+                centerOverlay.classList.add('opacity-0', 'pointer-events-none');
+            } else {
+                btnIcon.className = 'fa-solid fa-play text-xs';
+                centerOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        // --- 時間格式化與進度條同步 ---
+        function formatTime(sec) {
+            if (isNaN(sec)) return '00:00';
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = Math.floor(sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        audioElement.addEventListener('timeupdate', () => {
+            if (!audioElement.duration) return;
+            const pct = (audioElement.currentTime / audioElement.duration) * 100;
+            document.getElementById('seekBar').value = pct;
+            const curStr = formatTime(audioElement.currentTime);
+            const durStr = formatTime(audioElement.duration);
+            document.getElementById('timeDisplay').textContent = `${curStr} / ${durStr}`;
+            document.getElementById('currentTimeSmall').textContent = curStr;
+            document.getElementById('durationSmall').textContent = durStr;
+        });
+
+        document.getElementById('seekBar').addEventListener('input', function() {
+            if (audioElement.duration) {
+                audioElement.currentTime = (this.value / 100) * audioElement.duration;
+            }
+        });
+
+        document.getElementById('volumeBar').addEventListener('input', function() {
+            audioElement.volume = this.value / 100;
+        });
+
+        // --- 參數控制與模板切換 ---
+        function setVisualMode(mode) {
+            state.visualMode = mode;
+            document.querySelectorAll('.style-card').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+        }
+
+        function setColorTheme(themeKey, labelName) {
+            state.colorTheme = themeKey;
+            document.getElementById('themeNameLabel').textContent = labelName;
+        }
+
+        function applyPreset(presetName) {
+            if (presetName === 'cyberRing') {
+                setVisualMode('ring_bars');
+                setColorTheme('neonAnime', '霓虹動漫紫');
+            } else if (presetName === 'animeWave') {
+                setVisualMode('dual_bars');
+                setColorTheme('crimsonNight', '緋紅魅影');
+            } else if (presetName === 'starParticles') {
+                setVisualMode('particles');
+                setColorTheme('auroraMint', '極光冰川藍');
+            } else if (presetName === 'cyberGrid') {
+                setVisualMode('triangle');
+                setColorTheme('cyberGold', '賽博龐克金');
+            }
+            showToast('已套用視覺特效模板！', 'fa-wand-magic-sparkles text-purple-400');
+        }
+
+        function triggerAutoPreset() {
+            const modes = ['ring_bars', 'dual_bars', 'particles', 'triangle'];
+            const themeKeys = [
+                {k: 'neonAnime', n: '霓虹動漫紫'},
+                {k: 'cyberGold', n: '賽博龐克金'},
+                {k: 'auroraMint', n: '極光冰川藍'},
+                {k: 'crimsonNight', n: '緋紅魅影'}
+            ];
+            const randMode = modes[Math.floor(Math.random() * modes.length)];
+            const randTheme = themeKeys[Math.floor(Math.random() * themeKeys.length)];
+            setVisualMode(randMode);
+            setColorTheme(randTheme.k, randTheme.n);
+            showToast(`AI 已為您搭配「${randTheme.n}」視覺組合`, 'fa-sparkles text-cyan-400');
+        }
+
+        function resetSettings() {
+            setVisualMode('ring_bars');
+            setColorTheme('neonAnime', '霓虹動漫紫');
+            document.getElementById('intensitySlider').value = 85;
+            state.intensity = 0.85;
+            document.getElementById('intensityVal').textContent = '85%';
+            document.getElementById('blurSlider').value = 2;
+            state.bgBlur = 2;
+            document.getElementById('blurVal').textContent = '2px';
+            document.getElementById('brightnessSlider').value = 75;
+            state.bgBrightness = 0.75;
+            document.getElementById('brightnessVal').textContent = '75%';
+            showToast('已恢復預設視覺參數', 'fa-rotate-left text-slate-300');
+        }
+
+        // 滑桿監聽
+        document.getElementById('intensitySlider').addEventListener('input', function() {
+            state.intensity = this.value / 100;
+            document.getElementById('intensityVal').textContent = `${this.value}%`;
+        });
+        document.getElementById('blurSlider').addEventListener('input', function() {
+            state.bgBlur = this.value;
+            document.getElementById('blurVal').textContent = `${this.value}px`;
+        });
+        document.getElementById('brightnessSlider').addEventListener('input', function() {
+            state.bgBrightness = this.value / 100;
+            document.getElementById('brightnessVal').textContent = `${this.value}%`;
+        });
+        document.getElementById('particleToggle').addEventListener('change', function() {
+            state.showParticles = this.value === 'true';
+        });
+
+        function switchNav(el) {
+            document.querySelectorAll('.nav-pill').forEach(p => {
+                p.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-md');
+                p.classList.add('text-slate-400');
+            });
+            el.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-md');
+            el.classList.remove('text-slate-400');
+        }
+
+        function toggleFullscreen() {
+            const container = document.getElementById('canvasContainer');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // --- 匯出功能：擷取封面圖片 & 錄製影片 ---
+        function exportSnapshot() {
+            const link = document.createElement('a');
+            link.download = `MusicFlow_Visualizer_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast('已成功匯出高畫質視覺封面圖片！', 'fa-download text-emerald-400');
+        }
+
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        function toggleRecording() {
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                document.getElementById('recordBtnText').textContent = '錄製影片';
+                document.getElementById('recordBtn').classList.remove('animate-pulse', 'border-rose-500');
+                return;
+            }
+
+            try {
+                const stream = canvas.captureStream(60);
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `MusicFlow_Video_${Date.now()}.webm`;
+                    a.click();
+                    showToast('影片錄製完成並已自動下載！', 'fa-film text-cyan-400');
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('recordBtnText').textContent = '停止並下載';
+                document.getElementById('recordBtn').classList.add('animate-pulse', 'border-rose-500');
+                showToast('開始錄製畫布動態，再次點擊即可完成下載', 'fa-record-vinyl text-rose-500');
+            } catch (err) {
+                showToast('目前瀏覽器不支援直接錄製畫布', 'fa-circle-exclamation text-amber-400');
+            }
+        }
+
+        function shareProject() {
+            const summary = `MusicFlow Studio 視覺設定｜模式: ${state.visualMode}｜主題: ${document.getElementById('themeNameLabel').textContent}`;
+            const tempInput = document.createElement('input');
+            tempInput.value = summary;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('已複製專案視覺參數至剪貼簿！', 'fa-check text-emerald-400');
+        }
+
+        // --- 響應式畫布尺寸調整 ---
+        function resizeCanvases() {
+            const container = document.getElementById('canvasContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            waveCanvas.width = waveCanvas.parentElement.clientWidth;
+            waveCanvas.height = waveCanvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvases);
+
+        // --- 核心視覺渲染迴圈 (60 FPS) ---
+        function renderLoop() {
+            requestAnimationFrame(renderLoop);
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const currentTheme = themes[state.colorTheme];
+
+            // 1. 取得頻譜數據 (若未播放則產生優雅的待機呼吸波動)
+            let bassAvg = 0;
+            if (analyser && state.isPlaying) {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < 16; i++) sum += dataArray[i];
+                bassAvg = (sum / 16) / 255;
+            } else {
+                if (!dataArray) {
+                    bufferLength = 128;
+                    dataArray = new Uint8Array(bufferLength);
+                }
+                const t = Date.now() * 0.002;
+                for (let i = 0; i < bufferLength; i++) {
+                    dataArray[i] = Math.max(0, Math.sin(t + i * 0.15) * 35 + 40);
+                }
+                bassAvg = (Math.sin(t) + 1) * 0.15;
+            }
+
+            const pulseScale = 1 + bassAvg * 0.12 * state.intensity;
+            state.rotationAngle += 0.005 + bassAvg * 0.02;
+
+            // 2. 繪製背景圖層 (支援模糊、亮度與低音微震縮放)
+            ctx.save();
+            ctx.filter = `blur(${state.bgBlur}px) brightness(${state.bgBrightness})`;
+            const bgSource = customBgImage || defaultBgCanvas;
+            const bgW = w * pulseScale;
+            const bgH = h * pulseScale;
+            ctx.drawImage(bgSource, (w - bgW) / 2, (h - bgH) / 2, bgW, bgH);
+            ctx.restore();
+
+            // 3. 繪製漂浮霓虹粒子
+            if (state.showParticles) {
+                particles.forEach(p => {
+                    p.x += p.speedX * (1 + bassAvg * 3);
+                    p.y += p.speedY * (1 + bassAvg * 4);
+                    if (p.y < 0) { p.y = h; p.x = Math.random() * w; }
+                    if (p.x < 0) p.x = w;
+                    if (p.x > w) p.x = 0;
+
+                    ctx.save();
+                    ctx.fillStyle = currentTheme.primary;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = currentTheme.primary;
+                    ctx.globalAlpha = p.alpha;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (1 + bassAvg * 0.8), 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+            }
+
+            // 4. 根據選擇的視覺模式渲染主特效
+            ctx.save();
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = currentTheme.glow;
+
+            if (state.visualMode === 'ring_bars') {
+                // 模式 A: 動漫霓虹光環 + 底部頻譜柱 (致敬參考圖經典構圖)
+                drawNeonRing(w * 0.65, h * 0.44, Math.min(w, h) * 0.21, currentTheme, bassAvg);
+                drawBottomSpectrum(w, h, currentTheme);
+            } else if (state.visualMode === 'dual_bars') {
+                // 模式 B: 中央對稱鏡像頻譜
+                drawMirrorSpectrum(w, h, currentTheme);
+            } else if (state.visualMode === 'particles') {
+                // 模式 C: 中央脈衝星雲核心
+                drawNeonRing(w * 0.5, h * 0.48, Math.min(w, h) * 0.24, currentTheme, bassAvg);
+                drawStarburst(w * 0.5, h * 0.48, currentTheme, bassAvg);
+            } else if (state.visualMode === 'triangle') {
+                // 模式 D: 賽博稜鏡三角光束
+                drawCyberTriangle(w * 0.5, h * 0.48, Math.min(w, h) * 0.26, currentTheme, bassAvg);
+                drawBottomSpectrum(w, h, currentTheme);
+            }
+            ctx.restore();
+
+            // 5. 同步繪製下方時間軸微型波形
+            drawTimelineWave(currentTheme);
+        }
+
+        // 繪製放射狀霓虹圓環
+        function drawNeonRing(cx, cy, baseRadius, theme, bassAvg) {
+            const radius = baseRadius * (1 + bassAvg * 0.15 * state.intensity);
+            const bars = 72;
+
+            // 外圈光暈環
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 6, 0, Math.PI * 2);
+            ctx.strokeStyle = theme.secondary;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            for (let i = 0; i < bars; i++) {
+                const angle = (i / bars) * Math.PI * 2 + state.rotationAngle;
+                const dataIdx = Math.floor((i / bars) * (bufferLength * 0.7));
+                const val = (dataArray[dataIdx] / 255) * state.intensity;
+                const barH = Math.max(4, val * (baseRadius * 0.65));
+
+                const x1 = cx + Math.cos(angle) * radius;
+                const y1 = cy + Math.sin(angle) * radius;
+                const x2 = cx + Math.cos(angle) * (radius + barH);
+                const y2 = cy + Math.sin(angle) * (radius + barH);
+
+                ctx.strokeStyle = i % 2 === 0 ? theme.primary : theme.accent;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        }
+
+        // 繪製底部經典頻譜長條
+        function drawBottomSpectrum(w, h, theme) {
+            const barCount = 64;
+            const barWidth = (w / barCount) * 0.7;
+            const gap = (w / barCount) * 0.3;
+
+            const grad = ctx.createLinearGradient(0, h, 0, h * 0.6);
+            grad.addColorStop(0, theme.accent);
+            grad.addColorStop(0.5, theme.secondary);
+            grad.addColorStop(1, theme.primary);
+            ctx.fillStyle = grad;
+
+            for (let i = 0; i < barCount; i++) {
+                const dataIdx = Math.floor((i / barCount) * (bufferLength * 0.75));
+                const val = (dataArray[dataIdx] / 255) * state.intensity;
+                const barHeight = Math.max(4, val * h * 0.32);
+                const x = i * (barWidth + gap) + gap / 2;
+                const y = h - barHeight;
+
+                ctx.beginPath();
+                ctx.roundRect(x, y, barWidth, barHeight, [3, 3, 0, 0]);
+                ctx.fill();
+            }
+        }
+
+        // 繪製中央鏡像對稱頻譜
+        function drawMirrorSpectrum(w, h, theme) {
+            const barCount = 56;
+            const totalW = w * 0.8;
+            const startX = (w - totalW) / 2;
+            const step = totalW / barCount;
+            const barW = step * 0.65;
+            const centerY = h * 0.5;
+
+            for (let i = 0; i < barCount; i++) {
+                const distFromCenter = Math.abs(i - barCount / 2) / (barCount / 2);
+                const dataIdx = Math.floor(distFromCenter * (bufferLength * 0.65));
+                const val = (dataArray[dataIdx] / 255) * state.intensity;
+                const barH = Math.max(6, val * h * 0.36);
+
+                const grad = ctx.createLinearGradient(0, centerY - barH, 0, centerY + barH);
+                grad.addColorStop(0, theme.primary);
+                grad.addColorStop(0.5, theme.secondary);
+                grad.addColorStop(1, theme.accent);
+                ctx.fillStyle = grad;
+
+                const x = startX + i * step;
+                ctx.beginPath();
+                ctx.roundRect(x, centerY - barH, barW, barH * 2, 4);
+                ctx.fill();
+            }
+        }
+
+        // 繪製星雲能量射線
+        function drawStarburst(cx, cy, theme, bassAvg) {
+            const rays = 36;
+            for (let i = 0; i < rays; i++) {
+                const angle = (i / rays) * Math.PI * 2 - state.rotationAngle * 1.5;
+                const val = (dataArray[i * 2] / 255) * state.intensity;
+                const len = 30 + val * 160;
+                ctx.strokeStyle = i % 3 === 0 ? theme.primary : theme.accent;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
+                ctx.stroke();
+            }
+        }
+
+        // 繪製賽博稜鏡三角形
+        function drawCyberTriangle(cx, cy, size, theme, bassAvg) {
+            const r = size * (1 + bassAvg * 0.25 * state.intensity);
+            ctx.lineWidth = 4;
+
+            for (let layer = 0; layer < 2; layer++) {
+                const layerR = r * (1 - layer * 0.22);
+                ctx.strokeStyle = layer === 0 ? theme.primary : theme.accent;
+                ctx.beginPath();
+                for (let i = 0; i < 3; i++) {
+                    const angle = (i * (Math.PI * 2)) / 3 - Math.PI / 2 + (layer === 1 ? Math.sin(state.rotationAngle) * 0.15 : 0);
+                    const px = cx + Math.cos(angle) * layerR;
+                    const py = cy + Math.sin(angle) * layerR;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+        }
+
+        // 繪製時間軸迷你波形
+        function drawTimelineWave(theme) {
+            const ww = waveCanvas.width;
+            const wh = waveCanvas.height;
+            waveCtx.clearRect(0, 0, ww, wh);
+
+            const count = 80;
+            const step = ww / count;
+            waveCtx.fillStyle = theme.primary;
+
+            for (let i = 0; i < count; i++) {
+                const val = dataArray ? dataArray[i % bufferLength] / 255 : 0.2;
+                const bh = Math.max(2, val * wh * 0.85);
+                waveCtx.fillRect(i * step, (wh - bh) / 2, step * 0.6, bh);
+            }
+        }
+
+        // --- 頁面載入完成啟動 ---
+        window.onload = function() {
+            generateDefaultCyberBackground();
+            resizeCanvases();
+            initParticles();
+            renderLoop();
+        };
+    </script>
+</body>
+</html>

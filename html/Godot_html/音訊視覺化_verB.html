@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即時音樂可視化工作室 (Audio Visualizer Studio)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #09090b;
+            color: #f4f4f5;
+            overflow-x: hidden;
+        }
+        /* 自訂滑桿樣式 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #a855f7;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #27272a;
+            border-radius: 2px;
+        }
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 -->
+    <header class="glass-panel sticky top-0 z-50 px-6 py-3 flex items-center justify-between border-b border-zinc-800">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-purple-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <i class="fa-solid fa-wave-square text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wide bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">SonicWave Studio</h1>
+                <p class="text-xs text-zinc-400">線上即時音頻可視化生成器</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <label for="audioUpload" class="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 border border-zinc-700">
+                <i class="fa-solid fa-cloud-arrow-up text-purple-400"></i>
+                <span>上傳音訊 (MP3/WAV)</span>
+            </label>
+            <input type="file" id="audioUpload" accept="audio/*" class="hidden">
+
+            <button id="demoBtn" class="bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-300 px-3 py-2 rounded-lg text-sm transition border border-zinc-700/50" title="使用內建電子節拍測試">
+                <i class="fa-solid fa-music mr-1 text-cyan-400"></i> 內建範例音效
+            </button>
+
+            <button id="recordBtn" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-purple-600/20 disabled:opacity-50">
+                <i class="fa-solid fa-circle-dot" id="recordIcon"></i>
+                <span id="recordText">錄製並匯出影片</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主工作區 -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- 左側控制面板 -->
+        <aside class="w-full lg:w-80 glass-panel border-r border-zinc-800 p-5 flex flex-col gap-6 overflow-y-auto z-10">
+            
+            <!-- 視覺化樣式選擇 -->
+            <div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-shapes text-purple-400"></i> 視覺化場景範本
+                </h2>
+                <div class="grid grid-cols-2 gap-2.5" id="styleSelector">
+                    <button data-style="bars" class="style-btn active p-3 rounded-xl border border-purple-500 bg-purple-500/10 text-left transition flex flex-col gap-1">
+                        <i class="fa-solid fa-chart-simple text-purple-400 text-lg"></i>
+                        <span class="text-sm font-medium text-white">鏡像頻譜柱</span>
+                        <span class="text-[11px] text-zinc-400">經典對稱律動</span>
+                    </button>
+                    <button data-style="circle" class="style-btn p-3 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 text-left transition flex flex-col gap-1">
+                        <i class="fa-solid fa-circle-notch text-cyan-400 text-lg"></i>
+                        <span class="text-sm font-medium text-zinc-200">霓虹能量環</span>
+                        <span class="text-[11px] text-zinc-400">重低音脈衝波</span>
+                    </button>
+                    <button data-style="wave" class="style-btn p-3 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 text-left transition flex flex-col gap-1">
+                        <i class="fa-solid fa-wave-square text-pink-400 text-lg"></i>
+                        <span class="text-sm font-medium text-zinc-200">多層流光波</span>
+                        <span class="text-[11px] text-zinc-400">平滑聲波曲線</span>
+                    </button>
+                    <button data-style="particles" class="style-btn p-3 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 text-left transition flex flex-col gap-1">
+                        <i class="fa-solid fa-bahai text-amber-400 text-lg"></i>
+                        <span class="text-sm font-medium text-zinc-200">星塵節拍矩陣</span>
+                        <span class="text-[11px] text-zinc-400">放射粒子星雲</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 色彩主題 -->
+            <div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-palette text-cyan-400"></i> 色彩與光暈主題
+                </h2>
+                <div class="grid grid-cols-5 gap-2 mb-3">
+                    <button data-c1="#a855f7" data-c2="#06b6d4" class="color-preset h-8 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 ring-2 ring-white cursor-pointer"></button>
+                    <button data-c1="#f43f5e" data-c2="#f59e0b" class="color-preset h-8 rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 opacity-75 hover:opacity-100 cursor-pointer"></button>
+                    <button data-c1="#10b981" data-c2="#3b82f6" class="color-preset h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-blue-500 opacity-75 hover:opacity-100 cursor-pointer"></button>
+                    <button data-c1="#ec4899" data-c2="#8b5cf6" class="color-preset h-8 rounded-lg bg-gradient-to-r from-pink-500 to-violet-500 opacity-75 hover:opacity-100 cursor-pointer"></button>
+                    <button data-c1="#ffffff" data-c2="#94a3b8" class="color-preset h-8 rounded-lg bg-gradient-to-r from-white to-slate-400 opacity-75 hover:opacity-100 cursor-pointer"></button>
+                </div>
+                <div class="flex items-center justify-between gap-2 text-xs text-zinc-300 bg-zinc-900/80 p-2.5 rounded-lg border border-zinc-800">
+                    <div class="flex items-center gap-2">
+                        <input type="color" id="color1" value="#a855f7" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                        <span>主色調</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="color" id="color2" value="#06b6d4" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0">
+                        <span>漸層副色</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 參數微調 -->
+            <div class="space-y-4">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-pink-400"></i> 動態參數微調
+                </h2>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-zinc-300">節拍靈敏度 (Gain)</span>
+                        <span id="sensVal" class="text-purple-400 font-mono">1.3x</span>
+                    </div>
+                    <input type="range" id="sensitivity" min="0.5" max="2.5" step="0.1" value="1.3" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-zinc-300">平滑阻尼 (Smoothing)</span>
+                        <span id="smoothVal" class="text-purple-400 font-mono">0.82</span>
+                    </div>
+                    <input type="range" id="smoothing" min="0.3" max="0.95" step="0.01" value="0.82" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-zinc-300">霓虹發光強度 (Glow)</span>
+                        <span id="glowVal" class="text-purple-400 font-mono">15px</span>
+                    </div>
+                    <input type="range" id="glow" min="0" max="40" step="1" value="15" class="w-full">
+                </div>
+            </div>
+
+            <!-- 畫面文字疊加 -->
+            <div class="space-y-2.5">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+                    <i class="fa-solid fa-font text-amber-400"></i> 曲目資訊浮水印
+                </h2>
+                <input type="text" id="songTitleInput" placeholder="輸入歌曲名稱..." value="CYBERPUNK NIGHTS" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500">
+                <input type="text" id="artistInput" placeholder="輸入創作者 / 頻道名稱..." value="SYNTHWAVE COLLECTIVE" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-purple-500">
+            </div>
+
+        </aside>
+
+        <!-- 右側預覽畫布與播放控制 -->
+        <section class="flex-1 flex flex-col relative bg-black">
+            <!-- 狀態提示標籤 -->
+            <div id="recordingBadge" class="hidden absolute top-4 left-4 z-20 bg-red-500/20 border border-red-500 text-red-400 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 animate-pulse">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span> 正在錄製畫布與音訊...
+            </div>
+
+            <!-- 畫布容器 -->
+            <div class="flex-1 relative flex items-center justify-center overflow-hidden p-4" id="canvasContainer">
+                <canvas id="visualizerCanvas" class="w-full h-full rounded-xl border border-zinc-800/80 shadow-2xl bg-[#050508]"></canvas>
+                
+                <!-- 初始引導提示 -->
+                <div id="emptyOverlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10 pointer-events-none transition-opacity duration-300">
+                    <div class="w-16 h-16 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-headphones text-2xl text-purple-400"></i>
+                    </div>
+                    <p class="text-lg font-medium text-white mb-1">請上傳音訊檔案或點擊「內建範例音效」</p>
+                    <p class="text-sm text-zinc-400">支援 MP3, WAV, OGG 格式，即時於瀏覽器本地運算渲染</p>
+                </div>
+            </div>
+
+            <!-- 底部播放器控制列 -->
+            <div class="glass-panel border-t border-zinc-800 px-6 py-3 flex items-center gap-4">
+                <button id="playPauseBtn" class="w-10 h-10 rounded-full bg-white text-black hover:bg-zinc-200 flex items-center justify-center transition disabled:opacity-40" disabled>
+                    <i class="fa-solid fa-play ml-0.5" id="playIcon"></i>
+                </button>
+
+                <div class="flex-1 flex items-center gap-3">
+                    <span id="currentTime" class="text-xs font-mono text-zinc-400 w-10 text-right">00:00</span>
+                    <input type="range" id="progressBar" min="0" max="100" value="0" step="0.1" class="flex-1" disabled>
+                    <span id="durationTime" class="text-xs font-mono text-zinc-400 w-10">00:00</span>
+                </div>
+
+                <div class="flex items-center gap-2 w-28">
+                    <i class="fa-solid fa-volume-high text-zinc-400 text-xs"></i>
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8" class="w-full">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <audio id="audioElement" crossorigin="anonymous"></audio>
+
+    <script>
+        // DOM 元素
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioElement = document.getElementById('audioElement');
+        const audioUpload = document.getElementById('audioUpload');
+        const demoBtn = document.getElementById('demoBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playIcon = document.getElementById('playIcon');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationTimeEl = document.getElementById('durationTime');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const emptyOverlay = document.getElementById('emptyOverlay');
+
+        // 控制參數
+        let currentStyle = 'bars';
+        let color1 = '#a855f7';
+        let color2 = '#06b6d4';
+        let sensitivity = 1.3;
+        let smoothing = 0.82;
+        let glowIntensity = 15;
+        let songTitle = 'CYBERPUNK NIGHTS';
+        let artistName = 'SYNTHWAVE COLLECTIVE';
+
+        // Web Audio API 變數
+        let audioCtx;
+        let analyser;
+        let sourceNode;
+        let destNode; // 用於錄製
+        let dataArray;
+        let timeDataArray;
+        let isDemoPlaying = false;
+        let demoInterval;
+        let animationId;
+
+        // 調整畫布解析度
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            canvas.width = container.clientWidth - 32;
+            canvas.height = container.clientHeight - 32;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 初始化 Web Audio API
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 512;
+                analyser.smoothingTimeConstant = smoothing;
+
+                sourceNode = audioCtx.createMediaElementSource(audioElement);
+                destNode = audioCtx.createMediaStreamDestination();
+
+                sourceNode.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                analyser.connect(destNode);
+
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                timeDataArray = new Uint8Array(bufferLength);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 上傳本地音訊
+        audioUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            stopDemoSynth();
+            initAudioContext();
+
+            const fileURL = URL.createObjectURL(file);
+            audioElement.src = fileURL;
+            
+            // 自動填入檔名作為標題
+            const cleanName = file.name.replace(/\.[^/.]+$/, "").toUpperCase();
+            document.getElementById('songTitleInput').value = cleanName;
+            songTitle = cleanName;
+
+            emptyOverlay.classList.add('opacity-0');
+            playPauseBtn.disabled = false;
+            progressBar.disabled = false;
+
+            audioElement.play();
+            updatePlayIcon(true);
+            startRenderLoop();
+        });
+
+        // 內建電子節拍合成器 (無需外部檔案即可測試)
+        demoBtn.addEventListener('click', () => {
+            initAudioContext();
+            audioElement.pause();
+            stopDemoSynth();
+
+            isDemoPlaying = true;
+            emptyOverlay.classList.add('opacity-0');
+            playPauseBtn.disabled = false;
+            progressBar.disabled = true;
+            document.getElementById('songTitleInput').value = "SYNTH BEAT DEMO (BUILT-IN)";
+            songTitle = "SYNTH BEAT DEMO (BUILT-IN)";
+            updatePlayIcon(true);
+
+            let step = 0;
+            const notes = [110, 110, 130.81, 146.83, 110, 110, 164.81, 146.83];
+
+            demoInterval = setInterval(() => {
+                if (!isDemoPlaying) return;
+                const now = audioCtx.currentTime;
+
+                // Kick 大鼓 (每拍)
+                if (step % 2 === 0) {
+                    const kickOsc = audioCtx.createOscillator();
+                    const kickGain = audioCtx.createGain();
+                    kickOsc.frequency.setValueAtTime(140, now);
+                    kickOsc.frequency.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    kickGain.gain.setValueAtTime(0.9, now);
+                    kickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    kickOsc.connect(kickGain);
+                    kickGain.connect(analyser);
+                    kickGain.connect(audioCtx.destination);
+                    kickGain.connect(destNode);
+                    kickOsc.start(now);
+                    kickOsc.stop(now + 0.35);
+                }
+
+                // Bassline 合成器旋律
+                const bassOsc = audioCtx.createOscillator();
+                const bassGain = audioCtx.createGain();
+                bassOsc.type = 'sawtooth';
+                bassOsc.frequency.setValueAtTime(notes[step % notes.length], now);
+                
+                // 低通濾波器營造電子感
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800 + Math.sin(step) * 400, now);
+
+                bassGain.gain.setValueAtTime(0.25, now);
+                bassGain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+
+                bassOsc.connect(filter);
+                filter.connect(bassGain);
+                bassGain.connect(analyser);
+                bassGain.connect(audioCtx.destination);
+                bassGain.connect(destNode);
+
+                bassOsc.start(now);
+                bassOsc.stop(now + 0.22);
+
+                step++;
+            }, 240);
+
+            startRenderLoop();
+        });
+
+        function stopDemoSynth() {
+            isDemoPlaying = false;
+            if (demoInterval) clearInterval(demoInterval);
+        }
+
+        // 播放/暫停控制
+        playPauseBtn.addEventListener('click', () => {
+            if (isDemoPlaying) {
+                stopDemoSynth();
+                updatePlayIcon(false);
+                return;
+            }
+            if (audioElement.paused) {
+                audioCtx.resume();
+                audioElement.play();
+                updatePlayIcon(true);
+            } else {
+                audioElement.pause();
+                updatePlayIcon(false);
+            }
+        });
+
+        function updatePlayIcon(isPlaying) {
+            playIcon.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play ml-0.5';
+        }
+
+        // 進度條與音量控制
+        audioElement.addEventListener('timeupdate', () => {
+            if (audioElement.duration) {
+                const percent = (audioElement.currentTime / audioElement.duration) * 100;
+                progressBar.value = percent;
+                currentTimeEl.textContent = formatTime(audioElement.currentTime);
+                durationTimeEl.textContent = formatTime(audioElement.duration);
+            }
+        });
+
+        progressBar.addEventListener('input', () => {
+            if (audioElement.duration) {
+                audioElement.currentTime = (progressBar.value / 100) * audioElement.duration;
+            }
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            audioElement.volume = e.target.value;
+        });
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = Math.floor(sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // UI 控制面板事件綁定
+        document.querySelectorAll('.style-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.style-btn').forEach(b => {
+                    b.classList.remove('active', 'border-purple-500', 'bg-purple-500/10');
+                    b.classList.add('border-zinc-800', 'bg-zinc-900/50');
+                });
+                btn.classList.add('active', 'border-purple-500', 'bg-purple-500/10');
+                btn.classList.remove('border-zinc-800', 'bg-zinc-900/50');
+                currentStyle = btn.dataset.style;
+            });
+        });
+
+        document.querySelectorAll('.color-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-preset').forEach(b => b.classList.remove('ring-2', 'ring-white'));
+                btn.classList.add('ring-2', 'ring-white');
+                color1 = btn.dataset.c1;
+                color2 = btn.dataset.c2;
+                document.getElementById('color1').value = color1;
+                document.getElementById('color2').value = color2;
+            });
+        });
+
+        document.getElementById('color1').addEventListener('input', (e) => color1 = e.target.value);
+        document.getElementById('color2').addEventListener('input', (e) => color2 = e.target.value);
+
+        document.getElementById('sensitivity').addEventListener('input', (e) => {
+            sensitivity = parseFloat(e.target.value);
+            document.getElementById('sensVal').textContent = sensitivity.toFixed(1) + 'x';
+        });
+
+        document.getElementById('smoothing').addEventListener('input', (e) => {
+            smoothing = parseFloat(e.target.value);
+            document.getElementById('smoothVal').textContent = smoothing.toFixed(2);
+            if (analyser) analyser.smoothingTimeConstant = smoothing;
+        });
+
+        document.getElementById('glow').addEventListener('input', (e) => {
+            glowIntensity = parseInt(e.target.value);
+            document.getElementById('glowVal').textContent = glowIntensity + 'px';
+        });
+
+        document.getElementById('songTitleInput').addEventListener('input', (e) => songTitle = e.target.value);
+        document.getElementById('artistInput').addEventListener('input', (e) => artistName = e.target.value);
+
+        // 粒子系統 (用於星塵節拍矩陣)
+        const particles = Array.from({ length: 70 }, () => ({
+            angle: Math.random() * Math.PI * 2,
+            radius: Math.random() * 150 + 40,
+            speed: Math.random() * 0.015 + 0.005,
+            size: Math.random() * 3 + 1
+        }));
+
+        // 主渲染迴圈
+        function startRenderLoop() {
+            if (animationId) cancelAnimationFrame(animationId);
+
+            function render() {
+                animationId = requestAnimationFrame(render);
+
+                const w = canvas.width;
+                const h = canvas.height;
+                const centerX = w / 2;
+                const centerY = h / 2;
+
+                // 背景殘影清除
+                ctx.fillStyle = 'rgba(5, 5, 8, 0.35)';
+                ctx.fillRect(0, 0, w, h);
+
+                if (!analyser) return;
+                analyser.getByteFrequencyData(dataArray);
+                analyser.getByteTimeDomainData(timeDataArray);
+
+                // 計算低頻能量 (重低音脈衝)
+                let bassSum = 0;
+                for (let i = 0; i < 12; i++) bassSum += dataArray[i];
+                const bassAvg = (bassSum / 12) * sensitivity;
+                const pulseScale = 1 + (bassAvg / 255) * 0.18;
+
+                // 設定漸層與光暈
+                const gradient = ctx.createLinearGradient(0, h, w, 0);
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+
+                ctx.shadowBlur = glowIntensity;
+                ctx.shadowColor = color1;
+
+                // 1. 鏡像頻譜柱 (Bars)
+                if (currentStyle === 'bars') {
+                    const barCount = 64;
+                    const barWidth = (w * 0.7) / barCount;
+                    const startX = (w - barCount * barWidth) / 2;
+
+                    for (let i = 0; i < barCount; i++) {
+                        const val = Math.min(255, dataArray[i] * sensitivity);
+                        const barHeight = (val / 255) * (h * 0.38);
+                        const x = startX + i * barWidth;
+
+                        ctx.fillStyle = gradient;
+                        // 上半部與下半部對稱繪製
+                        ctx.beginPath();
+                        ctx.roundRect(x + 2, centerY - barHeight - 2, barWidth - 4, barHeight, 4);
+                        ctx.roundRect(x + 2, centerY + 2, barWidth - 4, barHeight, 4);
+                        ctx.fill();
+                    }
+                }
+
+                // 2. 霓虹能量環 (Circle)
+                else if (currentStyle === 'circle') {
+                    const baseRadius = Math.min(w, h) * 0.22 * pulseScale;
+                    const bars = 90;
+
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = 3;
+
+                    for (let i = 0; i < bars; i++) {
+                        const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+                        const val = Math.min(255, dataArray[i] * sensitivity);
+                        const barLen = (val / 255) * (Math.min(w, h) * 0.22);
+
+                        const x1 = centerX + Math.cos(angle) * baseRadius;
+                        const y1 = centerY + Math.sin(angle) * baseRadius;
+                        const x2 = centerX + Math.cos(angle) * (baseRadius + barLen);
+                        const y2 = centerY + Math.sin(angle) * (baseRadius + barLen);
+
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+
+                    // 中心發光圓環
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, baseRadius * 0.92, 0, Math.PI * 2);
+                    ctx.strokeStyle = color2;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // 3. 多層流光波 (Wave)
+                else if (currentStyle === 'wave') {
+                    for (let layer = 0; layer < 3; layer++) {
+                        ctx.beginPath();
+                        ctx.lineWidth = 3 - layer * 0.7;
+                        ctx.strokeStyle = layer === 0 ? color1 : (layer === 1 ? color2 : '#ffffff');
+
+                        const sliceWidth = w / timeDataArray.length;
+                        let x = 0;
+
+                        for (let i = 0; i < timeDataArray.length; i++) {
+                            const v = (timeDataArray[i] - 128) / 128.0;
+                            const amplitude = v * (h * 0.35) * sensitivity * (1 - layer * 0.25);
+                            const y = centerY + amplitude + Math.sin(i * 0.05 + layer) * 10;
+
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                            x += sliceWidth;
+                        }
+                        ctx.stroke();
+                    }
+                }
+
+                // 4. 星塵節拍矩陣 (Particles)
+                else if (currentStyle === 'particles') {
+                    particles.forEach((p, idx) => {
+                        p.angle += p.speed * pulseScale;
+                        const freqVal = dataArray[idx % 60] * sensitivity;
+                        const dynamicRadius = p.radius * pulseScale + (freqVal * 0.35);
+
+                        const px = centerX + Math.cos(p.angle) * dynamicRadius;
+                        const py = centerY + Math.sin(p.angle) * dynamicRadius;
+
+                        ctx.beginPath();
+                        ctx.arc(px, py, p.size * pulseScale, 0, Math.PI * 2);
+                        ctx.fillStyle = idx % 2 === 0 ? color1 : color2;
+                        ctx.fill();
+                    });
+                }
+
+                // 繪製曲目資訊文字 (隨重低音微幅縮放)
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'center';
+                
+                if (currentStyle === 'circle') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${Math.floor(18 * pulseScale)}px "Noto Sans TC", sans-serif`;
+                    ctx.fillText(songTitle, centerX, centerY - 4);
+                    ctx.fillStyle = '#a1a1aa';
+                    ctx.font = '12px "Noto Sans TC", sans-serif';
+                    ctx.fillText(artistName, centerX, centerY + 18);
+                } else {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 22px "Noto Sans TC", sans-serif';
+                    ctx.fillText(songTitle, centerX, h - 55);
+                    ctx.fillStyle = '#a1a1aa';
+                    ctx.font = '13px "Noto Sans TC", sans-serif';
+                    ctx.fillText(artistName, centerX, h - 32);
+                }
+            }
+
+            render();
+        }
+
+        // 錄製畫布並匯出影片功能 (MediaRecorder API)
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+        const recordBtn = document.getElementById('recordBtn');
+        const recordText = document.getElementById('recordText');
+        const recordIcon = document.getElementById('recordIcon');
+        const recordingBadge = document.getElementById('recordingBadge');
+
+        recordBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        function startRecording() {
+            initAudioContext();
+            const canvasStream = canvas.captureStream(60); // 60 FPS
+            
+            // 合併畫布視訊流與音訊流
+            const combinedTracks = [
+                ...canvasStream.getVideoTracks(),
+                ...(destNode ? destNode.stream.getAudioTracks() : [])
+            ];
+            const combinedStream = new MediaStream(combinedTracks);
+
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${songTitle || 'audio-visualizer'}.webm`;
+                a.click();
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordText.textContent = '停止並下載影片';
+            recordIcon.className = 'fa-solid fa-stop text-red-400';
+            recordingBadge.classList.remove('hidden');
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            recordText.textContent = '錄製並匯出影片';
+            recordIcon.className = 'fa-solid fa-circle-dot';
+            recordingBadge.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
