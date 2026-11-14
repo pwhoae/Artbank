@@ -14,6 +14,7 @@ TDD:教程驅動+var+func+application
 
 <a id="玩法"></a>
 ### 玩法靈感
+
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E7%8E%A9%E6%B3%95%E9%9D%88%E6%84%9F.md">玩法靈感</a>
 # [不適合程式背景獨立開發者的遊戲方向]
 ```
@@ -43,6 +44,15 @@ MMO（大型多人線上遊戲）:高難度的技術架構+需要龐大團隊
 <hr>
 
 ### 技巧
+一、 核心理念與 Godot 基礎概念
+灰盒理念（Greyboxing）：先用純色方塊代替正式美術，優先驗證「手感與玩法」是否成立（如同蓋房子先做毛坯房再裝修），避免後期修改成本過高，且能排除動畫對測試手感的干擾。
+Godot 五大核心概念：
+節點（Node）：最小功能單位（如樂高積木塊）。2D 座標以像素為單位（X 向右為正、Y 向下為正，因此向上跳躍速度為負值）。
+場景（Scene）：多個節點組成的樹狀結構（.tscn 檔），父節點移動時子節點會跟隨；場景本身也能當作節點嵌入其他場景。
+腳本（Script）：掛載在節點上的程式碼（.gd 檔），控制節點行為。
+信號（Signal）：節點發生特定事件時發出的通知（如 jump 信號），供其他節點訂閱並做出反應（如後續播放音效）。
+檢查器（Inspector）：右側面板，用來檢視及即時調整節點屬性，腳本中以 @export 宣告的參數也會顯示於此。
+
 <a href="https://github.com/pwhoae/Artbank/blob/main/godot/Godot_coding.md">Godot coding</a>
 1. 不要重复造轮子>Assets
 2. [視差省MB+Low poly(Quaternius)+與低解析度貼圖]
