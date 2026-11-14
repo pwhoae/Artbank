@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniWorkspace — 結合 AL / MAL / Notion / Asana 優點的動漫追蹤系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts: Inter 與 Noto Sans TC -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        darkbg: '#0f172a',
+                        darkcard: '#1e293b',
+                        darkborder: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 自訂捲軸樣式，提升整體質感 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+        .glass-header {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-darkbg dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列：結合 AniList 的現代感與 Asana 的數據儀表板 -->
+    <header class="sticky top-0 z-30 glass-header bg-white/80 dark:bg-darkbg/80 border-b border-slate-200 dark:border-darkborder">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between h-16 gap-3">
+                <!-- Logo 與標題 -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                        <i data-lucide="tv" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight flex items-center gap-2">
+                            AniWorkspace
+                            <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-500/20">Pro</span>
+                        </h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">AL 視覺 × MAL 數據 × Notion 筆記 × Asana 排程</p>
+                    </div>
+                </div>
+
+                <!-- 統計數據列 (MAL 統計風格) -->
+                <div class="hidden lg:flex items-center gap-6 text-sm bg-slate-100/80 dark:bg-darkcard/80 px-4 py-1.5 rounded-xl border border-slate-200/60 dark:border-darkborder">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="text-slate-500 dark:text-slate-400">在看:</span>
+                        <span id="stat-watching" class="font-bold">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        <span class="text-slate-500 dark:text-slate-400">已看完:</span>
+                        <span id="stat-completed" class="font-bold">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span class="text-slate-500 dark:text-slate-400">總集數:</span>
+                        <span id="stat-episodes" class="font-bold">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+                        <span class="text-slate-500 dark:text-slate-400">均分:</span>
+                        <span id="stat-avg-score" class="font-bold">0.0</span>
+                    </div>
+                </div>
+
+                <!-- 右側操作區 -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- 主題切換 -->
+                    <button id="theme-toggle" class="p-2.5 rounded-xl bg-slate-100 dark:bg-darkcard hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="切換深色/淺色模式">
+                        <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                        <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                    </button>
+
+                    <!-- 新增作品按鈕 -->
+                    <button onclick="openAddModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md shadow-indigo-600/20 transition-all active:scale-95">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>新增動漫</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 工具列：Notion 資料庫多視圖切換 + 篩選器 -->
+    <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-darkcard p-3 rounded-2xl border border-slate-200 dark:border-darkborder shadow-sm">
+            
+            <!-- 視圖切換 (Notion Multi-view 概念) -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-darkbg p-1 rounded-xl overflow-x-auto">
+                <button onclick="switchView('grid')" id="view-btn-grid" class="view-tab flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-white dark:bg-darkcard text-indigo-600 dark:text-indigo-400 shadow-sm">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    <span>視覺卡片 (AL)</span>
+                </button>
+                <button onclick="switchView('board')" id="view-btn-board" class="view-tab flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="kanban" class="w-4 h-4"></i>
+                    <span>狀態看板 (Asana)</span>
+                </button>
+                <button onclick="switchView('schedule')" id="view-btn-schedule" class="view-tab flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                    <span>週更排程表</span>
+                </button>
+            </div>
+
+            <!-- 搜尋與狀態過濾 -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative flex-1 sm:w-56">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="search-input" placeholder="搜尋作品名稱、標籤或靈感..." oninput="renderApp()" class="w-full pl-9 pr-3 py-1.5 text-sm rounded-xl bg-slate-100 dark:bg-darkbg border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-darkcard outline-none transition-all">
+                </div>
+
+                <select id="status-filter" onchange="renderApp()" class="px-3 py-1.5 text-sm rounded-xl bg-slate-100 dark:bg-darkbg border border-transparent focus:border-indigo-500 outline-none cursor-pointer">
+                    <option value="all">全部狀態</option>
+                    <option value="watching">🟢 觀看中 (Watching)</option>
+                    <option value="completed">🔵 已看完 (Completed)</option>
+                    <option value="planning">🟡 計劃觀看 (Planning)</option>
+                    <option value="paused">🟠 暫停/擱置 (Paused)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主內容區 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <!-- 視圖容器 -->
+        <div id="app-content"></div>
+    </main>
+
+    <!-- Notion 風格側邊詳情與靈感筆記抽屜 (Slide-over Drawer) -->
+    <div id="detail-drawer" class="fixed inset-0 z-50 hidden">
+        <!-- 背景遮罩 -->
+        <div onclick="closeDrawer()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+        
+        <!-- 抽屜主體 -->
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-white dark:bg-darkcard shadow-2xl border-l border-slate-200 dark:border-darkborder flex flex-col overflow-hidden transform transition-transform">
+            <!-- 抽屜頂部工具列 -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-darkborder bg-slate-50/50 dark:bg-darkbg/50">
+                <div class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
+                    <span>Notion 知識庫與深度劇評頁面</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="deleteCurrentAnime()" class="p-2 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors" title="刪除此作品">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="closeDrawer()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 抽屜可捲動內容 -->
+            <div id="drawer-body" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <!-- 內容將由 JS 動態注入 -->
+            </div>
+
+            <!-- 抽屜底部儲存按鈕 -->
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-darkborder bg-slate-50 dark:bg-darkbg flex justify-end gap-3">
+                <button onclick="closeDrawer()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">取消</button>
+                <button onclick="saveDrawerChanges()" class="px-5 py-2 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 transition-all">儲存變更</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增動漫 Modal -->
+    <div id="add-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div onclick="closeAddModal()" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-lg bg-white dark:bg-darkcard rounded-2xl shadow-2xl border border-slate-200 dark:border-darkborder overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-darkborder flex items-center justify-between">
+                <h3 class="font-bold text-lg">新增動漫追蹤項目</h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="add-form" onsubmit="handleAddAnime(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">作品名稱 *</label>
+                    <input type="text" id="new-title" required placeholder="例如：葬送的芙莉蓮" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-darkbg border border-slate-200 dark:border-darkborder focus:border-indigo-500 outline-none text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">總集數 *</label>
+                        <input type="number" id="new-total" required min="1" value="12" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-darkbg border border-slate-200 dark:border-darkborder focus:border-indigo-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">觀看狀態</label>
+                        <select id="new-status" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-darkbg border border-slate-200 dark:border-darkborder focus:border-indigo-500 outline-none text-sm">
+                            <option value="watching">觀看中</option>
+                            <option value="planning">計劃觀看</option>
+                            <option value="completed">已看完</option>
+                            <option value="paused">暫停/擱置</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">更新日 (Asana 排程)</label>
+                        <select id="new-airday" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-darkbg border border-slate-200 dark:border-darkborder focus:border-indigo-500 outline-none text-sm">
+                            <option value="週一">週一</option>
+                            <option value="週二">週二</option>
+                            <option value="週三">週三</option>
+                            <option value="週四">週四</option>
+                            <option value="週五" selected>週五</option>
+                            <option value="週六">週六</option>
+                            <option value="週日">週日</option>
+                            <option value="已完結">已完結 / 非週更</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">製作公司 (MAL 資訊)</label>
+                        <input type="text" id="new-studio" placeholder="例如：MADHOUSE" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-darkbg border border-slate-200 dark:border-darkborder focus:border-indigo-500 outline-none text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">靈感與題材標籤 (以逗號分隔)</label>
+                    <input type="text" id="new-tags" placeholder="例如：奇幻, 公路片, 頂級作畫, 分鏡參考" class="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-darkbg border border-slate-200 dark:border-darkborder focus:border-indigo-500 outline-none text-sm">
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">取消</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">建立追蹤</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast 提示訊息框 (取代 alert) -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-sm font-medium">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 dark:text-emerald-600"></i>
+            <span id="toast-msg">操作成功</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. 狀態與預設資料庫 (結合四者精華的資料結構)
+        // ==========================================
+        let currentView = 'grid'; // 'grid' | 'board' | 'schedule'
+        let activeAnimeId = null;
+
+        // 預設展示資料，包含豐富的動漫資訊、評分、排程與 Notion 深度筆記
+        let animeList = [
+            {
+                id: '1',
+                title: '葬送的芙莉蓮',
+                originalTitle: '葬送のフリーレン',
+                status: 'completed',
+                progress: 28,
+                totalEpisodes: 28,
+                score: 9.8, // AniList 精細小數評分
+                airDay: '已完結',
+                studio: 'MADHOUSE', // MAL 製作公司資訊
+                season: '2023 秋',
+                coverGradient: 'from-emerald-600 via-teal-600 to-cyan-700',
+                tags: ['奇幻', '公路旅行', '時間哲學', '作畫神回'],
+                // Notion 風格深度筆記與靈感拆解
+                notes: `【世界觀與敘事筆記】\n1. 反傳統勇者敘事：從「打倒魔王之後」開始，用壽命論探討人與人之間的理解。\n2. 戰鬥分鏡參考：第 26 集複製體之戰的空間調度與魔法粒子特效極具張力，適合做為動作系統設計的視覺參考。\n3. 配樂運用：Evan Call 的凱爾特風格配樂完美烘托了旅途的靜謐與哀愁。`,
+                checklist: [
+                    { text: '整理第 26 集魔法陣視覺設計截圖', done: true },
+                    { text: '重溫第 1-4 集首播特別篇', done: true }
+                ]
+            },
+            {
+                id: '2',
+                title: '迷宮飯',
+                originalTitle: 'ダンジョン飯',
+                status: 'watching',
+                progress: 18,
+                totalEpisodes: 24,
+                score: 9.2,
+                airDay: '週四',
+                studio: 'TRIGGER',
+                season: '2024 冬',
+                coverGradient: 'from-amber-500 via-orange-600 to-red-600',
+                tags: ['美食', '地下城生態', '世界觀設定', '扳機社'],
+                notes: `【生態系設計靈感】\n九井諒子對地下城食物鏈的邏輯建構堪稱教科書等級！\n- 走路菇、炎龍、史萊姆都有完整的生物學解釋。\n- 非常適合用來參考「遊戲內生態系統與資源循環」的企劃案。`,
+                checklist: [
+                    { text: '記錄瑪露希爾的表情包作畫張數變化', done: false },
+                    { text: '追上本週最新進度', done: true }
+                ]
+            },
+            {
+                id: '3',
+                title: '膽大黨 (ダンダダン)',
+                originalTitle: 'ダンダダン',
+                status: 'watching',
+                progress: 7,
+                totalEpisodes: 12,
+                score: 9.5,
+                airDay: '週五',
+                studio: 'Science SARU',
+                season: '2024 秋',
+                coverGradient: 'from-fuchsia-600 via-purple-600 to-indigo-700',
+                tags: ['超自然', '高速戰鬥', '色彩實驗', '湯淺系'],
+                notes: `【視覺風格分析】\nScience SARU 在單色調（紅/藍/粉）高對比場景切換上的表現極度驚豔，高速追逐戰的廣角鏡頭變形非常有衝擊力。`,
+                checklist: [
+                    { text: '分析 OP 畫面節奏與音樂卡點', done: true }
+                ]
+            },
+            {
+                id: '4',
+                title: '進擊的巨人 最終季',
+                originalTitle: '進撃の巨人 The Final Season',
+                status: 'completed',
+                progress: 30,
+                totalEpisodes: 30,
+                score: 9.9,
+                airDay: '已完結',
+                studio: 'MAPPA',
+                season: '完結篇',
+                coverGradient: 'from-slate-700 via-zinc-800 to-stone-900',
+                tags: ['史詩', '群像劇', '伏筆回收', '必看神作'],
+                notes: `【劇本結構分析】\n從牆內生存戰轉向地緣政治與歷史循環，前期的所有細節（如第一集標題「致兩千年後的你」）全數精準回收。`,
+                checklist: []
+            },
+            {
+                id: '5',
+                title: '孤獨搖滾！',
+                originalTitle: 'ぼっち・ざ・ろっく！',
+                status: 'planning',
+                progress: 0,
+                totalEpisodes: 12,
+                score: 0,
+                airDay: '週六',
+                studio: 'CloverWorks',
+                season: '2022 秋',
+                coverGradient: 'from-pink-500 via-rose-500 to-amber-500',
+                tags: ['音樂', '社恐喜劇', '多媒材演出'],
+                notes: `聽說融合了定格動畫、實拍與 3D 崩壞演出的神級喜劇，列入週末補番清單！`,
+                checklist: [
+                    { text: '週末一口氣看前 4 集', done: false }
+                ]
+            }
+        ];
+
+        const statusMeta = {
+            watching: { label: '觀看中', color: 'emerald', icon: 'play-circle' },
+            completed: { label: '已看完', color: 'indigo', icon: 'check-circle' },
+            planning: { label: '計劃觀看', color: 'amber', icon: 'bookmark' },
+            paused: { label: '暫停/擱置', color: 'orange', icon: 'pause-circle' }
+        };
+
+        // ==========================================
+        // 2. 初始化與主題控制
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            renderApp();
+        });
+
+        function initTheme() {
+            const btn = document.getElementById('theme-toggle');
+            btn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                lucide.createIcons();
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // ==========================================
+        // 3. 統計儀表板更新 (MAL 數據統計風格)
+        // ==========================================
+        function updateStats() {
+            const watching = animeList.filter(a => a.status === 'watching').length;
+            const completed = animeList.filter(a => a.status === 'completed').length;
+            const totalEpisodes = animeList.reduce((sum, a) => sum + a.progress, 0);
+            
+            const scoredList = animeList.filter(a => a.score > 0);
+            const avgScore = scoredList.length > 0 
+                ? (scoredList.reduce((sum, a) => sum + a.score, 0) / scoredList.length).toFixed(1)
+                : '0.0';
+
+            document.getElementById('stat-watching').textContent = watching;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-episodes').textContent = totalEpisodes;
+            document.getElementById('stat-avg-score').textContent = avgScore;
+        }
+
+        // ==========================================
+        // 4. 視圖切換與渲染核心
+        // ==========================================
+        function switchView(view) {
+            currentView = view;
+            // 更新頁籤樣式
+            document.querySelectorAll('.view-tab').forEach(btn => {
+                btn.classList.remove('bg-white', 'dark:bg-darkcard', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+            const activeBtn = document.getElementById(`view-btn-${view}`);
+            activeBtn.classList.add('bg-white', 'dark:bg-darkcard', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+            renderApp();
+        }
+
+        function getFilteredAnime() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            return animeList.filter(anime => {
+                const matchesStatus = statusFilter === 'all' || anime.status === statusFilter;
+                const matchesQuery = !query || 
+                    anime.title.toLowerCase().includes(query) ||
+                    anime.studio.toLowerCase().includes(query) ||
+                    anime.tags.some(t => t.toLowerCase().includes(query)) ||
+                    anime.notes.toLowerCase().includes(query);
+                return matchesStatus && matchesQuery;
+            });
+        }
+
+        function renderApp() {
+            updateStats();
+            const container = document.getElementById('app-content');
+            const filtered = getFilteredAnime();
+
+            if (filtered.length === 0 && currentView !== 'schedule') {
+                container.innerHTML = `
+                    <div class="text-center py-20 bg-white dark:bg-darkcard rounded-2xl border border-dashed border-slate-300 dark:border-darkborder">
+                        <i data-lucide="sparkles" class="w-12 h-12 mx-auto text-slate-400 mb-3"></i>
+                        <h3 class="text-lg font-semibold mb-1">找不到符合條件的動漫</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">試著調整搜尋關鍵字，或點擊右上角新增一部新番！</p>
+                        <button onclick="openAddModal()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">新增動漫</button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            if (currentView === 'grid') {
+                renderGridView(container, filtered);
+            } else if (currentView === 'board') {
+                renderBoardView(container, filtered);
+            } else if (currentView === 'schedule') {
+                renderScheduleView(container, filtered);
+            }
+            lucide.createIcons();
+        }
+
+        // 視圖 A：AniList 現代視覺卡片網格
+        function renderGridView(container, list) {
+            const cardsHtml = list.map(anime => {
+                const pct = Math.min(100, Math.round((anime.progress / anime.totalEpisodes) * 100));
+                const meta = statusMeta[anime.status];
+                
+                return `
+                <div class="group bg-white dark:bg-darkcard rounded-2xl border border-slate-200 dark:border-darkborder overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col">
+                    <!-- 視覺封面橫幅 (模擬 AniList Banner) -->
+                    <div onclick="openDrawer('${anime.id}')" class="relative h-32 bg-gradient-to-br ${anime.coverGradient} p-4 flex flex-col justify-between cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-black/40 text-white backdrop-blur-md flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-${meta.color}-400"></span>
+                                ${meta.label}
+                            </span>
+                            ${anime.score > 0 ? `
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-400/90 text-slate-900 flex items-center gap-1 shadow-sm">
+                                <i data-lucide="star" class="w-3 h-3 fill-slate-900"></i>
+                                ${anime.score.toFixed(1)}
+                            </span>` : ''}
+                        </div>
+                        <div class="text-white">
+                            <p class="text-[11px] opacity-80 font-medium truncate">${anime.studio} • ${anime.airDay}</p>
+                            <h3 class="font-bold text-base leading-snug line-clamp-1 group-hover:underline">${anime.title}</h3>
+                        </div>
+                    </div>
+
+                    <!-- 卡片內容與互動進度條 -->
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-4">
+                        <!-- 標籤與筆記預覽 (Notion 元素) -->
+                        <div onclick="openDrawer('${anime.id}')" class="cursor-pointer space-y-2.5">
+                            <div class="flex flex-wrap gap-1.5">
+                                ${anime.tags.slice(0, 3).map(tag => `
+                                    <span class="px-2 py-0.5 text-[11px] rounded-md bg-slate-100 dark:bg-darkbg text-slate-600 dark:text-slate-300 font-medium">#${tag}</span>
+                                `).join('')}
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                ${anime.notes ? anime.notes : '點擊撰寫劇評與靈感筆記...'}
+                            </p>
+                        </div>
+
+                        <!-- Asana 進度條 + 快速 +1 集按鈕 -->
+                        <div class="pt-2 border-t border-slate-100 dark:border-darkborder/80">
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="text-slate-500 dark:text-slate-400 font-medium">觀看進度</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-200">${anime.progress} / ${anime.totalEpisodes} 集 (${pct}%)</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-100 dark:bg-darkbg rounded-full overflow-hidden mb-3">
+                                <div class="h-full bg-indigo-500 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <button onclick="openDrawer('${anime.id}')" class="flex-1 py-1.5 px-3 rounded-xl text-xs font-medium bg-slate-100 dark:bg-darkbg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center justify-center gap-1.5">
+                                    <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+                                    <span>筆記與評分</span>
+                                </button>
+                                ${anime.progress < anime.totalEpisodes ? `
+                                <button onclick="incrementEpisode('${anime.id}')" class="py-1.5 px-3 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all active:scale-95 flex items-center gap-1" title="進度 +1 集">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                    <span>1 集</span>
+                                </button>` : `
+                                <span class="py-1.5 px-3 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                    <span>完食</span>
+                                </span>`}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">${cardsHtml}</div>`;
+        }
+
+        // 視圖 B：Asana / Notion 狀態看板 (Kanban Board)
+        function renderBoardView(container, list) {
+            const columns = ['watching', 'planning', 'paused', 'completed'];
+            
+            const colsHtml = columns.map(statusKey => {
+                const meta = statusMeta[statusKey];
+                const items = list.filter(a => a.status === statusKey);
+
+                const itemsHtml = items.map(anime => {
+                    const pct = Math.round((anime.progress / anime.totalEpisodes) * 100);
+                    return `
+                    <div onclick="openDrawer('${anime.id}')" class="bg-white dark:bg-darkcard p-3.5 rounded-xl border border-slate-200 dark:border-darkborder shadow-sm hover:border-indigo-500 cursor-pointer transition-all space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <h4 class="font-bold text-sm leading-snug">${anime.title}</h4>
+                            ${anime.score > 0 ? `<span class="text-xs font-bold text-amber-500 shrink-0">★ ${anime.score}</span>` : ''}
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            ${anime.tags.slice(0, 2).map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-darkbg text-slate-500 dark:text-slate-400">#${t}</span>`).join('')}
+                        </div>
+                        <div class="flex items-center justify-between pt-1">
+                            <div class="flex items-center gap-2 flex-1 mr-3">
+                                <div class="w-full h-1.5 bg-slate-100 dark:bg-darkbg rounded-full overflow-hidden">
+                                    <div class="h-full bg-${meta.color}-500 rounded-full" style="width: ${pct}%"></div>
+                                </div>
+                                <span class="text-[11px] font-medium text-slate-500 shrink-0">${anime.progress}/${anime.totalEpisodes}</span>
+                            </div>
+                            ${anime.progress < anime.totalEpisodes ? `
+                            <button onclick="event.stopPropagation(); incrementEpisode('${anime.id}')" class="px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500 text-indigo-600 dark:text-indigo-400 hover:text-white text-[11px] font-semibold transition-colors">
+                                +1
+                            </button>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div class="bg-slate-100/70 dark:bg-darkcard/40 rounded-2xl p-3.5 border border-slate-200/70 dark:border-darkborder flex flex-col gap-3 min-h-[400px]">
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-${meta.color}-500"></span>
+                            <h3 class="font-bold text-sm">${meta.label}</h3>
+                        </div>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-darkcard text-slate-600 dark:text-slate-300">${items.length}</span>
+                    </div>
+                    <div class="space-y-2.5 flex-1">
+                        ${itemsHtml || `<div class="text-center py-8 text-xs text-slate-400">尚無作品</div>`}
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">${colsHtml}</div>`;
+        }
+
+        // 視圖 C：Asana 週更追番排程表
+        function renderScheduleView(container, list) {
+            const days = ['週一', '週二', '週三', '週四', '週五', '週六', '週日', '已完結'];
+            
+            const daysHtml = days.map(day => {
+                const dayItems = list.filter(a => a.airDay === day);
+                const isWeekend = day === '週六' || day === '週日';
+                
+                return `
+                <div class="bg-white dark:bg-darkcard rounded-2xl border ${isWeekend ? 'border-indigo-500/30' : 'border-slate-200 dark:border-darkborder'} p-4 flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-darkborder pb-2.5">
+                        <span class="font-bold text-sm ${isWeekend ? 'text-indigo-600 dark:text-indigo-400' : ''}">${day}</span>
+                        <span class="text-xs text-slate-400">${dayItems.length} 部</span>
+                    </div>
+                    <div class="space-y-2.5">
+                        ${dayItems.length > 0 ? dayItems.map(anime => `
+                            <div onclick="openDrawer('${anime.id}')" class="p-3 rounded-xl bg-slate-50 dark:bg-darkbg hover:ring-1 hover:ring-indigo-500 cursor-pointer transition-all flex items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-xs truncate">${anime.title}</p>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">進度: 第 ${anime.progress} / ${anime.totalEpisodes} 集</p>
+                                </div>
+                                ${anime.progress < anime.totalEpisodes ? `
+                                <button onclick="event.stopPropagation(); incrementEpisode('${anime.id}')" class="shrink-0 p-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors" title="看完了最新一集">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                </button>` : `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0"></i>`}
+                            </div>
+                        `).join('') : `<p class="text-xs text-slate-400 py-4 text-center">無排程作品</p>`}
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="mb-4 flex items-center justify-between">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">參考 Asana 時間軸概念，按每週更新日檢視你的追番任務與待看清單。</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">${daysHtml}</div>
+            `;
+        }
+
+        // ==========================================
+        // 5. 核心互動功能 (+1 集、抽屜編輯、新增刪除)
+        // ==========================================
+        function incrementEpisode(id) {
+            const anime = animeList.find(a => a.id === id);
+            if (!anime) return;
+
+            if (anime.progress < anime.totalEpisodes) {
+                anime.progress += 1;
+                if (anime.status === 'planning') {
+                    anime.status = 'watching';
+                }
+                if (anime.progress === anime.totalEpisodes) {
+                    anime.status = 'completed';
+                    showToast(`恭喜完食《${anime.title}》！已自動移至「已看完」`);
+                } else {
+                    showToast(`《${anime.title}》進度更新至第 ${anime.progress} 集`);
+                }
+                renderApp();
+            }
+        }
+
+        // 開啟 Notion 風格詳情與筆記側邊抽屜
+        function openDrawer(id) {
+            activeAnimeId = id;
+            const anime = animeList.find(a => a.id === id);
+            if (!anime) return;
+
+            const drawerBody = document.getElementById('drawer-body');
+            drawerBody.innerHTML = `
+                <!-- 頂部封面與標題 -->
+                <div class="rounded-2xl bg-gradient-to-r ${anime.coverGradient} p-6 text-white shadow-lg">
+                    <div class="flex flex-wrap items-center gap-2 text-xs font-medium opacity-90 mb-2">
+                        <span class="px-2 py-0.5 rounded bg-black/30">${anime.studio || '未知製作公司'}</span>
+                        <span>•</span>
+                        <span>${anime.season || '動畫作品'}</span>
+                    </div>
+                    <h2 class="text-2xl font-bold tracking-tight">${anime.title}</h2>
+                    <p class="text-sm opacity-80 mt-1">${anime.originalTitle || ''}</p>
+                </div>
+
+                <!-- 屬性設定區 (結合 AniList 精細評分 + Asana 狀態排程) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-darkbg p-4 rounded-2xl border border-slate-200 dark:border-darkborder">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">觀看狀態</label>
+                        <select id="edit-status" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-darkcard border border-slate-200 dark:border-darkborder text-sm outline-none focus:border-indigo-500">
+                            <option value="watching" ${anime.status === 'watching' ? 'selected' : ''}>🟢 觀看中 (Watching)</option>
+                            <option value="completed" ${anime.status === 'completed' ? 'selected' : ''}>🔵 已看完 (Completed)</option>
+                            <option value="planning" ${anime.status === 'planning' ? 'selected' : ''}>🟡 計劃觀看 (Planning)</option>
+                            <option value="paused" ${anime.status === 'paused' ? 'selected' : ''}>🟠 暫停/擱置 (Paused)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">更新排程日</label>
+                        <select id="edit-airday" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-darkcard border border-slate-200 dark:border-darkborder text-sm outline-none focus:border-indigo-500">
+                            ${['週一', '週二', '週三', '週四', '週五', '週六', '週日', '已完結'].map(d => 
+                                `<option value="${d}" ${anime.airDay === d ? 'selected' : ''}>${d}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">觀看集數 (${anime.progress} / ${anime.totalEpisodes})</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="edit-progress" min="0" max="${anime.totalEpisodes}" value="${anime.progress}" class="w-full px-3 py-2 rounded-xl bg-white dark:bg-darkcard border border-slate-200 dark:border-darkborder text-sm outline-none focus:border-indigo-500">
+                            <span class="text-sm text-slate-400 shrink-0">/ ${anime.totalEpisodes} 集</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">AniList 精細評分 (0 - 10.0)</label>
+                        <div class="flex items-center gap-3">
+                            <input type="range" id="edit-score-range" min="0" max="10" step="0.1" value="${anime.score}" oninput="document.getElementById('edit-score-val').textContent = parseFloat(this.value).toFixed(1)" class="flex-1 accent-indigo-600 cursor-pointer">
+                            <span id="edit-score-val" class="w-10 text-right font-bold text-amber-500 text-sm">${anime.score.toFixed(1)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 標籤管理 -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">靈感與分類標籤 (逗號分隔)</label>
+                    <input type="text" id="edit-tags" value="${anime.tags.join(', ')}" class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-darkbg border border-slate-200 dark:border-darkborder text-sm outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Notion 風格長文筆記與靈感庫 -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <i data-lucide="pen-tool" class="w-3.5 h-3.5 text-indigo-500"></i>
+                            深度劇評 / 作畫分鏡與創作靈感筆記
+                        </label>
+                    </div>
+                    <textarea id="edit-notes" rows="7" placeholder="在這裡記錄你的觀後感、喜歡的台詞、作畫神回集數，或是可以應用在自己專案中的設計靈感..." class="w-full p-4 rounded-2xl bg-slate-50 dark:bg-darkbg border border-slate-200 dark:border-darkborder text-sm leading-relaxed outline-none focus:border-indigo-500 resize-y">${anime.notes}</textarea>
+                </div>
+            `;
+
+            document.getElementById('detail-drawer').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDrawer() {
+            document.getElementById('detail-drawer').classList.add('hidden');
+            activeAnimeId = null;
+        }
+
+        function saveDrawerChanges() {
+            if (!activeAnimeId) return;
+            const anime = animeList.find(a => a.id === activeAnimeId);
+            if (!anime) return;
+
+            anime.status = document.getElementById('edit-status').value;
+            anime.airDay = document.getElementById('edit-airday').value;
+            anime.progress = Math.min(anime.totalEpisodes, Math.max(0, parseInt(document.getElementById('edit-progress').value) || 0));
+            anime.score = parseFloat(document.getElementById('edit-score-range').value) || 0;
+            
+            const rawTags = document.getElementById('edit-tags').value;
+            anime.tags = rawTags.split(/[,，]/).map(t => t.trim()).filter(Boolean);
+            anime.notes = document.getElementById('edit-notes').value;
+
+            if (anime.progress === anime.totalEpisodes && anime.status === 'watching') {
+                anime.status = 'completed';
+            }
+
+            closeDrawer();
+            renderApp();
+            showToast(`已儲存《${anime.title}》的筆記與進度`);
+        }
+
+        function deleteCurrentAnime() {
+            if (!activeAnimeId) return;
+            const anime = animeList.find(a => a.id === activeAnimeId);
+            animeList = animeList.filter(a => a.id !== activeAnimeId);
+            closeDrawer();
+            renderApp();
+            showToast(`已移除《${anime.title}》`);
+        }
+
+        // 新增動漫 Modal 控制
+        function openAddModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+            document.getElementById('new-title').focus();
+        }
+
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+            document.getElementById('add-form').reset();
+        }
+
+        function handleAddAnime(e) {
+            e.preventDefault();
+            const title = document.getElementById('new-title').value.trim();
+            const totalEpisodes = parseInt(document.getElementById('new-total').value) || 12;
+            const status = document.getElementById('new-status').value;
+            const airDay = document.getElementById('new-airday').value;
+            const studio = document.getElementById('new-studio').value.trim() || '獨立/未標註';
+            const rawTags = document.getElementById('new-tags').value;
+            const tags = rawTags ? rawTags.split(/[,，]/).map(t => t.trim()).filter(Boolean) : ['新番'];
+
+            const gradients = [
+                'from-blue-600 via-indigo-600 to-purple-700',
+                'from-emerald-500 via-teal-600 to-cyan-700',
+                'from-rose-500 via-pink-600 to-purple-700',
+                'from-amber-500 via-orange-600 to-rose-600'
+            ];
+            const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+
+            const newAnime = {
+                id: Date.now().toString(),
+                title,
+                originalTitle: '',
+                status,
+                progress: status === 'completed' ? totalEpisodes : 0,
+                totalEpisodes,
+                score: 0,
+                airDay,
+                studio,
+                season: '自訂新增',
+                coverGradient: randomGradient,
+                tags,
+                notes: '',
+                checklist: []
+            };
+
+            animeList.unshift(newAnime);
+            closeAddModal();
+            renderApp();
+            showToast(`已將《${title}》加入追蹤清單`);
+        }
+    </script>
+</body>
+</html>

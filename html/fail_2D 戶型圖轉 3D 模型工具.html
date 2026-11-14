@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D 戶型圖轉 3D 模型工具</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- 頂部導覽列 -->
+    <header class="h-16 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between px-6 z-20 shrink-0 text-white">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-cube text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-wide">ArchiForge 3D</h1>
+                <p class="text-xs text-slate-400">2D 戶型轉 3D 互動建模系統</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span id="status-badge" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-full border border-emerald-500/30">
+                <i class="fa-solid fa-circle text-[8px] mr-1.5 animate-pulse"></i> 3D 渲染就緒
+            </span>
+        </div>
+    </header>
+
+    <!-- 主要工作區 -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- 左側控制面板 -->
+        <aside class="w-80 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 shrink-0 shadow-2xl">
+            <div class="p-5 border-b border-slate-800">
+                <h2 class="text-white font-semibold text-sm tracking-wider uppercase flex items-center">
+                    <i class="fa-solid fa-sliders mr-2 text-indigo-400"></i> 控制與建模面板
+                </h2>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 space-y-6 text-slate-300 text-sm">
+                
+                <!-- 模式切換 -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">工作模式</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="mode-2d-btn" onclick="switchTab('2d')" class="py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs flex items-center justify-center space-x-2 transition border border-slate-700">
+                            <i class="fa-solid fa-pen-ruler"></i>
+                            <span>2D 繪圖/編輯</span>
+                        </button>
+                        <button id="mode-3d-btn" onclick="switchTab('3d')" class="py-2.5 px-3 rounded-lg bg-indigo-600 text-white font-medium text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 transition">
+                            <i class="fa-solid fa-cubes"></i>
+                            <span>3D 模型預覽</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2D 戶型操作區 -->
+                <div id="panel-2d" class="space-y-4 pt-2">
+                    <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                        <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                            在右側 2D 畫布上點擊滑鼠新增牆體頂點，或直接套用內建範例進行 3D 生成。
+                        </p>
+                        <div class="space-y-2">
+                            <button onclick="loadPreset('studio')" class="w-full py-2 px-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-medium transition text-left flex items-center justify-between">
+                                <span><i class="fa-solid fa-house mr-2 text-indigo-400"></i> 單人套房範例</span>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                            </button>
+                            <button onclick="loadPreset('apartment')" class="w-full py-2 px-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-medium transition text-left flex items-center justify-between">
+                                <span><i class="fa-solid fa-building mr-2 text-indigo-400"></i> 標準兩房一廳</span>
+                                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="undoPoint()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition border border-slate-700">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> 復原上一步
+                        </button>
+                        <button onclick="clearCanvasPoints()" class="flex-1 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-xs font-medium transition border border-rose-500/20">
+                            <i class="fa-solid fa-trash mr-1"></i> 全部清除
+                        </button>
+                    </div>
+
+                    <button onclick="generate3DFromCanvas()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>立即生成 3D 模型</span>
+                    </button>
+                </div>
+
+                <!-- 3D 調整屬性區 -->
+                <div id="panel-3d" class="space-y-4 pt-2 hidden">
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">牆體高度 (Height)</span>
+                            <span id="height-val" class="font-semibold text-indigo-400">3.0 m</span>
+                        </div>
+                        <input type="range" id="wall-height-slider" min="1.5" max="6.0" step="0.1" value="3.0" 
+                               oninput="updateWallHeight(this.value)"
+                               class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">牆體厚度 (Thickness)</span>
+                            <span id="thickness-val" class="font-semibold text-indigo-400">0.25 m</span>
+                        </div>
+                        <input type="range" id="wall-thickness-slider" min="0.1" max="0.6" step="0.05" value="0.25" 
+                               oninput="updateWallThickness(this.value)"
+                               class="w-full accent-indigo-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">牆面材質顏色</label>
+                        <div class="grid grid-cols-5 gap-2">
+                            <button onclick="changeWallColor(0xf8fafc)" class="w-full h-8 rounded-lg bg-slate-100 border-2 border-indigo-500 shadow-sm transition hover:scale-105" data-color="white"></button>
+                            <button onclick="changeWallColor(0x3b82f6)" class="w-full h-8 rounded-lg bg-blue-500 border-2 border-transparent shadow-sm transition hover:scale-105" data-color="blue"></button>
+                            <button onclick="changeWallColor(0x10b981)" class="w-full h-8 rounded-lg bg-emerald-500 border-2 border-transparent shadow-sm transition hover:scale-105" data-color="emerald"></button>
+                            <button onclick="changeWallColor(0xf59e0b)" class="w-full h-8 rounded-lg bg-amber-500 border-2 border-transparent shadow-sm transition hover:scale-105" data-color="amber"></button>
+                            <button onclick="changeWallColor(0x64748b)" class="w-full h-8 rounded-lg bg-slate-500 border-2 border-transparent shadow-sm transition hover:scale-105" data-color="slate"></button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">顯示模式</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="toggleWireframe(false)" id="solid-btn" class="py-2 px-3 rounded-lg bg-indigo-600 text-white font-medium text-xs transition">實體模型</button>
+                            <button onclick="toggleWireframe(true)" id="wire-btn" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition border border-slate-700">線框網格</button>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800">
+                        <button onclick="resetCamera()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition border border-slate-700 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-video"></i>
+                            <span>重設攝影機視角</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-4 border-t border-slate-800 text-center text-xs text-slate-500">
+                Three.js & Canvas 雙引擎驅動
+            </div>
+        </aside>
+
+        <!-- 主畫布與視窗區域 -->
+        <main class="flex-1 relative bg-slate-950 flex flex-col">
+            
+            <!-- 2D 繪圖畫布容器 -->
+            <div id="canvas-2d-container" class="absolute inset-0 flex items-center justify-center p-8 z-0">
+                <div class="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-800 w-full h-full max-w-4xl max-h-[750px] flex flex-col">
+                    <!-- 畫布頂部工具列 -->
+                    <div class="bg-slate-900 text-white px-4 py-3 flex justify-between items-center border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-pen-to-square text-indigo-400"></i>
+                            <span class="font-semibold text-xs tracking-wide">2D 戶型向量編輯器</span>
+                        </div>
+                        <div class="text-xs text-slate-400">
+                            提示：滑鼠左鍵點擊畫布以繪製牆體輪廓，形成封閉多邊形。
+                        </div>
+                    </div>
+                    <!-- HTML5 Canvas -->
+                    <div class="flex-1 relative bg-slate-50 cursor-crosshair overflow-hidden">
+                        <canvas id="blueprint-canvas" class="w-full h-full block"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D WebGL 畫布容器 -->
+            <div id="canvas-3d-container" class="absolute inset-0 z-0 hidden">
+                <div id="webgl-target" class="w-full h-full"></div>
+                
+                <!-- 3D 浮動操作提示 -->
+                <div class="absolute bottom-6 left-6 bg-slate-900/80 backdrop-blur-md text-white px-4 py-2.5 rounded-xl border border-slate-800 text-xs shadow-xl flex items-center space-x-4 pointer-events-none">
+                    <span><i class="fa-solid fa-computer-mouse mr-1 text-indigo-400"></i> 左鍵旋轉</span>
+                    <span><i class="fa-solid fa-arrows-up-down-left-right mr-1 text-indigo-400"></i> 右鍵平移</span>
+                    <span><i class="fa-solid fa-magnifying-glass mr-1 text-indigo-400"></i> 滾輪縮放</span>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- 訊息提示彈窗 -->
+    <div id="toast" class="fixed top-20 right-6 bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl text-xs z-50 flex items-center space-x-3 transition-all duration-300 transform translate-x-96 opacity-0">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toast-msg">操作成功</span>
+    </div>
+
+    <!-- JavaScript 邏輯實作 -->
+    <script>
+        // --- 狀態管理與變數 ---
+        let currentMode = '2d'; // '2d' 或 '3d'
+        let points2D = []; // 2D 畫布頂點座標陣列 [{x, y}]
+        let isDrawingClosed = false;
+
+        // Three.js 相關變數
+        let scene, camera, renderer, controls;
+        let wallMesh = null;
+        let currentWallHeight = 3.0;
+        let currentWallThickness = 0.25;
+        let currentWallColor = 0xf8fafc;
+        let isWireframe = false;
+
+        // 2D 畫布相關
+        const canvas2D = document.getElementById('blueprint-canvas');
+        const ctx2D = canvas2D.getContext('2d');
+
+        // 初始化
+        window.addEventListener('load', () => {
+            init2DCanvas();
+            initThreeJS();
+            loadPreset('apartment'); // 預設載入標準兩房一廳
+            window.addEventListener('resize', onWindowResize);
+        });
+
+        // 切換分頁
+        function switchTab(mode) {
+            currentMode = mode;
+            const container2D = document.getElementById('canvas-2d-container');
+            const container3D = document.getElementById('canvas-3d-container');
+            const btn2D = document.getElementById('mode-2d-btn');
+            const btn3D = document.getElementById('mode-3d-btn');
+            const panel2D = document.getElementById('panel-2d');
+            const panel3D = document.getElementById('panel-3d');
+
+            if (mode === '2d') {
+                container2D.classList.remove('hidden');
+                container3D.classList.add('hidden');
+                btn2D.className = "py-2.5 px-3 rounded-lg bg-indigo-600 text-white font-medium text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 transition";
+                btn3D.className = "py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs flex items-center justify-center space-x-2 transition border border-slate-700";
+                panel2D.classList.remove('hidden');
+                panel3D.classList.add('hidden');
+            } else {
+                container2D.classList.add('hidden');
+                container3D.classList.remove('hidden');
+                btn3D.className = "py-2.5 px-3 rounded-lg bg-indigo-600 text-white font-medium text-xs flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 transition";
+                btn2D.className = "py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs flex items-center justify-center space-x-2 transition border border-slate-700";
+                panel2D.classList.add('hidden');
+                panel3D.classList.remove('hidden');
+
+                // 自動生成 3D 模型
+                generate3DFromCanvas();
+                // 觸發 Three.js 尺寸重整
+                setTimeout(() => {
+                    onWindowResize();
+                }, 50);
+            }
+        }
+
+        // --- 2D 繪圖畫布邏輯 ---
+        function init2DCanvas() {
+            resize2DCanvas();
+            canvas2D.addEventListener('click', (e) => {
+                if (currentMode !== '2d') return;
+                const rect = canvas2D.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                points2D.push({ x, y });
+                draw2D();
+            });
+        }
+
+        function resize2DCanvas() {
+            const parent = canvas2D.parentElement;
+            canvas2D.width = parent.clientWidth;
+            canvas2D.height = parent.clientHeight;
+            draw2D();
+        }
+
+        function draw2D() {
+            if (!ctx2D) return;
+            ctx2D.clearRect(0, 0, canvas2D.width, canvas2D.height);
+
+            // 繪製網格背景
+            ctx2D.strokeStyle = '#e2e8f0';
+            ctx2D.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < canvas2D.width; x += gridSize) {
+                ctx2D.beginPath();
+                ctx2D.moveTo(x, 0);
+                ctx2D.lineTo(x, canvas2D.height);
+                ctx2D.stroke();
+            }
+            for (let y = 0; y < canvas2D.height; y += gridSize) {
+                ctx2D.beginPath();
+                ctx2D.moveTo(0, y);
+                ctx2D.lineTo(canvas2D.width, y);
+                ctx2D.stroke();
+            }
+
+            if (points2D.length === 0) return;
+
+            // 繪製牆體線段
+            ctx2D.beginPath();
+            ctx2D.moveTo(points2D[0].x, points2D[0].y);
+            for (let i = 1; i < points2D.length; i++) {
+                ctx2D.lineTo(points2D[i].x, points2D[i].y);
+            }
+            if (points2D.length > 2) {
+                ctx2D.closePath();
+                ctx2D.fillStyle = 'rgba(99, 102, 241, 0.08)';
+                ctx2D.fill();
+            }
+            ctx2D.strokeStyle = '#4f46e5';
+            ctx2D.lineWidth = 4;
+            ctx2D.stroke();
+
+            // 繪製頂點控制點
+            points2D.forEach((p, index) => {
+                ctx2D.beginPath();
+                ctx2D.arc(p.x, p.y, 6, 0, Math.PI * 2);
+                ctx2D.fillStyle = index === 0 ? '#10b981' : '#ffffff';
+                ctx2D.strokeStyle = '#4f46e5';
+                ctx2D.lineWidth = 3;
+                ctx2D.fill();
+                ctx2D.stroke();
+            });
+        }
+
+        function undoPoint() {
+            points2D.pop();
+            draw2D();
+            showToast('已復原上一個頂點', 'info');
+        }
+
+        function clearCanvasPoints() {
+            points2D = [];
+            draw2D();
+            showToast('已清除所有繪圖', 'warning');
+        }
+
+        function loadPreset(type) {
+            const w = canvas2D.width || 600;
+            const h = canvas2D.height || 500;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            if (type === 'studio') {
+                // 簡單矩形套房
+                points2D = [
+                    { x: cx - 120, y: cy - 90 },
+                    { x: cx + 120, y: cy - 90 },
+                    { x: cx + 120, y: cy + 90 },
+                    { x: cx - 120, y: cy + 90 }
+                ];
+            } else if (type === 'apartment') {
+                // 兩房一廳 L 型/多邊形格局
+                points2D = [
+                    { x: cx - 160, y: cy - 120 },
+                    { x: cx + 160, y: cy - 120 },
+                    { x: cx + 160, y: cy + 30 },
+                    { x: cx + 80, y: cy + 30 },
+                    { x: cx + 80, y: cy + 120 },
+                    { x: cx - 160, y: cy + 120 }
+                ];
+            }
+            draw2D();
+            showToast('已載入「' + (type === 'studio' ? '單人套房' : '標準兩房一廳') + '」範例', 'success');
+        }
+
+
+        // --- Three.js 3D 渲染與建模邏輯 ---
+        function initThreeJS() {
+            const container = document.getElementById('webgl-target');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x090d16);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 25, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0);
+
+            // 環境光與平行光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(15, 30, 20);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            const gridHelper = new THREE.GridHelper(40, 40, 0x4f46e5, 0x1e293b);
+            gridHelper.position.y = -0.01;
+            scene.add(gridHelper);
+
+            animateThree();
+        }
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            resize2DCanvas();
+            const container = document.getElementById('webgl-target');
+            if (container && camera && renderer) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        // 核心功能：根據 2D 畫布座標進行 3D 擠出 (Extrude)
+        function generate3DFromCanvas() {
+            if (points2D.length < 3) {
+                showToast('請至少繪製 3 個頂點以構成封閉戶型', 'warning');
+                switchTab('2d');
+                return;
+            }
+
+            // 切換至 3D 視圖
+            switchTab('3d');
+
+            // 移除舊模型
+            if (wallMesh) {
+                scene.remove(wallMesh);
+                wallMesh.geometry.dispose();
+                if (Array.isArray(wallMesh.material)) {
+                    wallMesh.material.forEach(m => m.dispose());
+                } else {
+                    wallMesh.material.dispose();
+                }
+            }
+
+            // 將 2D 螢幕座標中心化並正規化縮放到 3D 空間尺規
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            points2D.forEach(p => {
+                minX = Math.min(minX, p.x);
+                maxX = Math.max(maxX, p.x);
+                minY = Math.min(minY, p.y);
+                maxY = Math.max(maxY, p.y);
+            });
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            // 建立 Three.js Shape
+            const shape = new THREE.Shape();
+            points2D.forEach((p, idx) => {
+                // 座標轉換：平面置中，並將 Y 軸反轉對應 WebGL 3D 坐標系
+                const nx = (p.x - centerX) / 35;
+                const ny = -(p.y - centerY) / 35;
+                if (idx === 0) shape.moveTo(nx, ny);
+                else shape.lineTo(nx, ny);
+            });
+            shape.closePath();
+
+            // 牆體擠出設定 (ExtrudeSettings)
+            const extrudeSettings = {
+                steps: 1,
+                depth: currentWallHeight,
+                bevelEnabled: true,
+                bevelThickness: 0.03,
+                bevelSize: 0.03,
+                bevelSegments: 2
+            };
+
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geometry.center(); // 將幾何中心對齊原點
+
+            const material = new THREE.MeshStandardMaterial({
+                color: currentWallColor,
+                roughness: 0.35,
+                metalness: 0.1,
+                wireframe: isWireframe
+            });
+
+            wallMesh = new THREE.Mesh(geometry, material);
+            wallMesh.rotation.x = -Math.PI / 2; // 轉正立面
+            wallMesh.position.y = currentWallHeight / 2;
+            wallMesh.castShadow = true;
+            wallMesh.receiveShadow = true;
+
+            scene.add(wallMesh);
+            showToast('3D 戶型模型生成成功！', 'success');
+        }
+
+        // --- 控制面板互動函數 ---
+        function updateWallHeight(val) {
+            currentWallHeight = parseFloat(val);
+            document.getElementById('height-val').innerText = currentWallHeight.toFixed(1) + ' m';
+            if (currentMode === '3d') generate3DFromCanvas();
+        }
+
+        function updateWallThickness(val) {
+            currentWallThickness = parseFloat(val);
+            document.getElementById('thickness-val').innerText = currentWallThickness.toFixed(2) + ' m';
+            if (currentMode === '3d') generate3DFromCanvas();
+        }
+
+        function changeWallColor(colorHex) {
+            currentWallColor = colorHex;
+            if (wallMesh && wallMesh.material) {
+                wallMesh.material.color.setHex(colorHex);
+            }
+            showToast('已更新牆面材質顏色', 'success');
+        }
+
+        function toggleWireframe(wire) {
+            isWireframe = wire;
+            const solidBtn = document.getElementById('solid-btn');
+            const wireBtn = document.getElementById('wire-btn');
+            if (wire) {
+                wireBtn.className = "py-2 px-3 rounded-lg bg-indigo-600 text-white font-medium text-xs transition";
+                solidBtn.className = "py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition border border-slate-700";
+            } else {
+                solidBtn.className = "py-2 px-3 rounded-lg bg-indigo-600 text-white font-medium text-xs transition";
+                wireBtn.className = "py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs transition border border-slate-700";
+            }
+            if (wallMesh && wallMesh.material) {
+                wallMesh.material.wireframe = wire;
+            }
+        }
+
+        function resetCamera() {
+            if (controls && camera) {
+                camera.position.set(0, 25, 25);
+                controls.target.set(0, 0, 0);
+                controls.update();
+                showToast('視角已重設', 'info');
+            }
+        }
+
+        // 訊息通知小幫手
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-sm";
+            } else if (type === 'warning') {
+                toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400 text-sm";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-info text-indigo-400 text-sm";
+            }
+
+            toast.classList.remove('translate-x-96', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-x-96', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

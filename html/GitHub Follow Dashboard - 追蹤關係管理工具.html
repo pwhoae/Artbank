@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Follow Dashboard - 追蹤關係管理工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    colors: {
+                        gh: {
+                            bg: '#0d1117',
+                            card: '#161b22',
+                            border: '#30363d',
+                            text: '#c9d1d9',
+                            muted: '#8b949e',
+                            accent: '#58a6ff',
+                            green: '#238636',
+                            greenHover: '#2ea043',
+                            red: '#da3633',
+                            yellow: '#d29922'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for sleek GitHub aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        .tab-active {
+            border-bottom: 2px solid #f78166;
+            color: #f0f6fc;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-500/30 selection:text-blue-200">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 bg-[#161b22]/90 backdrop-blur-md border-b border-[#30363d]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-white text-[#0d1117] flex items-center justify-center text-xl shadow-sm">
+                    <i class="fa-brands fa-github"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-white leading-tight">GitHub Follow Radar</h1>
+                    <p class="text-xs text-[#8b949e] hidden sm:block">追蹤分析與雙向關係管理面板</p>
+                </div>
+            </div>
+
+            <!-- Right Actions: Token Settings & Export -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button onclick="toggleTokenModal()" id="tokenStatusBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-[#c9d1d9] transition">
+                    <span id="tokenIndicator" class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span class="hidden sm:inline">API Token (提升限額 / 直接操作)</span>
+                    <span class="sm:hidden">Token</span>
+                </button>
+                <button onclick="exportToCSV()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-[#c9d1d9] transition" title="匯出 CSV 報表">
+                    <i class="fa-solid fa-file-csv text-emerald-400"></i>
+                    <span class="hidden md:inline">匯出 CSV</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Control & Search Bar -->
+        <section class="bg-[#161b22] border border-[#30363d] rounded-xl p-4 sm:p-5 shadow-lg">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div class="flex-1 max-w-xl">
+                    <label for="usernameInput" class="block text-xs font-semibold uppercase tracking-wider text-[#8b949e] mb-2">
+                        目標 GitHub 帳號 (支援輸入帳號名稱或網址)
+                    </label>
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#8b949e]">
+                                <i class="fa-solid fa-at text-sm"></i>
+                            </span>
+                            <input type="text" id="usernameInput" value="pwhoae" placeholder="例如: pwhoae 或 https://github.com/pwhoae"
+                                class="w-full pl-9 pr-4 py-2.5 bg-[#0d1117] border border-[#30363d] rounded-lg text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff] focus:ring-1 focus:ring-[#58a6ff] transition">
+                        </div>
+                        <button onclick="startAnalysis()" id="analyzeBtn"
+                            class="px-5 py-2.5 bg-[#238636] hover:bg-[#2ea043] active:scale-[0.99] text-white text-sm font-semibold rounded-lg shadow transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                            <span>開始分析</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Target User Profile Quick Summary -->
+                <div id="targetProfileCard" class="hidden flex items-center gap-3.5 bg-[#0d1117] border border-[#30363d] px-4 py-2.5 rounded-xl">
+                    <img id="targetAvatar" src="" alt="Avatar" class="w-11 h-11 rounded-full border border-[#30363d]">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <a id="targetNameLink" href="#" target="_blank" class="font-bold text-white hover:text-[#58a6ff] text-sm flex items-center gap-1">
+                                <span id="targetName">pwhoae</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#8b949e]"></i>
+                            </a>
+                            <span id="rateLimitBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-[#21262d] text-[#8b949e] border border-[#30363d]">
+                                API 剩餘: --
+                            </span>
+                        </div>
+                        <p id="targetBio" class="text-xs text-[#8b949e] line-clamp-1 max-w-xs mt-0.5">載入中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar (Shown while fetching) -->
+            <div id="loadingContainer" class="hidden mt-4 pt-4 border-t border-[#30363d]">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span id="loadingText" class="text-[#58a6ff] font-medium flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> 正在擷取 Followers 與 Following 清單...
+                    </span>
+                    <span id="loadingPercent" class="text-[#8b949e] font-mono">0%</span>
+                </div>
+                <div class="w-full bg-[#0d1117] rounded-full h-2 overflow-hidden border border-[#30363d]">
+                    <div id="loadingBar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 10%"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Overview Cards -->
+        <section class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <!-- Card 1: Not Following Back (Key Focus) -->
+            <div onclick="switchTab('notFollowingBack')" class="cursor-pointer group bg-[#161b22] hover:bg-[#1c2128] border border-rose-500/40 hover:border-rose-500 rounded-xl p-4 transition relative overflow-hidden">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-rose-400">單向追蹤 (沒回追你)</span>
+                    <span class="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-user-xmark"></i>
+                    </span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-bold text-white" id="statNotFollowingBack">0</div>
+                <p class="text-[11px] text-[#8b949e] mt-1">你有 Follow 但對方沒 Follow 你</p>
+            </div>
+
+            <!-- Card 2: Mutual Friends -->
+            <div onclick="switchTab('mutual')" class="cursor-pointer group bg-[#161b22] hover:bg-[#1c2128] border border-emerald-500/30 hover:border-emerald-500 rounded-xl p-4 transition">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-emerald-400">互相追蹤 (Mutual)</span>
+                    <span class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-handshake"></i>
+                    </span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-bold text-white" id="statMutual">0</div>
+                <p class="text-[11px] text-[#8b949e] mt-1">雙方都有彼此 Follow</p>
+            </div>
+
+            <!-- Card 3: Fans (You don't follow back) -->
+            <div onclick="switchTab('fans')" class="cursor-pointer group bg-[#161b22] hover:bg-[#1c2128] border border-amber-500/30 hover:border-amber-500 rounded-xl p-4 transition">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-amber-400">粉絲 (你尚未回追)</span>
+                    <span class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-star"></i>
+                    </span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-bold text-white" id="statFans">0</div>
+                <p class="text-[11px] text-[#8b949e] mt-1">對方 Follow 你但你沒回追</p>
+            </div>
+
+            <!-- Card 4: Total Followers -->
+            <div onclick="switchTab('followers')" class="cursor-pointer group bg-[#161b22] hover:bg-[#1c2128] border border-[#30363d] hover:border-[#58a6ff] rounded-xl p-4 transition">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-[#8b949e]">總 Followers</span>
+                    <span class="w-7 h-7 rounded-lg bg-blue-500/10 text-[#58a6ff] flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-users"></i>
+                    </span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-bold text-white" id="statFollowers">0</div>
+                <p class="text-[11px] text-[#8b949e] mt-1">追蹤此帳號的人數</p>
+            </div>
+
+            <!-- Card 5: Total Following -->
+            <div onclick="switchTab('following')" class="col-span-2 lg:col-span-1 cursor-pointer group bg-[#161b22] hover:bg-[#1c2128] border border-[#30363d] hover:border-[#58a6ff] rounded-xl p-4 transition">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-medium text-[#8b949e]">總 Following</span>
+                    <span class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </span>
+                </div>
+                <div class="text-2xl sm:text-3xl font-bold text-white" id="statFollowing">0</div>
+                <p class="text-[11px] text-[#8b949e] mt-1">正在追蹤的帳號數量</p>
+            </div>
+        </section>
+
+        <!-- Filter Tabs & Search Toolbar -->
+        <section class="bg-[#161b22] border border-[#30363d] rounded-xl overflow-hidden shadow-lg">
+            <!-- Tabs Header -->
+            <div class="border-b border-[#30363d] px-4 flex items-center justify-between flex-wrap gap-2 bg-[#0d1117]/40">
+                <nav class="flex space-x-1 sm:space-x-4 overflow-x-auto no-scrollbar" aria-label="Tabs">
+                    <button onclick="switchTab('notFollowingBack')" id="tab-notFollowingBack" class="tab-btn tab-active py-3.5 px-2 text-xs sm:text-sm whitespace-nowrap flex items-center gap-2 transition">
+                        <span>沒互相 Follow (未回追)</span>
+                        <span id="badge-notFollowingBack" class="px-2 py-0.5 text-xs rounded-full bg-rose-500/20 text-rose-300">0</span>
+                    </button>
+                    <button onclick="switchTab('mutual')" id="tab-mutual" class="tab-btn py-3.5 px-2 text-xs sm:text-sm text-[#8b949e] hover:text-white whitespace-nowrap flex items-center gap-2 transition">
+                        <span>互相 Follow</span>
+                        <span id="badge-mutual" class="px-2 py-0.5 text-xs rounded-full bg-[#21262d] text-[#8b949e]">0</span>
+                    </button>
+                    <button onclick="switchTab('fans')" id="tab-fans" class="tab-btn py-3.5 px-2 text-xs sm:text-sm text-[#8b949e] hover:text-white whitespace-nowrap flex items-center gap-2 transition">
+                        <span>粉絲 (你未回追)</span>
+                        <span id="badge-fans" class="px-2 py-0.5 text-xs rounded-full bg-[#21262d] text-[#8b949e]">0</span>
+                    </button>
+                    <button onclick="switchTab('following')" id="tab-following" class="tab-btn py-3.5 px-2 text-xs sm:text-sm text-[#8b949e] hover:text-white whitespace-nowrap flex items-center gap-2 transition">
+                        <span>全部 Following</span>
+                        <span id="badge-following" class="px-2 py-0.5 text-xs rounded-full bg-[#21262d] text-[#8b949e]">0</span>
+                    </button>
+                    <button onclick="switchTab('followers')" id="tab-followers" class="tab-btn py-3.5 px-2 text-xs sm:text-sm text-[#8b949e] hover:text-white whitespace-nowrap flex items-center gap-2 transition">
+                        <span>全部 Followers</span>
+                        <span id="badge-followers" class="px-2 py-0.5 text-xs rounded-full bg-[#21262d] text-[#8b949e]">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Sub-toolbar: Local Filter & Sort -->
+            <div class="p-4 border-b border-[#30363d] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#161b22]">
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-filter absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8b949e] text-xs"></i>
+                    <input type="text" id="filterInput" oninput="renderUserGrid()" placeholder="搜尋使用者名稱 (Username)..."
+                        class="w-full pl-9 pr-4 py-2 bg-[#0d1117] border border-[#30363d] rounded-lg text-xs sm:text-sm text-white placeholder-[#484f58] focus:outline-none focus:border-[#58a6ff]">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <select id="sortSelect" onchange="renderUserGrid()" class="bg-[#0d1117] border border-[#30363d] text-[#c9d1d9] text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#58a6ff]">
+                        <option value="default">預設順序 (GitHub API)</option>
+                        <option value="asc">名稱 A → Z</option>
+                        <option value="desc">名稱 Z → A</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- User Cards Grid -->
+            <div class="p-4 sm:p-6">
+                <div id="userGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <!-- Dynamic User Cards Injected Here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden py-16 text-center">
+                    <div class="w-14 h-14 rounded-full bg-[#21262d] text-[#8b949e] flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-user-slash"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-white">目前分類沒有符合的使用者</h3>
+                    <p class="text-xs text-[#8b949e] mt-1">請嘗試切換上方分頁或清除搜尋關鍵字</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- GitHub Personal Access Token Modal -->
+    <div id="tokenModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-key text-amber-400"></i>
+                    設定 GitHub API Token (選填)
+                </h3>
+                <button onclick="toggleTokenModal()" class="text-[#8b949e] hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="text-xs text-[#8b949e] space-y-2 leading-relaxed">
+                <p>1. <strong>提升查詢限額</strong>：未登入狀態 GitHub API 每小時僅限 60 次請求；加入 Token 可提升至 5,000 次。</p>
+                <p>2. <strong>一鍵追蹤 / 取消追蹤</strong>：若勾選 <code class="text-amber-300 bg-[#0d1117] px-1 py-0.5 rounded">user:follow</code> 權限，可直接在儀表板內執行 Unfollow / Follow 操作！</p>
+                <p class="text-[11px] text-emerald-400"><i class="fa-solid fa-shield-halved mr-1"></i>Token 僅儲存在您的瀏覽器 localStorage 中，不會傳送至任何第三方伺服器。</p>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-[#c9d1d9] mb-1.5">Personal Access Token (Classic / Fine-grained)</label>
+                <input type="password" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                    class="w-full px-3.5 py-2 bg-[#0d1117] border border-[#30363d] rounded-lg text-sm text-white focus:outline-none focus:border-[#58a6ff]">
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button onclick="clearToken()" class="px-3.5 py-2 rounded-lg text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition">
+                    清除 Token
+                </button>
+                <button onclick="saveToken()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-[#238636] hover:bg-[#2ea043] text-white transition">
+                    儲存並套用
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification Box (Replaces alert) -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // ==========================================
+        // Application State & Data Storage
+        // ==========================================
+        let state = {
+            username: 'pwhoae',
+            token: localStorage.getItem('gh_follow_token') || '',
+            followers: [],
+            following: [],
+            mutual: [],
+            notFollowingBack: [], // You follow them, they don't follow you
+            fans: [],             // They follow you, you don't follow them
+            activeTab: 'notFollowingBack',
+            isLoading: false
+        };
+
+        // ==========================================
+        // Initialization
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTokenUI();
+            if (state.token) {
+                document.getElementById('tokenInput').value = state.token;
+            }
+            // Allow pressing Enter in username input
+            document.getElementById('usernameInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') startAnalysis();
+            });
+            // Automatically run analysis for default user 'pwhoae'
+            startAnalysis();
+        });
+
+        // ==========================================
+        // Helper: Parse Username from URL or Input
+        // ==========================================
+        function parseUsername(rawInput) {
+            let cleaned = rawInput.trim();
+            if (!cleaned) return '';
+            // Handle full GitHub URLs like https://github.com/pwhoae?tab=followers
+            try {
+                if (cleaned.includes('github.com/')) {
+                    const urlObj = new URL(cleaned.startsWith('http') ? cleaned : 'https://' + cleaned);
+                    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+                    if (pathParts.length > 0) {
+                        return pathParts[0];
+                    }
+                }
+            } catch (e) {
+                // Fallback regex if URL constructor fails
+                const match = cleaned.match(/github\.com\/([^\/\?\s]+)/i);
+                if (match && match[1]) return match[1];
+            }
+            return cleaned.replace(/^@/, '');
+        }
+
+        // ==========================================
+        // GitHub API Fetching Engine (With Pagination)
+        // ==========================================
+        function getHeaders() {
+            const headers = {
+                'Accept': 'application/vnd.github.v3+json'
+            };
+            if (state.token) {
+                headers['Authorization'] = `token ${state.token}`;
+            }
+            return headers;
+        }
+
+        async function fetchAllPaginated(url, onProgress) {
+            let results = [];
+            let page = 1;
+            const perPage = 100;
+
+            while (true) {
+                const pagedUrl = `${url}?per_page=${perPage}&page=${page}`;
+                const response = await fetch(pagedUrl, { headers: getHeaders() });
+
+                // Update Rate Limit Display
+                const remaining = response.headers.get('X-RateLimit-Remaining');
+                if (remaining !== null) {
+                    document.getElementById('rateLimitBadge').textContent = `API 剩餘: ${remaining}`;
+                }
+
+                if (!response.ok) {
+                    if (response.status === 404) throw new Error(`找不到使用者 "${state.username}"`);
+                    if (response.status === 403) throw new Error('GitHub API 速率限制已滿，請點擊右上角設定 API Token。');
+                    throw new Error(`API 請求失敗 (HTTP ${response.status})`);
+                }
+
+                const data = await response.json();
+                results = results.concat(data);
+
+                if (onProgress) onProgress(results.length);
+
+                // If returned items < perPage, we've reached the last page
+                if (data.length < perPage) break;
+                page++;
+            }
+            return results;
+        }
+
+        // ==========================================
+        // Core Analysis Workflow
+        // ==========================================
+        async function startAnalysis() {
+            if (state.isLoading) return;
+
+            const rawInput = document.getElementById('usernameInput').value;
+            const parsedUser = parseUsername(rawInput);
+
+            if (!parsedUser) {
+                showToast('請輸入有效的 GitHub 使用者名稱或網址', 'error');
+                return;
+            }
+
+            state.username = parsedUser;
+            document.getElementById('usernameInput').value = parsedUser;
+            setLoading(true, '正在讀取帳號基本資料...', 15);
+
+            try {
+                // 1. Fetch User Profile
+                const userRes = await fetch(`https://api.github.com/users/${state.username}`, { headers: getHeaders() });
+                if (!userRes.ok) {
+                    if (userRes.status === 404) throw new Error(`找不到 GitHub 使用者 "${state.username}"`);
+                    if (userRes.status === 403) throw new Error('API 請求次數達上限，請設定 Token 後再試');
+                    throw new Error('無法取得使用者資料');
+                }
+                const userData = await userRes.json();
+                renderTargetProfile(userData);
+
+                // 2. Fetch Followers
+                setLoading(true, `正在擷取 Followers (${userData.followers} 人)...`, 40);
+                const followers = await fetchAllPaginated(`https://api.github.com/users/${state.username}/followers`, (count) => {
+                    setLoading(true, `已讀取 ${count} 位 Followers...`, 55);
+                });
+
+                // 3. Fetch Following
+                setLoading(true, `正在擷取 Following (${userData.following} 人)...`, 75);
+                const following = await fetchAllPaginated(`https://api.github.com/users/${state.username}/following`, (count) => {
+                    setLoading(true, `已讀取 ${count} 位 Following...`, 90);
+                });
+
+                // 4. Cross-Reference & Categorize Sets
+                setLoading(true, '正在比對雙向追蹤關係...', 98);
+                processRelationships(followers, following);
+
+                showToast(`已完成 @${state.username} 的追蹤關係分析！`, 'success');
+            } catch (err) {
+                console.error(err);
+                showToast(err.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function processRelationships(followers, following) {
+            state.followers = followers;
+            state.following = following;
+
+            const followerMap = new Map(followers.map(u => [u.login.toLowerCase(), u]));
+            const followingMap = new Map(following.map(u => [u.login.toLowerCase(), u]));
+
+            // Mutual: In both lists
+            state.mutual = following.filter(u => followerMap.has(u.login.toLowerCase()));
+
+            // Not Following Back: In Following, NOT in Followers
+            state.notFollowingBack = following.filter(u => !followerMap.has(u.login.toLowerCase()));
+
+            // Fans: In Followers, NOT in Following
+            state.fans = followers.filter(u => !followingMap.has(u.login.toLowerCase()));
+
+            updateStatsUI();
+            renderUserGrid();
+        }
+
+        // ==========================================
+        // Direct GitHub Follow / Unfollow Actions (Requires Token)
+        // ==========================================
+        async function toggleFollowAction(targetLogin, actionType, btnElement) {
+            if (!state.token) {
+                showToast('請先點擊右上角設定具備 user:follow 權限的 GitHub Token，或點擊帳號直接前往 GitHub 操作。', 'warning');
+                toggleTokenModal();
+                return;
+            }
+
+            const originalHTML = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i>`;
+
+            try {
+                const method = actionType === 'unfollow' ? 'DELETE' : 'PUT';
+                const res = await fetch(`https://api.github.com/user/following/${targetLogin}`, {
+                    method: method,
+                    headers: getHeaders()
+                });
+
+                if (res.status === 204) {
+                    showToast(actionType === 'unfollow' ? `已取消追蹤 @${targetLogin}` : `已成功回追 @${targetLogin}`, 'success');
+                    // Update local state immediately for snappy UX
+                    if (actionType === 'unfollow') {
+                        state.following = state.following.filter(u => u.login !== targetLogin);
+                    } else {
+                        const fanUser = state.followers.find(u => u.login === targetLogin);
+                        if (fanUser) state.following.push(fanUser);
+                    }
+                    processRelationships(state.followers, state.following);
+                } else if (res.status === 404 || res.status === 403) {
+                    throw new Error('Token 權限不足，請確認已勾選 user:follow 權限，且操作的是自己的帳號。');
+                } else {
+                    throw new Error(`操作失敗 (HTTP ${res.status})`);
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHTML;
+            }
+        }
+
+        // ==========================================
+        // UI Rendering Functions
+        // ==========================================
+        function renderTargetProfile(user) {
+            const card = document.getElementById('targetProfileCard');
+            card.classList.remove('hidden');
+            document.getElementById('targetAvatar').src = user.avatar_url;
+            document.getElementById('targetName').textContent = user.name ? `${user.name} (@${user.login})` : `@${user.login}`;
+            document.getElementById('targetNameLink').href = user.html_url;
+            document.getElementById('targetBio').textContent = user.bio || '此使用者沒有填寫個人簡介';
+        }
+
+        function updateStatsUI() {
+            document.getElementById('statNotFollowingBack').textContent = state.notFollowingBack.length;
+            document.getElementById('statMutual').textContent = state.mutual.length;
+            document.getElementById('statFans').textContent = state.fans.length;
+            document.getElementById('statFollowers').textContent = state.followers.length;
+            document.getElementById('statFollowing').textContent = state.following.length;
+
+            document.getElementById('badge-notFollowingBack').textContent = state.notFollowingBack.length;
+            document.getElementById('badge-mutual').textContent = state.mutual.length;
+            document.getElementById('badge-fans').textContent = state.fans.length;
+            document.getElementById('badge-following').textContent = state.following.length;
+            document.getElementById('badge-followers').textContent = state.followers.length;
+        }
+
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-white');
+                btn.classList.add('text-[#8b949e]');
+            });
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.add('tab-active');
+                activeBtn.classList.remove('text-[#8b949e]');
+            }
+            renderUserGrid();
+        }
+
+        function renderUserGrid() {
+            const grid = document.getElementById('userGrid');
+            const emptyState = document.getElementById('emptyState');
+            const filterText = document.getElementById('filterInput').value.toLowerCase().trim();
+            const sortOrder = document.getElementById('sortSelect').value;
+
+            let list = [...(state[state.activeTab] || [])];
+
+            // Filter by search text
+            if (filterText) {
+                list = list.filter(u => u.login.toLowerCase().includes(filterText));
+            }
+
+            // Sort
+            if (sortOrder === 'asc') {
+                list.sort((a, b) => a.login.localeCompare(b.login));
+            } else if (sortOrder === 'desc') {
+                list.sort((a, b) => b.login.localeCompare(a.login));
+            }
+
+            if (list.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            const followerSet = new Set(state.followers.map(u => u.login.toLowerCase()));
+            const followingSet = new Set(state.following.map(u => u.login.toLowerCase()));
+
+            grid.innerHTML = list.map(user => {
+                const isFollower = followerSet.has(user.login.toLowerCase());
+                const isFollowing = followingSet.has(user.login.toLowerCase());
+
+                // Determine relationship badge
+                let statusBadge = '';
+                let actionButton = '';
+
+                if (isFollower && isFollowing) {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"><i class="fa-solid fa-handshake text-[10px]"></i> 互相追蹤</span>`;
+                    actionButton = `<button onclick="toggleFollowAction('${user.login}', 'unfollow', this)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-[#21262d] hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/40 border border-[#30363d] text-[#c9d1d9] transition">取消追蹤</button>`;
+                } else if (isFollowing && !isFollower) {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/30"><i class="fa-solid fa-user-xmark text-[10px]"></i> 對方未回追</span>`;
+                    actionButton = `<button onclick="toggleFollowAction('${user.login}', 'unfollow', this)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 transition">Unfollow</button>`;
+                } else if (isFollower && !isFollowing) {
+                    statusBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30"><i class="fa-solid fa-star text-[10px]"></i> 你的粉絲</span>`;
+                    actionButton = `<button onclick="toggleFollowAction('${user.login}', 'follow', this)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-[#238636] hover:bg-[#2ea043] text-white transition">回追 Follow</button>`;
+                }
+
+                return `
+                    <div class="bg-[#0d1117] hover:bg-[#161b22] border border-[#30363d] hover:border-[#484f58] rounded-xl p-4 flex flex-col justify-between gap-3 transition group">
+                        <div class="flex items-start gap-3">
+                            <a href="${user.html_url}" target="_blank" class="shrink-0">
+                                <img src="${user.avatar_url}" alt="${user.login}" loading="lazy"
+                                    onerror="this.src='https://placehold.co/80x80/21262d/8b949e?text=GH'"
+                                    class="w-12 h-12 rounded-full border border-[#30363d] group-hover:border-[#58a6ff] transition">
+                            </a>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-1">
+                                    <a href="${user.html_url}" target="_blank" class="font-semibold text-sm text-white hover:text-[#58a6ff] truncate block">
+                                        ${user.login}
+                                    </a>
+                                    <a href="${user.html_url}" target="_blank" class="text-[#8b949e] hover:text-white text-xs shrink-0" title="在 GitHub 開啟主頁">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </a>
+                                </div>
+                                <div class="mt-1.5">
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2.5 border-t border-[#21262d] flex items-center justify-between gap-2">
+                            <a href="${user.html_url}?tab=repositories" target="_blank" class="text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition">
+                                <i class="fa-solid fa-book-bookmark mr-1"></i>Repos
+                            </a>
+                            ${actionButton}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // Loading & Modal & Toast Controls
+        // ==========================================
+        function setLoading(isLoading, text = '', percent = 0) {
+            state.isLoading = isLoading;
+            const container = document.getElementById('loadingContainer');
+            const btn = document.getElementById('analyzeBtn');
+
+            if (isLoading) {
+                container.classList.remove('hidden');
+                document.getElementById('loadingText').innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> ${text}`;
+                document.getElementById('loadingPercent').textContent = `${percent}%`;
+                document.getElementById('loadingBar').style.width = `${percent}%`;
+                btn.disabled = true;
+                btn.classList.add('opacity-60', 'cursor-not-allowed');
+            } else {
+                container.classList.add('hidden');
+                btn.disabled = false;
+                btn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }
+
+        function toggleTokenModal() {
+            const modal = document.getElementById('tokenModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function saveToken() {
+            const val = document.getElementById('tokenInput').value.trim();
+            state.token = val;
+            localStorage.setItem('gh_follow_token', val);
+            updateTokenUI();
+            toggleTokenModal();
+            showToast('GitHub Token 已儲存，正在重新載入資料...', 'success');
+            startAnalysis();
+        }
+
+        function clearToken() {
+            state.token = '';
+            document.getElementById('tokenInput').value = '';
+            localStorage.removeItem('gh_follow_token');
+            updateTokenUI();
+            toggleTokenModal();
+            showToast('已清除 Token', 'info');
+        }
+
+        function updateTokenUI() {
+            const indicator = document.getElementById('tokenIndicator');
+            if (state.token) {
+                indicator.classList.remove('bg-amber-500');
+                indicator.classList.add('bg-emerald-500');
+            } else {
+                indicator.classList.remove('bg-emerald-500');
+                indicator.classList.add('bg-amber-500');
+            }
+        }
+
+        // ==========================================
+        // CSV Export Feature
+        // ==========================================
+        function exportToCSV() {
+            if (state.followers.length === 0 && state.following.length === 0) {
+                showToast('目前沒有可匯出的資料，請先執行分析。', 'warning');
+                return;
+            }
+
+            const followerSet = new Set(state.followers.map(u => u.login.toLowerCase()));
+            const followingSet = new Set(state.following.map(u => u.login.toLowerCase()));
+            const allUsersMap = new Map();
+
+            [...state.followers, ...state.following].forEach(u => {
+                allUsersMap.set(u.login.toLowerCase(), u);
+            });
+
+            let csvContent = '\uFEFFUsername,Status,Is_Follower,Is_Following,Profile_URL\n';
+
+            allUsersMap.forEach((user, key) => {
+                const isF = followerSet.has(key);
+                const isIng = followingSet.has(key);
+                let status = '';
+                if (isF && isIng) status = 'Mutual (互相追蹤)';
+                else if (isIng && !isF) status = 'Not Following Back (對方未回追)';
+                else if (isF && !isIng) status = 'Fan (粉絲/你未回追)';
+
+                csvContent += `${user.login},"${status}",${isF ? 'Yes' : 'No'},${isIng ? 'Yes' : 'No'},${user.html_url}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `github_follow_analysis_${state.username}_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('CSV 報表匯出成功！', 'success');
+        }
+
+        // ==========================================
+        // Toast Notification System (No alert())
+        // ==========================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-[#161b22] border-emerald-500/50 text-emerald-300',
+                error: 'bg-[#161b22] border-rose-500/50 text-rose-300',
+                warning: 'bg-[#161b22] border-amber-500/50 text-amber-300',
+                info: 'bg-[#161b22] border-blue-500/50 text-blue-300'
+            };
+
+            const icons = {
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-circle-exclamation text-rose-400',
+                warning: 'fa-triangle-exclamation text-amber-400',
+                info: 'fa-circle-info text-blue-400'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-xs sm:text-sm max-w-sm transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type] || icons.info} text-base shrink-0"></i>
+                <span class="leading-snug">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
