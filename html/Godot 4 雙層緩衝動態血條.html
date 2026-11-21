@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Godot 4 雙層延遲動態血條系統 (Dynamic Health Bar)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        godot: {
+                            blue: '#478cbf',
+                            dark: '#21252b',
+                            panel: '#282c34',
+                            border: '#3b4048',
+                            health: '#2ecc71',
+                            damage: '#e74c3c'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e2227;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3b4048;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #478cbf;
+        }
+        .code-keyword { color: #e06c75; font-weight: bold; }
+        .code-func { color: #61afef; }
+        .code-type { color: #e5c07b; }
+        .code-var { color: #abb2bf; }
+        .code-comment { color: #7f848e; italic: true; }
+        .code-str { color: #98c379; }
+        .code-num { color: #d19a66; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-4px, 2px); }
+            40% { transform: translate(4px, -2px); }
+            60% { transform: translate(-3px, -1px); }
+            80% { transform: translate(2px, 1px); }
+        }
+        .animate-shake {
+            animation: shake 0.25s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-godot-dark text-gray-200 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-godot-panel border-b border-godot-border p-4 shadow-md flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="bg-godot-blue p-2 rounded-lg text-white font-bold text-xl flex items-center justify-center w-10 h-10">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white leading-tight">Godot 4 雙層緩衝動態血條 (HealthBar System)</h1>
+                <p class="text-xs text-gray-400">雙層 ProgressBar + Timer 扣血延遲追趕機制示範與程式碼</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs bg-godot-blue/20 text-godot-blue border border-godot-blue/30 px-2.5 py-1 rounded-full font-mono">
+                Godot 4.x / GDScript
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1600px] w-full mx-auto">
+        
+        <!-- Left Panel: Interactive Simulation (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- Visual Simulator Card -->
+            <div class="bg-godot-panel border border-godot-border rounded-xl p-5 shadow-lg flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-eye text-godot-blue"></i> 視覺反饋實時模擬 (Visual Preview)
+                    </h2>
+                    <span id="timer-status" class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 font-mono">
+                        Timer: 靜止 (Idle)
+                    </span>
+                </div>
+
+                <!-- Simulation Canvas Area -->
+                <div id="simulation-box" class="relative bg-gray-950 border border-godot-border rounded-lg p-6 flex flex-col items-center justify-center min-h-[220px] overflow-hidden transition-all">
+                    
+                    <!-- Dummy Monster Avatar -->
+                    <div id="target-avatar" class="relative mb-6 flex flex-col items-center">
+                        <div class="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-900 rounded-2xl flex items-center justify-center border-2 border-purple-400 shadow-lg shadow-purple-900/40">
+                            <i id="monster-icon" class="fa-solid fa-ghost text-2xl text-purple-200"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-purple-300 mt-2">小怪 / 敵人單位</span>
+
+                        <!-- World Space Floating HealthBar (Above Head) -->
+                        <div class="absolute -top-10 w-36 flex flex-col items-center">
+                            <!-- Dual Layer Health Bar Box -->
+                            <div class="relative w-full h-3.5 bg-gray-900 rounded border border-gray-700 shadow-md overflow-hidden">
+                                <!-- Bottom Layer: DamageBar (Red/White Buffer) -->
+                                <div id="sim-damage-bar" class="absolute top-0 left-0 h-full bg-red-400 transition-none" style="width: 100%; z-index: 1;"></div>
+                                <!-- Top Layer: Main HealthBar (Green Actual Health) -->
+                                <div id="sim-health-bar" class="absolute top-0 left-0 h-full bg-emerald-500 transition-all duration-75" style="width: 100%; z-index: 2;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Screen Space Boss HealthBar Simulation -->
+                    <div class="w-full mt-2 pt-4 border-t border-gray-800/80">
+                        <div class="flex justify-between items-center mb-1 text-xs">
+                            <span class="font-bold text-red-400 flex items-center gap-1">
+                                <i class="fa-solid fa-dragon"></i> 巨龍 BOSS (螢幕固定血條)
+                            </span>
+                            <span id="boss-hp-text" class="font-mono text-gray-300">100 / 100</span>
+                        </div>
+                        
+                        <!-- Dual Layer ProgressBar UI -->
+                        <div class="relative w-full h-5 bg-gray-900 rounded border border-gray-700 shadow-inner overflow-hidden">
+                            <!-- DamageBar (White/Red Buffer) -->
+                            <div id="sim-boss-damage-bar" class="absolute top-0 left-0 h-full bg-white/80 transition-none" style="width: 100%; z-index: 1;"></div>
+                            <!-- HealthBar (Green Main Bar) -->
+                            <div id="sim-boss-health-bar" class="absolute top-0 left-0 h-full bg-emerald-500 transition-all duration-75" style="width: 100%; z-index: 2;"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Control Dashboard -->
+                <div class="mt-5 space-y-4">
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button id="btn-damage-small" class="bg-red-900/40 hover:bg-red-800/60 border border-red-700/50 text-red-200 text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition active:scale-95">
+                            <i class="fa-solid fa-sword text-red-400"></i> 普通攻擊 (-15)
+                        </button>
+                        <button id="btn-damage-large" class="bg-amber-900/40 hover:bg-amber-800/60 border border-amber-700/50 text-amber-200 text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition active:scale-95">
+                            <i class="fa-solid fa-burst text-amber-400"></i> 重擊 (-40)
+                        </button>
+                        <button id="btn-heal" class="bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-700/50 text-emerald-200 text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition active:scale-95">
+                            <i class="fa-solid fa-heart-pulse text-emerald-400"></i> 治療 (+25)
+                        </button>
+                        <button id="btn-reset" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition active:scale-95">
+                            <i class="fa-solid fa-rotate-left"></i> 復原滿血
+                        </button>
+                    </div>
+
+                    <!-- Adjustable Parameters -->
+                    <div class="bg-gray-900/60 p-3.5 rounded-lg border border-godot-border/60 space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <label for="slider-delay" class="text-gray-300 font-medium flex items-center gap-1.5">
+                                <i class="fa-regular fa-clock text-godot-blue"></i> Timer 延遲時間 (Wait Time):
+                            </label>
+                            <span id="delay-val" class="font-mono text-godot-blue font-bold">0.4s</span>
+                        </div>
+                        <input id="slider-delay" type="range" min="0.1" max="1.5" step="0.1" value="0.4" class="w-full accent-godot-blue bg-gray-800 rounded cursor-pointer h-1.5">
+
+                        <div class="flex justify-between items-center text-xs pt-1">
+                            <label for="select-catchup-mode" class="text-gray-300 font-medium flex items-center gap-1.5">
+                                <i class="fa-solid fa-sliders text-godot-blue"></i> 緩衝條追趕方式:
+                            </label>
+                            <select id="select-catchup-mode" class="bg-gray-800 text-gray-200 border border-gray-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-godot-blue">
+                                <option value="tween">Smooth Tween (平滑漸變 - 最佳打擊感)</option>
+                                <option value="instant">Instant Catchup (直接對齊 - 原版邏輯)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Godot Scene Tree Structure Card -->
+            <div class="bg-godot-panel border border-godot-border rounded-xl p-5 shadow-lg flex-1">
+                <h2 class="font-bold text-gray-200 mb-3 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-sitemap text-godot-blue"></i> Godot 節點樹結構 (Scene Tree Hierarchy)
+                </h2>
+                
+                <div class="bg-gray-950 border border-godot-border rounded-lg p-3 font-mono text-xs space-y-1.5 text-gray-300">
+                    <div class="flex items-center gap-2 text-emerald-400 font-bold">
+                        <i class="fa-solid fa-bars-progress text-sm"></i>
+                        <span>HealthBar</span>
+                        <span class="text-[10px] text-gray-500 font-normal ml-auto">(Control / ProgressBar - 前景綠條, Z-Index = 1)</span>
+                    </div>
+                    <div class="pl-5 flex items-center gap-2 text-red-300">
+                        <span class="text-gray-600">├──</span>
+                        <i class="fa-solid fa-bars-progress text-sm"></i>
+                        <span>DamageBar</span>
+                        <span class="text-[10px] text-gray-500 font-normal ml-auto">(ProgressBar - 背景緩衝條, Z-Index = -1)</span>
+                    </div>
+                    <div class="pl-5 flex items-center gap-2 text-amber-300">
+                        <span class="text-gray-600">└──</span>
+                        <i class="fa-solid fa-stopwatch text-sm"></i>
+                        <span>Timer</span>
+                        <span class="text-[10px] text-gray-500 font-normal ml-auto">(Timer - Wait Time: 0.4s, One Shot: True)</span>
+                    </div>
+                </div>
+
+                <!-- Setup Tips -->
+                <div class="mt-3 text-xs text-gray-400 space-y-1">
+                    <p class="flex items-start gap-1">
+                        <i class="fa-solid fa-circle-info text-godot-blue mt-0.5"></i>
+                        <span><b>DamageBar 設為 Full Rect</b>：確保大小與父節點 <code class="text-godot-blue">HealthBar</code> 完全一致。</span>
+                    </p>
+                    <p class="flex items-start gap-1">
+                        <i class="fa-solid fa-circle-info text-godot-blue mt-0.5"></i>
+                        <span><b>StyleBox 設置</b>：將百分比文字隱藏 (Show Percentage = false)，前景色與背景色設定 Flat StyleBox。</span>
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Panel: GDScript Code & Guides (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+            
+            <div class="bg-godot-panel border border-godot-border rounded-xl p-5 shadow-lg flex-1 flex flex-col">
+                
+                <!-- Code Header & Tab Selector -->
+                <div class="flex flex-wrap justify-between items-center pb-3 border-b border-godot-border gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-code text-godot-blue"></i>
+                        <h2 class="font-bold text-gray-200 text-sm">GDScript 實現程式碼 (Godot 4.x)</h2>
+                    </div>
+
+                    <!-- Script Tabs -->
+                    <div class="flex bg-gray-900 p-1 rounded-lg border border-godot-border text-xs">
+                        <button id="tab-btn-healthbar" class="px-3 py-1 rounded-md text-white font-medium bg-godot-blue transition">
+                            health_bar.gd
+                        </button>
+                        <button id="tab-btn-enemy" class="px-3 py-1 rounded-md text-gray-400 font-medium hover:text-white transition">
+                            enemy.gd (角色綁定)
+                        </button>
+                        <button id="tab-btn-boss" class="px-3 py-1 rounded-md text-gray-400 font-medium hover:text-white transition">
+                            boss_ui.gd (CanvasLayer)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Code Container with Copy Button -->
+                <div class="relative flex-1 mt-4 bg-gray-950 border border-godot-border rounded-lg overflow-hidden flex flex-col min-h-[420px]">
+                    <div class="bg-gray-900 border-b border-godot-border px-4 py-2 flex justify-between items-center text-xs">
+                        <span id="current-filename" class="font-mono text-godot-blue flex items-center gap-2">
+                            <i class="fa-regular fa-file-code"></i> res://scenes/ui/health_bar.gd
+                        </span>
+                        <button id="btn-copy-code" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                            <i class="fa-regular fa-copy"></i> 複製程式碼
+                        </button>
+                    </div>
+
+                    <!-- Code Display Window -->
+                    <div class="flex-1 p-4 font-mono text-xs overflow-auto custom-scrollbar leading-relaxed">
+                        
+                        <!-- HealthBar.gd Tab -->
+                        <pre id="code-healthbar" class="block"><code><span class="code-comment"># res://scenes/ui/health_bar.gd</span>
+<span class="code-keyword">extends</span> <span class="code-type">ProgressBar</span>
+
+<span class="code-comment"># 子節點引用</span>
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> damage_bar: <span class="code-type">ProgressBar</span> = $DamageBar
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> timer: <span class="code-type">Timer</span> = $Timer
+
+<span class="code-comment"># 可在 Godot 編輯器調整的參數</span>
+<span class="code-keyword">@export</span> <span class="code-keyword">var</span> damage_delay: <span class="code-type">float</span> = <span class="code-num">0.4</span>
+<span class="code-keyword">@export</span> <span class="code-keyword">var</span> use_smooth_tween: <span class="code-type">bool</span> = <span class="code-keyword">true</span> <span class="code-comment"># 是否啟用平滑縮減效果</span>
+
+<span class="code-comment"># 當前生命值，使用 Setter 自動觸發更新</span>
+<span class="code-keyword">var</span> health: <span class="code-type">float</span> = <span class="code-num">0.0</span>: <span class="code-keyword">set</span> = _set_health
+
+<span class="code-keyword">func</span> <span class="code-func">_ready</span>() -> <span class="code-type">void</span>:
+    <span class="code-comment"># 設定 Timer 屬性</span>
+    timer.wait_time = damage_delay
+    timer.one_shot = <span class="code-keyword">true</span>
+    
+    <span class="code-comment"># 連接計時器超時訊號</span>
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> timer.timeout.<span class="code-func">is_connected</span>(_on_timer_timeout):
+        timer.timeout.<span class="code-func">connect</span>(_on_timer_timeout)
+
+<span class="code-comment">## 初始化生命值 (在角色 _ready 時呼叫)</span>
+<span class="code-keyword">func</span> <span class="code-func">init_health</span>(p_health: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    health = p_health
+    max_value = health
+    value = health
+    
+    <span class="code-comment"># 同步設定 DamageBar 初始數值</span>
+    damage_bar.max_value = health
+    damage_bar.value = health
+
+<span class="code-comment">## Setter: 每次 health 改變時會自動呼叫</span>
+<span class="code-keyword">func</span> <span class="code-func">_set_health</span>(new_health: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">var</span> prev_health = health
+    health = <span class="code-func">clampf</span>(new_health, <span class="code-num">0.0</span>, max_value)
+    
+    <span class="code-comment"># 1. 頂層綠條立即更新 (表現立即受擊感)</span>
+    value = health
+    
+    <span class="code-comment"># 2. 判斷血量變化狀態</span>
+    <span class="code-keyword">if</span> health < prev_health:
+        <span class="code-comment"># 遭受傷害：啟動/重置延遲計時器 (底層白條暫時不動)</span>
+        timer.<span class="code-func">start</span>()
+    <span class="code-keyword">else</span>:
+        <span class="code-comment"># 治療/回血：底層緩衝條立即補滿並停止計時器</span>
+        damage_bar.value = health
+        timer.<span class="code-func">stop</span>()
+
+<span class="code-comment">## Timer 時間到：底層 DamageBar 開始追趕縮減</span>
+<span class="code-keyword">func</span> <span class="code-func">_on_timer_timeout</span>() -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> use_smooth_tween:
+        <span class="code-comment"># 方案 A: 使用 Tween 讓底條平滑追上 (視覺反饋極佳)</span>
+        <span class="code-keyword">var</span> tween = <span class="code-func">create_tween</span>()
+        tween.<span class="code-func">tween_property</span>(damage_bar, <span class="code-str">"value"</span>, health, <span class="code-num">0.25</span>)\
+            .<span class="code-func">set_trans</span>(<span class="code-type">Tween</span>.TRANS_SINE)\
+            .<span class="code-func">set_ease</span>(<span class="code-type">Tween</span>.EASE_OUT)
+    <span class="code-keyword">else</span>:
+        <span class="code-comment"># 方案 B: 直接賦值快速縮減</span>
+        damage_bar.value = health</code></pre>
+
+                        <!-- Enemy.gd Tab -->
+                        <pre id="code-enemy" class="hidden"><code><span class="code-comment"># res://scenes/entities/enemy.gd</span>
+<span class="code-keyword">extends</span> <span class="code-type">CharacterBody2D</span>
+
+<span class="code-keyword">@export</span> <span class="code-keyword">var</span> max_health: <span class="code-type">float</span> = <span class="code-num">100.0</span>
+<span class="code-keyword">var</span> current_health: <span class="code-type">float</span>
+
+<span class="code-comment"># 頭頂血條節點引用</span>
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> health_bar = $HealthBar
+
+<span class="code-keyword">func</span> <span class="code-func">_ready</span>() -> <span class="code-type">void</span>:
+    current_health = max_health
+    <span class="code-comment"># 初始化頭頂血條</span>
+    <span class="code-keyword">if</span> health_bar:
+        health_bar.<span class="code-func">init_health</span>(max_health)
+
+<span class="code-comment">## 受到傷害時呼叫</span>
+<span class="code-keyword">func</span> <span class="code-func">take_damage</span>(amount: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    current_health -= amount
+    
+    <span class="code-comment"># 更新血條 UI (觸發 HealthBar Setter)</span>
+    <span class="code-keyword">if</span> health_bar:
+        health_bar.health = current_health
+    
+    <span class="code-comment"># 死亡判定</span>
+    <span class="code-keyword">if</span> current_health <= <span class="code-num">0</span>:
+        <span class="code-func">die</span>()
+
+<span class="code-keyword">func</span> <span class="code-func">heal</span>(amount: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    current_health = <span class="code-func">minf</span>(current_health + amount, max_health)
+    <span class="code-keyword">if</span> health_bar:
+        health_bar.health = current_health
+
+<span class="code-keyword">func</span> <span class="code-func">die</span>() -> <span class="code-type">void</span>:
+    <span class="code-comment"># 執行死亡動畫或銷毀</span>
+    <span class="code-func">queue_free</span>()</code></pre>
+
+                        <!-- Boss UI Tab -->
+                        <pre id="code-boss" class="hidden"><code><span class="code-comment"># res://scenes/ui/boss_hud.gd</span>
+<span class="code-keyword">extends</span> <span class="code-type">CanvasLayer</span>
+
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> boss_health_bar = $MarginContainer/VBoxContainer/HealthBar
+<span class="code-keyword">@onready</span> <span class="code-keyword">var</span> hp_label = $MarginContainer/VBoxContainer/HPLabel
+
+<span class="code-keyword">func</span> <span class="code-func">setup_boss</span>(boss_name: <span class="code-type">String</span>, max_hp: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    boss_health_bar.<span class="code-func">init_health</span>(max_hp)
+    <span class="code-func">_update_text</span>(max_hp, max_hp)
+
+<span class="code-keyword">func</span> <span class="code-func">on_boss_health_changed</span>(new_hp: <span class="code-type">float</span>, max_hp: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    boss_health_bar.health = new_hp
+    <span class="code-func">_update_text</span>(new_hp, max_hp)
+
+<span class="code-keyword">func</span> <span class="code-func">_update_text</span>(hp: <span class="code-type">float</span>, max_hp: <span class="code-type">float</span>) -> <span class="code-type">void</span>:
+    <span class="code-keyword">if</span> hp_label:
+        hp_label.text = <span class="code-str">"%d / %d"</span> % [<span class="code-func">int</span>(hp), <span class="code-func">int</span>(max_hp)]</code></pre>
+
+                    </div>
+                </div>
+
+                <!-- Godot Inspector Checklist -->
+                <div class="mt-4 border-t border-godot-border pt-3">
+                    <h3 class="text-xs font-bold text-gray-300 mb-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-godot-blue"></i> Godot 屬性檢視器 (Inspector) 設定清單
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-400">
+                        <div class="bg-gray-900/60 p-2 rounded border border-godot-border/50">
+                            <span class="text-emerald-400 font-semibold">HealthBar (Root):</span>
+                            <ul class="list-disc list-inside mt-1 space-y-0.5">
+                                <li>Show Percentage: <code class="text-gray-200">False</code></li>
+                                <li>Z-Index: <code class="text-gray-200">1</code> (蓋在白條上方)</li>
+                                <li>StyleBox Fill: 藍綠色 (FlatStyle)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-900/60 p-2 rounded border border-godot-border/50">
+                            <span class="text-red-400 font-semibold">DamageBar (Child):</span>
+                            <ul class="list-disc list-inside mt-1 space-y-0.5">
+                                <li>Anchors Preset: <code class="text-gray-200">Full Rect</code></li>
+                                <li>Z-Index: <code class="text-gray-200">-1</code> (置於綠條後方)</li>
+                                <li>StyleBox Fill: 白色或深紅色</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simulator State
+            let maxHp = 100;
+            let currentHp = 100;
+            let timerDelay = 0.4;
+            let catchupMode = 'tween'; // 'tween' or 'instant'
+            let timerId = null;
+            let catchupAnimationId = null;
+            let damageBarHp = 100; // Value of the underlying buffer bar
+
+            // DOM Elements
+            const simHealthBar = document.getElementById('sim-health-bar');
+            const simDamageBar = document.getElementById('sim-damage-bar');
+            const simBossHealthBar = document.getElementById('sim-boss-health-bar');
+            const simBossDamageBar = document.getElementById('sim-boss-damage-bar');
+            const bossHpText = document.getElementById('boss-hp-text');
+            const timerStatus = document.getElementById('timer-status');
+            const simulationBox = document.getElementById('simulation-box');
+            const targetAvatar = document.getElementById('target-avatar');
+
+            // Controls
+            const btnDamageSmall = document.getElementById('btn-damage-small');
+            const btnDamageLarge = document.getElementById('btn-damage-large');
+            const btnHeal = document.getElementById('btn-heal');
+            const btnReset = document.getElementById('btn-reset');
+            const sliderDelay = document.getElementById('slider-delay');
+            const delayVal = document.getElementById('delay-val');
+            const selectCatchupMode = document.getElementById('select-catchup-mode');
+
+            // Tabs
+            const tabBtnHealthbar = document.getElementById('tab-btn-healthbar');
+            const tabBtnEnemy = document.getElementById('tab-btn-enemy');
+            const tabBtnBoss = document.getElementById('tab-btn-boss');
+            const codeHealthbar = document.getElementById('code-healthbar');
+            const codeEnemy = document.getElementById('code-enemy');
+            const codeBoss = document.getElementById('code-boss');
+            const currentFilename = document.getElementById('current-filename');
+            const btnCopyCode = document.getElementById('btn-copy-code');
+
+            // Tab Switching Logic
+            function setActiveTab(tab) {
+                [tabBtnHealthbar, tabBtnEnemy, tabBtnBoss].forEach(b => {
+                    b.classList.remove('bg-godot-blue', 'text-white');
+                    b.classList.add('text-gray-400');
+                });
+                [codeHealthbar, codeEnemy, codeBoss].forEach(c => c.classList.add('hidden'));
+
+                if (tab === 'healthbar') {
+                    tabBtnHealthbar.classList.add('bg-godot-blue', 'text-white');
+                    codeHealthbar.classList.remove('hidden');
+                    currentFilename.innerHTML = `<i class="fa-regular fa-file-code"></i> res://scenes/ui/health_bar.gd`;
+                } else if (tab === 'enemy') {
+                    tabBtnEnemy.classList.add('bg-godot-blue', 'text-white');
+                    codeEnemy.classList.remove('hidden');
+                    currentFilename.innerHTML = `<i class="fa-regular fa-file-code"></i> res://scenes/entities/enemy.gd`;
+                } else if (tab === 'boss') {
+                    tabBtnBoss.classList.add('bg-godot-blue', 'text-white');
+                    codeBoss.classList.remove('hidden');
+                    currentFilename.innerHTML = `<i class="fa-regular fa-file-code"></i> res://scenes/ui/boss_hud.gd`;
+                }
+            }
+
+            tabBtnHealthbar.addEventListener('click', () => setActiveTab('healthbar'));
+            tabBtnEnemy.addEventListener('click', () => setActiveTab('enemy'));
+            tabBtnBoss.addEventListener('click', () => setActiveTab('boss'));
+
+            // Copy Code Functionality
+            btnCopyCode.addEventListener('click', () => {
+                let activeCode = '';
+                if (!codeHealthbar.classList.contains('hidden')) activeCode = codeHealthbar.innerText;
+                else if (!codeEnemy.classList.contains('hidden')) activeCode = codeEnemy.innerText;
+                else if (!codeBoss.classList.contains('hidden')) activeCode = codeBoss.innerText;
+
+                navigator.clipboard.writeText(activeCode).then(() => {
+                    const originalText = btnCopyCode.innerHTML;
+                    btnCopyCode.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> 已複製！`;
+                    setTimeout(() => {
+                        btnCopyCode.innerHTML = originalText;
+                    }, 2000);
+                });
+            });
+
+            // Update UI render
+            function updateUI(immediateDamageBar = false) {
+                const healthPercent = Math.max(0, (currentHp / maxHp) * 100);
+                
+                // Top layer green bar updates IMMEDIATELY
+                simHealthBar.style.width = `${healthPercent}%`;
+                simBossHealthBar.style.width = `${healthPercent}%`;
+                bossHpText.innerText = `${Math.round(currentHp)} / ${maxHp}`;
+
+                if (immediateDamageBar) {
+                    // Heal / Reset: sync immediately
+                    damageBarHp = currentHp;
+                    const damagePercent = Math.max(0, (damageBarHp / maxHp) * 100);
+                    simDamageBar.style.width = `${damagePercent}%`;
+                    simBossDamageBar.style.width = `${damagePercent}%`;
+                }
+            }
+
+            // Trigger Damage Logic
+            function applyDamage(amount) {
+                const prevHp = currentHp;
+                currentHp = Math.max(0, currentHp - amount);
+
+                // Shake effect on hit
+                targetAvatar.classList.remove('animate-shake');
+                void targetAvatar.offsetWidth; // trigger reflow
+                targetAvatar.classList.add('animate-shake');
+
+                // 1. Top green bar drops immediately
+                updateUI(false);
+
+                // 2. Clear existing timer if hit repeatedly (re-start delay)
+                if (timerId) {
+                    clearTimeout(timerId);
+                }
+
+                // Show timer running status
+                timerStatus.innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping mr-1"></span> Timer: 倒數中 (${timerDelay}s)`;
+                timerStatus.className = "text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-mono";
+
+                // 3. Start Timer delay
+                timerId = setTimeout(() => {
+                    // Timer Timeout triggered!
+                    timerStatus.innerHTML = `Timer: 超時觸發 (Timeout)`;
+                    timerStatus.className = "text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono";
+
+                    startDamageBarCatchup();
+                }, timerDelay * 1000);
+            }
+
+            // DamageBar Catchup Execution
+            function startDamageBarCatchup() {
+                if (catchupAnimationId) {
+                    cancelAnimationFrame(catchupAnimationId);
+                }
+
+                if (catchupMode === 'instant') {
+                    damageBarHp = currentHp;
+                    const percent = Math.max(0, (damageBarHp / maxHp) * 100);
+                    simDamageBar.style.width = `${percent}%`;
+                    simBossDamageBar.style.width = `${percent}%`;
+                    
+                    setTimeout(() => {
+                        timerStatus.innerHTML = `Timer: 靜止 (Idle)`;
+                        timerStatus.className = "text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 font-mono";
+                    }, 500);
+                } else {
+                    // Smooth Tween Simulation
+                    const startTime = performance.now();
+                    const startDamageHp = damageBarHp;
+                    const targetHp = currentHp;
+                    const duration = 250; // 0.25s tween
+
+                    function step(currentTime) {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        
+                        // Ease-Out Quadratic formula
+                        const easeOut = 1 - (1 - progress) * (1 - progress);
+                        damageBarHp = startDamageHp + (targetHp - startDamageHp) * easeOut;
+
+                        const percent = Math.max(0, (damageBarHp / maxHp) * 100);
+                        simDamageBar.style.width = `${percent}%`;
+                        simBossDamageBar.style.width = `${percent}%`;
+
+                        if (progress < 1) {
+                            catchupAnimationId = requestAnimationFrame(step);
+                        } else {
+                            damageBarHp = targetHp;
+                            timerStatus.innerHTML = `Timer: 靜止 (Idle)`;
+                            timerStatus.className = "text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 font-mono";
+                        }
+                    }
+
+                    catchupAnimationId = requestAnimationFrame(step);
+                }
+            }
+
+            // Heal Logic
+            function applyHeal(amount) {
+                if (timerId) clearTimeout(timerId);
+                if (catchupAnimationId) cancelAnimationFrame(catchupAnimationId);
+
+                currentHp = Math.min(maxHp, currentHp + amount);
+                updateUI(true); // Immediate fill for heal
+
+                timerStatus.innerHTML = `Timer: 靜止 (Healed)`;
+                timerStatus.className = "text-xs px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-mono";
+            }
+
+            // Reset Logic
+            function resetHealth() {
+                if (timerId) clearTimeout(timerId);
+                if (catchupAnimationId) cancelAnimationFrame(catchupAnimationId);
+
+                currentHp = maxHp;
+                updateUI(true);
+
+                timerStatus.innerHTML = `Timer: 靜止 (Idle)`;
+                timerStatus.className = "text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 font-mono";
+            }
+
+            // Event Listeners
+            btnDamageSmall.addEventListener('click', () => applyDamage(15));
+            btnDamageLarge.addEventListener('click', () => applyDamage(40));
+            btnHeal.addEventListener('click', () => applyHeal(25));
+            btnReset.addEventListener('click', () => resetHealth());
+
+            sliderDelay.addEventListener('input', (e) => {
+                timerDelay = parseFloat(e.target.value);
+                delayVal.innerText = `${timerDelay.toFixed(1)}s`;
+            });
+
+            selectCatchupMode.addEventListener('change', (e) => {
+                catchupMode = e.target.value;
+            });
+
+            // Initial setup
+            updateUI(true);
+        });
+    </script>
+</body>
+</html>

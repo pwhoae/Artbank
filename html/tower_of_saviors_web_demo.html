@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>神魔之塔 - Tower of Saviors Web Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #0b0d12;
+            color: #f3f4f6;
+        }
+
+        .title-font {
+            font-family: 'Cinzel', 'Noto Sans TC', serif;
+        }
+
+        /* Glossy Orb Spheres */
+        .orb {
+            border-radius: 50%;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            box-shadow: inset -4px -6px 12px rgba(0,0,0,0.6), 0 6px 10px rgba(0,0,0,0.4);
+            transition: transform 0.05s ease-out, opacity 0.2s ease, scale 0.2s ease;
+            cursor: grab;
+            z-index: 10;
+        }
+
+        .orb:active {
+            cursor: grabbing;
+        }
+
+        /* Elemental Color Profiles */
+        .orb-water { background: radial-gradient(circle at 35% 35%, #6dd5ed, #2193b0, #104e6b); border: 2px solid #a1eafb; text-shadow: 0 0 6px #00d2ff; }
+        .orb-fire  { background: radial-gradient(circle at 35% 35%, #ff7e5f, #eb3b5a, #801328); border: 2px solid #ffb8b8; text-shadow: 0 0 6px #ff3838; }
+        .orb-wood  { background: radial-gradient(circle at 35% 35%, #56ab2f, #20bf6b, #0f582d); border: 2px solid #a3f3a8; text-shadow: 0 0 6px #2bcbba; }
+        .orb-light { background: radial-gradient(circle at 35% 35%, #fff200, #f7b731, #a37200); border: 2px solid #fff9a6; text-shadow: 0 0 6px #fed330; }
+        .orb-dark  { background: radial-gradient(circle at 35% 35%, #b86bfa, #8854d0, #3c1361); border: 2px solid #e0b0ff; text-shadow: 0 0 6px #a55eea; }
+        .orb-heart { background: radial-gradient(circle at 35% 35%, #ff9ff3, #fd79a8, #9e1d5e); border: 2px solid #ffd6f3; text-shadow: 0 0 6px #fd79a8; }
+
+        /* Floating Highlight Overlay for Glass Look */
+        .orb::before {
+            content: '';
+            position: absolute;
+            top: 12%;
+            left: 18%;
+            width: 35%;
+            height: 25%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.55);
+            filter: blur(1px);
+            pointer-events: none;
+        }
+
+        /* Particle / Floating Combo Effect */
+        @keyframes comboPop {
+            0% { transform: scale(0.5) translateY(0); opacity: 0; }
+            50% { transform: scale(1.3) translateY(-15px); opacity: 1; }
+            100% { transform: scale(1) translateY(-30px); opacity: 0; }
+        }
+
+        .combo-popup {
+            animation: comboPop 0.8s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes attackFlash {
+            0% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.3); }
+        }
+
+        .attack-fx {
+            animation: attackFlash 0.5s ease-out forwards;
+            pointer-events: none;
+        }
+
+        /* Shake animation for Boss damage */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-1deg); }
+            40% { transform: translateX(8px) rotate(1deg); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        .shake-element {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2 sm:p-4">
+
+    <!-- Main Simulator Container -->
+    <div class="w-full max-w-md bg-slate-900 border-2 border-amber-600/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-3 border-b border-slate-800 text-center relative">
+            <h1 class="title-font text-2xl font-black text-amber-400 tracking-wider flex items-center justify-center gap-2">
+                <i class="fa-solid font-black fa-dragon text-amber-500"></i>
+                神魔之塔
+                <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-sans border border-amber-500/30">轉珠模擬器</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-0.5">Tower of Saviors Web Simulator</p>
+        </div>
+
+        <!-- Boss Battle Area -->
+        <div id="battle-stage" class="relative bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-950 p-4 border-b border-slate-800 min-h-[190px] flex flex-col justify-between overflow-hidden">
+            <!-- Background Magic Circle VFX Pattern -->
+            <div class="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
+                <i class="fa-solid fa-gear text-[180px] animate-spin-slow"></i>
+            </div>
+
+            <!-- Enemy Monster Card -->
+            <div id="boss-card" class="relative z-10 bg-slate-800/80 border border-slate-700 rounded-xl p-3 shadow-lg flex items-center gap-3">
+                <div id="boss-avatar" class="w-16 h-16 rounded-lg bg-gradient-to-tr from-purple-900 to-indigo-600 border-2 border-purple-400/50 flex items-center justify-center text-3xl text-purple-200 shadow-md">
+                    <i class="fa-solid fa-dragon"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-sm text-slate-200 flex items-center gap-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>
+                            遠古魔龍 (CD <span id="boss-cd" class="text-amber-400 font-extrabold">2</span>)
+                        </span>
+                        <span id="boss-hp-text" class="text-xs font-mono text-slate-400">100,000 / 100,000</span>
+                    </div>
+                    <!-- Boss HP Bar -->
+                    <div class="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                        <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-500 rounded-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Battle Text Layer -->
+            <div id="fx-layer" class="absolute inset-0 pointer-events-none z-20 flex items-center justify-center"></div>
+
+            <!-- Player Team Cards Bar -->
+            <div class="relative z-10 grid grid-cols-6 gap-1 mt-3">
+                <!-- Team Slot 1: Water -->
+                <div class="bg-slate-800/90 border border-cyan-500/50 rounded-lg p-1 text-center shadow">
+                    <div class="text-[10px] text-cyan-400 font-bold">主將</div>
+                    <i class="fa-solid fa-droplet text-cyan-400 text-sm"></i>
+                    <div class="text-[9px] text-slate-300 font-mono">x2.5</div>
+                </div>
+                <!-- Team Slot 2: Fire -->
+                <div class="bg-slate-800/90 border border-rose-500/50 rounded-lg p-1 text-center shadow">
+                    <div class="text-[10px] text-rose-400 font-bold">隊員</div>
+                    <i class="fa-solid fa-fire text-rose-400 text-sm"></i>
+                    <div class="text-[9px] text-slate-300 font-mono">x1.5</div>
+                </div>
+                <!-- Team Slot 3: Wood -->
+                <div class="bg-slate-800/90 border border-emerald-500/50 rounded-lg p-1 text-center shadow">
+                    <div class="text-[10px] text-emerald-400 font-bold">隊員</div>
+                    <i class="fa-solid fa-leaf text-emerald-400 text-sm"></i>
+                    <div class="text-[9px] text-slate-300 font-mono">x1.5</div>
+                </div>
+                <!-- Team Slot 4: Light -->
+                <div class="bg-slate-800/90 border border-amber-400/50 rounded-lg p-1 text-center shadow">
+                    <div class="text-[10px] text-amber-300 font-bold">隊員</div>
+                    <i class="fa-solid fa-sun text-amber-300 text-sm"></i>
+                    <div class="text-[9px] text-slate-300 font-mono">x1.5</div>
+                </div>
+                <!-- Team Slot 5: Dark -->
+                <div class="bg-slate-800/90 border border-purple-500/50 rounded-lg p-1 text-center shadow">
+                    <div class="text-[10px] text-purple-400 font-bold">隊員</div>
+                    <i class="fa-solid fa-moon text-purple-400 text-sm"></i>
+                    <div class="text-[9px] text-slate-300 font-mono">x1.5</div>
+                </div>
+                <!-- Team Slot 6: Friend -->
+                <div class="bg-slate-800/90 border border-pink-500/50 rounded-lg p-1 text-center shadow">
+                    <div class="text-[10px] text-pink-400 font-bold">戰友</div>
+                    <i class="fa-solid fa-heart text-pink-400 text-sm"></i>
+                    <div class="text-[9px] text-slate-300 font-mono">x2.5</div>
+                </div>
+            </div>
+
+            <!-- Player HP Bar -->
+            <div class="relative z-10 mt-2">
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-emerald-400 font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-shield-halved"></i> 隊伍生命值
+                    </span>
+                    <span id="player-hp-text" class="font-mono text-slate-300">24,500 / 24,500</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                    <div id="player-hp-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Status & Combo Display -->
+        <div class="bg-slate-950 px-4 py-2 border-b border-slate-800 flex justify-between items-center">
+            <div>
+                <div id="status-msg" class="text-xs font-semibold text-amber-400">請按住符石開始轉珠</div>
+                <div id="damage-summary" class="text-[11px] text-slate-400">連擊倍率: 1.0x</div>
+            </div>
+            <div id="combo-display" class="text-2xl font-black text-rose-500 title-font tracking-wider">
+                0 <span class="text-sm font-normal text-slate-400">COMBO</span>
+            </div>
+        </div>
+
+        <!-- Drag Time Limit Progress Bar -->
+        <div class="w-full h-1.5 bg-slate-950 relative">
+            <div id="timer-bar" class="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-none" style="width: 100%;"></div>
+        </div>
+
+        <!-- Game Board Container -->
+        <div class="p-3 bg-slate-950 flex justify-center items-center select-none">
+            <div id="board" class="relative bg-slate-900 border-2 border-slate-800 rounded-xl overflow-hidden shadow-inner" style="width: 360px; height: 300px;">
+                <!-- Grid cell background squares rendered via JS -->
+            </div>
+        </div>
+
+        <!-- Bottom Controller Bar -->
+        <div class="p-3 bg-slate-900 border-t border-slate-800 flex justify-between items-center gap-2">
+            <button id="reset-btn" class="px-4 py-2 bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 border border-slate-600 text-slate-200 text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> 重置盤面
+            </button>
+            <button id="sound-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-bold rounded-lg shadow transition flex items-center gap-1.5">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-amber-400"></i> 音效
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playSwap() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playCombo(comboNumber) {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const freq = 440 + (comboNumber * 60); // Pitch raises with each combo
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playAttack() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const sound = new SoundFX();
+
+        const COLS = 6;
+        const ROWS = 5;
+        const CELL_SIZE = 60; // 360px / 6 cols = 60px per orb
+        const MOVE_TIME_LIMIT = 6.0; // Seconds
+
+        const Element = {
+            WATER: 'water',
+            FIRE: 'fire',
+            WOOD: 'wood',
+            LIGHT: 'light',
+            DARK: 'dark',
+            HEART: 'heart'
+        };
+
+        const ELEMENT_META = {
+            [Element.WATER]: { name: '水', icon: 'fa-droplet', colorClass: 'orb-water' },
+            [Element.FIRE]:  { name: '火', icon: 'fa-fire', colorClass: 'orb-fire' },
+            [Element.WOOD]:  { name: '木', icon: 'fa-leaf', colorClass: 'orb-wood' },
+            [Element.LIGHT]: { name: '光', icon: 'fa-sun', colorClass: 'orb-light' },
+            [Element.DARK]:  { name: '暗', icon: 'fa-moon', colorClass: 'orb-dark' },
+            [Element.HEART]: { name: '心', icon: 'fa-heart', colorClass: 'orb-heart' }
+        };
+
+        const GameState = {
+            IDLE: 'IDLE',
+            DRAGGING: 'DRAGGING',
+            RESOLVING: 'RESOLVING'
+        };
+
+        let currentState = GameState.IDLE;
+        let grid = []; // 2D array storing element string
+        let orbNodes = []; // 2D array storing DOM elements
+
+        // Drag tracking
+        let isDragging = false;
+        let heldCoord = { r: -1, c: -1 };
+        let heldNode = null;
+        let dragTimer = MOVE_TIME_LIMIT;
+        let timerInterval = null;
+
+        // Combat Stats
+        let bossHP = 100000;
+        let bossMaxHP = 100000;
+        let bossCD = 2;
+        let playerHP = 24500;
+        let playerMaxHP = 24500;
+
+        // DOM elements
+        const boardEl = document.getElementById('board');
+        const timerBarEl = document.getElementById('timer-bar');
+        const statusMsgEl = document.getElementById('status-msg');
+        const comboDisplayEl = document.getElementById('combo-display');
+        const damageSummaryEl = document.getElementById('damage-summary');
+        const bossHpBarEl = document.getElementById('boss-hp-bar');
+        const bossHpTextEl = document.getElementById('boss-hp-text');
+        const bossCdEl = document.getElementById('boss-cd');
+        const bossCardEl = document.getElementById('boss-card');
+        const playerHpBarEl = document.getElementById('player-hp-bar');
+        const playerHpTextEl = document.getElementById('player-hp-text');
+        const fxLayerEl = document.getElementById('fx-layer');
+
+        function initBoard() {
+            boardEl.innerHTML = '';
+            grid = [];
+            orbNodes = [];
+
+            // Render static cell grid lines
+            for (let r = 0; r < ROWS; r++) {
+                grid[r] = [];
+                orbNodes[r] = [];
+                for (let c = 0; c < COLS; c++) {
+                    const cellBg = document.createElement('div');
+                    cellBg.className = 'absolute border border-slate-800/60 rounded-lg';
+                    cellBg.style.width = `${CELL_SIZE}px`;
+                    cellBg.style.height = `${CELL_SIZE}px`;
+                    cellBg.style.left = `${c * CELL_SIZE}px`;
+                    cellBg.style.top = `${r * CELL_SIZE}px`;
+                    cellBg.style.backgroundColor = (r + c) % 2 === 0 ? 'rgba(15, 23, 42, 0.4)' : 'rgba(30, 41, 59, 0.4)';
+                    boardEl.appendChild(cellBg);
+                }
+            }
+
+            // Generate random grid with NO initial 3-matches
+            const elements = Object.values(Element);
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let validElems = [...elements];
+                    
+                    // Prevent horizontal 3-match
+                    if (c >= 2 && grid[r][c-1] === grid[r][c-2]) {
+                        validElems = validElems.filter(e => e !== grid[r][c-1]);
+                    }
+                    // Prevent vertical 3-match
+                    if (r >= 2 && grid[r-1][c] === grid[r-2][c]) {
+                        validElems = validElems.filter(e => e !== grid[r-1][c]);
+                    }
+
+                    const chosen = validElems[Math.floor(Math.random() * validElems.length)];
+                    grid[r][c] = chosen;
+                    
+                    const orbNode = createOrbNode(chosen, r, c);
+                    boardEl.appendChild(orbNode);
+                    orbNodes[r][c] = orbNode;
+                }
+            }
+
+            comboDisplayEl.innerHTML = `0 <span class="text-sm font-normal text-slate-400">COMBO</span>`;
+            statusMsgEl.textContent = "請按住符石開始轉珠";
+            damageSummaryEl.textContent = "連擊倍率: 1.0x";
+            timerBarEl.style.width = '100%';
+        }
+
+        function createOrbNode(elemType, r, c) {
+            const meta = ELEMENT_META[elemType];
+            const div = document.createElement('div');
+            div.className = `orb ${meta.colorClass} text-white`;
+            div.style.width = `${CELL_SIZE - 6}px`;
+            div.style.height = `${CELL_SIZE - 6}px`;
+            div.style.left = `${c * CELL_SIZE + 3}px`;
+            div.style.top = `${r * CELL_SIZE + 3}px`;
+            div.innerHTML = `<i class="fa-solid ${meta.icon} text-lg"></i>`;
+            return div;
+        }
+
+        function attachInputHandlers() {
+            const getBoardPointerPos = (e) => {
+                const rect = boardEl.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: Math.max(0, Math.min(rect.width - 1, clientX - rect.left)),
+                    y: Math.max(0, Math.min(rect.height - 1, clientY - rect.top))
+                };
+            };
+
+            const onStart = (e) => {
+                if (currentState !== GameState.IDLE) return;
+                const pos = getBoardPointerPos(e);
+                const c = Math.floor(pos.x / CELL_SIZE);
+                const r = Math.floor(pos.y / CELL_SIZE);
+
+                if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                    startDrag(r, c, pos);
+                }
+            };
+
+            const onMove = (e) => {
+                if (currentState !== GameState.DRAGGING || !isDragging) return;
+                e.preventDefault(); // Prevent page scrolling while dragging on mobile
+                const pos = getBoardPointerPos(e);
+                
+                // Center orb on finger/cursor
+                heldNode.style.left = `${pos.x - (CELL_SIZE - 6) / 2}px`;
+                heldNode.style.top = `${pos.y - (CELL_SIZE - 6) / 2}px`;
+
+                const targetC = Math.floor(pos.x / CELL_SIZE);
+                const targetR = Math.floor(pos.y / CELL_SIZE);
+
+                if (targetR >= 0 && targetR < ROWS && targetC >= 0 && targetC < COLS) {
+                    if (targetR !== heldCoord.r || targetC !== heldCoord.c) {
+                        swapOrbs(heldCoord, { r: targetR, c: targetC });
+                        heldCoord = { r: targetR, c: targetC };
+                        sound.playSwap();
+                    }
+                }
+            };
+
+            const onEnd = () => {
+                if (currentState === GameState.DRAGGING) {
+                    endDrag();
+                }
+            };
+
+            boardEl.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+
+            boardEl.addEventListener('touchstart', onStart, { passive: false });
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onEnd);
+        }
+
+        function startDrag(r, c, pos) {
+            currentState = GameState.DRAGGING;
+            isDragging = true;
+            heldCoord = { r, c };
+            heldNode = orbNodes[r][c];
+            heldNode.style.zIndex = '50';
+            heldNode.style.transform = 'scale(1.15)';
+
+            dragTimer = MOVE_TIME_LIMIT;
+            statusMsgEl.textContent = "轉珠中...";
+            
+            // Start countdown timer bar
+            const startTime = performance.now();
+            timerInterval = setInterval(() => {
+                const elapsed = (performance.now() - startTime) / 1000;
+                dragTimer = Math.max(0, MOVE_TIME_LIMIT - elapsed);
+                timerBarEl.style.width = `${(dragTimer / MOVE_TIME_LIMIT) * 100}%`;
+
+                if (dragTimer <= 0) {
+                    endDrag();
+                }
+            }, 30);
+        }
+
+        function swapOrbs(c1, c2) {
+            // Swap in matrix grid
+            const temp = grid[c1.r][c1.c];
+            grid[c1.r][c1.c] = grid[c2.r][c2.c];
+            grid[c2.r][c2.c] = temp;
+
+            // Swap in orbNodes array
+            const otherNode = orbNodes[c2.r][c2.c];
+            orbNodes[c1.r][c1.c] = otherNode;
+            orbNodes[c2.r][c2.c] = heldNode;
+
+            // Animate moving the non-held orb to its new cell position
+            otherNode.style.left = `${c1.c * CELL_SIZE + 3}px`;
+            otherNode.style.top = `${c1.r * CELL_SIZE + 3}px`;
+        }
+
+        function endDrag() {
+            if (currentState !== GameState.DRAGGING) return;
+            isDragging = false;
+            clearInterval(timerInterval);
+            currentState = GameState.RESOLVING;
+
+            // Snap held orb back to exact grid position
+            if (heldNode) {
+                heldNode.style.zIndex = '10';
+                heldNode.style.transform = 'scale(1)';
+                heldNode.style.left = `${heldCoord.c * CELL_SIZE + 3}px`;
+                heldNode.style.top = `${heldCoord.r * CELL_SIZE + 3}px`;
+            }
+
+            statusMsgEl.textContent = "結算中...";
+            resolveMatchesAndCascade();
+        }
+
+        async function resolveMatchesAndCascade() {
+            let totalCombos = 0;
+            let elemMatchCounts = { water: 0, fire: 0, wood: 0, light: 0, dark: 0, heart: 0 };
+
+            while (true) {
+                const matchedCells = findMatchedCells();
+                if (matchedCells.length === 0) break; // End of cascades
+
+                const comboClusters = groupMatchesIntoCombos(matchedCells);
+                
+                for (let cluster of comboClusters) {
+                    totalCombos++;
+                    sound.playCombo(totalCombos);
+                    
+                    const elemType = grid[cluster[0].r][cluster[0].c];
+                    elemMatchCounts[elemType] += cluster.length;
+
+                    // Update UI Combo Text
+                    comboDisplayEl.innerHTML = `${totalCombos} <span class="text-sm font-normal text-amber-400">COMBO!</span>`;
+
+                    // Pop animation for cluster nodes
+                    cluster.forEach(coord => {
+                        const node = orbNodes[coord.r][coord.c];
+                        if (node) {
+                            node.style.transform = 'scale(0.0)';
+                            node.style.opacity = '0';
+                        }
+                    });
+
+                    // Show floating combo text popup on cluster center
+                    showComboPopup(cluster, totalCombos);
+
+                    await new Promise(r => setTimeout(r, 220));
+                }
+
+                // Clear DOM nodes and mark empty
+                matchedCells.forEach(coord => {
+                    if (orbNodes[coord.r][coord.c]) {
+                        orbNodes[coord.r][coord.c].remove();
+                        orbNodes[coord.r][coord.c] = null;
+                    }
+                    grid[coord.r][coord.c] = null;
+                });
+
+                // Apply Gravity Fall & Spawn new Orbs
+                await applyGravityAndRefill();
+            }
+
+            // Calculate damage & attack phase
+            await processBattleResults(totalCombos, elemMatchCounts);
+
+            currentState = GameState.IDLE;
+            statusMsgEl.textContent = "請按住符石開始轉珠";
+            timerBarEl.style.width = '100%';
+        }
+
+        function findMatchedCells() {
+            const matched = [];
+            const isMatched = (r, c) => matched.some(m => m.r === r && m.c === c);
+
+            // Horizontal Scan
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS - 2; c++) {
+                    const elem = grid[r][c];
+                    if (elem && elem === grid[r][c+1] && elem === grid[r][c+2]) {
+                        let k = c;
+                        while (k < COLS && grid[r][k] === elem) {
+                            if (!isMatched(r, k)) matched.push({ r, c: k });
+                            k++;
+                        }
+                    }
+                }
+            }
+
+            // Vertical Scan
+            for (let c = 0; c < COLS; c++) {
+                for (let r = 0; r < ROWS - 2; r++) {
+                    const elem = grid[r][c];
+                    if (elem && elem === grid[r+1][c] && elem === grid[r+2][c]) {
+                        let k = r;
+                        while (k < ROWS && grid[k][c] === elem) {
+                            if (!isMatched(k, c)) matched.push({ r: k, c });
+                            k++;
+                        }
+                    }
+                }
+            }
+
+            return matched;
+        }
+
+        function groupMatchesIntoCombos(matchedCells) {
+            const clusters = [];
+            const visited = new Set();
+
+            const key = (r, c) => `${r},${c}`;
+
+            matchedCells.forEach(cell => {
+                if (visited.has(key(cell.r, cell.c))) return;
+
+                const cluster = [];
+                const queue = [cell];
+                visited.add(key(cell.r, cell.c));
+                const elemType = grid[cell.r][cell.c];
+
+                while (queue.length > 0) {
+                    const curr = queue.shift();
+                    cluster.push(curr);
+
+                    const neighbors = [
+                        { r: curr.r + 1, c: curr.c },
+                        { r: curr.r - 1, c: curr.c },
+                        { r: curr.r, c: curr.c + 1 },
+                        { r: curr.r, c: curr.c - 1 }
+                    ];
+
+                    neighbors.forEach(n => {
+                        if (n.r >= 0 && n.r < ROWS && n.c >= 0 && n.c < COLS) {
+                            if (matchedCells.some(m => m.r === n.r && m.c === n.c) && !visited.has(key(n.r, n.c))) {
+                                if (grid[n.r][n.c] === elemType) {
+                                    visited.add(key(n.r, n.c));
+                                    queue.push(n);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                clusters.push(cluster);
+            });
+
+            return clusters;
+        }
+
+        function applyGravityAndRefill() {
+            return new Promise(resolve => {
+                const elements = Object.values(Element);
+
+                for (let c = 0; c < COLS; c++) {
+                    let emptySlots = 0;
+                    // Move existing orbs down
+                    for (let r = ROWS - 1; r >= 0; r--) {
+                        if (grid[r][c] === null) {
+                            emptySlots++;
+                        } else if (emptySlots > 0) {
+                            const newR = r + emptySlots;
+                            grid[newR][c] = grid[r][c];
+                            grid[r][c] = null;
+
+                            const node = orbNodes[r][c];
+                            orbNodes[newR][c] = node;
+                            orbNodes[r][c] = null;
+
+                            node.style.top = `${newR * CELL_SIZE + 3}px`;
+                        }
+                    }
+
+                    // Spawn new skyfall orbs
+                    for (let i = 0; i < emptySlots; i++) {
+                        const spawnR = emptySlots - 1 - i;
+                        const newElem = elements[Math.floor(Math.random() * elements.length)];
+                        grid[spawnR][c] = newElem;
+
+                        const newOrb = createOrbNode(newElem, spawnR, c);
+                        newOrb.style.top = `${-(i + 1) * CELL_SIZE}px`; // Start above board
+                        boardEl.appendChild(newOrb);
+                        orbNodes[spawnR][c] = newOrb;
+
+                        // Trigger CSS transition down to slot
+                        setTimeout(() => {
+                            newOrb.style.top = `${spawnR * CELL_SIZE + 3}px`;
+                        }, 50);
+                    }
+                }
+
+                setTimeout(resolve, 350);
+            });
+        }
+
+        function showComboPopup(cluster, comboCount) {
+            const avgC = cluster.reduce((sum, item) => sum + item.c, 0) / cluster.length;
+            const avgR = cluster.reduce((sum, item) => sum + item.r, 0) / cluster.length;
+
+            const popup = document.createElement('div');
+            popup.className = 'combo-popup absolute font-black text-xl text-amber-300 title-font z-40 drop-shadow-lg';
+            popup.style.left = `${avgC * CELL_SIZE + 10}px`;
+            popup.style.top = `${avgR * CELL_SIZE + 10}px`;
+            popup.textContent = `${comboCount} COMBO!`;
+
+            boardEl.appendChild(popup);
+            setTimeout(() => popup.remove(), 800);
+        }
+
+        async function processBattleResults(combos, matchCounts) {
+            if (combos === 0) return;
+
+            const comboMultiplier = 1.0 + (combos - 1) * 0.25;
+            damageSummaryEl.textContent = `連擊倍率: ${comboMultiplier.toFixed(2)}x (${combos} Combos)`;
+
+            // Calculate Total Damage
+            const baseAttack = 12000;
+            let totalDamage = Math.floor(baseAttack * comboMultiplier);
+
+            // Calculate Heart Recovery
+            if (matchCounts[Element.HEART] > 0) {
+                const healAmount = Math.floor(4000 * (matchCounts[Element.HEART] / 3) * comboMultiplier);
+                playerHP = Math.min(playerMaxHP, playerHP + healAmount);
+                updatePlayerHP();
+            }
+
+            // Attack Boss Animation
+            sound.playAttack();
+            bossCardEl.classList.add('shake-element');
+            showAttackVFX(totalDamage);
+
+            bossHP = Math.max(0, bossHP - totalDamage);
+            updateBossHP();
+
+            await new Promise(r => setTimeout(r, 600));
+            bossCardEl.classList.remove('shake-element');
+
+            // Boss Death or Counter-attack
+            if (bossHP <= 0) {
+                statusMsgEl.textContent = "🎉 擊敗敵人！點擊重置開始新關卡";
+            } else {
+                bossCD--;
+                if (bossCD <= 0) {
+                    bossCD = 2; // Reset CD
+                    // Boss Attacks player
+                    const bossDmg = 8500;
+                    playerHP = Math.max(0, playerHP - bossDmg);
+                    updatePlayerHP();
+                    statusMsgEl.textContent = `💥 敵人發動攻擊造成 ${bossDmg} 傷害！`;
+                }
+                bossCdEl.textContent = bossCD;
+            }
+        }
+
+        function showAttackVFX(damage) {
+            const vfx = document.createElement('div');
+            vfx.className = 'attack-fx absolute font-black text-3xl text-rose-500 title-font z-50 tracking-widest';
+            vfx.textContent = `-${damage.toLocaleString()}`;
+            fxLayerEl.appendChild(vfx);
+            setTimeout(() => vfx.remove(), 600);
+        }
+
+        function updateBossHP() {
+            const pct = (bossHP / bossMaxHP) * 100;
+            bossHpBarEl.style.width = `${pct}%`;
+            bossHpTextEl.textContent = `${bossHP.toLocaleString()} / ${bossMaxHP.toLocaleString()}`;
+        }
+
+        function updatePlayerHP() {
+            const pct = (playerHP / playerMaxHP) * 100;
+            playerHpBarEl.style.width = `${pct}%`;
+            playerHpTextEl.textContent = `${playerHP.toLocaleString()} / ${playerMaxHP.toLocaleString()}`;
+        }
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if (currentState !== GameState.IDLE) return;
+            bossHP = bossMaxHP;
+            bossCD = 2;
+            playerHP = playerMaxHP;
+            updateBossHP();
+            updatePlayerHP();
+            bossCdEl.textContent = bossCD;
+            initBoard();
+        });
+
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
+        soundBtn.addEventListener('click', () => {
+            sound.enabled = !sound.enabled;
+            if (sound.enabled) {
+                soundIcon.className = 'fa-solid fa-volume-high text-amber-400';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-slate-500';
+            }
+        });
+
+        // Initialize game board on page load
+        window.addEventListener('load', () => {
+            initBoard();
+            attachInputHandlers();
+        });
+    </script>
+</body>
+</html>

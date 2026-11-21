@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝可梦闪卡效果拆解实验室 | Pokémon Holo Card CSS Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        },
+                        darkbg: '#0b0f19',
+                        cardbg: '#111827',
+                        cardborder: '#1f2937'
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --card-width: 320px;
+            --card-height: 450px;
+            
+            /* Pointer & Animation variables driven by JS */
+            --pointer-x: 50%;
+            --pointer-y: 50%;
+            --pointer-from-center: 0;
+            --background-x: 50%;
+            --background-y: 50%;
+            --rotate-x: 0deg;
+            --rotate-y: 0deg;
+            --effect-intensity: 0;
+            --max-tilt: 18deg;
+
+            /* Layer Visibility Controls */
+            --show-shine: 1;
+            --show-stripes: 1;
+            --show-glare: 1;
+            --show-grain: 1;
+
+            /* Dynamic Gradient colors */
+            --rainbow-1: #ff0000;
+            --rainbow-2: #ff7f00;
+            --rainbow-3: #ffff00;
+            --rainbow-4: #00ff00;
+            --rainbow-5: #00ffff;
+            --rainbow-6: #0000ff;
+            --rainbow-7: #8b00ff;
+        }
+
+        @media (min-width: 768px) {
+            :root {
+                --card-width: 360px;
+                --card-height: 500px;
+            }
+        }
+
+        /* Perspective Stage */
+        .perspective-container {
+            perspective: 1200px;
+            perspective-origin: center;
+        }
+
+        /* 3D Card Base */
+        .card-container {
+            width: var(--card-width);
+            height: var(--card-height);
+            position: relative;
+            touch-action: none;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .card-container:active {
+            cursor: grabbing;
+        }
+
+        /* Rotator Layer */
+        .card__rotator {
+            width: 100%;
+            height: 100%;
+            border-radius: 18px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(var(--rotate-x)) rotateY(var(--rotate-y));
+            transition: transform 0.05s linear;
+            will-change: transform;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7),
+                        0 0 30px 2px rgba(255, 255, 255, calc(var(--effect-intensity) * 0.15));
+        }
+
+        /* Card Front Base */
+        .card__front {
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            overflow: hidden;
+            background-color: #1a1a24;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            display: grid;
+            grid-template-areas: "card";
+        }
+
+        .card__front > * {
+            grid-area: card;
+            border-radius: 18px;
+        }
+
+        /* Pokémon Artwork & Static Card Layout Layer */
+        .card__artwork {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* LAYER A & F: Shine + Base Foil Noise Layer */
+        .card__shine {
+            z-index: 2;
+            mix-blend-mode: color-dodge;
+            opacity: calc(var(--effect-intensity) * var(--show-shine));
+            transition: opacity 0.2s ease;
+            display: grid;
+            grid-template-areas: "shine";
+            
+            /* Layer A1 + A2 + A4 + F1 (Noise Texture) Combined Gradient Stack */
+            background-image: 
+                /* F1: Grain Foil Texture */
+                var(--grain-texture, radial-gradient(circle at 50% 50%, rgba(255,255,255,0.15) 1px, transparent 1px)),
+                /* A4: Follower Radial Highlight */
+                radial-gradient(
+                    farthest-corner circle at var(--pointer-x) var(--pointer-y),
+                    rgba(255, 255, 255, 0.8) 0%,
+                    rgba(255, 255, 255, 0.25) 25%,
+                    rgba(0, 0, 0, 0.8) 90%
+                ),
+                /* A2: Dark/Light Luminosity Bands */
+                repeating-linear-gradient(
+                    110deg,
+                    rgba(255,255,255,0.7) 0%,
+                    rgba(0,0,0,0.8) 12%,
+                    rgba(255,255,255,0.9) 24%,
+                    rgba(0,0,0,0.8) 36%
+                ),
+                /* A1: Wide Color Spectral Gradient */
+                repeating-linear-gradient(
+                    135deg,
+                    var(--rainbow-1) 0%,
+                    var(--rainbow-2) 14%,
+                    var(--rainbow-3) 28%,
+                    var(--rainbow-4) 42%,
+                    var(--rainbow-5) 57%,
+                    var(--rainbow-6) 71%,
+                    var(--rainbow-7) 85%,
+                    var(--rainbow-1) 100%
+                );
+
+            background-size: 
+                var(--grain-size, 8px 8px),
+                160% 160%,
+                200% 200%,
+                400% 400%;
+
+            background-position: 
+                0% 0%,
+                var(--background-x) var(--background-y),
+                calc(var(--background-x) * 1.5) calc(var(--background-y) * 1.5),
+                var(--background-x) var(--background-y);
+
+            background-blend-mode: 
+                difference,
+                luminosity,
+                color-dodge;
+
+            filter: brightness(calc(0.7 + var(--pointer-from-center) * 0.5)) 
+                    contrast(1.4) 
+                    saturate(1.3);
+        }
+
+        /* LAYER B: Diagonal Foil Highlight Stripes (Pseudo Element) */
+        .card__shine::after {
+            content: "";
+            grid-area: shine;
+            border-radius: 18px;
+            opacity: calc(var(--show-stripes) * (0.3 + var(--pointer-from-center) * 0.7));
+            
+            /* B1 Rainbow + B2 Sharp Diagonal Stripes */
+            background-image: 
+                /* B1 Vertical Spectral Bar */
+                linear-gradient(
+                    180deg,
+                    var(--rainbow-1), var(--rainbow-2), var(--rainbow-3),
+                    var(--rainbow-4), var(--rainbow-5), var(--rainbow-6), var(--rainbow-7)
+                ),
+                /* B2 Diagonal High-Contrast Bands */
+                repeating-linear-gradient(
+                    128deg,
+                    #000 0%,
+                    #fff 4%,
+                    #000 8%,
+                    #fff 12%,
+                    #000 16%
+                );
+
+            background-size: 100% 300%, 250% 250%;
+            background-position: 0% var(--background-y), var(--background-x) var(--background-y);
+            background-blend-mode: hue;
+            mix-blend-mode: lighten;
+        }
+
+        /* LAYER D: External Glare Spotlight Layer */
+        .card__glare {
+            z-index: 3;
+            border-radius: 18px;
+            mix-blend-mode: hard-light;
+            opacity: calc(var(--effect-intensity) * var(--show-glare) * (0.2 + var(--pointer-from-center) * 0.8));
+            transition: opacity 0.15s ease;
+            
+            background-image: radial-gradient(
+                farthest-corner circle at var(--pointer-x) var(--pointer-y),
+                rgba(255, 255, 255, 0.95) 0%,
+                rgba(255, 255, 255, 0.4) 20%,
+                rgba(0, 0, 0, 0.85) 80%
+            );
+            pointer-events: none;
+        }
+
+        /* Holographic Border Highlight */
+        .card__border {
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            border: 1.5px solid rgba(255, 255, 255, calc(0.15 + var(--pointer-from-center) * 0.4));
+            z-index: 4;
+            pointer-events: none;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, calc(var(--pointer-from-center) * 0.2));
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+
+        /* Glowing Badge */
+        .glow-badge {
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-200 font-sans h-full overflow-x-hidden flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-cardborder bg-cardbg/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-500 to-emerald-300 flex items-center justify-center text-darkbg font-bold text-lg shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-sparkles text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-bold text-base sm:text-lg tracking-wider bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">
+                        POKÉMON HOLO STUDIO
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">CSS 3D 闪卡反光质感拆解与互动实验室</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Action Controls -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button id="btn-reset" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                    <span>重置视角</span>
+                </button>
+                <button id="btn-auto-demo" class="px-3 py-1.5 rounded-lg border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/20 text-xs font-medium text-brand-400 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-play text-xs" id="demo-icon"></i>
+                    <span id="demo-text">自动展示 (Demo)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workbench Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT COLUMN: Interactive 3D Card Display Canvas -->
+        <section class="lg:col-span-7 flex flex-col items-center justify-center bg-cardbg/50 border border-cardborder rounded-2xl p-6 sm:p-10 min-h-[520px] sm:min-h-[600px] relative overflow-hidden group">
+            
+            <!-- Ambient Background Radial Glow -->
+            <div id="ambient-glow" class="absolute w-[450px] h-[450px] rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none transition-all duration-700"></div>
+
+            <!-- Top Tip Header -->
+            <div class="absolute top-4 left-4 right-4 flex items-center justify-between text-xs text-slate-400 pointer-events-none">
+                <span class="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800">
+                    <i class="fa-solid fa-hand-pointer text-emerald-400 animate-pulse"></i> 鼠标悬停 / 触控拖拽驱动 3D 倾斜
+                </span>
+                <span id="fps-counter" class="font-mono text-slate-500 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">60 FPS</span>
+            </div>
+
+            <!-- Perspective 3D Card Wrapper -->
+            <div class="perspective-container my-auto pt-4">
+                <div class="card-container" id="card-element">
+                    <div class="card__rotator" id="card-rotator">
+                        <div class="card__front">
+                            <!-- Card Base Artwork -->
+                            <div class="card__artwork" id="card-art"></div>
+                            
+                            <!-- Layer A & F: Shine & Foil Texture Layer -->
+                            <div class="card__shine" id="card-shine"></div>
+                            
+                            <!-- Layer D: Spotlight Glare Layer -->
+                            <div class="card__glare" id="card-glare"></div>
+                            
+                            <!-- Card Metallic Highlight Border -->
+                            <div class="card__border"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live HUD Coordinates Overlay -->
+            <div class="mt-6 w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs font-mono grid grid-cols-3 gap-2 text-center">
+                <div class="bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
+                    <span class="text-slate-400 block text-[10px]">ROTATION (X, Y)</span>
+                    <span id="hud-rot" class="text-emerald-400 font-semibold">0°, 0°</span>
+                </div>
+                <div class="bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
+                    <span class="text-slate-400 block text-[10px]">POINTER (X, Y)</span>
+                    <span id="hud-ptr" class="text-cyan-400 font-semibold">50%, 50%</span>
+                </div>
+                <div class="bg-slate-800/50 p-1.5 rounded border border-slate-700/50">
+                    <span class="text-slate-400 block text-[10px]">TILTER DISTANCE</span>
+                    <span id="hud-dist" class="text-amber-400 font-semibold">0.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Layer Inspector & Tuning Controls -->
+        <section class="lg:col-span-5 flex flex-col gap-5">
+            
+            <!-- CARD PRESET SELECTOR -->
+            <div class="bg-cardbg border border-cardborder rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-cards text-brand-500"></i> 卡片材质预设 (Presets)
+                    </h2>
+                    <span class="text-[11px] text-slate-400">选择不同颜色的宝可梦</span>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-2" id="preset-container">
+                    <!-- Cards will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- TAB CONTROLS: LAYER INSPECTOR vs TUNING -->
+            <div class="bg-cardbg border border-cardborder rounded-2xl p-5 flex flex-col gap-4">
+                <!-- Navigation Tabs -->
+                <div class="flex border-b border-slate-800 pb-3 gap-4">
+                    <button id="tab-btn-layers" class="text-sm font-semibold text-brand-400 border-b-2 border-brand-500 pb-1.5 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-layer-group"></i> 核心图层拆解 (Video Breakdown)
+                    </button>
+                    <button id="tab-btn-settings" class="text-sm font-semibold text-slate-400 hover:text-slate-200 pb-1.5 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-sliders"></i> 渲染参数微调
+                    </button>
+                </div>
+
+                <!-- TAB 1: VIDEO LAYER BREAKDOWN INSPECTOR -->
+                <div id="tab-content-layers" class="space-y-3">
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        根据 13 分钟拆解视频，闪卡的重叠反光由以下 4 个核心 CSS 图层配合 <code class="text-brand-400 bg-slate-900 px-1 py-0.5 rounded">blend-mode</code> 与 <code class="text-brand-400 bg-slate-900 px-1 py-0.5 rounded">filter</code> 组合而成：
+                    </p>
+
+                    <!-- Layer Toggle Item: Layer A (Shine Rainbow) -->
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-start gap-3 hover:border-slate-700 transition">
+                        <input type="checkbox" id="layer-shine-check" checked class="mt-1 w-4 h-4 rounded text-brand-500 focus:ring-brand-500 bg-slate-800 border-slate-700">
+                        <div class="flex-1 text-xs">
+                            <div class="flex items-center justify-between font-semibold text-slate-200">
+                                <span>图层 A: 基础多彩渐变 (Shine Layer)</span>
+                                <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/30">mix-blend: color-dodge</span>
+                            </div>
+                            <p class="text-slate-400 text-[11px] mt-1">
+                                由大面积彩虹渐变(A1)、明暗明度条纹(A2)与跟随指针的径向渐变(A4)叠加而成，随 <code class="text-purple-300">--background-x/y</code> 位移。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Layer Toggle Item: Layer B (Diagonal Stripes) -->
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-start gap-3 hover:border-slate-700 transition">
+                        <input type="checkbox" id="layer-stripes-check" checked class="mt-1 w-4 h-4 rounded text-brand-500 focus:ring-brand-500 bg-slate-800 border-slate-700">
+                        <div class="flex-1 text-xs">
+                            <div class="flex items-center justify-between font-semibold text-slate-200">
+                                <span>图层 B: 动态斜向高亮条纹 (Foil Stripes)</span>
+                                <span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30">::after pseudo / blend: hue</span>
+                            </div>
+                            <p class="text-slate-400 text-[11px] mt-1">
+                                128° 斜向明暗条纹(B2)被彩虹色(B1)通过 <code class="text-amber-300">background-blend-mode: hue</code> 染色，营造真实卡片斜向反射。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Layer Toggle Item: Layer D (Dynamic Glare) -->
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-start gap-3 hover:border-slate-700 transition">
+                        <input type="checkbox" id="layer-glare-check" checked class="mt-1 w-4 h-4 rounded text-brand-500 focus:ring-brand-500 bg-slate-800 border-slate-700">
+                        <div class="flex-1 text-xs">
+                            <div class="flex items-center justify-between font-semibold text-slate-200">
+                                <span>图层 D: 外部聚光灯高光 (Glare Layer)</span>
+                                <span class="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/30">mix-blend: hard-light</span>
+                            </div>
+                            <p class="text-slate-400 text-[11px] mt-1">
+                                模拟外部自然光源打在卡片上的聚焦白光斑，圆心坐标实时与 <code class="text-blue-300">--pointer-x/y</code> 挂钩。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Layer Toggle Item: Layer F (Foil Grain Texture) -->
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-start gap-3 hover:border-slate-700 transition">
+                        <input type="checkbox" id="layer-grain-check" checked class="mt-1 w-4 h-4 rounded text-brand-500 focus:ring-brand-500 bg-slate-800 border-slate-700">
+                        <div class="flex-1 text-xs">
+                            <div class="flex items-center justify-between font-semibold text-slate-200">
+                                <span>图层 F: 卡片细微金属磨砂纹理 (Foil Grain)</span>
+                                <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">blend-mode: difference</span>
+                            </div>
+                            <p class="text-slate-400 text-[11px] mt-1">
+                                细密的不规则磨砂图片/点阵，固定不随指针滑动，产生“光在纹理深处流动”的真实质感。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PARAMETER TUNING SLIDERS -->
+                <div id="tab-content-settings" class="space-y-4 hidden">
+                    <!-- Max Tilt Angle -->
+                    <div>
+                        <div class="flex justify-between text-xs font-medium text-slate-300 mb-1">
+                            <label for="slider-tilt">最大倾斜角度 (Max Tilt Angle)</label>
+                            <span id="val-tilt" class="font-mono text-brand-400">18°</span>
+                        </div>
+                        <input type="range" id="slider-tilt" min="5" max="35" value="18" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                    </div>
+
+                    <!-- Effect Intensity Threshold -->
+                    <div>
+                        <div class="flex justify-between text-xs font-medium text-slate-300 mb-1">
+                            <label for="slider-intensity">全局闪光强度 (Effect Intensity Scale)</label>
+                            <span id="val-intensity" class="font-mono text-brand-400">1.0x</span>
+                        </div>
+                        <input type="range" id="slider-intensity" min="0.2" max="2.0" step="0.1" value="1.0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                    </div>
+
+                    <!-- Spring Lerp Speed -->
+                    <div>
+                        <div class="flex justify-between text-xs font-medium text-slate-300 mb-1">
+                            <label for="slider-lerp">指针追踪阻尼感 (Lerp Ease Speed)</label>
+                            <span id="val-lerp" class="font-mono text-brand-400">0.12</span>
+                        </div>
+                        <input type="range" id="slider-lerp" min="0.03" max="0.30" step="0.01" value="0.12" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                    </div>
+
+                    <!-- Foil Background Scale -->
+                    <div>
+                        <div class="flex justify-between text-xs font-medium text-slate-300 mb-1">
+                            <label for="slider-bgscale">反光背景平移速度 (Background Motion Offset)</label>
+                            <span id="val-bgscale" class="font-mono text-brand-400">0.4x</span>
+                        </div>
+                        <input type="range" id="slider-bgscale" min="0.1" max="1.0" step="0.05" value="0.4" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- CODE / PRINCIPLE SUMMARY BOX -->
+            <div class="bg-cardbg border border-cardborder rounded-2xl p-5">
+                <h3 class="text-xs font-semibold text-slate-300 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-code text-cyan-400"></i> 核心逻辑哲学：JS 输入，CSS 表现
+                </h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    JS 仅负责在 60FPS 循环中做坐标标准化与 Lerp 物理缓动，然后修改 CSS 变量（<code class="text-cyan-300">--pointer-x</code>, <code class="text-cyan-300">--rotate-x</code>, <code class="text-cyan-300">--pointer-from-center</code>）。所有的 3D 旋转、光斑混合、彩虹条纹均完全由浏览器硬件加速的 CSS 样式引擎渲染！
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- PRESETS DATA ---
+        const POKEMON_PRESETS = [
+            {
+                id: 'charizard',
+                name: '喷火龙 VMAX',
+                type: '🔥 火系',
+                badgeBg: 'bg-red-500/20 text-red-400 border-red-500/30',
+                glowColor: 'rgba(239, 68, 68, 0.25)',
+                // SVG / High quality artwork generated canvas placeholder for Pokemon
+                artUrl: 'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?auto=format&fit=crop&w=800&q=80',
+                colors: {
+                    r1: '#ff0000', r2: '#ff5500', r3: '#ffaa00', r4: '#ffff00', r5: '#ff0055', r6: '#990000', r7: '#ff0000'
+                }
+            },
+            {
+                id: 'rayquaza',
+                name: '裂空座 Gold Star',
+                type: '🐲 龙系',
+                badgeBg: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+                glowColor: 'rgba(16, 185, 129, 0.25)',
+                artUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80',
+                colors: {
+                    r1: '#00ff88', r2: '#00ffff', r3: '#0088ff', r4: '#00ffaa', r5: '#aaff00', r6: '#006644', r7: '#00ff88'
+                }
+            },
+            {
+                id: 'gengar',
+                name: '耿鬼 Secret Rare',
+                type: '👻 幽灵系',
+                badgeBg: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                glowColor: 'rgba(168, 85, 247, 0.25)',
+                artUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=800&q=80',
+                colors: {
+                    r1: '#9900ff', r2: '#cc00ff', r3: '#ff00aa', r4: '#4400cc', r5: '#00ffff', r6: '#220066', r7: '#9900ff'
+                }
+            },
+            {
+                id: 'pikachu',
+                name: '皮卡丘 25 周年',
+                type: '⚡ 电系',
+                badgeBg: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+                glowColor: 'rgba(245, 158, 11, 0.25)',
+                artUrl: 'https://images.unsplash.com/photo-1609372332255-611485457725?auto=format&fit=crop&w=800&q=80',
+                colors: {
+                    r1: '#ffee00', r2: '#ffaa00', r3: '#00ffff', r4: '#ff00aa', r5: '#ffffff', r6: '#ffdd00', r7: '#ffee00'
+                }
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const cardContainer = document.getElementById('card-element');
+        const cardRotator = document.getElementById('card-rotator');
+        const cardArt = document.getElementById('card-art');
+        const cardShine = document.getElementById('card-shine');
+        const cardGlare = document.getElementById('card-glare');
+        const ambientGlow = document.getElementById('ambient-glow');
+        const presetContainer = document.getElementById('preset-container');
+
+        // HUD Elements
+        const hudRot = document.getElementById('hud-rot');
+        const hudPtr = document.getElementById('hud-ptr');
+        const hudDist = document.getElementById('hud-dist');
+        const fpsCounter = document.getElementById('fps-counter');
+
+        // Checkboxes & Inputs
+        const layerShineCheck = document.getElementById('layer-shine-check');
+        const layerStripesCheck = document.getElementById('layer-stripes-check');
+        const layerGlareCheck = document.getElementById('layer-glare-check');
+        const layerGrainCheck = document.getElementById('layer-grain-check');
+
+        const sliderTilt = document.getElementById('slider-tilt');
+        const sliderIntensity = document.getElementById('slider-intensity');
+        const sliderLerp = document.getElementById('slider-lerp');
+        const sliderBgScale = document.getElementById('slider-bgscale');
+
+        const valTilt = document.getElementById('val-tilt');
+        const valIntensity = document.getElementById('val-intensity');
+        const valLerp = document.getElementById('val-lerp');
+        const valBgScale = document.getElementById('val-bgscale');
+
+        const btnReset = document.getElementById('btn-reset');
+        const btnAutoDemo = document.getElementById('btn-auto-demo');
+        const demoIcon = document.getElementById('demo-icon');
+        const demoText = document.getElementById('demo-text');
+
+        const tabBtnLayers = document.getElementById('tab-btn-layers');
+        const tabBtnSettings = document.getElementById('tab-btn-settings');
+        const tabContentLayers = document.getElementById('tab-content-layers');
+        const tabContentSettings = document.getElementById('tab-content-settings');
+
+        // --- ANIMATION & PHYSICS STATE ---
+        let state = {
+            // Target Pointer Position (0-100)
+            targetX: 50,
+            targetY: 50,
+            // Lerped Current Position
+            currentX: 50,
+            currentY: 50,
+            // Pointer Intensity / Active status
+            targetIntensity: 0,
+            currentIntensity: 0,
+            // Configurations
+            maxTilt: 18,
+            intensityScale: 1.0,
+            lerpSpeed: 0.12,
+            bgMotionOffset: 0.4,
+            // Modes
+            isInteracting: false,
+            isAutoDemo: false,
+            activePresetIndex: 0
+        };
+
+        // FPS Tracker variables
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+
+        // --- UTILITY MATH FUNCTIONS ---
+        // Clamp numerical value between min and max
+        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+        
+        // Linear Interpolation (Lerp)
+        const lerp = (start, end, amt) => start + (end - start) * amt;
+
+        // Calculate normalized distance from card center (0 at center, 1 at edge, >1 in corners)
+        const calcDistanceFromCenter = (x, y) => {
+            const dx = (x - 50) / 50;
+            const dy = (y - 50) / 50;
+            return clamp(Math.hypot(dx, dy), 0, 1.4);
+        };
+
+        // Generate SVG Noise Data URL for Grain Foil (Layer F)
+        function createGrainNoiseTexture() {
+            const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'>
+                <filter id='noise'>
+                    <feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/>
+                    <feColorMatrix type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.45 0'/>
+                </filter>
+                <rect width='100%' height='100%' filter='url(#noise)'/>
+            </svg>`;
+            return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
+        }
+
+        // Initialize Presets UI
+        function initPresets() {
+            presetContainer.innerHTML = '';
+            POKEMON_PRESETS.forEach((preset, index) => {
+                const btn = document.createElement('button');
+                btn.className = `p-2 rounded-xl border flex flex-col items-center gap-1 transition ${
+                    index === state.activePresetIndex 
+                        ? 'border-brand-500 bg-brand-500/10 text-white shadow-lg shadow-brand-500/10' 
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                }`;
+                btn.onclick = () => selectPreset(index);
+                btn.innerHTML = `
+                    <span class="text-xs font-semibold">${preset.name.split(' ')[0]}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded ${preset.badgeBg}">${preset.type}</span>
+                `;
+                presetContainer.appendChild(btn);
+            });
+
+            // Set initial grain texture variable
+            document.documentElement.style.setProperty('--grain-texture', createGrainNoiseTexture());
+            selectPreset(0);
+        }
+
+        function selectPreset(index) {
+            state.activePresetIndex = index;
+            const preset = POKEMON_PRESETS[index];
+
+            // Update Card Art Image
+            cardArt.style.backgroundImage = `url('${preset.artUrl}')`;
+            ambientGlow.style.backgroundColor = preset.glowColor;
+
+            // Set Rainbow Gradient Custom Properties
+            const root = document.documentElement;
+            root.style.setProperty('--rainbow-1', preset.colors.r1);
+            root.style.setProperty('--rainbow-2', preset.colors.r2);
+            root.style.setProperty('--rainbow-3', preset.colors.r3);
+            root.style.setProperty('--rainbow-4', preset.colors.r4);
+            root.style.setProperty('--rainbow-5', preset.colors.r5);
+            root.style.setProperty('--rainbow-6', preset.colors.r6);
+            root.style.setProperty('--rainbow-7', preset.colors.r7);
+
+            // Refresh Preset Buttons UI
+            Array.from(presetContainer.children).forEach((btn, idx) => {
+                if (idx === index) {
+                    btn.className = 'p-2 rounded-xl border border-brand-500 bg-brand-500/10 text-white shadow-lg shadow-brand-500/10 flex flex-col items-center gap-1 transition';
+                } else {
+                    btn.className = 'p-2 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200 flex flex-col items-center gap-1 transition';
+                }
+            });
+        }
+
+        // --- POINTER EVENT HANDLERS ---
+        function handlePointerMove(e) {
+            if (state.isAutoDemo) stopAutoDemo();
+
+            const rect = cardContainer.getBoundingClientRect();
+            
+            // Calculate pointer X, Y relative to card bounding box (0 to 100%)
+            const rawX = ((e.clientX - rect.left) / rect.width) * 100;
+            const rawY = ((e.clientY - rect.top) / rect.height) * 100;
+
+            // Clamp normalized positions (allow slight overshoot up to -10 to 110%)
+            state.targetX = clamp(rawX, -10, 110);
+            state.targetY = clamp(rawY, -10, 110);
+            state.targetIntensity = 1.0;
+            state.isInteracting = true;
+        }
+
+        function handlePointerLeave() {
+            if (state.isAutoDemo) return;
+            
+            // Smoothly return card to rest center position
+            state.targetX = 50;
+            state.targetY = 50;
+            state.targetIntensity = 0;
+            state.isInteracting = false;
+        }
+
+        // Attach Pointer Listeners to Card Container (Stable interaction box)
+        cardContainer.addEventListener('pointermove', handlePointerMove);
+        cardContainer.addEventListener('pointerleave', handlePointerLeave);
+        cardContainer.addEventListener('pointerdown', (e) => {
+            cardContainer.setPointerCapture(e.pointerId);
+            handlePointerMove(e);
+        });
+        cardContainer.addEventListener('pointerup', (e) => {
+            cardContainer.releasePointerCapture(e.pointerId);
+            handlePointerLeave();
+        });
+
+        // --- TAB SWITCHING LOGIC ---
+        tabBtnLayers.onclick = () => {
+            tabBtnLayers.className = 'text-sm font-semibold text-brand-400 border-b-2 border-brand-500 pb-1.5 flex items-center gap-2 transition';
+            tabBtnSettings.className = 'text-sm font-semibold text-slate-400 hover:text-slate-200 pb-1.5 flex items-center gap-2 transition';
+            tabContentLayers.classList.remove('hidden');
+            tabContentSettings.classList.add('hidden');
+        };
+
+        tabBtnSettings.onclick = () => {
+            tabBtnSettings.className = 'text-sm font-semibold text-brand-400 border-b-2 border-brand-500 pb-1.5 flex items-center gap-2 transition';
+            tabBtnLayers.className = 'text-sm font-semibold text-slate-400 hover:text-slate-200 pb-1.5 flex items-center gap-2 transition';
+            tabContentSettings.classList.remove('hidden');
+            tabContentLayers.classList.add('hidden');
+        };
+
+        // --- LAYER TOGGLES LISTENERS ---
+        layerShineCheck.onchange = (e) => {
+            document.documentElement.style.setProperty('--show-shine', e.target.checked ? '1' : '0');
+        };
+        layerStripesCheck.onchange = (e) => {
+            document.documentElement.style.setProperty('--show-stripes', e.target.checked ? '1' : '0');
+        };
+        layerGlareCheck.onchange = (e) => {
+            document.documentElement.style.setProperty('--show-glare', e.target.checked ? '1' : '0');
+        };
+        layerGrainCheck.onchange = (e) => {
+            document.documentElement.style.setProperty('--show-grain', e.target.checked ? '1' : '0');
+            cardShine.style.backgroundImage = e.target.checked 
+                ? '' 
+                : cardShine.style.backgroundImage.replace(/url\([^)]+\),?/, '');
+        };
+
+        // --- SLIDER CONTROLS LISTENERS ---
+        sliderTilt.oninput = (e) => {
+            state.maxTilt = parseFloat(e.target.value);
+            valTilt.textContent = `${state.maxTilt}°`;
+        };
+        sliderIntensity.oninput = (e) => {
+            state.intensityScale = parseFloat(e.target.value);
+            valIntensity.textContent = `${state.intensityScale.toFixed(1)}x`;
+        };
+        sliderLerp.oninput = (e) => {
+            state.lerpSpeed = parseFloat(e.target.value);
+            valLerp.textContent = state.lerpSpeed.toFixed(2);
+        };
+        sliderBgScale.oninput = (e) => {
+            state.bgMotionOffset = parseFloat(e.target.value);
+            valBgScale.textContent = `${state.bgMotionOffset.toFixed(2)}x`;
+        };
+
+        // --- AUTO DEMO & RESET LOGIC ---
+        btnReset.onclick = () => {
+            stopAutoDemo();
+            state.targetX = 50;
+            state.targetY = 50;
+            state.targetIntensity = 0;
+        };
+
+        btnAutoDemo.onclick = () => {
+            if (state.isAutoDemo) {
+                stopAutoDemo();
+            } else {
+                startAutoDemo();
+            }
+        };
+
+        function startAutoDemo() {
+            state.isAutoDemo = true;
+            demoIcon.className = 'fa-solid fa-square text-xs';
+            demoText.textContent = '停止展示';
+            btnAutoDemo.className = 'px-3 py-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 text-xs font-medium text-amber-400 transition flex items-center gap-1.5';
+        }
+
+        function stopAutoDemo() {
+            state.isAutoDemo = false;
+            demoIcon.className = 'fa-solid fa-play text-xs';
+            demoText.textContent = '自动展示 (Demo)';
+            btnAutoDemo.className = 'px-3 py-1.5 rounded-lg border border-brand-500/40 bg-brand-500/10 text-xs font-medium text-brand-400 transition flex items-center gap-1.5';
+            handlePointerLeave();
+        }
+
+        // --- MAIN ANIMATION & RENDERING LOOP (60 FPS) ---
+        function animate(time) {
+            // FPS Calculation
+            frameCount++;
+            if (time - lastFrameTime >= 1000) {
+                fps = Math.round((frameCount * 1000) / (time - lastFrameTime));
+                fpsCounter.textContent = `${fps} FPS`;
+                frameCount = 0;
+                lastFrameTime = time;
+            }
+
+            // AUTO DEMO MOTION PATTERN (Lissajous Curve Orbit)
+            if (state.isAutoDemo) {
+                const t = time * 0.0018;
+                state.targetX = 50 + Math.sin(t) * 38;
+                state.targetY = 50 + Math.cos(t * 1.3) * 38;
+                state.targetIntensity = 1.0;
+            }
+
+            // LERP PHYSICS INTERPOLATION
+            state.currentX = lerp(state.currentX, state.targetX, state.lerpSpeed);
+            state.currentY = lerp(state.currentY, state.targetY, state.lerpSpeed);
+            state.currentIntensity = lerp(state.currentIntensity, state.targetIntensity, state.lerpSpeed);
+
+            // CALCULATE ROTATION ANGLES
+            // Notice: rotateY is inverted relative to X cursor movement so card edges lean TOWARDS pointer
+            const rotateX = ((state.currentY - 50) / 50) * -state.maxTilt;
+            const rotateY = ((state.currentX - 50) / 50) * state.maxTilt;
+
+            // CALCULATE BACKGROUND BITMAP OFFSETS
+            // Scaled compression so shine background doesn't move too frantically
+            const bgX = 50 + (state.currentX - 50) * state.bgMotionOffset;
+            const bgY = 50 + (state.currentY - 50) * state.bgMotionOffset;
+
+            // CALCULATE DISTANCE FROM CENTER
+            const distFromCenter = calcDistanceFromCenter(state.currentX, state.currentY);
+
+            // APPLY CSS CUSTOM PROPERTIES DIRECTLY
+            const root = document.documentElement;
+            root.style.setProperty('--pointer-x', `${state.currentX.toFixed(2)}%`);
+            root.style.setProperty('--pointer-y', `${state.currentY.toFixed(2)}%`);
+            root.style.setProperty('--background-x', `${bgX.toFixed(2)}%`);
+            root.style.setProperty('--background-y', `${bgY.toFixed(2)}%`);
+            root.style.setProperty('--rotate-x', `${rotateX.toFixed(2)}deg`);
+            root.style.setProperty('--rotate-y', `${rotateY.toFixed(2)}deg`);
+            root.style.setProperty('--pointer-from-center', distFromCenter.toFixed(2));
+            root.style.setProperty('--effect-intensity', (state.currentIntensity * state.intensityScale).toFixed(2));
+
+            // UPDATE HUD DISPLAY
+            hudRot.textContent = `${rotateX.toFixed(1)}°, ${rotateY.toFixed(1)}°`;
+            hudPtr.textContent = `${Math.round(state.currentX)}%, ${Math.round(state.currentY)}%`;
+            hudDist.textContent = distFromCenter.toFixed(2);
+
+            // Request Next Frame
+            requestAnimationFrame(animate);
+        }
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            initPresets();
+            // Start Animation Loop
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
