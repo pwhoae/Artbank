@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Row Combiner & Delimiter Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+
+
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-100 selection:text-indigo-800">
+
+    <!-- Main Container -->
+    <main class="w-full max-w-4xl mx-auto px-4 py-8 sm:py-12 flex-grow">
+        
+        <!-- Header Section -->
+        <header class="mb-8 text-center sm:text-left">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                Row Combiner & Delimiter Tool
+            </h1>
+            <p class="mt-2 text-sm sm:text-base text-slate-600">
+                Paste multiple lines of text, customize your separator symbol, and instantly merge them into a single row.
+            </p>
+        </header>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-8 space-y-6">
+            
+            <!-- Top Controls: Symbol Customizer & Options -->
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-100">
+                
+                <!-- Custom Symbol Input -->
+                <div class="w-full sm:w-auto flex-grow max-w-xs">
+                    <label for="delimiterInput" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                        Separator Symbol
+                    </label>
+                    <div class="relative flex items-center">
+                        <input 
+                            type="text" 
+                            id="delimiterInput" 
+                            value="|" 
+                            placeholder="e.g. | or , "
+                            aria-label="Separator Symbol"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-base font-semibold text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        >
+                        <!-- Quick Preset Buttons -->
+                        <div class="flex items-center gap-1 ml-2">
+                            <button type="button" onclick="setSymbol('|')" title="Pipe" class="px-2.5 py-2 text-xs font-mono font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">|</button>
+                            <button type="button" onclick="setSymbol(',')" title="Comma" class="px-2.5 py-2 text-xs font-mono font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">,</button>
+                            <button type="button" onclick="setSymbol(';')" title="Semicolon" class="px-2.5 py-2 text-xs font-mono font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">;</button>
+                            <button type="button" onclick="setSymbol(' | ')" title="Spaced Pipe" class="px-2.5 py-2 text-xs font-mono font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors whitespace-nowrap">" | "</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formatting Checkboxes -->
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 sm:pt-0">
+                    <label class="inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" id="ignoreEmptyCheck" checked class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500">
+                        <span class="ml-2 text-sm text-slate-700 font-medium">Skip empty rows</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" id="trimRowsCheck" checked class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500">
+                        <span class="ml-2 text-sm text-slate-700 font-medium">Trim spaces</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Input Textarea Section -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="userInput" class="text-sm font-semibold text-slate-700">
+                        Input Rows <span id="rowCountBadge" class="ml-1.5 px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">0 rows</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="loadSample()" class="text-xs font-medium text-indigo-600 hover:text-indigo-700 px-2.5 py-1 rounded-lg hover:bg-indigo-50 transition-colors">
+                            Sample Data
+                        </button>
+                        <button type="button" onclick="clearAll()" class="text-xs font-medium text-rose-600 hover:text-rose-700 px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+                <textarea 
+                    id="userInput" 
+                    rows="7" 
+                    placeholder="Enter or paste your rows here...&#10;Apple&#10;Banana&#10;Cherry"
+                    class="w-full p-4 bg-slate-50 border border-slate-300 rounded-xl text-sm sm:text-base text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-y"
+                ></textarea>
+            </div>
+
+            <!-- Output Section -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="outputResult" class="text-sm font-semibold text-slate-700">
+                        Combined Single Row Output
+                    </label>
+                    <button 
+                        type="button" 
+                        id="copyBtn"
+                        onclick="copyOutput()" 
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                        <!-- Copy Icon SVG -->
+                        <svg id="copyIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        <span id="copyBtnText">Copy Output</span>
+                    </button>
+                </div>
+                <textarea 
+                    id="outputResult" 
+                    rows="4" 
+                    readonly 
+                    placeholder="Your combined row will appear here automatically..."
+                    class="w-full p-4 bg-slate-900 text-emerald-400 font-mono text-sm sm:text-base rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 resize-y"
+                ></textarea>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Custom Toast Notification (Replaces alert) -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none z-50">
+        <div class="bg-slate-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 border border-slate-700">
+            <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span id="toastMessage">Copied to clipboard!</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-400">
+        Real-time text row combiner • Instant formatting
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        // DOM Elements
+        const userInput = document.getElementById('userInput');
+        const delimiterInput = document.getElementById('delimiterInput');
+        const ignoreEmptyCheck = document.getElementById('ignoreEmptyCheck');
+        const trimRowsCheck = document.getElementById('trimRowsCheck');
+        const outputResult = document.getElementById('outputResult');
+        const rowCountBadge = document.getElementById('rowCountBadge');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        let toastTimeout;
+
+        /**
+         * Processes the multi-line input and updates the combined single-row output
+         */
+        function processRows() {
+            try {
+                const rawText = userInput.value;
+                const delimiter = delimiterInput.value;
+                const skipEmpty = ignoreEmptyCheck.checked;
+                const trimSpaces = trimRowsCheck.checked;
+
+                if (!rawText) {
+                    outputResult.value = '';
+                    rowCountBadge.textContent = '0 rows';
+                    return;
+                }
+
+                // Split input by standard line breaks (\r\n, \n, or \r)
+                let rows = rawText.split(/\r?\n/);
+
+                // Optionally trim leading/trailing whitespace from each row
+                if (trimSpaces) {
+                    rows = rows.map(row => row.trim());
+                }
+
+                // Optionally filter out empty rows
+                if (skipEmpty) {
+                    rows = rows.filter(row => row.length > 0);
+                }
+
+                // Update row counter badge
+                const count = rows.length;
+                rowCountBadge.textContent = `${count} ${count === 1 ? 'row' : 'rows'}`;
+
+                // Join all rows into one single row using the custom delimiter
+                outputResult.value = rows.join(delimiter);
+            } catch (error) {
+                console.error('Error processing rows:', error);
+            }
+        }
+
+        /**
+         * Sets a quick preset symbol in the delimiter input and triggers update
+         */
+        function setSymbol(symbol) {
+            delimiterInput.value = symbol;
+            processRows();
+        }
+
+        /**
+         * Populates sample data for quick testing
+         */
+        function loadSample() {
+            userInput.value = "Item 01\nItem 02\nItem 03\nItem 04\nItem 05";
+            processRows();
+            showToast('Sample rows loaded');
+        }
+
+        /**
+         * Clears the input and output fields
+         */
+        function clearAll() {
+            userInput.value = '';
+            processRows();
+            userInput.focus();
+            showToast('Cleared all text');
+        }
+
+        /**
+         * Copies the combined output text to the user's clipboard using execCommand fallback
+         */
+        function copyOutput() {
+            if (!outputResult.value) {
+                showToast('Nothing to copy yet');
+                return;
+            }
+
+            try {
+                outputResult.select();
+                outputResult.setSelectionRange(0, 99999); // For mobile devices
+                const successful = document.execCommand('copy');
+                
+                // Deselect text after copying
+                window.getSelection().removeAllRanges();
+
+                if (successful) {
+                    showToast('Combined row copied to clipboard!');
+                } else {
+                    showToast('Failed to copy text');
+                }
+            } catch (err) {
+                console.error('Copy failed:', err);
+                showToast('Unable to copy text');
+            }
+        }
+
+        /**
+         * Displays a subtle non-blocking toast message
+         */
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Attach real-time event listeners
+        userInput.addEventListener('input', processRows);
+        delimiterInput.addEventListener('input', processRows);
+        ignoreEmptyCheck.addEventListener('change', processRows);
+        trimRowsCheck.addEventListener('change', processRows);
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', processRows);
+    </script>
+</body>
+</html>
