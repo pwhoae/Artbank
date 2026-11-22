@@ -1,6 +1,8 @@
 ### 動畫放棄
 主要需要動作指導+保持一致
 動作遊戲:mixiam 原形{idle,walk,run,jump},{閃,death,wall,punch,kick}
+<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%8B%95%E7%95%AB%E5%B9%80%20Spritesheet/readme.md">Spritesheet</a>
+
 
 ### 动画技巧(靈活感>頭髮飄動+呼吸+眨眼+輕微身體搖擺+衣服飄動)  **加速度与减速度,速度与间距**
 1. 主观轨迹:可以打破现实法则，使用主观夸张的运动轨迹。
