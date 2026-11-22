@@ -36,12 +36,8 @@
 |[回到底部](#readme) <a id="readme_begin"></a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/godot_note.md">Godot 筆記</a>|
 |<a href="https://github.com/pwhoae/Artbank/tree/main/godot/shader/_%E5%8F%AF%E7%94%A8shader">Shader庫</a>|<a href="https://github.com/pwhoae/Artbank/blob/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/readme.md"> GLB/GLTF</a>|
 |寫故事用九宮圖|生動表情包|
-<a href="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/pixai.readme">pixai 筆記</a>
-<hr>
+|<a href="https://github.com/pwhoae/Artbank/blob/main/GPT%E7%94%9F%E6%88%90/pixai.readme">pixai 筆記</a>|<a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>|
  
-
-<a href="https://github.com/pwhoae/Artbank/tree/main/godot/%E5%A0%B4%E6%99%AF%E8%A3%9D%E9%A3%BE/_%E9%9D%88%E6%84%9F">_靈感</a>
-
 <hr><hr><hr>
 
 
