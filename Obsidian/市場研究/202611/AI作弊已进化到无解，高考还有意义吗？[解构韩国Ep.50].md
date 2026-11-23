@@ -1,0 +1,56 @@
+---
+title: "AI作弊已进化到无解，高考还有意义吗？[解构韩国Ep.50]"
+source: "https://www.bilibili.com/video/BV1pvsx6rEnH/?spm_id_from=333.1245.0.0"
+author:
+  - "[[松松企划社]]"
+published: 2026-11-19
+created: 2026-11-22
+description: "-"
+tags:
+  - "clippings"
+---
+<iframe width="560" height="315" src="https://player.bilibili.com/player.html?bvid=BV1pvsx6rEnH&#38;page=1&#38;high_quality=1&#38;danmaku=0" title="Bilibili video player" frameborder="0" allowfullscreen=""></iframe>
+
+\-
+
+## Transcript
+
+**0:00** · Four subjects, four hundred points max— he scored three hundred and ninety seven point five. For one subject where the national avg. was just thirty one points— a hellishly tough one— he scored ninety seven point five! The other three? All perfect scores. This is the record breaking top scorer who emerged from South Korea’s recent Certified Tax Accountant Examination. but amid public outcry and a police probe, that top scorer buckled under the pressure and turned himself in. Just like that, the truth was out. He wasn’t some once in a century exam cracking savant;
+
+**0:29** · but rather, scores cranked out by way of a button cam hidden in his clothes and a cloud based large language model. Hi all, I’m Lao Song. Today is South Korea’s College Scholastic Ability Test day, but that outrageous, extreme cheating case unearthed a few days ago has utterly shattered the credibility of its national exams. Now, it’s not just South Korea’s Ministry of Education that’s scrambling—many nations’ education ministries are also watching Korea’s exam halls today. Why? Because on this track of involution,
+
+**0:58** · South Korea’s version has always been way out in front— you could say they are the test server for zero sum game education. Plus, in South Korea, those entrance exams are in November, not the summer. This time lag has ministries of education worldwide waiting to see how South Korea will tackle these mind boggling AI cheating tactics. to strategize for their CSAT next June or July. So, in this nation where involution has run wild, just how far HAS AI cheating evolved?
+
+**1:26** · Lao Song: As someone who dives into South Korea’s major left wing and right wing communities daily, I found that AI cheating in South Korea today is far from the small scale stuff we recall! it’s spawned a strict, three tier chain of contempt. First up: the entry level tactics at the very bottom of the chain of contempt—AI glasses. This trick has long been exposed ad nauseam by the media and is already an outdated product within South Korea’s high end, underground supply chain. Yet the bitter irony? For this CSAT, the Ministry of Education treated it like a major crisis,
+
+**1:56** · pouring most of its manpower into checking candidates' glasses and buttons. So, we can’t help but wonder: why would the mighty Ministry of Education fixate on something so long obsolete? This lays bare a most fatal flaw in South Korean politics. Take South Korea’s current Minister of Education, Choi Kyo jin— this gent is ten years older than even Lee Jae myung! he hails from last century’s anti military regime and union movements. A few days ago, when grilled in the National Assembly, he flat out declared he’s too old
+
+**2:25** · and doesn’t get this whole AI thing. Honestly, in all my years observing South Korean politics, this is the first time I’ve ever seen a minister level official just straight up slacking off like that! Then, Kim Moon soo, Chair of the Education Special Committee for the ruling party in South Korea, even spouted the absurd notion of having test takers police one another! But in South Korean political circles, knowing your job means zilch— what matters is which camp you belong to. to have someone utterly out of touch with modern AI serve as the education system’s top decision maker. To put it bluntly,
+
+**2:54** · it’s all just to cater to the political correctness of the ruling party; and on this front, the right wing People Power Party is just as bad— neither side should cast stones. This is why, when facing today’s tech crimes, which is why South Korea’s MOE lags behind its semiconductor advances, constantly on the defensive and totally missing the point. So, if even AI glasses are the entry level tool at the very bottom of the chain of contempt, what lies further up? In fact, the go to AI cheating methods in South Korea right now are button cameras and a spy earpiece,
+
+**3:23** · paired with a phone relay stashed in a backpack outside the exam hall. Many might think, “Why not just use metal detectors?” And don’t forget, South Korea is a semiconductor powerhouse— two of the globe’s top three semiconductor firms are Korean! Plus, semiconductors are based on Silicon, not metal; plus, today’s micro devices are tiny and their shells are mostly made of high end composite fiber. And for ultra mini gear like the spy earpiece— even though its casing IS metal, just how tiny IS it?
+
+**3:53** · you can’t pry it out of your ear with your fingers; you have to use a magnet to pull it out. They’re THAT small—regular metal detectors can’t even pick them up. Plus, having proctors wield magnets to check every single candidate’s ears before each exam? That’s just not feasible. This, in turn, spawns new issues like human rights violations and sexual harassment. Now, some might say, “ Why not just use a full band signal jammer in exam halls to cut off all radio waves?” That IS the most practical method right now. But it has two fatal flaws.
+
+**4:23** · First off, if you force a jam, it’d spill over to nearby homes, leaving residents unable to even dial emergency numbers, which could lead to disasters— and no one dares to shoulder that blame. If that did happen, the opposition party would surely hammer the Blue House hard. Thus, the bills have failed to pass in the National Assembly. Plus, no tech exists in reality that can one hundred percent block signals. Just pop an excuse to hit the restroom— even if only a faint signal seeps in for a split second—bam!
+
+**4:50** · Photo out, answers in, and the deed is done. So, since full spectrum jamming won’t work, For now, the most pragmatic compromise South Korea’s officials can offer is to just block Wi Fi within the exam venues. plus, they set up strict storage areas around exam venues to forcibly sequester candidates’ phones and other electronics. The logic behind this is rather grim: since I can’t spot that spy earpiece you’ve hidden, I’ll go hard after your phone. After all, phones are bulky— whether via metal detectors or manual pat downs, they get spotted every time.
+
+**5:20** · Just keep your phone firmly outside the exam hall, and once it’s far enough away, that Bluetooth physical link will sever right away. Bear in mind, those ultra miniature cameras and earpieces lack any native networking or AI algorithms of their own. Once they lose that phone relay, they become mere scrap metal. Yet, as they say, for every counter, a ploy. To completely sidestep both physical isolation and signal transmission, AI cheating in South Korea has now evolved to its ultimate form: offline, embedded AI.
+
+**5:49** · At this tier, elite players don’t even bother with the web. They directly cram the vast exam question banks and a compressed, lightweight large AI model— via custom fitting— into a ultra miniature AI semiconductor device they carry on their person. And for devices that don’t even need to send or receive radio waves, even the most potent signal blockers become a pile of scrap metal. Now, you might say, this offline mode can’t update in real time, so surely it can’t snag that top score— like that three ninety seven point five out of four hundred
+
+**6:18** · we saw earlier! But THAT’S what makes it so scary! In reality, any cheater with half a brain— who’d aim for a perfect score just to stir up hate? Isn’t that just digging your own grave and begging the media and cops to probe you? They won’t rely solely on AI; rather, they treat it as a cheat to ensure they perform exceptionally well. So, what’s the outcome? a top student whose grades are great already, but who could only get into Yonsei or Korea University, with AI giving them a stealthy boost, their scores might just hit the admission cutoff
+
+**6:48** · for Seoul National University . And this sort of low key score leap is AI cheating’s true, dimension reducing blow. Plus, I recently saw in South Korean communities that even the notion of AI contact lenses has cropped up! Faced with this insurmountable situation, let’s set aside moral critiques for now. Heck, even AI glasses—once tools at the very bottom of the cheating pecking order— That’s about four or five thousand Chinese Yuan—gear an average person in South Korea could afford if they scrimped a bit.
+
+**7:16** · But as official exam sites in South Korea ramp up their anti cheating measures, this has, in turn, pushed the underground black market toward ever more cutting edge and sky high priced tech. This spawns a very real world question: Kids from regular Korean families once vied for school district homes in Seoul’s Gangnam area. in the usual cram school rat race, they just can’t compete with those Gangnam left and Gangnam right folks. And now, many regular folk in South Korea might despairingly think: since I can’t out compete you on the straight and narrow,
+
+**7:44** · I might as well take the shady route and cheat, right? But once they hit the market, they found that all they could afford— stretching their budgets— were those commonplace AI glasses and button cameras. And what’s most ironic is, if you look back at the anti cheating measures the Ministry of Education unveiled this time, With all their might and gear, all they can sniff out are these very same commoner’s tools at the bottom of the chain of contempt. which makes you feel this incredibly absurd sense of illusion. South Korea’s Ministry of Education official anti cheating system
+
+**8:13** · seems tailor made to zero in on regular folks. In this game, kids from ordinary South Korean families can’t just not win fair competition— they’ve now been stripped clean of even the right to be cheaters. Honestly, back when I, Lao Song, studied at Seoul National University , there were quite a few students from ordinary families— but that was ten years ago. But if this extreme trend keeps up, in another ten years, on the Seoul National University campus, you likely won’t see any kids from ordinary families anymore.
+
+**8:43** · In short, in South Korea— this global test bed for involution— past involution at least left a sliver of chance for upward mobility for those impoverished, test cramming whizzes. But now, South Korea’s CSAT is morphing entirely into a warped race of capital and gear. Amidst this AI tech boom, if South Korea’s exam system remains fixated solely on rote memorization and who grinds through the most practice problems, then being wholly replaced by AI is just a matter of time. and the last path for ordinary South Koreans to flip their fate via the CSAT
+
+**9:13** · will be sealed shut for good. When that day comes, we might well have to ask: what purpose does this College Scholastic Ability Test — which has society in such a frenzy—even serve anymore? Okay! That’s it for this video! If you liked my share, please do follow and support us— see you next time!
