@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOOD2API // 暗黑极光像素 API 终端</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入像素字体与现代无衬线字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        pixel: ['"Press Start 2P"', 'monospace'],
+                    },
+                    colors: {
+                        retro: {
+                            cyan: '#00f5d4',
+                            pink: '#ff2a85',
+                            yellow: '#fee440',
+                            purple: '#9b5de5',
+                            green: '#38b000',
+                            dark: '#07070c'
+                        }
+                    },
+                    animation: {
+                        'aurora-1': 'aurora1 14s ease-in-out infinite alternate',
+                        'aurora-2': 'aurora2 18s ease-in-out infinite alternate',
+                        'aurora-3': 'aurora3 20s ease-in-out infinite alternate',
+                        'float': 'float 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        aurora1: {
+                            '0%': { transform: 'translate(0%, 0%) scale(1) rotate(0deg)' },
+                            '100%': { transform: 'translate(15%, 10%) scale(1.2) rotate(25deg)' },
+                        },
+                        aurora2: {
+                            '0%': { transform: 'translate(0%, 0%) scale(1.1) rotate(0deg)' },
+                            '100%': { transform: 'translate(-15%, -10%) scale(0.9) rotate(-20deg)' },
+                        },
+                        aurora3: {
+                            '0%': { transform: 'translate(-10%, 10%) scale(1)' },
+                            '100%': { transform: 'translate(10%, -15%) scale(1.25)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* 自定义样式与复古像素细节 */
+        body {
+            background-color: #07070c;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* 极光背景光晕 */
+        .aurora-blob {
+            filter: blur(90px);
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        /* 暗黑玻璃拟态卡片 */
+        .aurora-glass {
+            background: rgba(15, 17, 29, 0.58);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        /* 复古 8-Bit 像素硬边按钮 */
+        .pixel-btn {
+            position: relative;
+            transition: transform 0.08s steps(2), box-shadow 0.08s steps(2), background-color 0.15s;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.85);
+        }
+        .pixel-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.9);
+        }
+        .pixel-btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.9);
+        }
+        .pixel-btn.active-mood {
+            box-shadow: 0 0 18px currentColor, 4px 4px 0px rgba(0, 0, 0, 0.9);
+        }
+
+        /* 细微 CRT 扫描线叠加层 */
+        .crt-overlay {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.22) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* 像素进度条动画 */
+        @keyframes pixelScan {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        .retro-gradient-bar {
+            background: linear-gradient(90deg, #00f5d4, #9b5de5, #ff2a85, #fee440, #00f5d4);
+            background-size: 200% 100%;
+            animation: pixelScan 4s linear infinite;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 17, 29, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9b5de5;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative selection:bg-retro-pink selection:text-white">
+
+    <!-- 极光动态背景层 -->
+    <div class="fixed inset-0 overflow-hidden z-0 pointer-events-none">
+        <div class="aurora-blob absolute -top-24 -left-24 w-96 h-96 md:w-[34rem] md:h-[34rem] rounded-full bg-retro-cyan animate-aurora-1"></div>
+        <div class="aurora-blob absolute top-1/3 -right-24 w-96 h-96 md:w-[38rem] md:h-[38rem] rounded-full bg-retro-purple animate-aurora-2"></div>
+        <div class="aurora-blob absolute -bottom-32 left-1/4 w-96 h-96 md:w-[36rem] md:h-[36rem] rounded-full bg-retro-pink animate-aurora-3"></div>
+        <!-- 网格线装饰 -->
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+        <!-- 复古 CRT 扫描线 -->
+        <div class="crt-overlay fixed inset-0 z-50"></div>
+    </div>
+
+    <!-- 顶部状态栏 -->
+    <header class="relative z-10 w-full max-w-5xl mx-auto px-4 pt-6 pb-2 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-retro-cyan via-retro-purple to-retro-pink p-0.5 shadow-lg shadow-retro-purple/30 animate-float">
+                <div class="w-full h-full bg-retro-dark rounded-[10px] flex items-center justify-center font-pixel text-retro-cyan text-xs">
+                    &gt;_
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-pixel text-sm sm:text-base tracking-wider text-white drop-shadow-[0_0_8px_rgba(0,245,212,0.5)]">
+                        MOOD<span class="text-retro-cyan">2</span>API
+                    </h1>
+                    <span class="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-retro-pink/20 text-retro-pink border border-retro-pink/40">
+                        v0.dev EDITION
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">一句话 Vibecoding · 情绪驱动接口生成器</p>
+            </div>
+        </div>
+
+        <!-- 8-Bit 音效开关 & 状态指示 -->
+        <div class="flex items-center gap-3">
+            <button id="soundToggle" onclick="toggleSound()" class="pixel-btn flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-900/90 border-2 border-retro-cyan/60 text-retro-cyan text-xs font-mono hover:bg-retro-cyan/10 cursor-pointer">
+                <span id="soundIcon">🔊</span>
+                <span id="soundText">8-BIT SFX: ON</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="relative z-10 w-full max-w-5xl mx-auto px-4 py-6 flex-1 flex flex-col gap-6">
+        
+        <!-- 1. 情绪选择器 & 一句话 v0 提示词输入区 -->
+        <section class="aurora-glass rounded-2xl p-5 sm:p-7 relative overflow-hidden">
+            <div class="retro-gradient-bar h-1 w-full absolute top-0 left-0"></div>
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                <div>
+                    <span class="font-pixel text-[10px] text-retro-yellow uppercase tracking-widest block mb-1">
+                        STEP 01 // SELECT VIBE
+                    </span>
+                    <h2 class="text-lg sm:text-xl font-bold text-white">
+                        今天写代码的心情是怎样的？
+                    </h2>
+                </div>
+                <button onclick="randomVibe()" class="pixel-btn self-start sm:self-auto px-3.5 py-2 rounded-lg bg-retro-yellow text-slate-950 font-pixel text-[10px] flex items-center gap-2 cursor-pointer">
+                    <span>🎲</span> <span>手气不错</span>
+                </button>
+            </div>
+
+            <!-- 6种复古情绪按钮网格 -->
+            <div id="moodGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                <!-- 由 JS 动态渲染 -->
+            </div>
+
+            <!-- v0.dev 风格的一句话灵感输入栏 -->
+            <div class="bg-black/40 border border-white/10 rounded-xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 focus-within:border-retro-cyan/70 transition-colors">
+                <div class="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-retro-cyan shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-retro-cyan animate-ping"></span>
+                    <span>v0 Prompt:</span>
+                </div>
+                <input 
+                    id="vibeInput" 
+                    type="text" 
+                    placeholder="或者输入一句话心情/需求，例如：深夜改 Bug 急需一点治愈..." 
+                    class="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none px-2 py-1.5 font-sans"
+                    onkeydown="if(event.key === 'Enter') generateFromPrompt()"
+                />
+                <button 
+                    onclick="generateFromPrompt()" 
+                    class="pixel-btn px-5 py-2.5 rounded-lg bg-gradient-to-r from-retro-cyan to-retro-purple text-slate-950 font-bold text-xs sm:text-sm shrink-0 cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                    <span>⚡</span> <span>生成 API 灵感</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. API 推荐结果卡片（暗黑极光玻璃拟态 + 复古终端） -->
+        <section id="resultSection" class="aurora-glass rounded-2xl p-5 sm:p-7 transition-all duration-300">
+            <!-- 顶部标签与元信息 -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-5 border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <span id="apiEmoji" class="text-3xl sm:text-4xl bg-white/5 p-2.5 rounded-xl border border-white/10">🐱</span>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span id="apiCategory" class="font-pixel text-[9px] px-2 py-1 rounded bg-retro-cyan/20 text-retro-cyan border border-retro-cyan/40">
+                                HEALING // 治愈系
+                            </span>
+                            <span id="apiAuthBadge" class="font-mono text-xs px-2 py-0.5 rounded bg-retro-green/20 text-retro-green border border-retro-green/40">
+                                ✓ 无需 API Key
+                            </span>
+                        </div>
+                        <h3 id="apiTitle" class="text-xl sm:text-2xl font-extrabold text-white mt-1.5 tracking-tight">
+                            The Cat API (随机吸猫接口)
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- 换一个同心情 API 按钮 -->
+                <button onclick="nextApiInMood()" class="pixel-btn px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono flex items-center gap-2 cursor-pointer">
+                    <span>🔄</span> <span>换个同款 API</span>
+                </button>
+            </div>
+
+            <!-- 推荐理由与描述 -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- 左侧：心情契合度 & 简介 & Endpoint -->
+                <div class="lg:col-span-5 flex flex-col justify-between gap-4">
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl bg-gradient-to-br from-white/5 to-transparent border border-white/10">
+                            <div class="text-[11px] font-pixel text-retro-pink mb-2">💬 VIBE MATCH // 情绪处方</div>
+                            <p id="apiVibeReason" class="text-sm text-slate-200 leading-relaxed">
+                                报错红了一片？没有什么是一个 HTTP 200 返回的高清猫咪动图解决不了的。如果有，就请求两次。
+                            </p>
+                        </div>
+
+                        <div>
+                            <div class="text-xs font-mono text-slate-400 mb-1.5">API 功能简介：</div>
+                            <p id="apiDesc" class="text-sm text-slate-300 leading-relaxed">
+                                全球最受欢迎的免费猫咪图片与 GIF 公共接口，响应极快，支持按品种、格式筛选。
+                            </p>
+                        </div>
+
+                        <!-- Endpoint 展示框 -->
+                        <div>
+                            <div class="text-xs font-mono text-slate-400 mb-1.5 flex items-center justify-between">
+                                <span>ENDPOINT URL</span>
+                                <span class="text-retro-cyan text-[11px]">GET · JSON</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 bg-black/60 border border-white/15 rounded-xl px-3 py-2.5 font-mono text-xs text-retro-yellow overflow-x-auto">
+                                <code id="apiEndpoint" class="whitespace-nowrap">https://api.thecatapi.com/v1/images/search</code>
+                                <button onclick="copyEndpoint()" class="shrink-0 px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-white text-[11px] cursor-pointer">
+                                    复制
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮组：真实试运行 & 复制代码 -->
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button id="testApiBtn" onclick="runLiveApiTest()" class="pixel-btn flex-1 py-3 px-4 rounded-xl bg-retro-cyan text-slate-950 font-pixel text-[11px] flex items-center justify-center gap-2 cursor-pointer">
+                            <span>▶</span> <span>TEST LIVE API</span>
+                        </button>
+                        <button onclick="copyCodeSnippet()" class="pixel-btn py-3 px-4 rounded-xl bg-retro-purple text-white font-mono font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>📋</span> <span>复制代码</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧：复古代码终端 + 实时 JSON 响应预览 -->
+                <div class="lg:col-span-7 flex flex-col gap-4">
+                    <!-- 代码片段框 -->
+                    <div class="rounded-xl bg-[#090a12] border border-white/15 overflow-hidden flex flex-col">
+                        <div class="px-4 py-2.5 bg-white/5 border-b border-white/10 flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-retro-pink"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-retro-yellow"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-retro-green"></span>
+                                <span class="ml-2 text-xs font-mono text-slate-400">fetch-vibe.js</span>
+                            </div>
+                            <span class="font-pixel text-[9px] text-slate-500">ES2026 READY</span>
+                        </div>
+                        <pre class="p-4 text-xs sm:text-[13px] font-mono text-slate-200 overflow-x-auto leading-relaxed"><code id="apiCodeBlock"></code></pre>
+                    </div>
+
+                    <!-- 实时返回结果监视器 -->
+                    <div class="rounded-xl bg-[#06070d] border border-retro-cyan/30 overflow-hidden flex-1 flex flex-col min-h-[160px]">
+                        <div class="px-4 py-2 bg-retro-cyan/10 border-b border-retro-cyan/20 flex items-center justify-between">
+                            <span class="font-pixel text-[9px] text-retro-cyan flex items-center gap-2">
+                                <span class="inline-block w-2 h-2 bg-retro-cyan animate-pulse"></span>
+                                LIVE RESPONSE MONITOR
+                            </span>
+                            <span id="responseStatus" class="font-mono text-[11px] text-slate-400">READY TO PING</span>
+                        </div>
+                        <div id="liveOutput" class="p-4 font-mono text-xs text-retro-green overflow-auto max-h-56 leading-relaxed">
+                            <span class="text-slate-500">// 点击左侧 [▶ TEST LIVE API] 按钮，发起真实网络请求并听听 8-Bit 成功音效！</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部栏 -->
+    <footer class="relative z-10 w-full max-w-5xl mx-auto px-4 py-5 text-center sm:flex sm:items-center sm:justify-between text-xs text-slate-500 font-mono">
+        <div>BUILT FOR VIBECODING CHALLENGE // DARK AURORA + 8-BIT</div>
+        <div class="mt-1 sm:mt-0">PRESS ANY MOOD TO SYNTHESIZE CHIPTUNE</div>
+    </footer>
+
+    <!-- 全局 Toast 消息提示框 (替代 alert) -->
+    <div id="toastBox" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-200 pointer-events-none">
+        <div class="px-4 py-3 rounded-xl bg-slate-900/95 border-2 border-retro-yellow text-retro-yellow font-mono text-xs shadow-2xl flex items-center gap-2.5">
+            <span id="toastIcon">✨</span>
+            <span id="toastMsg">已复制到剪贴板</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. Web Audio API 复古 8-Bit 芯片音效引擎
+        // ==========================================
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 播放单个像素音符
+        function playTone(freq, type = 'square', duration = 0.08, delay = 0, vol = 0.08) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + delay + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(audioCtx.currentTime + delay);
+                osc.stop(audioCtx.currentTime + delay + duration);
+            } catch (e) {
+                console.warn('Audio play blocked:', e);
+            }
+        }
+
+        // 预设 8-Bit 音效库
+        const sfx = {
+            select: () => {
+                playTone(523.25, 'square', 0.06, 0, 0.07);    // C5
+                playTone(783.99, 'square', 0.09, 0.05, 0.07); // G5
+            },
+            coin: () => {
+                playTone(987.77, 'square', 0.07, 0, 0.07);    // B5
+                playTone(1318.51, 'square', 0.22, 0.07, 0.07);// E6
+            },
+            powerup: () => {
+                const notes = [330, 392, 659, 523, 587, 784];
+                notes.forEach((n, idx) => playTone(n, 'square', 0.07, idx * 0.055, 0.06));
+            },
+            laser: () => {
+                if (!soundEnabled) return;
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(140, audioCtx.currentTime + 0.16);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.16);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.16);
+            },
+            error: () => {
+                playTone(180, 'sawtooth', 0.12, 0, 0.08);
+                playTone(130, 'sawtooth', 0.18, 0.1, 0.08);
+            }
+        };
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            const btn = document.getElementById('soundToggle');
+            if (soundEnabled) {
+                icon.textContent = '🔊';
+                text.textContent = '8-BIT SFX: ON';
+                btn.classList.replace('border-slate-600', 'border-retro-cyan/60');
+                btn.classList.replace('text-slate-400', 'text-retro-cyan');
+                sfx.coin();
+            } else {
+                icon.textContent = '🔇';
+                text.textContent = '8-BIT SFX: OFF';
+                btn.classList.replace('border-retro-cyan/60', 'border-slate-600');
+                btn.classList.replace('text-retro-cyan', 'text-slate-400');
+            }
+        }
+
+        // ==========================================
+        // 2. 心情与精选公共 API 数据库
+        // ==========================================
+        const moodDatabase = [
+            {
+                id: 'healing',
+                label: 'Bug 爆炸求治愈',
+                emoji: '🐱',
+                color: '#00f5d4',
+                tag: 'HEALING // 治愈系',
+                keywords: ['累', '治愈', '崩溃', 'bug', '猫', '狗', '难过', '开心', '萌'],
+                apis: [
+                    {
+                        title: 'The Cat API (云吸猫急救接口)',
+                        emoji: '🐱',
+                        auth: '无需 API Key',
+                        reason: '报错红了一片？没有什么是一个 HTTP 200 返回的高清猫咪动图解决不了的。如果有，就请求两次。',
+                        desc: '全球最受欢迎的免费猫咪图片与 GIF 公共接口，秒级响应，专为拯救程序员发际线而生。',
+                        endpoint: 'https://api.thecatapi.com/v1/images/search',
+                        code: `// 召唤一只赛博猫咪治愈你的心情\nconst res = await fetch('https://api.thecatapi.com/v1/images/search');\nconst [cat] = await res.json();\nconsole.log('治愈能量已送达:', cat.url);`,
+                        renderPreview: (data) => {
+                            const url = data?.[0]?.url;
+                            return url ? `<div class="space-y-2"><img src="${url}" alt="Cat" class="h-32 rounded-lg border border-retro-cyan/50 object-cover"/><pre class="text-[11px] text-retro-cyan">${JSON.stringify(data[0], null, 2)}</pre></div>` : JSON.stringify(data, null, 2);
+                        }
+                    },
+                    {
+                        title: 'Dog CEO API (快乐小狗生成器)',
+                        emoji: '🐶',
+                        auth: '无需 API Key',
+                        reason: '修完了一个祖传屎山 Bug！快召唤一只摇尾巴的修勾来庆祝你的胜利。',
+                        desc: '基于斯坦福犬种数据集的开源免费小狗图片 API，支持按品种随机获取高清萌照。',
+                        endpoint: 'https://dog.ceo/api/breeds/image/random',
+                        code: `// 获取一只随机修勾\nconst res = await fetch('https://dog.ceo/api/breeds/image/random');\nconst data = await res.json();\nconsole.log('汪！:', data.message);`,
+                        renderPreview: (data) => {
+                            return data?.message ? `<div class="space-y-2"><img src="${data.message}" alt="Dog" class="h-32 rounded-lg border border-retro-cyan/50 object-cover"/><pre class="text-[11px] text-retro-cyan">${JSON.stringify(data, null, 2)}</pre></div>` : JSON.stringify(data, null, 2);
+                        }
+                    }
+                ]
+            },
+            {
+                id: 'geek',
+                label: '极客硬核探索欲',
+                emoji: '🚀',
+                color: '#9b5de5',
+                tag: 'COSMIC // 极客探索',
+                keywords: ['宇宙', '太空', '探索', '极客', '硬核', '科技', '未来', '卫星', 'iss'],
+                apis: [
+                    {
+                        title: 'Open Notify ISS (国际空间站实时坐标)',
+                        emoji: '🛰️',
+                        auth: '无需 API Key',
+                        reason: '觉得眼前的需求太琐碎？看看头顶 400 公里外正以每秒 7.66 公里飞驰的国际空间站，格局瞬间打开！',
+                        desc: '实时返回国际空间站（ISS）当前的经纬度坐标与时间戳，适合做地球仪可视化项目。',
+                        endpoint: 'https://api.wheretheiss.at/v1/satellites/25544',
+                        code: `// 追踪国际空间站实时轨道位置\nconst res = await fetch('https://api.wheretheiss.at/v1/satellites/25544');\nconst iss = await res.json();\nconsole.log(\`当前纬度: \${iss.latitude}, 经度: \${iss.longitude}\`);`
+                    },
+                    {
+                        title: 'SpaceX Launches API (火箭发射数据)',
+                        emoji: '🚀',
+                        auth: '无需 API Key',
+                        reason: '代码编译通过的那一刻，就像猎鹰火箭成功回收一样令人热血沸腾！',
+                        desc: '开源 SpaceX 历史与最新火箭发射任务、载荷、火箭型号及直播链接数据。',
+                        endpoint: 'https://api.spacexdata.com/v4/launches/latest',
+                        code: `// 获取最近一次 SpaceX 发射任务\nconst res = await fetch('https://api.spacexdata.com/v4/launches/latest');\nconst launch = await res.json();\nconsole.log('任务代号:', launch.name);`
+                    }
+                ]
+            },
+            {
+                id: 'retro',
+                label: '怀旧摸鱼玩游戏',
+                emoji: '🕹️',
+                color: '#fee440',
+                tag: '8-BIT // 摸鱼怀旧',
+                keywords: ['游戏', '摸鱼', '宝可梦', '怀旧', '复古', '像素', '无聊', '玩'],
+                apis: [
+                    {
+                        title: 'PokéAPI (宝可梦图鉴全集)',
+                        emoji: '⚡',
+                        auth: '无需 API Key',
+                        reason: '写代码写累了？来草丛里抓一只随机宝可梦！完整的属性、技能和像素立绘全都有。',
+                        desc: '最经典的 RESTful 宝可梦数据库，涵盖所有世代的宝可梦数据与精灵图（Sprites）。',
+                        endpoint: 'https://pokeapi.co/api/v2/pokemon/pikachu',
+                        code: `// 召唤皮卡丘的战斗数值与像素立绘\nconst res = await fetch('https://pokeapi.co/api/v2/pokemon/pikachu');\nconst p = await res.json();\nconsole.log(p.name, p.sprites.front_default);`,
+                        renderPreview: (data) => {
+                            const sprite = data?.sprites?.front_default;
+                            return sprite ? `<div class="flex items-center gap-4"><img src="${sprite}" class="w-24 h-24 bg-white/10 rounded-xl p-2 pixelated"/><pre class="text-[11px] text-retro-yellow">NAME: ${data.name.toUpperCase()}\nID: #${data.id}\nHEIGHT: ${data.height}\nWEIGHT: ${data.weight}</pre></div>` : JSON.stringify(data, null, 2);
+                        }
+                    },
+                    {
+                        title: 'Official Joke API (程序员冷笑话)',
+                        emoji: '🃏',
+                        auth: '无需 API Key',
+                        reason: '在终端里打印一条冷笑话，给枯燥的构建日志加点幽默感。',
+                        desc: '轻量级随机笑话接口，包含编程专场笑话，返回 setup（铺垫）和 punchline（包袱）。',
+                        endpoint: 'https://official-joke-api.appspot.com/jokes/programming/random',
+                        code: `// 来一条纯正的程序员冷笑话\nconst res = await fetch('https://official-joke-api.appspot.com/jokes/programming/random');\nconst [joke] = await res.json();\nconsole.log(joke.setup, '👉', joke.punchline);`
+                    }
+                ]
+            },
+            {
+                id: 'zen',
+                label: '深夜哲思与灵感',
+                emoji: '🌌',
+                color: '#ff2a85',
+                tag: 'MIDNIGHT // 深夜灵感',
+                keywords: ['深夜', '哲学', '名言', '灵感', '思考', 'emo', '孤独', '建议'],
+                apis: [
+                    {
+                        title: 'Advice Slip API (赛博人生建议)',
+                        emoji: '🔮',
+                        auth: '无需 API Key',
+                        reason: '深夜两点还在重构代码？向赛博神谕求一条随机的人生建议，也许答案就藏在其中。',
+                        desc: '极简风格的人生建议接口，每次请求返回一条随机的简短格言或生活小贴士。',
+                        endpoint: 'https://api.adviceslip.com/advice',
+                        code: `// 获取一条随机赛博神谕\nconst res = await fetch('https://api.adviceslip.com/advice');\nconst { slip } = await res.json();\nconsole.log('💡 神谕:', slip.advice);`
+                    },
+                    {
+                        title: 'Quotable / ZenQuotes (名人哲思录)',
+                        emoji: '📜',
+                        auth: '无需 API Key',
+                        reason: '适合放进你的个人主页或终端欢迎语里，让每次打开编辑器都充满仪式感。',
+                        desc: '聚合历史哲学家、科学家与作家的经典语录，支持跨域直接调用。',
+                        endpoint: 'https://dummyjson.com/quotes/random',
+                        code: `// 获取一条随机哲思名言\nconst res = await fetch('https://dummyjson.com/quotes/random');\nconst quote = await res.json();\nconsole.log(\`"\${quote.quote}" — \${quote.author}\`);`
+                    }
+                ]
+            },
+            {
+                id: 'builder',
+                label: '全速赶工搭建原型',
+                emoji: '⚡',
+                color: '#38b000',
+                tag: 'HACKATHON // 黑客松',
+                keywords: ['赶工', '黑客松', '测试', 'mock', '数据', '原型', '工作', '效率'],
+                apis: [
+                    {
+                        title: 'RandomUser.me (仿真用户生成器)',
+                        emoji: '🪪',
+                        auth: '无需 API Key',
+                        reason: '黑客松倒计时还剩 2 小时，UI 缺真实感用户头像和资料？一秒生成以假乱真的用户卡片！',
+                        desc: '生成包含头像、姓名、邮箱、地理位置和登录凭证的完整模拟用户 JSON 数据。',
+                        endpoint: 'https://randomuser.me/api/',
+                        code: `// 秒速生成高颜值 Mock 用户数据\nconst res = await fetch('https://randomuser.me/api/');\nconst { results } = await res.json();\nconsole.log(results[0].name, results[0].picture.large);`
+                    },
+                    {
+                        title: 'JSONPlaceholder (经典 REST 沙盒)',
+                        emoji: '📦',
+                        auth: '无需 API Key',
+                        reason: '前端界面已经写好了，后端接口还在画大饼？用它立刻跑通增删改查全流程。',
+                        desc: '开发者最信赖的免费在线 Fake REST API，支持 GET/POST/PUT/DELETE 模拟。',
+                        endpoint: 'https://jsonplaceholder.typicode.com/todos/1',
+                        code: `// 测试你的前端异步请求逻辑\nconst res = await fetch('https://jsonplaceholder.typicode.com/todos/1');\nconst todo = await res.json();\nconsole.log('模拟待办:', todo);`
+                    }
+                ]
+            },
+            {
+                id: 'chill',
+                label: '窗外下雨发呆中',
+                emoji: '🌧️',
+                color: '#38bdf8',
+                tag: 'CHILL // 气象漫步',
+                keywords: ['天气', '下雨', '发呆', '放松', '咖啡', '摸鱼', '看海'],
+                apis: [
+                    {
+                        title: 'Open-Meteo (全球免费气象站)',
+                        emoji: '🌦️',
+                        auth: '无需 API Key',
+                        reason: '不用注册账号、不用绑信用卡，输入经纬度就能拿到精准的实时气温与风速，写个极简天气小组件吧！',
+                        desc: '开源高精度的全球气象预报 API，完全免费且无密钥限制。',
+                        endpoint: 'https://api.open-meteo.com/v1/forecast?latitude=22.3193&longitude=114.1694&current_weather=true',
+                        code: `// 查询当前城市实时气象（示例为香港坐标）\nconst url = 'https://api.open-meteo.com/v1/forecast?latitude=22.3193&longitude=114.1694&current_weather=true';\nconst res = await fetch(url);\nconst data = await res.json();\nconsole.log('当前气温:', data.current_weather.temperature + '°C');`
+                    },
+                    {
+                        title: 'Bored API / Activity (无聊拯救计划)',
+                        emoji: '🎲',
+                        auth: '无需 API Key',
+                        reason: '对着空白屏幕发呆了十分钟？让算法随机给你派发一个现实世界的小任务！',
+                        desc: '当你不知道做什么时，随机推荐一项有趣的活动、DIY 或学习点子。',
+                        endpoint: 'https://dummyjson.com/recipes/1',
+                        code: `// 灵感枯竭？看看今晚做什么美食犒劳自己\nconst res = await fetch('https://dummyjson.com/recipes/1');\nconst recipe = await res.json();\nconsole.log('推荐食谱:', recipe.name, '难度:', recipe.difficulty);`
+                    }
+                ]
+            }
+        ];
+
+        // ==========================================
+        // 3. 应用状态与渲染逻辑
+        // ==========================================
+        let currentMoodIndex = 0;
+        let currentApiIndex = 0;
+
+        function renderMoodButtons() {
+            const grid = document.getElementById('moodGrid');
+            grid.innerHTML = moodDatabase.map((mood, idx) => {
+                const isSelected = idx === currentMoodIndex;
+                return `
+                    <button 
+                        onclick="selectMood(${idx})"
+                        style="color: ${mood.color}; border-color: ${isSelected ? mood.color : 'rgba(255,255,255,0.12)'}; background: ${isSelected ? 'rgba(255,255,255,0.09)' : 'rgba(10,12,22,0.6)'};"
+                        class="pixel-btn p-3 rounded-xl border-2 flex flex-col items-center justify-center gap-2 text-center cursor-pointer ${isSelected ? 'active-mood' : ''}"
+                    >
+                        <span class="text-2xl">${mood.emoji}</span>
+                        <span class="text-xs font-bold text-white leading-tight">${mood.label}</span>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function renderApiCard() {
+            const mood = moodDatabase[currentMoodIndex];
+            const api = mood.apis[currentApiIndex];
+
+            document.getElementById('apiEmoji').textContent = api.emoji;
+            const catEl = document.getElementById('apiCategory');
+            catEl.textContent = mood.tag;
+            catEl.style.color = mood.color;
+            catEl.style.borderColor = mood.color + '66';
+            catEl.style.backgroundColor = mood.color + '1A';
+
+            document.getElementById('apiAuthBadge').textContent = '✓ ' + api.auth;
+            document.getElementById('apiTitle').textContent = api.title;
+            document.getElementById('apiVibeReason').textContent = api.reason;
+            document.getElementById('apiDesc').textContent = api.desc;
+            document.getElementById('apiEndpoint').textContent = api.endpoint;
+            document.getElementById('apiCodeBlock').textContent = api.code;
+
+            // 重置实时测试面板
+            document.getElementById('responseStatus').textContent = 'READY TO PING';
+            document.getElementById('responseStatus').className = 'font-mono text-[11px] text-slate-400';
+            document.getElementById('liveOutput').innerHTML = `<span class="text-slate-500">// 点击左侧 [▶ TEST LIVE API] 按钮，向 ${api.endpoint} 发起真实请求！</span>`;
+        }
+
+        function selectMood(idx) {
+            currentMoodIndex = idx;
+            currentApiIndex = 0;
+            sfx.select();
+            renderMoodButtons();
+            renderApiCard();
+        }
+
+        function nextApiInMood() {
+            const mood = moodDatabase[currentMoodIndex];
+            currentApiIndex = (currentApiIndex + 1) % mood.apis.length;
+            sfx.coin();
+            renderApiCard();
+        }
+
+        function randomVibe() {
+            sfx.powerup();
+            const randMood = Math.floor(Math.random() * moodDatabase.length);
+            currentMoodIndex = randMood;
+            currentApiIndex = Math.floor(Math.random() * moodDatabase[randMood].apis.length);
+            renderMoodButtons();
+            renderApiCard();
+            showToast('🎲', `已随机切换至【${moodDatabase[randMood].label}】频道！`);
+        }
+
+        // 一句话 v0.dev 语义匹配
+        function generateFromPrompt() {
+            const input = document.getElementById('vibeInput').value.trim().toLowerCase();
+            if (!input) {
+                randomVibe();
+                return;
+            }
+            sfx.powerup();
+
+            let matchedIdx = -1;
+            for (let i = 0; i < moodDatabase.length; i++) {
+                if (moodDatabase[i].keywords.some(kw => input.includes(kw))) {
+                    matchedIdx = i;
+                    break;
+                }
+            }
+
+            if (matchedIdx === -1) {
+                // 基于字符串哈希确定性分配一种心情，体现 AI 灵感感
+                let hash = 0;
+                for (let c of input) hash += c.charCodeAt(0);
+                matchedIdx = hash % moodDatabase.length;
+            }
+
+            currentMoodIndex = matchedIdx;
+            currentApiIndex = 0;
+            renderMoodButtons();
+            renderApiCard();
+            showToast('⚡', `v0 灵感解析完成：已匹配【${moodDatabase[matchedIdx].label}】`);
+        }
+
+        // 发起真实 API 测试请求
+        async function runLiveApiTest() {
+            const mood = moodDatabase[currentMoodIndex];
+            const api = mood.apis[currentApiIndex];
+            const outputEl = document.getElementById('liveOutput');
+            const statusEl = document.getElementById('responseStatus');
+
+            sfx.laser();
+            statusEl.textContent = 'FETCHING...';
+            statusEl.className = 'font-mono text-[11px] text-retro-yellow animate-pulse';
+            outputEl.innerHTML = `<span class="text-retro-yellow">&gt; 正在连接赛博节点: ${api.endpoint} ...</span>`;
+
+            const startTime = performance.now();
+            try {
+                const res = await fetch(api.endpoint);
+                const duration = Math.round(performance.now() - startTime);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                sfx.coin();
+                statusEl.textContent = `200 OK · ${duration}ms`;
+                statusEl.className = 'font-mono text-[11px] text-retro-green font-bold';
+
+                if (api.renderPreview) {
+                    outputEl.innerHTML = api.renderPreview(data);
+                } else {
+                    outputEl.innerHTML = `<pre class="text-xs text-retro-cyan whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (err) {
+                sfx.error();
+                statusEl.textContent = 'NETWORK FALLBACK';
+                statusEl.className = 'font-mono text-[11px] text-retro-pink';
+                outputEl.innerHTML = `<span class="text-retro-pink">// 请求受跨域或网络限制 (${err.message})，已展示模拟响应结构：</span>\n<pre class="text-xs text-slate-300 mt-2">{\n  "status": "vibecoding_ok",\n  "mood": "${mood.id}",\n  "message": "API Endpoint 已复制，可直接在你的 Node/浏览器环境调用！"\n}</pre>`;
+            }
+        }
+
+        // 复制工具函数（兼容 iframe 环境）
+        function copyToClipboard(text, message) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                sfx.coin();
+                showToast('📋', message);
+            } catch (err) {
+                sfx.error();
+                showToast('⚠️', '复制失败，请手动选择文本复制');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function copyEndpoint() {
+            const url = document.getElementById('apiEndpoint').textContent;
+            copyToClipboard(url, 'API Endpoint 地址已复制！');
+        }
+
+        function copyCodeSnippet() {
+            const code = document.getElementById('apiCodeBlock').textContent;
+            copyToClipboard(code, 'Fetch 调用代码已复制到剪贴板！');
+        }
+
+        // 自定义复古消息提示框
+        let toastTimer = null;
+        function showToast(icon, msg) {
+            const box = document.getElementById('toastBox');
+            document.getElementById('toastIcon').textContent = icon;
+            document.getElementById('toastMsg').textContent = msg;
+
+            box.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                box.classList.add('translate-y-20', 'opacity-0');
+            }, 2400);
+        }
+
+        // 页面初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMoodButtons();
+            renderApiCard();
+        });
+    </script>
+</body>
+</html>
