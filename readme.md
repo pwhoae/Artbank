@@ -3,7 +3,7 @@
 開發有用之物：期望自己的勞動成果能被他人使用並帶來幫助。
 魔術般的魅力：精妙組件組裝，看著電腦依照指令運作並產生預期結果。
 持續學習：具備非重複性，每次解決不同問題都能獲得實務或理論上的新知
-
+https://www.img2desmos.com/
 Addons #simple card/simple card pile ui
 善用現成 Addons / Plugins（不要重複造輪子）Panku Console：遊戲內即時控制台，可追蹤變數、執行命令，極度利於 Debug 與測試。 
 GodotSteam：輕鬆無縫對接 Steam 平台功能（成就、多人連線等）。 
