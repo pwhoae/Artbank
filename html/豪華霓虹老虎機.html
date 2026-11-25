@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豪華霓虹老虎機 - Lucky Neon Slots</title>
+    <!-- 引入 Tailwind CSS 與 Tone.js (用於生成合成音效) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffd700;
+            --gold-dark: #b8860b;
+            --neon-pink: #ff007f;
+            --neon-blue: #00f3ff;
+            --bg-dark: #0f0c29;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: radial-gradient(circle at center, #24243e 0%, #0f0c29 60%, #050411 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .font-digital {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* 老虎機主機外殼 */
+        .slot-cabinet {
+            background: linear-gradient(145deg, #2b1d42, #170e26);
+            border: 4px solid #ffd700;
+            box-shadow: 
+                0 0 25px rgba(255, 215, 0, 0.4),
+                inset 0 0 30px rgba(0, 0, 0, 0.8),
+                0 20px 50px rgba(0, 0, 0, 0.9);
+            position: relative;
+        }
+
+        /* 頂部跑馬燈泡 */
+        .bulb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #443300;
+            box-shadow: 0 0 2px #000;
+            transition: all 0.2s;
+        }
+        .bulb.active {
+            background: #fff7cc;
+            box-shadow: 0 0 10px #ffd700, 0 0 20px #ff8800;
+        }
+
+        /* 滾輪視窗容器 */
+        .reels-window {
+            background: linear-gradient(180deg, #09090b 0%, #1e1b2e 20%, #27233a 50%, #1e1b2e 80%, #09090b 100%);
+            border: 4px solid #b8860b;
+            box-shadow: inset 0 15px 25px rgba(0,0,0,0.95), inset 0 -15px 25px rgba(0,0,0,0.95);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 中央中獎線 */
+        .payline {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255, 0, 127, 0.6);
+            transform: translateY(-50%);
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 0 10px #ff007f;
+        }
+        .payline::before, .payline::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            transform: translateY(-50%);
+        }
+        .payline::before {
+            left: 0;
+            border-width: 8px 0 8px 12px;
+            border-color: transparent transparent transparent #ff007f;
+        }
+        .payline::after {
+            right: 0;
+            border-width: 8px 12px 8px 0;
+            border-color: transparent #ff007f transparent transparent;
+        }
+
+        /* 單個滾輪軌道 */
+        .reel-col {
+            position: relative;
+            height: 240px; /* 顯示3個圖示，每個80px */
+            overflow: hidden;
+            border-right: 2px solid rgba(255, 215, 0, 0.2);
+        }
+        .reel-col:last-child {
+            border-right: none;
+        }
+
+        .reel-strip {
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+
+        .symbol-item {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.2rem;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+            transition: transform 0.2s;
+        }
+
+        /* 滾動時的動態模糊特效 */
+        .spinning .symbol-item {
+            filter: blur(2px) drop-shadow(0 0 5px rgba(255,255,255,0.3));
+            transform: scaleY(1.15);
+        }
+
+        /* 中獎圖示跳動發光 */
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px #ffd700); }
+            50% { transform: scale(1.25); filter: drop-shadow(0 0 25px #ff007f); }
+        }
+        .winner-symbol {
+            animation: winPulse 0.6s infinite ease-in-out;
+            z-index: 15;
+        }
+
+        /* 實體拉桿樣式 (桌面版顯示) */
+        .lever-base {
+            width: 24px;
+            height: 90px;
+            background: linear-gradient(90deg, #555, #ccc, #444);
+            border-radius: 0 12px 12px 0;
+            border: 2px solid #b8860b;
+            border-left: none;
+            position: relative;
+        }
+        .lever-arm {
+            width: 12px;
+            height: 110px;
+            background: linear-gradient(90deg, #888, #fff, #666);
+            position: absolute;
+            bottom: 40px;
+            left: 6px;
+            transform-origin: bottom center;
+            border-radius: 6px;
+            transition: transform 0.35s cubic-bezier(0.5, 1.8, 0.5, 0.8);
+            cursor: pointer;
+        }
+        .lever-ball {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #d90429 60%, #6a040f 100%);
+            position: absolute;
+            top: -24px;
+            left: -13px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6), inset 0 2px 5px rgba(255,255,255,0.6);
+        }
+        .lever-arm.pulled {
+            transform: rotateX(65deg) scaleY(0.55) translateY(60px);
+        }
+
+        /* 按鈕特效 */
+        .spin-btn {
+            background: linear-gradient(180deg, #ff2a85 0%, #b8004c 100%);
+            box-shadow: 0 6px 0 #66002a, 0 10px 20px rgba(255, 0, 127, 0.5);
+            transition: all 0.1s;
+        }
+        .spin-btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #66002a, 0 4px 10px rgba(255, 0, 127, 0.5);
+        }
+        .spin-btn:disabled {
+            background: linear-gradient(180deg, #555 0%, #333 100%);
+            box-shadow: 0 4px 0 #111;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* 金幣噴發畫布 */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* 機台震動動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px) rotate(-0.5deg); }
+            40% { transform: translateX(6px) rotate(0.5deg); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+        .cabinet-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-3 sm:p-6">
+
+    <!-- 金幣特效畫布 -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- 頂部音效與補幣控制列 -->
+    <div class="w-full max-w-lg flex justify-between items-center mb-3 px-2">
+        <button id="sound-toggle" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full text-sm transition backdrop-blur-sm border border-white/10">
+            <span id="sound-icon">🔊</span>
+            <span id="sound-text">音效開啟</span>
+        </button>
+        <button id="add-credits-btn" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 px-3 py-1.5 rounded-full text-sm font-bold transition">
+            + 免費領取 500 籌碼
+        </button>
+    </div>
+
+    <!-- 老虎機主體與右側拉桿容器 -->
+    <div class="relative flex items-center justify-center w-full max-w-lg">
+        
+        <!-- 老虎機主機 -->
+        <div id="cabinet" class="slot-cabinet w-full rounded-3xl p-4 sm:p-6 z-10">
+            
+            <!-- 頂部霓虹招牌 -->
+            <div class="text-center mb-4">
+                <div class="inline-block px-6 py-1.5 rounded-full bg-black/60 border-2 border-amber-400 shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-400 to-yellow-200">
+                        ★ MEGA JACKPOT ★
+                    </h1>
+                </div>
+                <!-- 跑馬燈泡列 -->
+                <div id="bulb-row" class="flex justify-around mt-3 px-4"></div>
+            </div>
+
+            <!-- 數據儀表板 (餘額 / 押注 / 贏得) -->
+            <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-4 bg-black/60 p-3 rounded-2xl border border-amber-500/30">
+                <div class="text-center">
+                    <div class="text-xs text-amber-300/80 font-bold">目前籌碼</div>
+                    <div id="balance-display" class="font-digital text-lg sm:text-xl font-bold text-emerald-400 truncate">1000</div>
+                </div>
+                <div class="text-center border-x border-white/10">
+                    <div class="text-xs text-amber-300/80 font-bold">單次押注</div>
+                    <div id="bet-display" class="font-digital text-lg sm:text-xl font-bold text-amber-400">50</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-xs text-amber-300/80 font-bold">本次贏得</div>
+                    <div id="win-display" class="font-digital text-lg sm:text-xl font-bold text-pink-400">0</div>
+                </div>
+            </div>
+
+            <!-- 核心三滾輪顯示視窗 -->
+            <div class="reels-window rounded-2xl mb-4">
+                <div class="payline"></div>
+                <div class="grid grid-cols-3">
+                    <!-- 滾輪 1 -->
+                    <div class="reel-col" id="reel-col-0">
+                        <div class="reel-strip" id="reel-strip-0"></div>
+                    </div>
+                    <!-- 滾輪 2 -->
+                    <div class="reel-col" id="reel-col-1">
+                        <div class="reel-strip" id="reel-strip-1"></div>
+                    </div>
+                    <!-- 滾輪 3 -->
+                    <div class="reel-col" id="reel-col-2">
+                        <div class="reel-strip" id="reel-strip-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 狀態提示訊息欄 -->
+            <div id="status-banner" class="text-center py-2 px-3 mb-4 rounded-xl bg-black/50 border border-white/10 text-amber-200 font-bold text-sm sm:text-base min-h-[40px] flex items-center justify-center">
+                準備好試試手氣了嗎？按下 SPIN 或拉動拉桿！
+            </div>
+
+            <!-- 操作按鈕區 -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <!-- 押注調整 -->
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-center bg-black/40 p-1.5 rounded-2xl border border-white/10">
+                    <button id="bet-down" class="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-95 font-black text-xl flex items-center justify-center transition">-</button>
+                    <button id="bet-max" class="px-3 h-10 rounded-xl bg-amber-600/80 hover:bg-amber-500 active:scale-95 font-bold text-xs tracking-wider transition">MAX BET</button>
+                    <button id="bet-up" class="w-10 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 active:scale-95 font-black text-xl flex items-center justify-center transition">+</button>
+                </div>
+
+                <!-- 啟動旋轉主按鈕 -->
+                <button id="spin-btn" class="spin-btn w-full sm:flex-1 py-3.5 px-6 rounded-2xl font-black text-xl tracking-widest text-white uppercase cursor-pointer">
+                    🎰 SPIN 旋轉
+                </button>
+            </div>
+
+            <!-- 賠率說明表 -->
+            <div class="mt-5 pt-4 border-t border-white/10">
+                <div class="text-xs text-center text-gray-400 mb-2 font-bold">★ 中獎賠率表 (中央紅線連線) ★</div>
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-center text-xs">
+                    <div class="bg-black/40 p-1.5 rounded-lg border border-amber-400/30">
+                        <div class="text-base">7️⃣7️⃣7️⃣</div>
+                        <div class="text-amber-400 font-bold">50x</div>
+                    </div>
+                    <div class="bg-black/40 p-1.5 rounded-lg border border-white/10">
+                        <div class="text-base">💎💎💎</div>
+                        <div class="text-cyan-300 font-bold">25x</div>
+                    </div>
+                    <div class="bg-black/40 p-1.5 rounded-lg border border-white/10">
+                        <div class="text-base">🔔🔔🔔</div>
+                        <div class="text-yellow-300 font-bold">15x</div>
+                    </div>
+                    <div class="bg-black/40 p-1.5 rounded-lg border border-white/10">
+                        <div class="text-base">🍉🍉🍉</div>
+                        <div class="text-emerald-300 font-bold">10x</div>
+                    </div>
+                    <div class="bg-black/40 p-1.5 rounded-lg border border-white/10">
+                        <div class="text-base">🍋🍋🍋</div>
+                        <div class="text-lime-300 font-bold">5x</div>
+                    </div>
+                    <div class="bg-black/40 p-1.5 rounded-lg border border-white/10">
+                        <div class="text-base">🍒🍒 (任意2)</div>
+                        <div class="text-pink-300 font-bold">2x (3個8x)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側機械拉桿 (在較寬螢幕顯示) -->
+        <div class="hidden sm:flex items-center -ml-1 z-0" title="點擊拉桿開始旋轉">
+            <div class="lever-base">
+                <div id="lever-arm" class="lever-arm">
+                    <div class="lever-ball"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 豪華霓虹老虎機核心邏輯
+         * 包含：物理慣性滾動動畫、回彈特效、Web Audio 合成音效、金幣噴發粒子系統
+         */
+
+        // 1. 符號與權重設定 (權重越高越容易出現)
+        const SYMBOLS = [
+            { id: 'seven',   char: '7️⃣', multiplier: 50, weight: 2 },
+            { id: 'diamond', char: '💎', multiplier: 25, weight: 4 },
+            { id: 'bell',    char: '🔔', multiplier: 15, weight: 6 },
+            { id: 'melon',   char: '🍉', multiplier: 10, weight: 8 },
+            { id: 'lemon',   char: '🍋', multiplier: 5,  weight: 10 },
+            { id: 'cherry',  char: '🍒', multiplier: 8,  weight: 12 }
+        ];
+
+        const SYMBOL_HEIGHT = 80; // 每個圖示高度 (px)
+        const REEL_COUNT = 3;
+        const STRIP_LENGTH = 36;  // 每次旋轉生成的滾輪條長度
+
+        // 遊戲狀態
+        let state = {
+            balance: 1000,
+            bet: 50,
+            minBet: 10,
+            maxBet: 200,
+            betStep: 10,
+            isSpinning: false,
+            soundEnabled: true,
+            currentSymbols: ['7️⃣', '💎', '7️⃣'] // 初始中央顯示圖示
+        };
+
+        // DOM 元素參照
+        const balanceEl = document.getElementById('balance-display');
+        const betEl = document.getElementById('bet-display');
+        const winEl = document.getElementById('win-display');
+        const statusBanner = document.getElementById('status-banner');
+        const spinBtn = document.getElementById('spin-btn');
+        const leverArm = document.getElementById('lever-arm');
+        const cabinet = document.getElementById('cabinet');
+        const strips = [
+            document.getElementById('reel-strip-0'),
+            document.getElementById('reel-strip-1'),
+            document.getElementById('reel-strip-2')
+        ];
+        const cols = [
+            document.getElementById('reel-col-0'),
+            document.getElementById('reel-col-1'),
+            document.getElementById('reel-col-2')
+        ];
+
+        // 2. 音效系統 (使用 Tone.js 合成，無需外部音檔)
+        let synth = null;
+        let audioInitialized = false;
+
+        async function initAudio() {
+            if (audioInitialized || !state.soundEnabled) return;
+            try {
+                await Tone.start();
+                synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 }
+                }).toDestination();
+                audioInitialized = true;
+            } catch (e) {
+                console.warn("Audio init skipped:", e);
+            }
+        }
+
+        function playSound(type) {
+            if (!state.soundEnabled || !synth) return;
+            const now = Tone.now();
+            try {
+                if (type === 'lever') {
+                    synth.triggerAttackRelease(["C3", "G3"], "16n", now);
+                } else if (type === 'tick') {
+                    synth.triggerAttackRelease("C5", "32n", now, 0.15);
+                } else if (type === 'stop') {
+                    synth.triggerAttackRelease("G2", "16n", now, 0.6);
+                } else if (type === 'win') {
+                    const notes = ["C5", "E5", "G5", "C6"];
+                    notes.forEach((note, i) => {
+                        synth.triggerAttackRelease(note, "8n", now + i * 0.09);
+                    });
+                } else if (type === 'jackpot') {
+                    const notes = ["C5", "E5", "G5", "B5", "C6", "G5", "C6"];
+                    notes.forEach((note, i) => {
+                        synth.triggerAttackRelease(note, "8n", now + i * 0.1);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        // 3. 依據權重隨機抽取一個符號
+        function getRandomSymbol() {
+            const totalWeight = SYMBOLS.reduce((sum, s) => sum + s.weight, 0);
+            let random = Math.random() * totalWeight;
+            for (const sym of SYMBOLS) {
+                if (random < sym.weight) return sym;
+                random -= sym.weight;
+            }
+            return SYMBOLS[SYMBOLS.length - 1];
+        }
+
+        // 4. 初始化滾輪畫面與頂部跑馬燈
+        function initReels() {
+            // 建立頂部燈泡
+            const bulbRow = document.getElementById('bulb-row');
+            for (let i = 0; i < 12; i++) {
+                const bulb = document.createElement('div');
+                bulb.className = 'bulb' + (i % 2 === 0 ? ' active' : '');
+                bulbRow.appendChild(bulb);
+            }
+
+            // 跑馬燈閃爍定時器
+            let step = 0;
+            setInterval(() => {
+                const bulbs = document.querySelectorAll('.bulb');
+                step++;
+                bulbs.forEach((b, idx) => {
+                    if (state.isSpinning) {
+                        // 旋轉時快速流水燈
+                        b.classList.toggle('active', (idx + step) % 3 === 0);
+                    } else {
+                        // 待機時交替閃爍
+                        b.classList.toggle('active', (idx + step) % 2 === 0);
+                    }
+                });
+            }, 250);
+
+            // 初始化三個滾輪的靜態顯示 (每個滾輪顯示 3 格，中間為目標格)
+            for (let i = 0; i < REEL_COUNT; i++) {
+                const topSym = getRandomSymbol().char;
+                const midSym = state.currentSymbols[i];
+                const botSym = getRandomSymbol().char;
+                renderStrip(i, [topSym, midSym, botSym]);
+                strips[i].style.transform = `translateY(0px)`;
+            }
+        }
+
+        function renderStrip(reelIndex, symbolChars) {
+            strips[reelIndex].innerHTML = symbolChars.map((char, idx) => 
+                `<div class="symbol-item" data-index="${idx}">${char}</div>`
+            ).join('');
+        }
+
+        // 5. 核心旋轉與動畫控制
+        async function spin() {
+            if (state.isSpinning) return;
+            if (state.balance < state.bet) {
+                showMessage("⚠️ 籌碼不足！請降低押注或領取免費籌碼。", "text-rose-400");
+                cabinet.classList.add('cabinet-shake');
+                setTimeout(() => cabinet.classList.remove('cabinet-shake'), 400);
+                return;
+            }
+
+            await initAudio();
+            playSound('lever');
+
+            // 扣除籌碼並鎖定狀態
+            state.isSpinning = true;
+            state.balance -= state.bet;
+            updateDashboard(0);
+            spinBtn.disabled = true;
+            showMessage("🎲 祝您好運！滾輪高速運轉中...", "text-cyan-300");
+
+            // 拉桿動畫
+            leverArm.classList.add('pulled');
+            setTimeout(() => leverArm.classList.remove('pulled'), 450);
+
+            // 預先決定本次三個滾輪的最終結果
+            const finalResults = [
+                getRandomSymbol(),
+                getRandomSymbol(),
+                getRandomSymbol()
+            ];
+
+            // 啟動三個滾輪的獨立動畫，依序停止 (產生緊張感)
+            const spinPromises = [];
+            for (let i = 0; i < REEL_COUNT; i++) {
+                const duration = 1400 + i * 550; // 第1輪1.4秒，第2輪1.95秒，第3輪2.5秒
+                spinPromises.push(animateReel(i, finalResults[i], duration));
+            }
+
+            // 等待所有滾輪完全停止
+            await Promise.all(spinPromises);
+
+            state.currentSymbols = finalResults.map(s => s.char);
+            evaluateWin(finalResults);
+
+            state.isSpinning = false;
+            spinBtn.disabled = false;
+        }
+
+        // 單個滾輪物理緩動動畫 (使用 requestAnimationFrame 實現流暢慣性與回彈)
+        function animateReel(reelIndex, targetSymbol, duration) {
+            return new Promise((resolve) => {
+                const strip = strips[reelIndex];
+                const col = cols[reelIndex];
+                
+                // 建構長滾輪帶：
+                // 索引 0, 1, 2 為目前畫面上看到的3個圖示 (確保無縫銜接)
+                const currentNodes = strip.querySelectorAll('.symbol-item');
+                const startChars = [
+                    currentNodes[0].textContent,
+                    currentNodes[1].textContent,
+                    currentNodes[2].textContent
+                ];
+
+                const totalItems = STRIP_LENGTH + reelIndex * 6;
+                const stripChars = [...startChars];
+
+                // 中間填充隨機圖示
+                for (let i = 3; i < totalItems - 3; i++) {
+                    stripChars.push(getRandomSymbol().char);
+                }
+
+                // 最後 3 格：倒數第3格(頂部)、倒數第2格(中央中獎線)、最後1格(底部)
+                stripChars.push(getRandomSymbol().char);
+                stripChars.push(targetSymbol.char); // 目標停止在中央線！
+                stripChars.push(getRandomSymbol().char);
+
+                renderStrip(reelIndex, stripChars);
+                col.classList.add('spinning');
+
+                // 目標移動距離：讓倒數第2格對齊視窗正中央 (第2格位置，即 offset = 1 * SYMBOL_HEIGHT)
+                const targetIndex = stripChars.length - 2;
+                const finalY = -((targetIndex - 1) * SYMBOL_HEIGHT);
+
+                let startTime = null;
+                let lastTickY = 0;
+
+                // 自定義緩動曲線：快速啟動 -> 勻速衝刺 -> 減速並帶有輕微過衝回彈 (Back-out)
+                function easeOutBack(t) {
+                    const c1 = 1.15; // 回彈幅度
+                    const c3 = c1 + 1;
+                    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+                }
+
+                function step(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    const elapsed = timestamp - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    // 在最後 20% 階段移除動態模糊，讓圖示清晰煞車
+                    if (progress > 0.8) {
+                        col.classList.remove('spinning');
+                    }
+
+                    const eased = easeOutBack(progress);
+                    const currentY = finalY * eased;
+                    strip.style.transform = `translateY(${currentY}px)`;
+
+                    // 經過每個圖示時發出細微機械滴答聲 (僅第一輪發聲避免吵雜)
+                    if (reelIndex === 0 && Math.abs(currentY - lastTickY) >= SYMBOL_HEIGHT) {
+                        lastTickY = currentY;
+                        playSound('tick');
+                    }
+
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        // 動畫結束後，精簡 DOM 只保留最終可見的 3 格，保持效能
+                        const finalVisible = [
+                            stripChars[targetIndex - 1],
+                            stripChars[targetIndex],
+                            stripChars[targetIndex + 1]
+                        ];
+                        renderStrip(reelIndex, finalVisible);
+                        strip.style.transform = `translateY(0px)`;
+                        playSound('stop');
+                        resolve();
+                    }
+                }
+
+                requestAnimationFrame(step);
+            });
+        }
+
+        // 6. 中獎判定與獎勵結算
+        function evaluateWin(results) {
+            const [r1, r2, r3] = results;
+            let winAmount = 0;
+            let winTitle = "";
+            let isJackpot = false;
+            let winningIndices = [];
+
+            // 情況 A: 三個完全相同
+            if (r1.id === r2.id && r2.id === r3.id) {
+                winAmount = state.bet * r1.multiplier;
+                winningIndices = [0, 1, 2];
+                if (r1.id === 'seven') {
+                    winTitle = `🎉 SUPER JACKPOT！三條 7️⃣ 贏得 ${winAmount} 籌碼！`;
+                    isJackpot = true;
+                } else {
+                    winTitle = `✨ 太棒了！三連線 ${r1.char} 贏得 ${winAmount} 籌碼！`;
+                    isJackpot = r1.multiplier >= 15;
+                }
+            } 
+            // 情況 B: 任意兩個櫻桃 🍒
+            else {
+                const cherryIndices = results
+                    .map((r, idx) => r.id === 'cherry' ? idx : -1)
+                    .filter(idx => idx !== -1);
+
+                if (cherryIndices.length === 2) {
+                    winAmount = state.bet * 2;
+                    winningIndices = cherryIndices;
+                    winTitle = `🍒 幸運雙櫻桃！贏得 ${winAmount} 籌碼！`;
+                }
+            }
+
+            if (winAmount > 0) {
+                state.balance += winAmount;
+                updateDashboard(winAmount);
+                showMessage(winTitle, "text-amber-300 animate-bounce");
+                highlightWinners(winningIndices);
+                
+                if (isJackpot) {
+                    playSound('jackpot');
+                    cabinet.classList.add('cabinet-shake');
+                    setTimeout(() => cabinet.classList.remove('cabinet-shake'), 500);
+                    launchCoins(120);
+                } else {
+                    playSound('win');
+                    launchCoins(45);
+                }
+            } else {
+                updateDashboard(0);
+                showMessage("差一點點！再轉一次把大獎帶回家！", "text-gray-300");
+            }
+        }
+
+        // 讓中獎的中央圖示產生脈衝放大特效
+        function highlightWinners(indices) {
+            indices.forEach(colIdx => {
+                const midItem = strips[colIdx].querySelectorAll('.symbol-item')[1];
+                if (midItem) midItem.classList.add('winner-symbol');
+            });
+        }
+
+        // 更新儀表板數字 (贏得金額帶數字跳動效果)
+        function updateDashboard(winAmount) {
+            balanceEl.textContent = state.balance.toLocaleString();
+            betEl.textContent = state.bet.toLocaleString();
+            
+            if (winAmount > 0) {
+                let current = 0;
+                const step = Math.ceil(winAmount / 20);
+                const timer = setInterval(() => {
+                    current += step;
+                    if (current >= winAmount) {
+                        current = winAmount;
+                        clearInterval(timer);
+                    }
+                    winEl.textContent = current.toLocaleString();
+                }, 25);
+            } else {
+                winEl.textContent = "0";
+            }
+        }
+
+        function showMessage(text, colorClass) {
+            statusBanner.className = `text-center py-2 px-3 mb-4 rounded-xl bg-black/60 border border-white/15 font-bold text-sm sm:text-base min-h-[42px] flex items-center justify-center transition-all ${colorClass}`;
+            statusBanner.textContent = text;
+        }
+
+        // 7. 金幣與彩帶噴發粒子動畫 (Canvas)
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function launchCoins(count) {
+            const colors = ['#ffd700', '#ffea00', '#ff007f', '#00f3ff', '#ffffff'];
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: canvas.width / 2 + (Math.random() - 0.5) * 150,
+                    y: canvas.height * 0.45,
+                    vx: (Math.random() - 0.5) * 18,
+                    vy: (Math.random() - 1.2) * 18,
+                    size: Math.random() * 8 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 15,
+                    isCoin: Math.random() > 0.3
+                });
+            }
+            if (particles.length <= count) {
+                requestAnimationFrame(updateParticles);
+            }
+        }
+
+        function updateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.55; // 重力加速度
+                p.rotation += p.vRot;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+
+                if (p.isCoin) {
+                    // 繪製閃亮金幣
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, p.size, p.size * Math.abs(Math.cos(p.rotation * 0.05)), 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#b8860b';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                } else {
+                    // 繪製慶祝彩帶
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                }
+                ctx.restore();
+
+                if (p.y > canvas.height + 30) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            if (particles.length > 0) {
+                requestAnimationFrame(updateParticles);
+            }
+        }
+
+        // 8. 事件監聽綁定
+        spinBtn.addEventListener('click', spin);
+        leverArm.addEventListener('click', spin);
+
+        // 支援鍵盤空白鍵旋轉
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !state.isSpinning) {
+                e.preventDefault();
+                spin();
+            }
+        });
+
+        document.getElementById('bet-up').addEventListener('click', () => {
+            if (state.isSpinning) return;
+            state.bet = Math.min(state.maxBet, state.bet + state.betStep);
+            updateDashboard(0);
+        });
+
+        document.getElementById('bet-down').addEventListener('click', () => {
+            if (state.isSpinning) return;
+            state.bet = Math.max(state.minBet, state.bet - state.betStep);
+            updateDashboard(0);
+        });
+
+        document.getElementById('bet-max').addEventListener('click', () => {
+            if (state.isSpinning) return;
+            state.bet = Math.min(state.maxBet, state.balance >= state.minBet ? Math.min(state.maxBet, state.balance) : state.maxBet);
+            updateDashboard(0);
+        });
+
+        document.getElementById('add-credits-btn').addEventListener('click', () => {
+            state.balance += 500;
+            updateDashboard(0);
+            showMessage("💰 已補充 500 免費籌碼！繼續享受遊戲！", "text-emerald-400");
+            launchCoins(20);
+        });
+
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('sound-icon').textContent = state.soundEnabled ? '🔊' : '🔇';
+            document.getElementById('sound-text').textContent = state.soundEnabled ? '音效開啟' : '音效靜音';
+            if (state.soundEnabled) initAudio();
+        });
+
+        // 啟動初始化
+        window.onload = initReels;
+    </script>
+</body>
+</html>

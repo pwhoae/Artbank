@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UP 角色平均抽數統計計算機與分佈圖</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts: Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<!-- 本人作为统计学领域大神（在ChatGPT加持下的），看到最近不少人晒抽卡统计，却对自己到底是欧是非经常错判。
+因此楼主提供一个在统计学上的计算公式，能够计算出理论上你的抽卡运气击败了多少比例的玩家。这个方法充分考虑了抽数多少的情况，不会被人说“哎呀你抽的太少没有参考性”。
+具体方法：
+1.新建一个Excel表格
+2.选中任意一个格子，右键“设置单元格格式”，将格式改为“百分比”并设置2位小数3.在格子中输入：=NORM.S.DIST((93.446-UP平均抽数)*SQRT(UP角色数量)/43.091,TRUE)，并填入UP平均抽数和UP角色数量。比如楼主的情况如图所示，就是输入83.4和114.按回车，就能得到百分比的计算结果了。楼主的情况是78.03%，目前还挺欧的 -->
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- 頂部導覽與標題 -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">UP 平均抽數統計檢定計算機</h1>
+                    <p class="text-xs text-slate-400">單樣本 Z 檢定 (One-sample Z-test) 與常態分佈視覺化</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50 self-start sm:self-auto">
+                <span class="font-mono text-indigo-300">NORM.S.DIST((μ₀ - X̄)·√n / σ, TRUE)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區塊 -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- 左側：參數輸入與控制面板 (5 欄) -->
+            <section class="lg:col-span-5 space-y-6">
+                
+                <!-- 觀測數據卡片 -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-5">
+                        <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            你的抽卡數據輸入
+                        </h2>
+                        <button id="btnReset" type="button" class="text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-lg transition cursor-pointer">
+                            重設預設值
+                        </button>
+                    </div>
+
+                    <div class="space-y-5">
+                        <!-- 輸入模式切換 -->
+                        <div class="grid grid-cols-2 gap-1 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                            <button id="modeAvgBtn" type="button" class="py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white shadow transition cursor-pointer">
+                                輸入「平均抽數」
+                            </button>
+                            <button id="modeTotalBtn" type="button" class="py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition cursor-pointer">
+                                輸入「總抽數」自動換算
+                            </button>
+                        </div>
+
+                        <!-- 抽數輸入框 (平均抽數模式) -->
+                        <div id="avgInputGroup">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="inputAvgPulls" class="text-sm font-medium text-slate-300">UP 平均抽數 (<span class="font-mono text-indigo-400">X̄</span>)</label>
+                                <span id="badgeDiff" class="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">差值: 0.00</span>
+                            </div>
+                            <div class="relative flex items-center">
+                                <input type="number" id="inputAvgPulls" value="80.0" step="0.1" min="1" max="300"
+                                    class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-white font-mono text-base outline-none transition">
+                                <span class="absolute right-4 text-xs text-slate-500">抽 / 隻</span>
+                            </div>
+                            <input type="range" id="sliderAvgPulls" min="20" max="160" step="0.5" value="80.0"
+                                class="w-full mt-2.5 accent-indigo-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+
+                        <!-- 總抽數輸入框 (總抽數模式，預設隱藏) -->
+                        <div id="totalInputGroup" class="hidden">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="inputTotalPulls" class="text-sm font-medium text-slate-300">投入總抽數</label>
+                                <span id="computedAvgLabel" class="text-xs font-mono text-indigo-400">平均: 80.00 抽</span>
+                            </div>
+                            <div class="relative flex items-center">
+                                <input type="number" id="inputTotalPulls" value="800" step="1" min="1"
+                                    class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-white font-mono text-base outline-none transition">
+                                <span class="absolute right-4 text-xs text-slate-500">抽</span>
+                            </div>
+                        </div>
+
+                        <!-- UP 角色數量 -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="inputCount" class="text-sm font-medium text-slate-300">UP 角色數量 (<span class="font-mono text-indigo-400">n</span>)</label>
+                                <span id="sampleWarning" class="text-xs text-amber-400 hidden">⚠ 樣本數較小，常態近似誤差較大</span>
+                            </div>
+                            <div class="relative flex items-center">
+                                <input type="number" id="inputCount" value="10" step="1" min="1" max="500"
+                                    class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-4 py-2.5 text-white font-mono text-base outline-none transition">
+                                <span class="absolute right-4 text-xs text-slate-500">隻</span>
+                            </div>
+                            <input type="range" id="sliderCount" min="1" max="100" step="1" value="10"
+                                class="w-full mt-2.5 accent-indigo-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                        </div>
+
+                        <!-- 快速情境預設按鈕 -->
+                        <div class="pt-2 border-t border-slate-800/80">
+                            <p class="text-xs text-slate-400 mb-2">快速測試情境：</p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button type="button" data-avg="68" data-n="12" class="preset-btn py-2 px-2 text-xs rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition cursor-pointer">
+                                    歐洲人 (68抽/12隻)
+                                </button>
+                                <button type="button" data-avg="93.45" data-n="10" class="preset-btn py-2 px-2 text-xs rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer">
+                                    標準期望 (93.45抽)
+                                </button>
+                                <button type="button" data-avg="118" data-n="12" class="preset-btn py-2 px-2 text-xs rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 transition cursor-pointer">
+                                    非酋體驗 (118抽/12隻)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 母體基準參數卡片 (可展開調整) -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+                    <details open>
+                        <summary class="text-sm font-semibold text-slate-200 cursor-pointer select-none flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                母體基準參數設定 (公式常數)
+                            </span>
+                            <span class="text-xs text-slate-500 font-normal">點擊收合/展開</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="inputMu" class="block text-xs text-slate-400 mb-1">基準平均 (<span class="font-mono">μ₀</span>)</label>
+                                <input type="number" id="inputMu" value="93.446" step="0.001" min="1"
+                                    class="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none">
+                            </div>
+                            <div>
+                                <label for="inputSigma" class="block text-xs text-slate-400 mb-1">母體標準差 (<span class="font-mono">σ</span>)</label>
+                                <input type="number" id="inputSigma" value="43.091" step="0.001" min="0.1"
+                                    class="w-full bg-slate-950 border border-slate-700 focus:border-purple-500 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none">
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs text-slate-500 leading-relaxed">
+                            預設值 <code class="text-slate-300">93.446</code> 與 <code class="text-slate-300">43.091</code> 對應常見限定池（如 90 抽保底、50% 歪率）的單隻 UP 理論期望抽數與標準差。
+                        </p>
+                    </details>
+                </div>
+
+                <!-- 動態 Excel 公式複製區 -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-medium text-slate-400">對應 Excel 公式（即時帶入數值）</span>
+                        <button id="btnCopyFormula" type="button" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span id="copyText">複製公式</span>
+                        </button>
+                    </div>
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-emerald-300 overflow-x-auto whitespace-nowrap">
+                        <span id="excelFormulaText">=NORM.S.DIST((93.446-80)*SQRT(10)/43.091,TRUE)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右側：計算結果指標與分佈圖表 (7 欄) -->
+            <section class="lg:col-span-7 space-y-6">
+
+                <!-- 核心指標四宮格 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <!-- 公式直接輸出 P(Z <= z) -->
+                    <div class="bg-slate-900/90 border border-indigo-500/40 rounded-2xl p-4 shadow-lg relative overflow-hidden">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                        <p class="text-xs text-slate-400 mb-1">公式結果 <span class="font-mono">P(Z ≤ z)</span></p>
+                        <p id="statCdf" class="text-2xl sm:text-3xl font-bold font-mono text-white">83.82%</p>
+                        <p id="statCdfRaw" class="text-xs font-mono text-indigo-300 mt-1">0.8382</p>
+                    </div>
+
+                    <!-- Z 分數 -->
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
+                        <p class="text-xs text-slate-400 mb-1">標準分數 (<span class="font-mono">Z-score</span>)</p>
+                        <p id="statZScore" class="text-2xl sm:text-3xl font-bold font-mono text-emerald-400">+0.99</p>
+                        <p id="statSe" class="text-xs text-slate-400 mt-1">標準誤 SE: 13.63</p>
+                    </div>
+
+                    <!-- 雙尾 p 值 -->
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
+                        <p class="text-xs text-slate-400 mb-1">雙尾檢定 <span class="font-mono">p-value</span></p>
+                        <p id="statPValue" class="text-2xl sm:text-3xl font-bold font-mono text-slate-200">0.3236</p>
+                        <p id="statSigBadge" class="text-xs text-slate-400 mt-1">未達顯著 (p ≥ 0.05)</p>
+                    </div>
+
+                    <!-- 歐非定位評級 -->
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg flex flex-col justify-between">
+                        <p class="text-xs text-slate-400 mb-1">運氣百分位評估</p>
+                        <div>
+                            <span id="statLuckTag" class="inline-block px-2.5 py-1 rounded-lg text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                小歐玩家
+                            </span>
+                        </div>
+                        <p id="statBeatText" class="text-xs text-slate-400 mt-1">優於 83.8% 理論玩家</p>
+                    </div>
+                </div>
+
+                <!-- 互動式分佈圖卡片 -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-base font-semibold text-white">標準常態分佈與抽樣分佈圖</h3>
+                            <p id="chartSubtitle" class="text-xs text-slate-400 mt-0.5">
+                                著色面積代表公式計算出的累積機率 P(Z ≤ z)
+                            </p>
+                        </div>
+                        <!-- 圖表 X 軸顯示切換 -->
+                        <div class="inline-flex p-1 bg-slate-950 rounded-xl border border-slate-800 self-start">
+                            <button id="axisZBtn" type="button" class="px-3 py-1 text-xs font-medium rounded-lg bg-slate-800 text-white transition cursor-pointer">
+                                Z 分數軸
+                            </button>
+                            <button id="axisPullBtn" type="button" class="px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition cursor-pointer">
+                                平均抽數軸
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas 容器 -->
+                    <div class="relative w-full h-72 sm:h-80 bg-slate-950/80 rounded-xl border border-slate-800/80 overflow-hidden">
+                        <canvas id="distCanvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <!-- 圖例說明 -->
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
+                        <div class="flex flex-wrap items-center gap-4">
+                            <span class="flex items-center gap-1.5">
+                                <span id="legendFillDot" class="w-3 h-3 rounded-sm bg-emerald-500/50 border border-emerald-400"></span>
+                                累積機率面積 (<span id="legendAreaPct" class="font-mono text-slate-200">83.82%</span>)
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-3 h-0.5 bg-slate-500 border-t border-dashed border-slate-400"></span>
+                                基準均值 (<span id="legendMeanVal" class="font-mono">Z=0 / 93.45抽</span>)
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-3 h-0.5 bg-amber-400"></span>
+                                95% 顯著門檻 (±1.96)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 統計白話解讀框 -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <h4 class="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        統計結果白話解讀
+                    </h4>
+                    <p id="interpretationText" class="text-sm text-slate-300 leading-relaxed">
+                        載入計算結果中...
+                    </p>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * 核心數學函數：計算標準常態分佈累積分佈函數 (CDF)
+         * 使用 Abramowitz & Stegun 7.1.26 近似演算法，誤差小於 1.5e-7
+         * @param {number} z - 標準常態分數
+         * @returns {number} P(Z <= z)，範圍 [0, 1]
+         */
+        function normSDist(z) {
+            if (z < -8) return 0;
+            if (z > 8) return 1;
+
+            const sign = z < 0 ? -1 : 1;
+            const x = Math.abs(z) / Math.SQRT2;
+
+            // 誤差函數 erf(x) 近似計算
+            const t = 1 / (1 + 0.3275911 * x);
+            const a1 = 0.254829592;
+            const a2 = -0.284496736;
+            const a3 = 1.421413741;
+            const a4 = -1.453152027;
+            const a5 = 1.061405429;
+
+            const erf = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return 0.5 * (1 + sign * erf);
+        }
+
+        /**
+         * 標準常態分佈機率密度函數 (PDF)
+         * @param {number} z - 標準常態分數
+         * @returns {number} 密度高度
+         */
+        function normSPdf(z) {
+            return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+        }
+
+        // 應用程式狀態管理
+        const state = {
+            inputMode: 'avg',   // 'avg' 或 'total'
+            axisMode: 'z',      // 'z' 或 'pull'
+            avgPulls: 80.0,
+            totalPulls: 800,
+            count: 10,
+            mu: 93.446,
+            sigma: 43.091
+        };
+
+        // 取得 DOM 元素參照
+        const els = {
+            modeAvgBtn: document.getElementById('modeAvgBtn'),
+            modeTotalBtn: document.getElementById('modeTotalBtn'),
+            avgInputGroup: document.getElementById('avgInputGroup'),
+            totalInputGroup: document.getElementById('totalInputGroup'),
+            inputAvgPulls: document.getElementById('inputAvgPulls'),
+            sliderAvgPulls: document.getElementById('sliderAvgPulls'),
+            inputTotalPulls: document.getElementById('inputTotalPulls'),
+            computedAvgLabel: document.getElementById('computedAvgLabel'),
+            inputCount: document.getElementById('inputCount'),
+            sliderCount: document.getElementById('sliderCount'),
+            sampleWarning: document.getElementById('sampleWarning'),
+            inputMu: document.getElementById('inputMu'),
+            inputSigma: document.getElementById('inputSigma'),
+            badgeDiff: document.getElementById('badgeDiff'),
+            excelFormulaText: document.getElementById('excelFormulaText'),
+            btnCopyFormula: document.getElementById('btnCopyFormula'),
+            copyText: document.getElementById('copyText'),
+            btnReset: document.getElementById('btnReset'),
+            // 結果顯示
+            statCdf: document.getElementById('statCdf'),
+            statCdfRaw: document.getElementById('statCdfRaw'),
+            statZScore: document.getElementById('statZScore'),
+            statSe: document.getElementById('statSe'),
+            statPValue: document.getElementById('statPValue'),
+            statSigBadge: document.getElementById('statSigBadge'),
+            statLuckTag: document.getElementById('statLuckTag'),
+            statBeatText: document.getElementById('statBeatText'),
+            interpretationText: document.getElementById('interpretationText'),
+            // 圖表相關
+            axisZBtn: document.getElementById('axisZBtn'),
+            axisPullBtn: document.getElementById('axisPullBtn'),
+            chartSubtitle: document.getElementById('chartSubtitle'),
+            legendFillDot: document.getElementById('legendFillDot'),
+            legendAreaPct: document.getElementById('legendAreaPct'),
+            legendMeanVal: document.getElementById('legendMeanVal'),
+            canvas: document.getElementById('distCanvas')
+        };
+
+        /**
+         * 執行統計計算並更新所有介面與圖表
+         */
+        function updateAll() {
+            // 確保數值合法
+            const n = Math.max(1, Math.floor(Number(state.count) || 1));
+            const mu = Math.max(0.1, Number(state.mu) || 93.446);
+            const sigma = Math.max(0.01, Number(state.sigma) || 43.091);
+
+            let avg = Number(state.avgPulls) || mu;
+            if (state.inputMode === 'total') {
+                const total = Math.max(1, Number(state.totalPulls) || 1);
+                avg = total / n;
+                state.avgPulls = avg;
+                els.computedAvgLabel.textContent = `平均: ${avg.toFixed(2)} 抽`;
+                els.inputAvgPulls.value = avg.toFixed(2);
+                els.sliderAvgPulls.value = Math.min(160, Math.max(20, avg));
+            } else {
+                state.totalPulls = Math.round(avg * n);
+                els.inputTotalPulls.value = state.totalPulls;
+            }
+
+            // 小樣本提示
+            if (n < 5) {
+                els.sampleWarning.classList.remove('hidden');
+            } else {
+                els.sampleWarning.classList.add('hidden');
+            }
+
+            // 計算標準誤 SE、Z 分數、累積機率 CDF、雙尾 p 值
+            const se = sigma / Math.sqrt(n);
+            const diff = mu - avg; // 正值代表抽數比基準少 (較歐)
+            const z = diff / se;
+            const cdf = normSDist(z);
+            const twoTailedP = 2 * Math.min(cdf, 1 - cdf);
+
+            // 更新平均差值標籤
+            if (diff > 0.005) {
+                els.badgeDiff.textContent = `比基準少 ${diff.toFixed(2)} 抽`;
+                els.badgeDiff.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300';
+            } else if (diff < -0.005) {
+                els.badgeDiff.textContent = `比基準多 ${Math.abs(diff).toFixed(2)} 抽`;
+                els.badgeDiff.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300';
+            } else {
+                els.badgeDiff.textContent = '與基準持平';
+                els.badgeDiff.className = 'text-xs font-medium px-2 py-0.5 rounded-md bg-slate-800 text-slate-300';
+            }
+
+            // 更新 Excel 公式預覽
+            const avgDisplay = Number.isInteger(avg) ? avg : Number(avg.toFixed(3));
+            els.excelFormulaText.textContent = `=NORM.S.DIST((${mu}-${avgDisplay})*SQRT(${n})/${sigma},TRUE)`;
+
+            // 更新四宮格數值
+            els.statCdf.textContent = `${(cdf * 100).toFixed(2)}%`;
+            els.statCdfRaw.textContent = cdf.toFixed(6);
+
+            const zSign = z >= 0 ? '+' : '';
+            els.statZScore.textContent = `${zSign}${z.toFixed(3)}`;
+            els.statZScore.className = `text-2xl sm:text-3xl font-bold font-mono ${z >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            els.statSe.textContent = `標準誤 SE: ${se.toFixed(2)}`;
+
+            els.statPValue.textContent = twoTailedP < 0.0001 ? '< 0.0001' : twoTailedP.toFixed(4);
+            if (twoTailedP < 0.01) {
+                els.statSigBadge.textContent = '極顯著差異 (p < 0.01)';
+                els.statSigBadge.className = 'text-xs font-medium text-amber-400 mt-1';
+            } else if (twoTailedP < 0.05) {
+                els.statSigBadge.textContent = '達統計顯著 (p < 0.05)';
+                els.statSigBadge.className = 'text-xs font-medium text-indigo-300 mt-1';
+            } else {
+                els.statSigBadge.textContent = '屬正常波動 (p ≥ 0.05)';
+                els.statSigBadge.className = 'text-xs text-slate-400 mt-1';
+            }
+
+            // 歐非定位評級
+            updateLuckClassification(cdf, z);
+
+            // 圖例與解讀文字
+            els.legendAreaPct.textContent = `${(cdf * 100).toFixed(2)}%`;
+            els.legendMeanVal.textContent = state.axisMode === 'z'
+                ? 'Z = 0'
+                : `μ₀ = ${mu.toFixed(2)} 抽`;
+
+            const fillIsLucky = z >= 0;
+            els.legendFillDot.className = fillIsLucky
+                ? 'w-3 h-3 rounded-sm bg-emerald-500/50 border border-emerald-400'
+                : 'w-3 h-3 rounded-sm bg-rose-500/50 border border-rose-400';
+
+            updateInterpretation(avg, n, mu, se, z, cdf, twoTailedP);
+
+            // 重繪分佈曲線
+            drawDistributionChart({ z, cdf, mu, se, avg });
+        }
+
+        /**
+         * 根據累積機率與 Z 值更新歐非等級標籤
+         */
+        function updateLuckClassification(cdf, z) {
+            let label = '';
+            let style = '';
+
+            if (cdf >= 0.975) {
+                label = '天選歐皇 (前 2.5%)';
+                style = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+            } else if (cdf >= 0.841) {
+                label = '大歐玩家 (前 16%)';
+                style = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+            } else if (cdf >= 0.60) {
+                label = '小歐玩家';
+                style = 'bg-teal-500/20 text-teal-300 border-teal-500/30';
+            } else if (cdf > 0.40) {
+                label = '標準平民';
+                style = 'bg-slate-700/60 text-slate-200 border-slate-600';
+            } else if (cdf > 0.159) {
+                label = '微非玩家';
+                style = 'bg-orange-500/20 text-orange-300 border-orange-500/30';
+            } else if (cdf > 0.025) {
+                label = '非酋體質 (後 16%)';
+                style = 'bg-rose-500/20 text-rose-300 border-rose-500/30';
+            } else {
+                label = '深淵非酋 (後 2.5%)';
+                style = 'bg-red-600/30 text-red-300 border-red-500/50';
+            }
+
+            els.statLuckTag.textContent = label;
+            els.statLuckTag.className = `inline-block px-2.5 py-1 rounded-lg text-xs sm:text-sm font-bold border ${style}`;
+            els.statBeatText.textContent = `優於 ${(cdf * 100).toFixed(1)}% 的同樣本數表現`;
+        }
+
+        /**
+         * 產生白話統計解讀文字
+         */
+        function updateInterpretation(avg, n, mu, se, z, cdf, pVal) {
+            const pct = (cdf * 100).toFixed(2);
+            const sigText = pVal < 0.05
+                ? `雙尾 p 值為 <strong>${pVal.toFixed(4)}</strong>（小於 0.05），表示在統計上已<strong>顯著偏離</strong>理論期望值，不只是單純的小幅隨機波動。`
+                : `雙尾 p 值為 <strong>${pVal.toFixed(4)}</strong>（大於或等於 0.05），表示在 <strong>${n} 隻</strong> UP 角色的樣本規模下，目前的偏差仍屬於抽卡機制的<strong>合理隨機波動範圍</strong>。`;
+
+            if (z >= 0) {
+                els.interpretationText.innerHTML = `
+                    在抽了 <strong>${n} 隻</strong> UP 角色且平均每隻花費 <strong>${avg.toFixed(2)} 抽</strong> 的情況下，你的成績比基準值（${mu} 抽）少花了 <strong>${(mu - avg).toFixed(2)} 抽</strong>，標準分數為 <strong>Z = +${z.toFixed(2)}</strong>。<br class="mb-1.5">
+                    公式輸出 <strong>${pct}%</strong> 代表：在相同樣本數下，約有 <strong>${pct}%</strong> 的理論玩家平均抽數會「高於或等於」你（意即你比 ${pct}% 的情況更省抽）。${sigText}
+                `;
+            } else {
+                els.interpretationText.innerHTML = `
+                    在抽了 <strong>${n} 隻</strong> UP 角色且平均每隻花費 <strong>${avg.toFixed(2)} 抽</strong> 的情況下，你的成績比基準值（${mu} 抽）多花了 <strong>${(avg - mu).toFixed(2)} 抽</strong>，標準分數為 <strong>Z = ${z.toFixed(2)}</strong>。<br class="mb-1.5">
+                    公式輸出 <strong>${pct}%</strong> 代表：在相同樣本數下，僅有 <strong>${pct}%</strong> 的理論玩家平均抽數會比你更高（約 ${(100 - cdf * 100).toFixed(2)}% 的情況比你更省抽）。${sigText}
+                `;
+            }
+        }
+
+        /**
+         * 繪製高解析度響應式常態分佈 Canvas 圖表
+         */
+        function drawDistributionChart({ z, cdf, mu, se, avg }) {
+            const canvas = els.canvas;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            // 依據容器尺寸動態設定 Canvas 畫布大小
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+
+            const W = rect.width;
+            const H = rect.height;
+
+            // 清空畫布
+            ctx.clearRect(0, 0, W, H);
+
+            // 繪圖邊距設定
+            const pad = { top: 34, right: 24, bottom: 44, left: 24 };
+            const plotW = W - pad.left - pad.right;
+            const plotH = H - pad.top - pad.bottom;
+
+            // 決定 X 軸 Z 範圍 (預設 -4 到 +4，若觀測值超出則自動擴展)
+            const maxAbsZ = Math.max(4, Math.min(7, Math.ceil(Math.abs(z) + 0.8)));
+            const zMin = -maxAbsZ;
+            const zMax = maxAbsZ;
+
+            // 座標轉換輔助函數
+            // 注意：在 Z 軸模式下，左邊是負 Z (非)，右邊是正 Z (歐)
+            // 在平均抽數軸模式下，為了與累積面積方向保持一致，左邊為高抽數，右邊為低抽數
+            const zToX = (zVal) => pad.left + ((zVal - zMin) / (zMax - zMin)) * plotW;
+            const maxPdf = normSPdf(0);
+            const pdfToY = (pVal) => pad.top + plotH - (pVal / (maxPdf * 1.12)) * plotH;
+            const baseY = pdfToY(0);
+
+            // 1. 繪製水平網格線
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 3; i++) {
+                const gy = pad.top + (plotH * i) / 4;
+                ctx.beginPath();
+                ctx.moveTo(pad.left, gy);
+                ctx.lineTo(W - pad.right, gy);
+                ctx.stroke();
+            }
+
+            // 2. 繪製累積機率陰影面積 (從 zMin 到 clampedZ)
+            const clampedZ = Math.max(zMin, Math.min(zMax, z));
+            const isLucky = z >= 0;
+
+            const areaGrad = ctx.createLinearGradient(0, pad.top, 0, baseY);
+            if (isLucky) {
+                areaGrad.addColorStop(0, 'rgba(16, 185, 129, 0.45)');
+                areaGrad.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+            } else {
+                areaGrad.addColorStop(0, 'rgba(244, 63, 94, 0.45)');
+                areaGrad.addColorStop(1, 'rgba(244, 63, 94, 0.05)');
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(zToX(zMin), baseY);
+            const steps = 240;
+            for (let i = 0; i <= steps; i++) {
+                const currZ = zMin + ((clampedZ - zMin) * i) / steps;
+                ctx.lineTo(zToX(currZ), pdfToY(normSPdf(currZ)));
+            }
+            ctx.lineTo(zToX(clampedZ), baseY);
+            ctx.closePath();
+            ctx.fillStyle = areaGrad;
+            ctx.fill();
+
+            // 3. 繪製 95% 顯著水準雙尾門檻虛線 (Z = -1.96 與 +1.96)
+            [-1.96, 1.96].forEach((critZ) => {
+                if (critZ >= zMin && critZ <= zMax) {
+                    const cx = zToX(critZ);
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(251, 191, 36, 0.45)';
+                    ctx.setLineDash([4, 4]);
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, pad.top + 8);
+                    ctx.lineTo(cx, baseY);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    ctx.fillStyle = 'rgba(251, 191, 36, 0.75)';
+                    ctx.font = '10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(critZ > 0 ? '+1.96' : '-1.96', cx, pad.top + 4);
+                }
+            });
+
+            // 4. 繪製中心基準線 (Z = 0)
+            const zeroX = zToX(0);
+            ctx.save();
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(zeroX, pad.top);
+            ctx.lineTo(zeroX, baseY);
+            ctx.stroke();
+            ctx.restore();
+
+            // 5. 繪製完整常態分佈鐘形曲線
+            ctx.beginPath();
+            for (let i = 0; i <= 300; i++) {
+                const currZ = zMin + ((zMax - zMin) * i) / 300;
+                const px = zToX(currZ);
+                const py = pdfToY(normSPdf(currZ));
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.strokeStyle = '#818cf8';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // 6. 繪製 X 軸底線與刻度標籤
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(pad.left, baseY);
+            ctx.lineTo(W - pad.right, baseY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+
+            const tickStep = maxAbsZ <= 4 ? 1 : 2;
+            for (let tz = -Math.floor(maxAbsZ); tz <= Math.floor(maxAbsZ); tz += tickStep) {
+                const tx = zToX(tz);
+                // 刻度短線
+                ctx.beginPath();
+                ctx.moveTo(tx, baseY);
+                ctx.lineTo(tx, baseY + 5);
+                ctx.stroke();
+
+                // 標籤文字依模式切換
+                let labelStr = '';
+                if (state.axisMode === 'z') {
+                    labelStr = tz === 0 ? '0' : (tz > 0 ? `+${tz}` : `${tz}`);
+                } else {
+                    const pullVal = mu - tz * se;
+                    labelStr = pullVal > 0 ? `${pullVal.toFixed(1)}抽` : '0抽';
+                }
+                ctx.fillText(labelStr, tx, baseY + 19);
+            }
+
+            // 左右兩端方向提示
+            ctx.font = '10px Noto Sans TC, sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'left';
+            ctx.fillText('← 偏非 (抽數較高)', pad.left, H - 6);
+            ctx.textAlign = 'right';
+            ctx.fillText('偏歐 (抽數較低) →', W - pad.right, H - 6);
+
+            // 7. 繪製目前觀測點垂直指示線與標記膠囊
+            const obsX = zToX(clampedZ);
+            const obsY = pdfToY(normSPdf(clampedZ));
+
+            ctx.strokeStyle = isLucky ? '#34d399' : '#fb7185';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(obsX, pad.top + 14);
+            ctx.lineTo(obsX, baseY);
+            ctx.stroke();
+
+            // 曲線上的圓點
+            ctx.beginPath();
+            ctx.arc(obsX, obsY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = isLucky ? '#10b981' : '#f43f5e';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            // 頂部標籤膠囊
+            const tagText = `Z=${z >= 0 ? '+' : ''}${z.toFixed(2)} (${(cdf * 100).toFixed(1)}%)`;
+            ctx.font = 'bold 11px Inter, sans-serif';
+            const textWidth = ctx.measureText(tagText).width;
+            const boxW = textWidth + 14;
+            const boxH = 20;
+            // 防止標籤超出左右邊界
+            const boxX = Math.max(pad.left, Math.min(W - pad.right - boxW, obsX - boxW / 2));
+            const boxY = 8;
+
+            ctx.fillStyle = isLucky ? '#065f46' : '#881337';
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+            ctx.fill();
+            ctx.strokeStyle = isLucky ? '#34d399' : '#fb7185';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.fillText(tagText, boxX + boxW / 2, boxY + 14);
+        }
+
+        // ================= 事件監聽綁定 =================
+
+        // 輸入模式切換：平均抽數 vs 總抽數
+        els.modeAvgBtn.addEventListener('click', () => {
+            state.inputMode = 'avg';
+            els.modeAvgBtn.className = 'py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white shadow transition cursor-pointer';
+            els.modeTotalBtn.className = 'py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+            els.avgInputGroup.classList.remove('hidden');
+            els.totalInputGroup.classList.add('hidden');
+            updateAll();
+        });
+
+        els.modeTotalBtn.addEventListener('click', () => {
+            state.inputMode = 'total';
+            els.modeTotalBtn.className = 'py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white shadow transition cursor-pointer';
+            els.modeAvgBtn.className = 'py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+            els.totalInputGroup.classList.remove('hidden');
+            els.avgInputGroup.classList.add('hidden');
+            updateAll();
+        });
+
+        // 平均抽數輸入與滑桿同步
+        els.inputAvgPulls.addEventListener('input', (e) => {
+            state.avgPulls = parseFloat(e.target.value) || 0;
+            els.sliderAvgPulls.value = Math.min(160, Math.max(20, state.avgPulls));
+            updateAll();
+        });
+
+        els.sliderAvgPulls.addEventListener('input', (e) => {
+            state.avgPulls = parseFloat(e.target.value);
+            els.inputAvgPulls.value = state.avgPulls;
+            updateAll();
+        });
+
+        // 總抽數輸入
+        els.inputTotalPulls.addEventListener('input', (e) => {
+            state.totalPulls = parseInt(e.target.value, 10) || 1;
+            updateAll();
+        });
+
+        // UP 角色數量輸入與滑桿同步
+        els.inputCount.addEventListener('input', (e) => {
+            state.count = parseInt(e.target.value, 10) || 1;
+            els.sliderCount.value = Math.min(100, Math.max(1, state.count));
+            updateAll();
+        });
+
+        els.sliderCount.addEventListener('input', (e) => {
+            state.count = parseInt(e.target.value, 10);
+            els.inputCount.value = state.count;
+            updateAll();
+        });
+
+        // 母體參數調整
+        els.inputMu.addEventListener('input', (e) => {
+            state.mu = parseFloat(e.target.value) || 93.446;
+            updateAll();
+        });
+
+        els.inputSigma.addEventListener('input', (e) => {
+            state.sigma = parseFloat(e.target.value) || 43.091;
+            updateAll();
+        });
+
+        // 快速情境預設按鈕
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const presetAvg = parseFloat(btn.dataset.avg);
+                const presetN = parseInt(btn.dataset.n, 10);
+                state.inputMode = 'avg';
+                els.modeAvgBtn.click();
+                state.avgPulls = presetAvg;
+                state.count = presetN;
+                els.inputAvgPulls.value = presetAvg;
+                els.sliderAvgPulls.value = presetAvg;
+                els.inputCount.value = presetN;
+                els.sliderCount.value = presetN;
+                updateAll();
+            });
+        });
+
+        // 重設預設值按鈕
+        els.btnReset.addEventListener('click', () => {
+            state.inputMode = 'avg';
+            state.avgPulls = 80.0;
+            state.count = 10;
+            state.mu = 93.446;
+            state.sigma = 43.091;
+            els.modeAvgBtn.click();
+            els.inputAvgPulls.value = 80.0;
+            els.sliderAvgPulls.value = 80.0;
+            els.inputCount.value = 10;
+            els.sliderCount.value = 10;
+            els.inputMu.value = 93.446;
+            els.inputSigma.value = 43.091;
+            updateAll();
+        });
+
+        // 圖表 X 軸切換
+        els.axisZBtn.addEventListener('click', () => {
+            state.axisMode = 'z';
+            els.axisZBtn.className = 'px-3 py-1 text-xs font-medium rounded-lg bg-slate-800 text-white transition cursor-pointer';
+            els.axisPullBtn.className = 'px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+            updateAll();
+        });
+
+        els.axisPullBtn.addEventListener('click', () => {
+            state.axisMode = 'pull';
+            els.axisPullBtn.className = 'px-3 py-1 text-xs font-medium rounded-lg bg-slate-800 text-white transition cursor-pointer';
+            els.axisZBtn.className = 'px-3 py-1 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+            updateAll();
+        });
+
+        // 複製 Excel 公式 (使用 execCommand 相容 iframe 環境)
+        els.btnCopyFormula.addEventListener('click', () => {
+            const textArea = document.createElement('textarea');
+            textArea.value = els.excelFormulaText.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                els.copyText.textContent = '已複製！';
+                setTimeout(() => {
+                    els.copyText.textContent = '複製公式';
+                }, 1800);
+            } catch (err) {
+                console.error('複製失敗:', err);
+            }
+            document.body.removeChild(textArea);
+        });
+
+        // 視窗大小改變時重繪 Canvas
+        window.addEventListener('resize', () => {
+            updateAll();
+        });
+
+        // 頁面載入完成後啟動初次計算與繪圖
+        window.onload = function () {
+            updateAll();
+        };
+    </script>
+</body>
+</html>
