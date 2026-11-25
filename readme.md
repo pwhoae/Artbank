@@ -1,3 +1,5 @@
+找客戶+MVP 了解業務
+用model flash 構思 max 全力
 HKSTP OPC BUILD 項目發佈暨騰訊雲 TVP 走進香港科學園
 Bilibili黑名单管理SOP workbuddy+cookie 
 https://live.photoplus.cn/live/57552627?accessFrom=live&userType=null&state=STATE&code=071ro50w3753b83aZx1w3zn8ti3ro50V#/live
