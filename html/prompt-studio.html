@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>提示詞工坊</title>
+<style>
+:root{
+  --bg:#f7f7f5;--surface:#ffffff;--surface-2:#fbfbf9;
+  --border:#e6e5e0;--border-strong:#d3d1c7;
+  --text:#2c2c2a;--muted:#78776f;--hint:#a09e95;
+  --primary:#534ab7;--primary-soft:#eeedfe;--primary-line:#cecbf6;
+  --teal:#0f6e56;--teal-soft:#e1f5ee;
+  --amber:#854f0b;--amber-soft:#faeeda;
+  --red:#a32d2d;--red-soft:#fcebeb;
+  --radius:10px;--radius-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei","PingFang SC",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:296px 1fr;height:100vh;min-height:600px}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.brand{padding:20px 20px 14px;border-bottom:1px solid var(--border)}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:.2px}
+.brand p{font-size:12px;color:var(--muted);margin-top:2px}
+.tools{padding:14px 16px 10px;border-bottom:1px solid var(--border)}
+.search{width:100%;padding:9px 11px 9px 32px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2378776f' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") no-repeat 10px center;outline:none}
+.search:focus{border-color:var(--primary-line);background-color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{border:1px solid var(--border);background:#fff;border-radius:6px;padding:3px 9px;font-size:12px;color:var(--muted)}
+.chip.active{background:var(--primary-soft);border-color:var(--primary-line);color:var(--primary)}
+.list{flex:1;overflow-y:auto;padding:10px 12px 16px}
+.item{padding:10px 11px;border:1px solid transparent;border-radius:var(--radius);margin-bottom:3px;cursor:pointer;transition:background .12s}
+.item:hover{background:var(--surface-2)}
+.item.active{background:var(--primary-soft);border-color:var(--primary-line)}
+.item-top{display:flex;align-items:center;gap:7px}
+.item-title{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-preview{font-size:12px;color:var(--hint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.cat{font-size:10px;padding:1px 6px;border-radius:4px;background:#f1efe8;color:var(--muted);white-space:nowrap;flex:none}
+.side-foot{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.side-foot button{flex:1}
+.main{overflow-y:auto;padding:28px 34px 60px;min-width:0}
+.wrap{max-width:1080px;margin:0 auto}
+.head{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.head h2{font-size:22px;font-weight:600;letter-spacing:-.2px}
+.head .meta{font-size:12px;color:var(--muted);margin-top:3px}
+.spacer{flex:1}
+.btn{border:1px solid var(--border-strong);background:#fff;border-radius:8px;padding:7px 13px;font-size:13px;color:var(--text);transition:background .12s,border-color .12s}
+.btn:hover{background:var(--surface-2);border-color:var(--hint)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:#443c9e}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{background:#f1efe8;color:var(--text)}
+.btn.danger{color:var(--red)}
+.btn.sm{padding:4px 10px;font-size:12px}
+.icon-btn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);background:#fff;border-radius:7px;padding:0}
+.icon-btn:hover{background:var(--surface-2)}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:18px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.card h3{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.4px;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.card h3::before{content:"";width:3px;height:13px;background:var(--primary);border-radius:2px}
+.field{margin-bottom:15px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.input,.select,.textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);border-radius:8px;padding:9px 11px;outline:none;transition:border-color .12s,background .12s}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--primary-line);background:#fff}
+.textarea{resize:vertical;min-height:190px;line-height:1.75;font-family:var(--font-mono,"SFMono-Regular",Consolas,monospace);font-size:12.5px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.varbox{background:var(--primary-soft);border:1px solid var(--primary-line);border-radius:10px;padding:14px;margin-top:4px}
+.varbox h4{font-size:12px;color:var(--primary);font-weight:600;margin-bottom:10px}
+.var-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:9px}
+.var-field label{font-size:11px;color:var(--primary);display:block;margin-bottom:3px;font-family:monospace}
+.var-field input{width:100%;border:1px solid var(--primary-line);border-radius:6px;padding:6px 9px;background:#fff;outline:none;font-size:13px}
+.var-field input:focus{border-color:var(--primary)}
+.output{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:14px;white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono,"SFMono-Regular",Consolas,monospace);font-size:12.5px;line-height:1.75;max-height:340px;overflow-y:auto;min-height:120px}
+.out-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.out-head h3{margin:0}
+.checks{list-style:none;margin-top:6px}
+.checks li{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.checks li:last-child{border-bottom:0}
+.dot{width:16px;height:16px;border-radius:50%;flex:none;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.dot.ok{background:var(--teal)}
+.dot.no{background:var(--border-strong);color:var(--muted)}
+.check-name{font-weight:500}
+.check-tip{font-size:11px;color:var(--hint);display:block}
+.score{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.score b{font-size:30px;font-weight:600;line-height:1}
+.score span{font-size:12px;color:var(--muted)}
+.bar{height:6px;background:#f1efe8;border-radius:4px;overflow:hidden;margin-bottom:16px}
+.bar i{display:block;height:100%;background:var(--teal);border-radius:4px;transition:width .25s}
+.empty{text-align:center;padding:90px 20px;color:var(--muted)}
+.empty h2{font-size:18px;color:var(--text);margin-bottom:8px;font-weight:600}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;opacity:0;transition:all .25s;pointer-events:none;z-index:99}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(max-width:900px){.app{grid-template-columns:1fr;height:auto}.sidebar{border-right:0;border-bottom:1px solid var(--border)}.list{max-height:260px}.main{padding:20px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>提示詞工坊</h1>
+      <p>模板庫 · 變數填充 · 品質檢查</p>
+    </div>
+    <div class="tools">
+      <input class="search" id="search" placeholder="搜尋提示詞…">
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="side-foot">
+      <button class="btn sm" id="btnExport">匯出</button>
+      <button class="btn sm" id="btnImport">匯入</button>
+      <button class="btn sm primary" id="btnNew">＋ 新增</button>
+    </div>
+  </aside>
+  <main class="main"><div class="wrap" id="main"></div></main>
+</div>
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept="application/json" style="display:none">
+
+<script>
+const CATS = ["全部","寫作","遊戲","工具","影片","角色"];
+const SEED = [
+  {
+    id:"s1", title:"九宮格故事生成器", cat:"寫作", tags:"故事,大綱,九宮格",
+    body:`你是一位資深故事策劃。請用九宮格法則設計一個故事。
+
+主題：{{故事主題}}
+受眾：{{目標受眾}}
+風格：{{故事風格}}
+
+請依序輸出九格，每格 2-3 句：
+1. 主角：誰？有什麼缺陷？
+2. 目標：他想要什麼？
+3. 動機：為什麼非要不可？
+4. 阻礙：誰或什麼擋住了他？
+5. 轉折：什麼事改變了一切？
+6. 高潮：最關鍵的選擇是什麼？
+7. 代價：他失去了什麼？
+8. 結局：變成什麼樣的人？
+9. 留白：留給讀者一個什麼問題？`
+  },
+  {
+    id:"s2", title:"遊戲策劃案生成器", cat:"遊戲", tags:"策劃,玩法,心理學",
+    body:`你是一位資深遊戲策劃，擅長運用心理學設計留存機制。請為以下構想產出一份精簡策劃案。
+
+遊戲類型：{{遊戲類型}}
+核心幻想：{{核心幻想}}
+目標平台：{{平台}}
+
+輸出格式：
+一、核心循環（30 秒 / 5 分鐘 / 1 小時三層）
+二、玩家動機（使用自我決定理論：自主、勝任、關聯）
+三、戰鬥力 / 成長系統
+四、週期更新節奏（每週 / 每月）
+五、首批 3 個可交付原型功能（按優先順序）`
+  },
+  {
+    id:"s3", title:"提示詞優化器", cat:"工具", tags:"meta,優化",
+    body:`你是提示詞工程專家。請優化下面這段提示詞，讓它更穩定、輸出更可控。
+
+原始提示詞：
+{{原始提示詞}}
+
+請按以下結構回覆：
+1. 問題診斷：列出缺失或模糊之處
+2. 優化版本：完整重寫
+3. 改動說明：逐條解釋為什麼這樣改
+4. 變體：給出 1 個更簡潔版、1 個更嚴格版`
+  },
+  {
+    id:"s4", title:"影片轉 Markdown 筆記", cat:"影片", tags:"YouTube,B站,摘要",
+    body:`你是一位內容整理專家。我會提供一段影片字幕，請整理成結構化筆記。
+
+影片主題：{{影片主題}}
+字幕內容：
+{{字幕}}
+
+輸出格式（Markdown）：
+# 標題
+## 一句話總結
+## 關鍵觀點（3-5 條）
+## 重要引述
+## 可執行行動
+## 待查資料
+
+注意：不要虛構字幕中沒有的內容；不確定處標註「 speculated 」。`
+  },
+  {
+    id:"s5", title:"生動表情包文案", cat:"角色", tags:"表情包,文案,社群",
+    body:`你是一位社群文案高手。請為下面的情境設計一組表情包文案。
+
+角色設定：{{角色}}
+使用情境：{{情境}}
+數量：{{數量}} 組
+
+每組包含：
+- 畫面描述（一句話）
+- 主文案（6 字以內）
+- 小字台詞（15 字以內）
+語氣要有記憶點，避免制式客套話。`
+  },
+  {
+    id:"s6", title:"通用角色扮演骨架", cat:"角色", tags:"角色,對話",
+    body:`你現在是 {{角色名稱}}。
+
+背景：{{背景}}
+說話風格：{{風格}}
+你正在和 {{對象}} 對話。
+
+規則：
+- 始終維持角色，不承認自己是 AI
+- 每次回覆不超過 120 字
+- 主動推進對話，不要只回答問題
+- 遇到不確定的事，用角色的方式帶過
+
+現在開始第一段對話。`
+  }
+];
+
+const KEY = "promptStudio.v1";
+let prompts, current=null, filter="全部", search="";
+try { prompts = JSON.parse(localStorage.getItem(KEY)) || JSON.parse(JSON.stringify(SEED)); }
+catch(e){ prompts = JSON.parse(JSON.stringify(SEED)); }
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const save = () => localStorage.setItem(KEY, JSON.stringify(prompts));
+const byId = id => prompts.find(p => p.id === id);
+const detectVars = text => [...new Set((text.match(/\{\{([^}]+)\}\}/g)||[]).map(v => v.slice(2,-2).trim()))];
+
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.timer); toast.timer = setTimeout(()=>t.classList.remove("show"), 1900);
+}
+
+function renderChips(){
+  $("#chips").innerHTML = CATS.map(c =>
+    `<button class="chip ${c===filter?'active':''}" data-cat="${c}">${c}</button>`).join("");
+  document.querySelectorAll(".chip").forEach(b => b.onclick = () => { filter=b.dataset.cat; renderChips(); renderList(); });
+}
+
+function renderList(){
+  const q = search.toLowerCase();
+  const list = prompts.filter(p =>
+    (filter==="全部" || p.cat===filter) &&
+    (!q || (p.title+" "+p.tags+" "+p.body).toLowerCase().includes(q)));
+  $("#list").innerHTML = list.length ? list.map(p => `
+    <div class="item ${p.id===current?'active':''}" data-id="${p.id}">
+      <div class="item-top"><span class="cat">${esc(p.cat)}</span><span class="item-title">${esc(p.title)}</span></div>
+      <div class="item-preview">${esc(p.body.replace(/\s+/g," ").slice(0,60))}</div>
+    </div>`).join("") : `<div style="padding:24px;text-align:center;color:var(--hint);font-size:13px">沒有符合的提示詞</div>`;
+  document.querySelectorAll(".item").forEach(el => el.onclick = () => { current=el.dataset.id; renderList(); renderMain(); });
+}
+
+function quality(body){
+  const checks = [
+    ["角色設定", /你是|你現在|角色|身為/.test(body), "開頭指定身份，輸出更穩定"],
+    ["明確任務", /請|幫我|輸出|設計|分析|整理/.test(body), "用動詞寫清楚要做什麼"],
+    ["背景脈絡", /背景|情境|主題|說明|假設/.test(body), "補足情境，減少自由發揮"],
+    ["輸出格式", /格式|輸出|結構|Markdown|表格|步驟|依序/.test(body), "指定格式才能直接複用"],
+    ["限制條件", /不要|避免|不超過|必須|注意|只能/.test(body), "寫出邊界，降低幻覺"],
+    ["範例引導", /例如|範例|例子|如：|示範/.test(body), "給一個範例效果最好"]
+  ];
+  return { checks, score: Math.round(checks.filter(c=>c[1]).length/checks.length*100) };
+}
+
+function result(){
+  const p = byId(current); if(!p) return "";
+  return p.body.replace(/\{\{([^}]+)\}\}/g, (m,k) => {
+    const v = (p.values||{})[k.trim()]; return v && v.trim() ? v.trim() : m;
+  });
+}
+
+function renderMain(){
+  const p = byId(current);
+  if(!p){
+    $("#main").innerHTML = `<div class="empty"><h2>選一個提示詞開始</h2><p>左側可切換模板，或按「新增」建立自己的提示詞。</p></div>`;
+    return;
+  }
+  const vars = detectVars(p.body);
+  const q = quality(p.body);
+  const out = result();
+  $("#main").innerHTML = `
+    <div class="head">
+      <div><h2>${esc(p.title)}</h2><div class="meta">${esc(p.cat)} · ${vars.length} 個變數 · 品質 ${q.score} 分</div></div>
+      <div class="spacer"></div>
+      <button class="btn" id="btnCopyAll">複製 generated</button>
+      <button class="btn ghost danger" id="btnDelete">刪除</button>
+    </div>
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h3>編輯提示詞</h3>
+          <div class="row">
+            <div class="field"><label>標題</label><input class="input" id="fTitle" value="${esc(p.title)}"></div>
+            <div class="field"><label>分類</label><select class="select" id="fCat">${CATS.filter(c=>c!=="全部").map(c=>`<option ${c===p.cat?"selected":""}>${c}</option>`).join("")}</select></div>
+          </div>
+          <div class="field"><label>標籤（逗號分隔）</label><input class="input" id="fTags" value="${esc(p.tags||"")}"></div>
+          <div class="field"><label>提示詞內容（用 {{變數}} 表示可替換處）</label><textarea class="textarea" id="fBody">${esc(p.body)}</textarea></div>
+        </div>
+        ${vars.length ? `<div class="varbox">
+          <h4>變數填充 · ${vars.length} 個</h4>
+          <div class="var-grid">${vars.map(v=>`
+            <div class="var-field"><label>{{${esc(v)}}}</label>
+            <input data-var="${esc(v)}" value="${esc((p.values||{})[v]||"")}" placeholder="填入 ${esc(v)}"></div>`).join("")}</div>
+        </div>` : ""}
+      </div>
+      <div>
+        <div class="card">
+          <div class="out-head"><h3>生成結果</h3><button class="btn sm" id="btnCopyOut">複製</button></div>
+          <div class="output" id="output">${esc(out)}</div>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h3>品質檢查</h3>
+          <div class="score"><b>${q.score}</b><span>/ 100 · ${q.score>=80?"結構完整":q.score>=50?"尚可加强":"建議補充"}</span></div>
+          <div class="bar"><i style="width:${q.score}%"></i></div>
+          <ul class="checks">${q.checks.map(c=>`
+            <li><span class="dot ${c[1]?"ok":"no"}">${c[1]?"✓":"·"}</span>
+            <span><span class="check-name">${c[0]}</span><span class="check-tip">${c[2]}</span></span></li>`).join("")}</ul>
+        </div>
+      </div>
+    </div>`;
+
+  $("#fTitle").oninput = e => { p.title=e.target.value; save(); renderList(); document.querySelector(".head h2").textContent=p.title||"未命名"; };
+  $("#fCat").onchange = e => { p.cat=e.target.value; save(); renderList(); };
+  $("#fTags").oninput = e => { p.tags=e.target.value; save(); };
+  $("#fBody").oninput = e => { p.body=e.target.value; save(); refreshOutput(); refreshQuality(); renderList(); };
+  document.querySelectorAll("[data-var]").forEach(inp => inp.oninput = e => {
+    p.values = p.values||{}; p.values[e.target.dataset.var] = e.target.value; save(); refreshOutput();
+  });
+  $("#btnCopyOut").onclick = () => copy(result());
+  $("#btnCopyAll").onclick = () => copy(result());
+  $("#btnDelete").onclick = () => {
+    if(!confirm(`刪除「${p.title}」？此動作無法復原。`)) return;
+    prompts = prompts.filter(x=>x.id!==p.id); current=null; save(); renderList(); renderMain(); toast("已刪除");
+  };
+}
+
+function refreshOutput(){ $("#output").textContent = result(); }
+function refreshQuality(){
+  const p=byId(current); const q=quality(p.body);
+  const card = document.querySelectorAll(".card")[2];
+  if(card){
+    card.querySelector(".score b").textContent=q.score;
+    card.querySelector(".score span").textContent=`/ 100 · ${q.score>=80?"結構完整":q.score>=50?"尚可加强":"建議補充"}`;
+    card.querySelector(".bar i").style.width=q.score+"%";
+    card.querySelector(".checks").innerHTML=q.checks.map(c=>`<li><span class="dot ${c[1]?"ok":"no"}">${c[1]?"✓":"·"}</span><span><span class="check-name">${c[0]}</span><span class="check-tip">${c[2]}</span></span></li>`).join("");
+    document.querySelector(".head .meta").textContent=`${p.cat} · ${detectVars(p.body).length} 個變數 · 品質 ${q.score} 分`;
+  }
+}
+function copy(text){
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(()=>toast("已複製到剪貼簿")).catch(()=>fallbackCopy(text)); }
+  else fallbackCopy(text);
+}
+function fallbackCopy(text){
+  const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+  try{document.execCommand("copy"); toast("已複製到剪貼簿");}catch(e){toast("複製失敗，請手動選取");}
+  ta.remove();
+}
+
+$("#search").oninput = e => { search=e.target.value; renderList(); };
+$("#btnNew").onclick = () => {
+  const p={id:"p"+Date.now(),title:"未命名提示詞",cat:"工具",tags:"",body:"你是一位 {{角色}}。\n\n任務：{{任務}}\n\n請依以下格式輸出：\n1. \n2. \n3. "};
+  prompts.unshift(p); current=p.id; save(); renderList(); renderMain();
+  $("#fTitle").focus(); $("#fTitle").select();
+};
+$("#btnExport").onclick = () => {
+  const blob=new Blob([JSON.stringify(prompts,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="prompt-studio.json"; a.click();
+  URL.revokeObjectURL(a.href); toast("已匯出 JSON");
+};
+$("#btnImport").onclick = () => $("#fileInput").click();
+$("#fileInput").onchange = e => {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const data=JSON.parse(r.result); if(!Array.isArray(data)) throw 0;
+    prompts=data.filter(x=>x&&typeof x.body==="string").map(x=>({...x,id:x.id||"p"+Math.random().toString(36).slice(2)}));
+    current=null; save(); renderList(); renderMain(); toast(`已匯入 ${prompts.length} 筆`);
+  }catch(err){ toast("檔案格式不正確"); } };
+  r.readAsText(f); e.target.value="";
+};
+
+renderChips(); renderList(); renderMain();
+</script>
+</body>
+</html>
