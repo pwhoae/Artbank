@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>走梯子機率預測工具</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts Noto Sans TC & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #12151a;
+            color: #e2e8f0;
+            user-select: none;
+        }
+        /* 自訂金邊與遊戲質感樣式 */
+        .gold-border {
+            border: 1.5px solid #c5a467;
+        }
+        .gold-glow-1 {
+            box-shadow: 0 0 18px rgba(250, 204, 21, 0.55);
+            border-color: #facc15 !important;
+        }
+        .gold-glow-2 {
+            box-shadow: 0 0 14px rgba(226, 232, 240, 0.45);
+            border-color: #e2e8f0 !important;
+        }
+        .gold-glow-3 {
+            box-shadow: 0 0 14px rgba(217, 119, 6, 0.45);
+            border-color: #d97706 !important;
+        }
+        .node-dot {
+            transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .node-dot:hover {
+            transform: scale(1.35);
+            box-shadow: 0 0 10px #38bdf8;
+        }
+        /* 隱藏數字輸入框上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-4 px-2 sm:px-4">
+
+    <!-- 主容器 -->
+    <div class="w-full max-w-xl bg-[#181c23] rounded-2xl border border-[#2d333f] shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- 頂部控制列 (設定直線數、橫線數、目標獎項) -->
+        <div class="m-3 mb-2 px-4 py-2.5 bg-[#0f1115] rounded-full gold-border flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div class="flex items-center gap-2">
+                <span class="text-gray-300 font-medium">直線數量:</span>
+                <input type="number" id="input-cols" min="2" max="10" value="6" 
+                    class="w-12 bg-transparent border-b border-gray-500 text-center text-white font-bold focus:outline-none focus:border-amber-400">
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <span class="text-gray-300 font-medium">橫線數量:</span>
+                <span id="current-rungs-count" class="text-amber-400 font-bold">0</span>
+                <span class="text-gray-500">/</span>
+                <input type="number" id="input-rungs" min="1" max="20" value="5" 
+                    class="w-12 bg-transparent border-b border-gray-500 text-center text-white font-bold focus:outline-none focus:border-amber-400">
+            </div>
+
+            <button id="btn-reset-all" class="text-xs px-2.5 py-1 rounded-full bg-[#252a34] hover:bg-[#323946] text-gray-300 transition">
+                重置盤面
+            </button>
+        </div>
+
+        <!-- 規則提示標籤 -->
+        <div class="text-center text-[11px] text-amber-400/80 mb-2">
+            ※ 規則限制：每條直線至少連接 1 條橫線 ｜ 點擊下方目標切換預測，點「✎」可修改目標名稱
+        </div>
+
+        <!-- 遊戲盤面區域 -->
+        <div class="px-3 sm:px-6 pt-2 pb-4 flex flex-col items-center relative">
+            
+            <!-- 頂部起點 (A, B, C...) 與 勝率顯示 -->
+            <div id="top-headers" class="w-full grid gap-1 sm:gap-2 mb-3">
+                <!-- 由 JS 動態生成 -->
+            </div>
+
+            <!-- 梯子 SVG 畫布區 -->
+            <div class="w-full relative select-none" id="ladder-wrapper">
+                <svg id="ladder-svg" class="w-full block overflow-visible" style="height: 360px;">
+                    <!-- 由 JS 動態繪製垂直線、橫線、可點擊節點 -->
+                </svg>
+            </div>
+
+            <!-- 底部終點獎勵卡 (點擊選擇目標大獎) -->
+            <div id="bottom-rewards" class="w-full grid gap-1.5 sm:gap-2 mt-2">
+                <!-- 由 JS 動態生成 -->
+            </div>
+
+        </div>
+
+        <!-- 分隔線與符合條件組合數統計 -->
+        <div class="bg-[#12151a] border-t border-[#262b36] px-4 py-3 text-center">
+            <div class="text-sm text-gray-300">
+                目前符合條件的配置：<span id="valid-configs-count" class="text-amber-400 font-bold text-base">計算中...</span> 種
+            </div>
+            <div id="warning-msg" class="text-xs text-rose-400 mt-1 hidden"></div>
+        </div>
+
+        <!-- 底部已走過的路徑記錄區 -->
+        <div class="p-4 bg-[#161920] border-t border-[#262b36]">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-bold text-gray-200">已走過的路徑 <span class="text-xs font-normal text-gray-400">(每走一次就記一筆以排除錯誤組合)</span></h3>
+            </div>
+
+            <!-- 路徑列表 -->
+            <div id="path-history-list" class="text-xs text-gray-400 mb-3 min-h-[24px] flex flex-wrap gap-2 items-center">
+                尚未記錄路徑。
+            </div>
+
+            <!-- 新增路徑表單 (預設隱藏，點擊新增展開) -->
+            <div id="add-path-panel" class="hidden mb-3 p-3 rounded-xl bg-[#0f1115] border border-[#2d333f] flex flex-wrap items-center gap-2 text-xs">
+                <span class="text-gray-300">起點：</span>
+                <select id="select-start" class="bg-[#1e232d] text-white px-2.5 py-1.5 rounded-lg border border-gray-600 focus:outline-none"></select>
+                <span class="text-gray-400">➔ 走到終點：</span>
+                <select id="select-end" class="bg-[#1e232d] text-white px-2.5 py-1.5 rounded-lg border border-gray-600 focus:outline-none"></select>
+                <button id="btn-confirm-path" class="ml-auto bg-amber-500 hover:bg-amber-600 text-black font-bold px-3 py-1.5 rounded-lg transition">
+                    確認新增
+                </button>
+                <button id="btn-cancel-path" class="bg-gray-700 hover:bg-gray-600 text-white px-2.5 py-1.5 rounded-lg transition">
+                    取消
+                </button>
+            </div>
+
+            <!-- 操作按鈕列 -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button id="btn-toggle-add-path" class="px-3.5 py-2 rounded-lg bg-[#232832] hover:bg-[#2e3543] text-gray-200 text-xs font-medium border border-gray-700 transition flex items-center gap-1.5">
+                    <span>+</span> 新增路徑
+                </button>
+                <button id="btn-clear-paths" class="px-3.5 py-2 rounded-lg bg-[#232832] hover:bg-[#2e3543] text-gray-200 text-xs font-medium border border-gray-700 transition">
+                    清除路徑
+                </button>
+                <button id="btn-clear-rungs" class="px-3.5 py-2 rounded-lg bg-[#232832] hover:bg-[#2e3543] text-gray-200 text-xs font-medium border border-gray-700 transition ml-auto">
+                    清除已知橫線
+                </button>
+            </div>
+            <p class="text-[11px] text-gray-500 mt-2.5">
+                提示：直接點擊梯子上的「藍色圓點」可標記已知的橫線；點擊最下方獎品圖示可切換預測目標，點擊右上角「✎」或雙擊卡片可修改目標名稱與數量。
+            </p>
+        </div>
+    </div>
+
+    <!-- 修改目標獎勵彈窗 -->
+    <div id="edit-reward-modal" class="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
+        <div class="w-full max-w-xs bg-[#181c23] border border-[#c5a467] rounded-2xl p-4 shadow-2xl">
+            <h4 class="text-sm font-bold text-amber-400 mb-3 flex items-center justify-between">
+                <span>修改第 <span id="edit-reward-index-label">1</span> 格目標獎勵</span>
+                <button type="button" id="btn-close-reward-modal" class="text-gray-400 hover:text-white text-base leading-none">×</button>
+            </h4>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-300 mb-1">目標名稱</label>
+                    <input type="text" id="input-reward-label" maxlength="8" placeholder="例如：大獎、魔法石"
+                        class="w-full bg-[#0f1115] border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-gray-300 mb-1">圖示 (Emoji)</label>
+                        <input type="text" id="input-reward-icon" maxlength="4" placeholder="例如：🎁"
+                            class="w-full bg-[#0f1115] border border-gray-600 rounded-lg px-3 py-2 text-white text-center focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 mb-1">數量 / 角標</label>
+                        <input type="text" id="input-reward-badge" maxlength="6" placeholder="例如：10 或 Max"
+                            class="w-full bg-[#0f1115] border border-gray-600 rounded-lg px-3 py-2 text-white text-center focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-end gap-2 text-xs">
+                <button type="button" id="btn-cancel-reward-modal" class="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 transition">
+                    取消
+                </button>
+                <button type="button" id="btn-save-reward-modal" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold transition">
+                    儲存修改
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自訂訊息提示框 (取代 alert) -->
+    <div id="toast-box" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    </div>
+
+    <script>
+        /**
+         * 走梯子 (Ghost Leg / Amidakuji) 機率預測核心邏輯
+         * 規則：
+         * 1. N 條直線 (編號 0 ~ N-1，顯示為 A, B, C...)
+         * 2. 總橫線數量為 M
+         * 3. 每個區間 (col, row) 最多一條橫線，且同一高度 (row) 相鄰區間不可同時有橫線 (避免交叉/三通)
+         * 4. 每條直線最少必須連接到 1 條橫線 (即第 0 條直線必須在區間 0 有至少 1 條橫線；最後一條直線 N-1 必須在區間 N-2 有至少 1 條橫線；中間直線 i 必須在區間 i-1 或 i 有至少 1 條橫線)
+         */
+
+        // 預設獎勵圖示與名稱配置 (仿照遊戲圖示風格)
+        const REWARD_PRESETS = [
+            { label: '頭獎券', badge: '2', icon: '🎫', bg: 'from-amber-900/60 to-yellow-700/40' },
+            { label: '靈魂', badge: '4000', icon: '👥', bg: 'from-slate-800 to-slate-700' },
+            { label: '素材卡', badge: '1', icon: '🌿', bg: 'from-emerald-900/60 to-emerald-700/40' },
+            { label: '滿等卡', badge: 'Max', icon: '👑', bg: 'from-yellow-900/60 to-amber-700/40' },
+            { label: '小怪', badge: '50', icon: '🐥', bg: 'from-lime-900/60 to-lime-700/40' },
+            { label: '金魚', badge: '5', icon: '🐟', bg: 'from-sky-900/60 to-blue-700/40' },
+            { label: '魔法石', badge: '10', icon: '💎', bg: 'from-purple-900/60 to-indigo-700/40' },
+            { label: '金幣', badge: '50萬', icon: '🪙', bg: 'from-amber-800/60 to-orange-700/40' },
+            { label: '體力劑', badge: '3', icon: '🧪', bg: 'from-rose-900/60 to-pink-700/40' },
+            { label: '神秘箱', badge: '1', icon: '📦', bg: 'from-teal-900/60 to-cyan-700/40' }
+        ];
+
+        // 複製一份可讓使用者自由修改的獎勵列表
+        let customRewards = REWARD_PRESETS.map(item => ({ ...item }));
+        let editingRewardIdx = 0;
+
+        // 應用程式狀態
+        const state = {
+            cols: 6,             // 直線數量
+            totalRungs: 5,       // 總橫線數量
+            rows: 6,             // 垂直可放置橫線的層數 (預設 6 層，類似圖中 5 個藍點+間隔)
+            targetRewardIdx: 0,  // 目標獎勵所在欄位索引 (0 代表第 1 個)
+            fixedRungs: [],      // 已知橫線 [{row, col}] (col 代表連接 col 與 col+1)
+            knownPaths: [],      // 已走過的路徑 [{start, end}]
+            probabilities: [],   // 計算出的各起點到達目標獎勵的機率
+            validCount: 0        // 符合條件的總盤面數
+        };
+
+        // DOM 元素參照
+        const inputCols = document.getElementById('input-cols');
+        const inputRungs = document.getElementById('input-rungs');
+        const currentRungsCountEl = document.getElementById('current-rungs-count');
+        const topHeadersEl = document.getElementById('top-headers');
+        const bottomRewardsEl = document.getElementById('bottom-rewards');
+        const ladderSvg = document.getElementById('ladder-svg');
+        const validConfigsCountEl = document.getElementById('valid-configs-count');
+        const warningMsgEl = document.getElementById('warning-msg');
+        const pathHistoryListEl = document.getElementById('path-history-list');
+        const addPathPanel = document.getElementById('add-path-panel');
+        const selectStart = document.getElementById('select-start');
+        const selectEnd = document.getElementById('select-end');
+        const toastBox = document.getElementById('toast-box');
+        const editRewardModal = document.getElementById('edit-reward-modal');
+        const editRewardIndexLabel = document.getElementById('edit-reward-index-label');
+        const inputRewardLabel = document.getElementById('input-reward-label');
+        const inputRewardIcon = document.getElementById('input-reward-icon');
+        const inputRewardBadge = document.getElementById('input-reward-badge');
+
+        // 取得指定欄位的獎勵資料
+        function getRewardInfo(idx) {
+            return customRewards[idx % customRewards.length];
+        }
+
+        // 開啟修改目標獎勵彈窗
+        function openEditRewardModal(idx) {
+            editingRewardIdx = idx;
+            const info = getRewardInfo(idx);
+            editRewardIndexLabel.textContent = idx + 1;
+            inputRewardLabel.value = info.label;
+            inputRewardIcon.value = info.icon;
+            inputRewardBadge.value = info.badge;
+            editRewardModal.classList.remove('hidden');
+            inputRewardLabel.focus();
+            inputRewardLabel.select();
+        }
+
+        // 關閉修改目標獎勵彈窗
+        function closeEditRewardModal() {
+            editRewardModal.classList.add('hidden');
+        }
+
+        // 顯示提示訊息
+        function showToast(msg) {
+            toastBox.textContent = msg;
+            toastBox.classList.remove('opacity-0');
+            setTimeout(() => {
+                toastBox.classList.add('opacity-0');
+            }, 2600);
+        }
+
+        // 取得英文字母標籤 (0 -> A, 1 -> B...)
+        function getColLetter(idx) {
+            return String.fromCharCode(65 + idx);
+        }
+
+        // 檢查某條橫線是否已存在
+        function hasFixedRung(row, col) {
+            return state.fixedRungs.some(r => r.row === row && r.col === col);
+        }
+
+        // 切換固定橫線 (點擊節點時觸發)
+        function toggleFixedRung(row, col) {
+            const existingIdx = state.fixedRungs.findIndex(r => r.row === row && r.col === col);
+            if (existingIdx !== -1) {
+                // 移除該橫線
+                state.fixedRungs.splice(existingIdx, 1);
+            } else {
+                // 檢查是否超過總橫線數
+                if (state.fixedRungs.length >= state.totalRungs) {
+                    showToast(`已達到設定的橫線上限 (${state.totalRungs} 條)！`);
+                    return;
+                }
+                // 檢查同一層相鄰位置是否已有橫線 (不能連續相連)
+                if (hasFixedRung(row, col - 1) || hasFixedRung(row, col + 1)) {
+                    showToast('同一高度的相鄰直線不可連續連接橫線！');
+                    return;
+                }
+                state.fixedRungs.push({ row, col });
+            }
+            updateAll();
+        }
+
+        /**
+         * 核心演算法：回溯窮舉所有合法的橫線配置並計算機率
+         */
+        function calculateProbabilities() {
+            const N = state.cols;
+            const M = state.totalRungs;
+            const R = state.rows;
+            const fixed = state.fixedRungs;
+            const paths = state.knownPaths;
+            const targetEnd = state.targetRewardIdx;
+
+            warningMsgEl.classList.add('hidden');
+
+            // 基本可行性檢查：每條線至少連 1 條橫線，最少需要 ceil(N / 2) 條橫線
+            const minRequiredRungs = Math.ceil(N / 2);
+            if (M < minRequiredRungs) {
+                state.validCount = 0;
+                state.probabilities = Array(N).fill(0);
+                warningMsgEl.textContent = `橫線數量不足！${N} 條直線每條至少需連 1 條橫線，最少需要 ${minRequiredRungs} 條橫線。`;
+                warningMsgEl.classList.remove('hidden');
+                return;
+            }
+
+            // 檢查目前 fixedRungs 是否超過 M
+            if (fixed.length > M) {
+                state.validCount = 0;
+                state.probabilities = Array(N).fill(0);
+                warningMsgEl.textContent = `已標記的橫線數量 (${fixed.length}) 超過設定總數 (${M})！`;
+                warningMsgEl.classList.remove('hidden');
+                return;
+            }
+
+            // 建立固定橫線的查詢表與每一層的已佔用狀態
+            // grid[r][c] = true 代表第 r 層、連接 c 與 c+1 的位置有橫線
+            const grid = Array.from({ length: R }, () => Array(N - 1).fill(false));
+            for (const item of fixed) {
+                if (item.row < R && item.col < N - 1) {
+                    grid[item.row][item.col] = true;
+                }
+            }
+
+            // 收集所有「尚未放置且可放置」的候選槽位 (row, col)
+            const candidates = [];
+            for (let r = 0; r < R; r++) {
+                for (let c = 0; c < N - 1; c++) {
+                    if (!grid[r][c]) {
+                        candidates.push({ r, c });
+                    }
+                }
+            }
+
+            const needed = M - fixed.length;
+            let validConfigurations = 0;
+            const winCounts = Array(N).fill(0);
+
+            // 預先建立直線連接計數陣列
+            const lineConnCount = Array(N).fill(0);
+            for (const item of fixed) {
+                lineConnCount[item.col]++;
+                lineConnCount[item.col + 1]++;
+            }
+
+            // 設定運算安全上限，避免極端參數導致瀏覽器卡死
+            let iterations = 0;
+            const MAX_ITERATIONS = 1200000;
+            let truncated = false;
+
+            // 回溯搜尋函式
+            function backtrack(candIdx, placedCount) {
+                iterations++;
+                if (iterations > MAX_ITERATIONS) {
+                    truncated = true;
+                    return;
+                }
+
+                // 剪枝：剩餘候選位置不夠放滿 needed
+                if (candidates.length - candIdx < needed - placedCount) {
+                    return;
+                }
+
+                // 已經放滿 M 條橫線，進行規則驗證
+                if (placedCount === needed) {
+                    // 1. 驗證每條直線至少連接 1 條橫線
+                    for (let i = 0; i < N; i++) {
+                        if (lineConnCount[i] < 1) return;
+                    }
+
+                    // 2. 模擬走梯子，計算每個起點最終到達的終點
+                    // pos[i] 代表原本在 i 的人目前所在的直線位置
+                    const pos = Array.from({ length: N }, (_, i) => i);
+                    for (let r = 0; r < R; r++) {
+                        for (let c = 0; c < N - 1; c++) {
+                            if (grid[r][c]) {
+                                // 交換 c 與 c+1 上的人
+                                const temp = pos[c];
+                                pos[c] = pos[c + 1];
+                                pos[c + 1] = temp;
+                            }
+                        }
+                    }
+
+                    // pos[endCol] 即為到達 endCol 的「原始起點編號」
+                    // 建立 startToEnd 映射
+                    const startToEnd = Array(N);
+                    for (let endCol = 0; endCol < N; endCol++) {
+                        startToEnd[pos[endCol]] = endCol;
+                    }
+
+                    // 3. 驗證是否符合使用者輸入的「已知路徑 (start -> end)」
+                    for (let p = 0; p < paths.length; p++) {
+                        if (startToEnd[paths[p].start] !== paths[p].end) {
+                            return;
+                        }
+                    }
+
+                    // 全部條件符合！統計此配置
+                    validConfigurations++;
+                    const winnerStart = pos[targetEnd];
+                    winCounts[winnerStart]++;
+                    return;
+                }
+
+                if (candIdx >= candidates.length) return;
+
+                const { r, c } = candidates[candIdx];
+
+                // 嘗試在 (r, c) 放置橫線 (前提是左邊 (r, c-1) 與右邊 (r, c+1) 都沒有橫線)
+                const canPlace = (c === 0 || !grid[r][c - 1]) && (c === N - 2 || !grid[r][c + 1]);
+                if (canPlace) {
+                    grid[r][c] = true;
+                    lineConnCount[c]++;
+                    lineConnCount[c + 1]++;
+
+                    backtrack(candIdx + 1, placedCount + 1);
+
+                    // 回溯還原
+                    grid[r][c] = false;
+                    lineConnCount[c]--;
+                    lineConnCount[c + 1]--;
+                }
+
+                // 嘗試不在 (r, c) 放置橫線
+                backtrack(candIdx + 1, placedCount);
+            }
+
+            backtrack(0, 0);
+
+            state.validCount = validConfigurations;
+            if (validConfigurations > 0) {
+                state.probabilities = winCounts.map(count => (count / validConfigurations) * 100);
+            } else {
+                state.probabilities = Array(N).fill(0);
+                warningMsgEl.textContent = '目前條件過於嚴苛或互相衝突，找不到符合的梯子配置！';
+                warningMsgEl.classList.remove('hidden');
+            }
+
+            if (truncated) {
+                warningMsgEl.textContent = '組合數過於龐大，已顯示前 120 萬次運算的近似機率分佈（建議先標記幾條橫線或路徑以縮小範圍）。';
+                warningMsgEl.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * 渲染頂部 A, B, C... 圓圈與勝率排名
+         */
+        function renderTopHeaders() {
+            const N = state.cols;
+            topHeadersEl.style.gridTemplateColumns = `repeat(${N}, minmax(0, 1fr))`;
+            topHeadersEl.innerHTML = '';
+
+            // 找出前三名勝率 (大於 0% 才列入排名)
+            const sortedProbs = [...new Set(state.probabilities.filter(p => p > 0))].sort((a, b) => b - a);
+            const rank1Val = sortedProbs[0] ?? -1;
+            const rank2Val = sortedProbs[1] ?? -1;
+            const rank3Val = sortedProbs[2] ?? -1;
+
+            for (let i = 0; i < N; i++) {
+                const prob = state.probabilities[i] || 0;
+                const letter = getColLetter(i);
+
+                let rank = 0;
+                if (prob > 0) {
+                    if (Math.abs(prob - rank1Val) < 0.0001) rank = 1;
+                    else if (Math.abs(prob - rank2Val) < 0.0001) rank = 2;
+                    else if (Math.abs(prob - rank3Val) < 0.0001) rank = 3;
+                }
+
+                // 根據排名決定外框光暈與文字顏色
+                let circleClass = 'border-[#b89b64] text-white';
+                let probTextClass = 'text-gray-200';
+                let badgeHtml = '<div class="h-4 mt-1"></div>';
+
+                if (rank === 1) {
+                    circleClass = 'border-yellow-400 gold-glow-1 text-white';
+                    probTextClass = 'text-yellow-400';
+                    badgeHtml = `<span class="mt-1 px-2 py-0.2 rounded-full bg-yellow-400 text-black text-[10px] font-extrabold leading-tight">第 1 名</span>`;
+                } else if (rank === 2) {
+                    circleClass = 'border-slate-200 gold-glow-2 text-white';
+                    probTextClass = 'text-slate-100';
+                    badgeHtml = `<span class="mt-1 px-2 py-0.2 rounded-full bg-slate-200 text-black text-[10px] font-extrabold leading-tight">第 2 名</span>`;
+                } else if (rank === 3) {
+                    circleClass = 'border-amber-500 gold-glow-3 text-white';
+                    probTextClass = 'text-amber-500';
+                    badgeHtml = `<span class="mt-1 px-2 py-0.2 rounded-full bg-amber-500 text-black text-[10px] font-extrabold leading-tight">第 3 名</span>`;
+                }
+
+                const colDiv = document.createElement('div');
+                colDiv.className = 'flex flex-col items-center';
+                colDiv.innerHTML = `
+                    <div class="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#3b7a8c] to-[#285563] border-[3px] ${circleClass} flex items-center justify-center shadow-inner transition-all">
+                        <span class="text-xl sm:text-2xl font-serif font-bold tracking-wider">${letter}</span>
+                    </div>
+                    <div class="mt-1.5 text-sm sm:text-lg font-bold ${probTextClass} tracking-tight">
+                        ${prob.toFixed(1)}%
+                    </div>
+                    ${badgeHtml}
+                `;
+                topHeadersEl.appendChild(colDiv);
+            }
+        }
+
+        /**
+         * 渲染梯子 SVG (垂直線、可點擊藍點、已固定的橫線)
+         */
+        function renderLadderSvg() {
+            const N = state.cols;
+            const R = state.rows;
+            const svgWidth = 500;
+            const svgHeight = 360;
+            ladderSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+            ladderSvg.innerHTML = '';
+
+            const colStep = svgWidth / N;
+            const topY = 18;
+            const bottomY = svgHeight - 18;
+            const rowStep = (bottomY - topY) / (R + 1);
+
+            // 1. 繪製垂直線與上下金色端點圓圈
+            for (let c = 0; c < N; c++) {
+                const x = colStep * (c + 0.5);
+
+                // 垂直主幹
+                const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                vLine.setAttribute('x1', x);
+                vLine.setAttribute('y1', topY);
+                vLine.setAttribute('x2', x);
+                vLine.setAttribute('y2', bottomY);
+                vLine.setAttribute('stroke', '#8c7448');
+                vLine.setAttribute('stroke-width', '4');
+                ladderSvg.appendChild(vLine);
+
+                // 頂部端點
+                const topDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                topDot.setAttribute('cx', x);
+                topDot.setAttribute('cy', topY);
+                topDot.setAttribute('r', '9');
+                topDot.setAttribute('fill', '#c5a467');
+                topDot.setAttribute('stroke', '#f5e6c8');
+                topDot.setAttribute('stroke-width', '2');
+                ladderSvg.appendChild(topDot);
+
+                // 底部端點
+                const botDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                botDot.setAttribute('cx', x);
+                botDot.setAttribute('cy', bottomY);
+                botDot.setAttribute('r', '9');
+                botDot.setAttribute('fill', '#c5a467');
+                botDot.setAttribute('stroke', '#f5e6c8');
+                botDot.setAttribute('stroke-width', '2');
+                ladderSvg.appendChild(botDot);
+            }
+
+            // 2. 繪製已標記的橫線 (發光金色橫槓)
+            for (const rung of state.fixedRungs) {
+                if (rung.col >= N - 1 || rung.row >= R) continue;
+                const x1 = colStep * (rung.col + 0.5);
+                const x2 = colStep * (rung.col + 1.5);
+                const y = topY + rowStep * (rung.row + 1);
+
+                const hLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                hLine.setAttribute('x1', x1);
+                hLine.setAttribute('y1', y);
+                hLine.setAttribute('x2', x2);
+                hLine.setAttribute('y2', y);
+                hLine.setAttribute('stroke', '#facc15');
+                hLine.setAttribute('stroke-width', '6');
+                hLine.setAttribute('stroke-linecap', 'round');
+                hLine.style.cursor = 'pointer';
+                hLine.addEventListener('click', () => toggleFixedRung(rung.row, rung.col));
+                ladderSvg.appendChild(hLine);
+            }
+
+            // 3. 繪製中間藍色互動節點 (點擊兩條直線中間的點，或點擊直線上的藍點來切換橫線)
+            for (let r = 0; r < R; r++) {
+                const y = topY + rowStep * (r + 1);
+
+                // 在每條直線上繪製藍色節點 (還原截圖視覺)
+                for (let c = 0; c < N; c++) {
+                    const x = colStep * (c + 0.5);
+                    const isConnectedLeft = hasFixedRung(r, c - 1);
+                    const isConnectedRight = hasFixedRung(r, c);
+                    const isActive = isConnectedLeft || isConnectedRight;
+
+                    const node = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    node.setAttribute('cx', x);
+                    node.setAttribute('cy', y);
+                    node.setAttribute('r', isActive ? '7' : '6');
+                    node.setAttribute('fill', isActive ? '#facc15' : '#4fa8e8');
+                    node.setAttribute('stroke', '#181c23');
+                    node.setAttribute('stroke-width', '1.5');
+                    node.classList.add('node-dot');
+                    node.style.cursor = 'pointer';
+
+                    // 點擊直線上的藍點時：若左邊已連則取消左邊；若右邊已連則取消右邊；否則優先連接右邊(若是最後一條線則連接左邊)
+                    node.addEventListener('click', () => {
+                        if (isConnectedRight) {
+                            toggleFixedRung(r, c);
+                        } else if (isConnectedLeft) {
+                            toggleFixedRung(r, c - 1);
+                        } else {
+                            const targetCol = (c < N - 1) ? c : c - 1;
+                            toggleFixedRung(r, targetCol);
+                        }
+                    });
+                    ladderSvg.appendChild(node);
+                }
+
+                // 在兩條直線正中央也加上隱形/微亮熱區，方便直接點中間連橫線
+                for (let c = 0; c < N - 1; c++) {
+                    const midX = colStep * (c + 1);
+                    const active = hasFixedRung(r, c);
+
+                    const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    hitArea.setAttribute('x', midX - colStep * 0.25);
+                    hitArea.setAttribute('y', y - 12);
+                    hitArea.setAttribute('width', colStep * 0.5);
+                    hitArea.setAttribute('height', 24);
+                    hitArea.setAttribute('fill', 'transparent');
+                    hitArea.style.cursor = 'pointer';
+                    hitArea.addEventListener('click', () => toggleFixedRung(r, c));
+                    ladderSvg.appendChild(hitArea);
+
+                    if (!active) {
+                        const hintDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        hintDot.setAttribute('cx', midX);
+                        hintDot.setAttribute('cy', y);
+                        hintDot.setAttribute('r', '3');
+                        hintDot.setAttribute('fill', '#4fa8e8');
+                        hintDot.setAttribute('opacity', '0.35');
+                        hintDot.style.pointerEvents = 'none';
+                        ladderSvg.appendChild(hintDot);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 渲染底部終點獎勵卡
+         */
+        function renderBottomRewards() {
+            const N = state.cols;
+            bottomRewardsEl.style.gridTemplateColumns = `repeat(${N}, minmax(0, 1fr))`;
+            bottomRewardsEl.innerHTML = '';
+
+            for (let i = 0; i < N; i++) {
+                const preset = getRewardInfo(i);
+                const isSelected = (state.targetRewardIdx === i);
+
+                const card = document.createElement('div');
+                card.className = `group relative aspect-square rounded-xl bg-gradient-to-br ${preset.bg} border-2 transition-all flex flex-col items-center justify-center overflow-hidden p-1 cursor-pointer ${
+                    isSelected 
+                    ? 'border-yellow-400 gold-glow-1 scale-105 z-10' 
+                    : 'border-gray-600/80 opacity-80 hover:opacity-100'
+                }`;
+
+                card.innerHTML = `
+                    <span class="text-xl sm:text-2xl drop-shadow mt-1">${preset.icon}</span>
+                    <span class="text-[10px] sm:text-xs text-gray-100 font-medium truncate w-full text-center mt-0.5">${preset.label}</span>
+                    <span class="absolute bottom-0.5 right-1.5 text-xs sm:text-sm font-extrabold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${preset.badge}</span>
+                    ${isSelected ? '<span class="absolute top-0.5 left-1 text-[9px] bg-yellow-400 text-black font-bold px-1 rounded">目標</span>' : ''}
+                    <button type="button" class="edit-reward-btn absolute top-0.5 right-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded bg-black/65 hover:bg-amber-500 text-gray-200 hover:text-black text-[10px] flex items-center justify-center transition" title="修改此目標名稱與數量">✎</button>
+                `;
+
+                // 點擊卡片本體：切換為預測目標
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('.edit-reward-btn')) return;
+                    state.targetRewardIdx = i;
+                    updateAll();
+                });
+
+                // 雙擊卡片：快速開啟編輯
+                card.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                    openEditRewardModal(i);
+                });
+
+                // 點擊右上角編輯按鈕：開啟編輯彈窗
+                card.querySelector('.edit-reward-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openEditRewardModal(i);
+                });
+
+                bottomRewardsEl.appendChild(card);
+            }
+        }
+
+        /**
+         * 渲染已走過的路徑列表與下拉選單
+         */
+        function renderPaths() {
+            const N = state.cols;
+
+            // 更新新增路徑的下拉選單
+            selectStart.innerHTML = '';
+            selectEnd.innerHTML = '';
+            for (let i = 0; i < N; i++) {
+                const letter = getColLetter(i);
+                const rewardName = getRewardInfo(i).label;
+                selectStart.innerHTML += `<option value="${i}">起點 ${letter}</option>`;
+                selectEnd.innerHTML += `<option value="${i}">第 ${i + 1} 格 (${rewardName})</option>`;
+            }
+
+            // 渲染歷史路徑標籤
+            if (state.knownPaths.length === 0) {
+                pathHistoryListEl.innerHTML = '<span class="text-gray-500">尚未記錄路徑。</span>';
+                return;
+            }
+
+            pathHistoryListEl.innerHTML = '';
+            state.knownPaths.forEach((p, idx) => {
+                const startLetter = getColLetter(p.start);
+                const endReward = getRewardInfo(p.end).label;
+                const tag = document.createElement('div');
+                tag.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#232834] border border-amber-500/40 text-gray-200 text-xs';
+                tag.innerHTML = `
+                    <span class="font-bold text-amber-400">${startLetter}</span>
+                    <span class="text-gray-400">➔</span>
+                    <span>第 ${p.end + 1} 格 (${endReward})</span>
+                    <button type="button" class="ml-1 text-gray-400 hover:text-rose-400 font-bold" title="刪除此筆路徑">×</button>
+                `;
+                tag.querySelector('button').addEventListener('click', () => {
+                    state.knownPaths.splice(idx, 1);
+                    updateAll();
+                });
+                pathHistoryListEl.appendChild(tag);
+            });
+        }
+
+        /**
+         * 統一更新畫面與重新計算機率
+         */
+        function updateAll() {
+            // 清理超出目前直線數的無效橫線或路徑
+            state.fixedRungs = state.fixedRungs.filter(r => r.col < state.cols - 1 && r.row < state.rows);
+            state.knownPaths = state.knownPaths.filter(p => p.start < state.cols && p.end < state.cols);
+            if (state.targetRewardIdx >= state.cols) {
+                state.targetRewardIdx = 0;
+            }
+
+            currentRungsCountEl.textContent = state.fixedRungs.length;
+
+            // 執行核心計算
+            calculateProbabilities();
+
+            // 更新 UI
+            validConfigsCountEl.textContent = state.validCount.toLocaleString();
+            renderTopHeaders();
+            renderLadderSvg();
+            renderBottomRewards();
+            renderPaths();
+        }
+
+        // 監聽直線數量輸入
+        inputCols.addEventListener('change', () => {
+            let val = parseInt(inputCols.value, 10);
+            if (isNaN(val) || val < 2) val = 2;
+            if (val > 10) {
+                val = 10;
+                showToast('為維持瀏覽器即時計算流暢度，直線上限為 10 條');
+            }
+            inputCols.value = val;
+            state.cols = val;
+
+            // 自動確保總橫線數至少符合「每條線連1條橫線」的最低門檻
+            const minRungs = Math.ceil(val / 2);
+            if (state.totalRungs < minRungs) {
+                state.totalRungs = minRungs;
+                inputRungs.value = minRungs;
+            }
+            updateAll();
+        });
+
+        // 監聽橫線數量輸入
+        inputRungs.addEventListener('change', () => {
+            let val = parseInt(inputRungs.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            if (val > 20) val = 20;
+            inputRungs.value = val;
+            state.totalRungs = val;
+            // 根據橫線總數動態微調垂直層數，讓橫線有足夠空間排列
+            state.rows = Math.max(6, Math.ceil(val / Math.max(1, Math.floor(state.cols / 2))) + 2);
+            updateAll();
+        });
+
+        // 新增路徑面板開關
+        document.getElementById('btn-toggle-add-path').addEventListener('click', () => {
+            addPathPanel.classList.toggle('hidden');
+        });
+
+        document.getElementById('btn-cancel-path').addEventListener('click', () => {
+            addPathPanel.classList.add('hidden');
+        });
+
+        document.getElementById('btn-confirm-path').addEventListener('click', () => {
+            const start = parseInt(selectStart.value, 10);
+            const end = parseInt(selectEnd.value, 10);
+
+            // 檢查起點或終點是否重複
+            if (state.knownPaths.some(p => p.start === start || p.end === end)) {
+                showToast('該起點或終點已經記錄過路徑了！');
+                return;
+            }
+
+            state.knownPaths.push({ start, end });
+            addPathPanel.classList.add('hidden');
+            updateAll();
+        });
+
+        // 清除路徑
+        document.getElementById('btn-clear-paths').addEventListener('click', () => {
+            state.knownPaths = [];
+            updateAll();
+        });
+
+        // 清除已知橫線
+        document.getElementById('btn-clear-rungs').addEventListener('click', () => {
+            state.fixedRungs = [];
+            updateAll();
+        });
+
+        // 重置全部
+        document.getElementById('btn-reset-all').addEventListener('click', () => {
+            state.fixedRungs = [];
+            state.knownPaths = [];
+            state.targetRewardIdx = 0;
+            customRewards = REWARD_PRESETS.map(item => ({ ...item }));
+            updateAll();
+        });
+
+        // 目標獎勵編輯彈窗事件綁定
+        document.getElementById('btn-close-reward-modal').addEventListener('click', closeEditRewardModal);
+        document.getElementById('btn-cancel-reward-modal').addEventListener('click', closeEditRewardModal);
+        document.getElementById('btn-save-reward-modal').addEventListener('click', () => {
+            const newLabel = inputRewardLabel.value.trim() || `目標 ${editingRewardIdx + 1}`;
+            const newIcon = inputRewardIcon.value.trim() || '🎁';
+            const newBadge = inputRewardBadge.value.trim();
+
+            const targetObj = getRewardInfo(editingRewardIdx);
+            targetObj.label = newLabel;
+            targetObj.icon = newIcon;
+            targetObj.badge = newBadge;
+
+            closeEditRewardModal();
+            updateAll();
+        });
+
+        // 點擊彈窗背景關閉
+        editRewardModal.addEventListener('click', (e) => {
+            if (e.target === editRewardModal) closeEditRewardModal();
+        });
+
+        // 彈窗內按 Enter 快速儲存
+        [inputRewardLabel, inputRewardIcon, inputRewardBadge].forEach(inp => {
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('btn-save-reward-modal').click();
+                } else if (e.key === 'Escape') {
+                    closeEditRewardModal();
+                }
+            });
+        });
+
+        // 初始化執行
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAll();
+        });
+    </script>
+</body>
+</html>
