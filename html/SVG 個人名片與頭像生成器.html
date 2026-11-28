@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SVG 個人名片與頭像生成器</title>
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 載入 Google Fonts: Noto Sans TC 與 Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <!-- 載入 Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Inter"', '"Noto Sans TC"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-sm">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 tracking-tight">SVG 個人名片工作室</h1>
+          <p class="text-xs text-slate-500 hidden sm:block">輸入自我介紹，即時生成高質感向量名片與專屬頭像</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-random-fill" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+          <i data-lucide="shuffle" class="w-4 h-4"></i>
+          <span>隨機靈感</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容區 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+      
+      <!-- 左側：表單輸入與樣式控制面板 (5 欄) -->
+      <section class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-6">
+        
+        <!-- 區塊 1：基本資料與自我介紹 -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <i data-lucide="user-pen" class="w-4 h-4 text-indigo-600"></i>
+              個人資訊與簡介
+            </h2>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="input-name" class="block text-xs font-semibold text-slate-700 mb-1">姓名 / 暱稱</label>
+              <input id="input-name" type="text" value="林子軒 Alex Lin" placeholder="輸入您的姓名"
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+            </div>
+            <div>
+              <label for="input-role" class="block text-xs font-semibold text-slate-700 mb-1">職稱 / 頭銜</label>
+              <input id="input-role" type="text" value="資深產品設計師 & 前端工程師" placeholder="例如：UI/UX 設計師"
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="input-bio" class="block text-xs font-semibold text-slate-700">自我介紹</label>
+              <span id="bio-counter" class="text-[11px] text-slate-400">0 / 90</span>
+            </div>
+            <textarea id="input-bio" rows="3" maxlength="90" placeholder="簡短介紹您的專長、熱情或座右銘（會自動排版進名片中）..."
+              class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none">熱愛將複雜的技術轉化為直覺且溫暖的數位體驗。專注於設計系統、互動動畫與現代網頁架構。</textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label for="input-tags" class="block text-xs font-semibold text-slate-700 mb-1">關鍵字標籤（逗號分隔）</label>
+              <input id="input-tags" type="text" value="UI/UX, React, SVG 動畫" placeholder="標籤1, 標籤2, 標籤3"
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+            </div>
+            <div>
+              <label for="input-contact" class="block text-xs font-semibold text-slate-700 mb-1">聯絡方式 / 網站</label>
+              <input id="input-contact" type="text" value="alexlin.design • hello@alex.tw" placeholder="Email 或個人網址"
+                class="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 區塊 2：視覺主題與幾何頭像訂製 -->
+        <div class="space-y-4 pt-1">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <i data-lucide="palette" class="w-4 h-4 text-indigo-600"></i>
+              視覺主題與向量頭像
+            </h2>
+          </div>
+
+          <!-- 名片主題選擇 -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-2">名片色彩主題</label>
+            <div id="theme-selector" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <!-- 由 JS 動態生成主題按鈕 -->
+            </div>
+          </div>
+
+          <!-- 頭像風格與種子碼 -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            <div>
+              <label for="select-avatar-style" class="block text-xs font-semibold text-slate-700 mb-1">頭像生成風格</label>
+              <select id="select-avatar-style"
+                class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                <option value="bot">可愛機器人 (Cyber Bot)</option>
+                <option value="minimal">極簡幾何人像 (Minimalist)</option>
+                <option value="abstract">包浩斯幾何圖騰 (Bauhaus)</option>
+                <option value="monogram">字母徽章 (Monogram)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">頭像特徵變化</label>
+              <button id="btn-reroll-avatar" type="button"
+                class="w-full px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/70 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                <i data-lucide="dices" class="w-4 h-4"></i>
+                <span>重新生成頭像特徵</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 右側：即時預覽與匯出區 (7 欄) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- 預覽卡片容器 -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <h2 class="text-sm font-bold text-slate-800">即時 SVG 向量預覽</h2>
+            </div>
+
+            <!-- 切換預覽視圖標籤：完整名片 / 獨立頭像 -->
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl">
+              <button id="tab-card" type="button"
+                class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition-all">
+                完整名片 (800×460)
+              </button>
+              <button id="tab-avatar" type="button"
+                class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                獨立頭像 (400×400)
+              </button>
+            </div>
+          </div>
+
+          <!-- 棋盤格背景預覽畫布 -->
+          <div class="relative rounded-xl border border-slate-200/90 overflow-hidden flex items-center justify-center p-4 sm:p-8 min-h-[300px] sm:min-h-[380px]"
+               style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 16px 16px; background-color: #f8fafc;">
+            
+            <!-- 名片 SVG 容器 -->
+            <div id="preview-card-wrapper" class="w-full max-w-[640px] transition-all duration-300 drop-shadow-xl">
+              <!-- SVG 將動態注入此處 -->
+            </div>
+
+            <!-- 獨立頭像 SVG 容器 (預設隱藏) -->
+            <div id="preview-avatar-wrapper" class="hidden w-full max-w-[260px] transition-all duration-300 drop-shadow-xl">
+              <!-- 獨立頭像 SVG 將動態注入此處 -->
+            </div>
+          </div>
+
+          <!-- 匯出操作按鈕列 -->
+          <div class="mt-6 pt-5 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">匯出目前預覽項目</h3>
+                <p id="export-hint" class="text-xs text-slate-400 mt-0.5">目前選擇：<strong class="text-slate-600">完整個人名片</strong>（支援無限縮放 SVG 或高解析 PNG）</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button id="btn-export-svg" type="button"
+                  class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] rounded-xl shadow-sm transition-all">
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <span>下載 SVG</span>
+                </button>
+
+                <button id="btn-export-png" type="button"
+                  class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 active:scale-[0.99] rounded-xl shadow-sm transition-all">
+                  <i data-lucide="image" class="w-4 h-4 text-indigo-600"></i>
+                  <span>下載 PNG (2x)</span>
+                </button>
+
+                <button id="btn-copy-svg" type="button" title="複製 SVG 原始碼"
+                  class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                  <i data-lucide="code-2" class="w-4 h-4"></i>
+                  <span class="hidden sm:inline">複製程式碼</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 隱藏的 Canvas 用於將 SVG 轉換為高解析度 PNG -->
+        <canvas id="export-canvas" class="hidden"></canvas>
+        <!-- 隱藏的 Textarea 用於安全複製剪貼簿內容 -->
+        <textarea id="clipboard-helper" class="sr-only" aria-hidden="true"></textarea>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- 輕量提示訊息 Toast (取代 alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    /**
+     * SVG 個人名片與頭像生成器核心邏輯
+     * 包含：主題定義、確定性偽隨機生成器、多種向量頭像演算法、自動文字換行、SVG/PNG 匯出
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 初始化 Lucide 圖示
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+
+      // ==========================================
+      // 1. 狀態與主題設定
+      // ==========================================
+      const THEMES = [
+        {
+          id: 'midnight',
+          name: '極夜深藍',
+          previewColor: 'bg-slate-900',
+          bgStart: '#0f172a',
+          bgEnd: '#1e1b4b',
+          cardBorder: '#334155',
+          accent: '#38bdf8',
+          accentSecondary: '#818cf8',
+          textPrimary: '#f8fafc',
+          textSecondary: '#94a3b8',
+          tagBg: 'rgba(56, 189, 248, 0.14)',
+          tagText: '#7dd3fc',
+          avatarBg: '#1e293b',
+          isDark: true
+        },
+        {
+          id: 'clean-light',
+          name: '純淨晨白',
+          previewColor: 'bg-white border border-slate-300',
+          bgStart: '#ffffff',
+          bgEnd: '#f1f5f9',
+          cardBorder: '#cbd5e1',
+          accent: '#4f46e5',
+          accentSecondary: '#0ea5e9',
+          textPrimary: '#0f172a',
+          textSecondary: '#475569',
+          tagBg: '#eef2ff',
+          tagText: '#4338ca',
+          avatarBg: '#e0e7ff',
+          isDark: false
+        },
+        {
+          id: 'sunset',
+          name: '日落珊瑚',
+          previewColor: 'bg-gradient-to-r from-rose-500 to-amber-500',
+          bgStart: '#fff1f2',
+          bgEnd: '#fffbeb',
+          cardBorder: '#fecdd3',
+          accent: '#e11d48',
+          accentSecondary: '#d97706',
+          textPrimary: '#1e1b4b',
+          textSecondary: '#57534e',
+          tagBg: '#ffe4e6',
+          tagText: '#be123c',
+          avatarBg: '#fecdd3',
+          isDark: false
+        },
+        {
+          id: 'emerald',
+          name: '森系翡翠',
+          previewColor: 'bg-emerald-800',
+          bgStart: '#064e3b',
+          bgEnd: '#022c22',
+          cardBorder: '#065f46',
+          accent: '#34d399',
+          accentSecondary: '#a7f3d0',
+          textPrimary: '#ecfdf5',
+          textSecondary: '#a7f3d0',
+          tagBg: 'rgba(52, 211, 153, 0.16)',
+          tagText: '#6ee7b7',
+          avatarBg: '#065f46',
+          isDark: true
+        }
+      ];
+
+      const RANDOM_PROFILES = [
+        {
+          name: '陳語嫣 Chloe Chen',
+          role: 'AI 產品經理 & 策略顧問',
+          bio: '致力於將生成式人工智慧融入日常工作流，打造以人為本的智慧軟體產品。',
+          tags: 'AI 策略, 產品設計, 敏捷開發',
+          contact: 'chloe.pm • github.com/chloechen',
+          themeId: 'midnight',
+          avatarStyle: 'bot'
+        },
+        {
+          name: '張哲維 David Chang',
+          role: '獨立遊戲開發者 & 像素藝術家',
+          bio: '白天寫程式，晚上畫像素與合成音樂。相信好遊戲能帶給世界更多想像力。',
+          tags: 'GameDev, Godot, 合成器音樂',
+          contact: 'david@pixelcraft.io',
+          themeId: 'sunset',
+          avatarStyle: 'minimal'
+        },
+        {
+          name: '蘇柏宇 Leo Su',
+          role: '品牌識別設計師',
+          bio: '擅長幾何構成與字體排印，為新創團隊建立清晰且具記憶點的視覺語言。',
+          tags: 'Brand Identity, Typography, SVG',
+          contact: 'leosu.studio • @leodesign',
+          themeId: 'clean-light',
+          avatarStyle: 'abstract'
+        },
+        {
+          name: '周以寧 Nina Chou',
+          role: '永續科技研究員',
+          bio: '透過數據視覺化與開放資料，探索城市綠能與低碳生活的創新解決方案。',
+          tags: 'CleanTech, Data Viz, 永續發展',
+          contact: 'nina.chou@greendata.org',
+          themeId: 'emerald',
+          avatarStyle: 'monogram'
+        }
+      ];
+
+      const state = {
+        name: '林子軒 Alex Lin',
+        role: '資深產品設計師 & 前端工程師',
+        bio: '熱愛將複雜的技術轉化為直覺且溫暖的數位體驗。專注於設計系統、互動動畫與現代網頁架構。',
+        tags: 'UI/UX, React, SVG 動畫',
+        contact: 'alexlin.design • hello@alex.tw',
+        themeId: 'midnight',
+        avatarStyle: 'bot',
+        seedOffset: 42,
+        activeTab: 'card' // 'card' 或 'avatar'
+      };
+
+      // ==========================================
+      // 2. DOM 元素參照
+      // ==========================================
+      const els = {
+        inputName: document.getElementById('input-name'),
+        inputRole: document.getElementById('input-role'),
+        inputBio: document.getElementById('input-bio'),
+        inputTags: document.getElementById('input-tags'),
+        inputContact: document.getElementById('input-contact'),
+        bioCounter: document.getElementById('bio-counter'),
+        themeSelector: document.getElementById('theme-selector'),
+        selectAvatarStyle: document.getElementById('select-avatar-style'),
+        btnRerollAvatar: document.getElementById('btn-reroll-avatar'),
+        btnRandomFill: document.getElementById('btn-random-fill'),
+        tabCard: document.getElementById('tab-card'),
+        tabAvatar: document.getElementById('tab-avatar'),
+        previewCardWrapper: document.getElementById('preview-card-wrapper'),
+        previewAvatarWrapper: document.getElementById('preview-avatar-wrapper'),
+        exportHint: document.getElementById('export-hint'),
+        btnExportSvg: document.getElementById('btn-export-svg'),
+        btnExportPng: document.getElementById('btn-export-png'),
+        btnCopySvg: document.getElementById('btn-copy-svg'),
+        exportCanvas: document.getElementById('export-canvas'),
+        clipboardHelper: document.getElementById('clipboard-helper'),
+        toastContainer: document.getElementById('toast-container')
+      };
+
+      // ==========================================
+      // 3. 工具函式：安全跳脫、雜湊隨機、文字換行
+      // ==========================================
+      function escapeXml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      }
+
+      // 根據字串與偏移量產生確定性種子 (0 ~ 2^32-1)
+      function getHashSeed(str, offset = 0) {
+        let h = 2166136261 ^ offset;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      // 建立偽隨機數生成器 (Mulberry32)
+      function createRng(seed) {
+        let a = seed;
+        return function () {
+          let t = (a += 0x6d2b79f5);
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      // 計算字元視覺寬度（全形/中文字算 2，半形/英文算 1.05）
+      function getCharVisualWidth(ch) {
+        return ch.charCodeAt(0) > 255 ? 2 : 1.05;
+      }
+
+      // 將自我介紹文字依視覺寬度自動切分為多行
+      function wrapTextLines(text, maxUnitsPerLine = 42, maxLines = 3) {
+        const clean = (text || '').replace(/\s+/g, ' ').trim();
+        if (!clean) return ['在左側輸入您的自我介紹，系統將自動為您排版。'];
+
+        const lines = [];
+        let currentLine = '';
+        let currentUnits = 0;
+
+        for (let i = 0; i < clean.length; i++) {
+          const ch = clean[i];
+          const w = getCharVisualWidth(ch);
+
+          if (currentUnits + w > maxUnitsPerLine && currentLine.length > 0) {
+            lines.push(currentLine.trim());
+            currentLine = ch;
+            currentUnits = w;
+            if (lines.length >= maxLines) break;
+          } else {
+            currentLine += ch;
+            currentUnits += w;
+          }
+        }
+
+        if (lines.length < maxLines && currentLine.trim()) {
+          lines.push(currentLine.trim());
+        } else if (lines.length === maxLines && currentLine.trim()) {
+          // 若超過最大行數，在最後一行加上省略號
+          const last = lines[maxLines - 1];
+          lines[maxLines - 1] = last.slice(0, Math.max(0, last.length - 1)) + '…';
+        }
+
+        return lines;
+      }
+
+      // 顯示自訂 Toast 通知 (不使用 alert)
+      function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const bgClass = type === 'error' ? 'bg-rose-600' : 'bg-slate-900';
+        toast.className = `${bgClass} text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0`;
+        toast.innerHTML = `
+          <span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-rose-300' : 'bg-emerald-400'}"></span>
+          <span>${escapeXml(message)}</span>
+        `;
+        els.toastContainer.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('translate-y-2', 'opacity-0');
+          setTimeout(() => toast.remove(), 300);
+        }, 2600);
+      }
+
+      // ==========================================
+      // 4. SVG 向量頭像生成引擎 (200x200 內部座標系)
+      // ==========================================
+      function buildAvatarInnerSvg(theme) {
+        const seed = getHashSeed(state.name + state.role, state.seedOffset);
+        const rng = createRng(seed);
+        const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+
+        const palette = [
+          theme.accent,
+          theme.accentSecondary,
+          '#f43f5e',
+          '#f59e0b',
+          '#10b981',
+          '#8b5cf6',
+          '#ec4899'
+        ];
+        const c1 = pick(palette);
+        let c2 = pick(palette);
+        if (c2 === c1) c2 = theme.accentSecondary;
+
+        // 背景裝飾光暈
+        let inner = `
+          <rect width="200" height="200" fill="${theme.avatarBg}" />
+          <circle cx="${40 + rng() * 120}" cy="${40 + rng() * 120}" r="${65 + rng() * 35}" fill="${c1}" opacity="0.18" />
+          <circle cx="${30 + rng() * 140}" cy="${140 + rng() * 50}" r="${50 + rng() * 30}" fill="${c2}" opacity="0.18" />
+        `;
+
+        const style = state.avatarStyle;
+
+        if (style === 'bot') {
+          // 風格 A：可愛向量機器人
+          const headRx = 22 + Math.floor(rng() * 16);
+          const eyeType = Math.floor(rng() * 3);
+          const antennaType = Math.floor(rng() * 2);
+          const mouthType = Math.floor(rng() * 3);
+
+          // 天線
+          if (antennaType === 0) {
+            inner += `
+              <line x1="100" y1="46" x2="100" y2="24" stroke="${c2}" stroke-width="6" stroke-linecap="round" />
+              <circle cx="100" cy="20" r="8" fill="${c1}" />
+            `;
+          } else {
+            inner += `
+              <line x1="72" y1="48" x2="62" y2="26" stroke="${c2}" stroke-width="5" stroke-linecap="round" />
+              <line x1="128" y1="48" x2="138" y2="26" stroke="${c2}" stroke-width="5" stroke-linecap="round" />
+              <circle cx="62" cy="24" r="6" fill="${c1}" />
+              <circle cx="138" cy="24" r="6" fill="${c1}" />
+            `;
+          }
+
+          // 耳朵與頭部主體
+          inner += `
+            <rect x="34" y="84" width="14" height="34" rx="7" fill="${c2}" />
+            <rect x="152" y="84" width="14" height="34" rx="7" fill="${c2}" />
+            <rect x="46" y="46" width="108" height="104" rx="${headRx}" fill="${c1}" />
+            <rect x="58" y="60" width="84" height="76" rx="${Math.max(12, headRx - 8)}" fill="#0f172a" opacity="0.88" />
+          `;
+
+          // 眼睛
+          if (eyeType === 0) {
+            inner += `
+              <circle cx="82" cy="92" r="10" fill="#38bdf8" />
+              <circle cx="118" cy="92" r="10" fill="#38bdf8" />
+              <circle cx="85" cy="89" r="3" fill="#ffffff" />
+              <circle cx="121" cy="89" r="3" fill="#ffffff" />
+            `;
+          } else if (eyeType === 1) {
+            inner += `
+              <path d="M72 94 Q82 82 92 94" stroke="#34d399" stroke-width="5" fill="none" stroke-linecap="round" />
+              <path d="M108 94 Q118 82 128 94" stroke="#34d399" stroke-width="5" fill="none" stroke-linecap="round" />
+            `;
+          } else {
+            inner += `
+              <rect x="70" y="85" width="60" height="14" rx="7" fill="${c2}" />
+              <circle cx="84" cy="92" r="4" fill="#ffffff" />
+              <circle cx="116" cy="92" r="4" fill="#ffffff" />
+            `;
+          }
+
+          // 嘴巴
+          if (mouthType === 0) {
+            inner += `<path d="M84 115 Q100 126 116 115" stroke="#f8fafc" stroke-width="4.5" fill="none" stroke-linecap="round" />`;
+          } else if (mouthType === 1) {
+            inner += `<rect x="82" y="112" width="36" height="8" rx="4" fill="#38bdf8" opacity="0.85" />`;
+          } else {
+            inner += `
+              <circle cx="88" cy="116" r="3.5" fill="#fbbf24" />
+              <circle cx="100" cy="116" r="3.5" fill="#fbbf24" />
+              <circle cx="112" cy="116" r="3.5" fill="#fbbf24" />
+            `;
+          }
+
+          // 肩膀底座
+          inner += `<path d="M62 195 C62 166, 138 166, 138 195 Z" fill="${c2}" />`;
+
+        } else if (style === 'minimal') {
+          // 風格 B：極簡幾何人像
+          const skinColors = ['#fed7aa', '#fde68a', '#fbcfe8', '#e2e8f0', '#fdba74'];
+          const hairColors = ['#1e293b', '#312e81', '#7c2d12', '#0f766e', '#4c1d95'];
+          const skin = pick(skinColors);
+          const hair = pick(hairColors);
+          const hasGlasses = rng() > 0.45;
+          const hairVariant = Math.floor(rng() * 3);
+
+          // 肩膀衣服
+          inner += `<path d="M36 200 C36 152, 164 152, 164 200 Z" fill="${c1}" />`;
+          // 領口裝飾
+          inner += `<polygon points="84,158 100,180 116,158" fill="#ffffff" opacity="0.85" />`;
+          // 脖子與臉部
+          inner += `
+            <rect x="88" y="128" width="24" height="34" rx="10" fill="${skin}" />
+            <rect x="66" y="54" width="68" height="84" rx="34" fill="${skin}" />
+          `;
+
+          // 髮型
+          if (hairVariant === 0) {
+            inner += `<path d="M64 86 C64 40, 136 40, 136 86 C126 68, 74 68, 64 86 Z" fill="${hair}" />`;
+          } else if (hairVariant === 1) {
+            inner += `
+              <circle cx="100" cy="44" r="18" fill="${hair}" />
+              <path d="M64 84 C64 44, 136 44, 136 84 C120 72, 80 72, 64 84 Z" fill="${hair}" />
+            `;
+          } else {
+            inner += `<path d="M62 92 C60 38, 140 38, 138 92 L132 74 L100 66 L68 74 Z" fill="${hair}" />`;
+          }
+
+          // 眼睛與微笑
+          inner += `
+            <circle cx="86" cy="96" r="4" fill="#1e293b" />
+            <circle cx="114" cy="96" r="4" fill="#1e293b" />
+            <path d="M91 114 Q100 122 109 114" stroke="#1e293b" stroke-width="3.5" fill="none" stroke-linecap="round" />
+          `;
+
+          // 眼鏡配件
+          if (hasGlasses) {
+            inner += `
+              <circle cx="86" cy="96" r="11" stroke="${c2}" stroke-width="3.5" fill="none" />
+              <circle cx="114" cy="96" r="11" stroke="${c2}" stroke-width="3.5" fill="none" />
+              <line x1="97" y1="96" x2="103" y2="96" stroke="${c2}" stroke-width="3.5" />
+            `;
+          }
+
+        } else if (style === 'abstract') {
+          // 風格 C：包浩斯幾何圖騰 (對稱與黃金比例分割)
+          const shapes = [];
+          for (let i = 0; i < 6; i++) {
+            const color = i % 2 === 0 ? c1 : c2;
+            const opacity = (0.45 + rng() * 0.5).toFixed(2);
+            const type = Math.floor(rng() * 3);
+            const x = 35 + Math.floor(rng() * 80);
+            const y = 35 + Math.floor(rng() * 80);
+            const size = 40 + Math.floor(rng() * 65);
+
+            if (type === 0) {
+              shapes.push(`<circle cx="${x + size / 2}" cy="${y + size / 2}" r="${size / 2}" fill="${color}" opacity="${opacity}" />`);
+            } else if (type === 1) {
+              const rot = Math.floor(rng() * 4) * 45;
+              shapes.push(`<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="12" fill="${color}" opacity="${opacity}" transform="rotate(${rot} ${x + size / 2} ${y + size / 2})" />`);
+            } else {
+              shapes.push(`<polygon points="${x + size / 2},${y} ${x + size},${y + size} ${x},${y + size}" fill="${color}" opacity="${opacity}" />`);
+            }
+          }
+          inner += shapes.join('\n');
+          // 中心亮點
+          inner += `<circle cx="100" cy="100" r="22" fill="${theme.isDark ? '#0f172a' : '#ffffff'}" opacity="0.9" />`;
+          inner += `<circle cx="100" cy="100" r="10" fill="${theme.accent}" />`;
+
+        } else {
+          // 風格 D：字母徽章 (Monogram)
+          const cleanName = (state.name || 'User').trim();
+          // 取得第一個字元或英文首字母
+          const initials = cleanName
+            .split(/\s+/)
+            .map((part) => Array.from(part)[0] || '')
+            .join('')
+            .slice(0, 2)
+            .toUpperCase() || 'ID';
+
+          inner += `
+            <circle cx="100" cy="100" r="76" fill="none" stroke="${c1}" stroke-width="6" stroke-dasharray="14 8" />
+            <circle cx="100" cy="100" r="62" fill="${c1}" />
+            <text x="100" y="104" text-anchor="middle" dominant-baseline="middle"
+                  font-family="'Inter', 'Noto Sans TC', sans-serif" font-weight="700" font-size="54" fill="#ffffff" letter-spacing="2">
+              ${escapeXml(initials)}
+            </text>
+          `;
+        }
+
+        return inner;
+      }
+
+      // ==========================================
+      // 5. 生成完整 SVG 文件字串（名片 & 獨立頭像）
+      // ==========================================
+      function generateCardSvgString() {
+        const theme = THEMES.find((t) => t.id === state.themeId) || THEMES[0];
+        const safeName = escapeXml(state.name.trim() || '您的姓名');
+        const safeRole = escapeXml(state.role.trim() || '個人頭銜 / 專業領域');
+        const safeContact = escapeXml(state.contact.trim() || 'yourname.me');
+
+        // 處理自我介紹多行排版
+        const bioLines = wrapTextLines(state.bio, 42, 3);
+        const bioSvgLines = bioLines
+          .map(
+            (line, idx) =>
+              `<tspan x="275" dy="${idx === 0 ? 0 : 28}">${escapeXml(line)}</tspan>`
+          )
+          .join('');
+
+        // 處理技能/關鍵字標籤 (最多取前 3 個)
+        const tagList = state.tags
+          .split(/[,，、]/)
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .slice(0, 3);
+
+        let currentTagX = 275;
+        const tagsSvg = tagList
+          .map((tag) => {
+            // 估算標籤寬度
+            let units = 0;
+            for (const ch of tag) units += getCharVisualWidth(ch);
+            const pillWidth = Math.max(68, Math.round(units * 8.5 + 28));
+            const x = currentTagX;
+            currentTagX += pillWidth + 10;
+            if (x + pillWidth > 760) return ''; // 避免超出名片右邊界
+
+            return `
+              <g transform="translate(${x}, 322)">
+                <rect width="${pillWidth}" height="30" rx="15" fill="${theme.tagBg}" />
+                <text x="${pillWidth / 2}" y="19" text-anchor="middle"
+                      font-family="'Inter', 'Noto Sans TC', sans-serif" font-size="13" font-weight="600" fill="${theme.tagText}">
+                  ${escapeXml(tag)}
+                </text>
+              </g>
+            `;
+          })
+          .join('');
+
+        const avatarInner = buildAvatarInnerSvg(theme);
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" width="100%" height="100%">
+  <defs>
+    <linearGradient id="card-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${theme.bgStart}" />
+      <stop offset="100%" stop-color="${theme.bgEnd}" />
+    </linearGradient>
+    <linearGradient id="accent-bar-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${theme.accent}" />
+      <stop offset="100%" stop-color="${theme.accentSecondary}" />
+    </linearGradient>
+    <clipPath id="avatar-circle-clip">
+      <circle cx="100" cy="100" r="88" />
+    </clipPath>
+    <pattern id="subtle-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="${theme.textSecondary}" opacity="0.12" />
+    </pattern>
+  </defs>
+
+  <!-- 名片底板 -->
+  <rect x="2" y="2" width="796" height="456" rx="28" fill="url(#card-bg-grad)" stroke="${theme.cardBorder}" stroke-width="2" />
+  <rect x="2" y="2" width="796" height="456" rx="28" fill="url(#subtle-grid)" />
+
+  <!-- 右上角裝飾幾何光圈 -->
+  <circle cx="760" cy="40" r="140" fill="${theme.accent}" opacity="0.07" />
+  <circle cx="720" cy="440" r="110" fill="${theme.accentSecondary}" opacity="0.07" />
+
+  <!-- 頂部品牌色條 -->
+  <rect x="44" y="34" width="64" height="6" rx="3" fill="url(#accent-bar-grad)" />
+
+  <!-- 左側頭像區塊 -->
+  <g transform="translate(46, 118)">
+    <!-- 頭像外框光環 -->
+    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#accent-bar-grad)" stroke-width="3" opacity="0.85" />
+    <g clip-path="url(#avatar-circle-clip)">
+      ${avatarInner}
+    </g>
+    <!-- 線上狀態小徽章 -->
+    <circle cx="166" cy="166" r="14" fill="${theme.bgStart}" />
+    <circle cx="166" cy="166" r="9" fill="#10b981" />
+  </g>
+
+  <!-- 右側個人資訊區 -->
+  <!-- 姓名 -->
+  <text x="275" y="106" font-family="'Inter', 'Noto Sans TC', sans-serif" font-size="34" font-weight="700" fill="${theme.textPrimary}" letter-spacing="-0.5">
+    ${safeName}
+  </text>
+
+  <!-- 職稱 -->
+  <text x="275" y="142" font-family="'Inter', 'Noto Sans TC', sans-serif" font-size="17" font-weight="600" fill="${theme.accent}">
+    ${safeRole}
+  </text>
+
+  <!-- 分隔線 -->
+  <line x1="275" y1="166" x2="745" y2="166" stroke="${theme.cardBorder}" stroke-width="1.5" opacity="0.7" />
+
+  <!-- 自我介紹多行文字 -->
+  <text x="275" y="204" font-family="'Inter', 'Noto Sans TC', sans-serif" font-size="16" font-weight="400" fill="${theme.textSecondary}">
+    ${bioSvgLines}
+  </text>
+
+  <!-- 關鍵字標籤 -->
+  ${tagsSvg}
+
+  <!-- 底部聯絡資訊列 -->
+  <g transform="translate(275, 396)">
+    <rect x="0" y="-16" width="8" height="8" rx="2" fill="${theme.accent}" />
+    <text x="18" y="-8" font-family="'Inter', 'Noto Sans TC', sans-serif" font-size="14" font-weight="500" fill="${theme.textSecondary}">
+      ${safeContact}
+    </text>
+  </g>
+</svg>`;
+      }
+
+      function generateStandaloneAvatarSvgString() {
+        const theme = THEMES.find((t) => t.id === state.themeId) || THEMES[0];
+        const avatarInner = buildAvatarInnerSvg(theme);
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <clipPath id="standalone-avatar-clip">
+      <rect x="4" y="4" width="192" height="192" rx="48" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#standalone-avatar-clip)">
+    ${avatarInner}
+  </g>
+  <rect x="4" y="4" width="192" height="192" rx="48" fill="none" stroke="${theme.accent}" stroke-width="4" opacity="0.6" />
+</svg>`;
+      }
+
+      // ==========================================
+      // 6. UI 渲染與互動更新
+      // ==========================================
+      function renderThemeButtons() {
+        els.themeSelector.innerHTML = THEMES.map((theme) => {
+          const isSelected = theme.id === state.themeId;
+          return `
+            <button type="button" data-theme-id="${theme.id}"
+              class="theme-btn flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${
+                isSelected
+                  ? 'border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-500/20'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              }">
+              <span class="w-5 h-5 rounded-full shrink-0 shadow-inner ${theme.previewColor}"></span>
+              <span class="text-xs font-semibold text-slate-700 truncate">${theme.name}</span>
+            </button>
+          `;
+        }).join('');
+
+        // 綁定點擊事件
+        document.querySelectorAll('.theme-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.themeId = btn.dataset.themeId;
+            renderThemeButtons();
+            updatePreview();
+          });
+        });
+      }
+
+      function updatePreview() {
+        // 更新字數統計
+        els.bioCounter.textContent = `${els.inputBio.value.length} / 90`;
+
+        // 注入 SVG
+        els.previewCardWrapper.innerHTML = generateCardSvgString();
+        els.previewAvatarWrapper.innerHTML = generateStandaloneAvatarSvgString();
+      }
+
+      function switchTab(tab) {
+        state.activeTab = tab;
+        if (tab === 'card') {
+          els.tabCard.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition-all';
+          els.tabAvatar.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+          els.previewCardWrapper.classList.remove('hidden');
+          els.previewAvatarWrapper.classList.add('hidden');
+          els.exportHint.innerHTML = '目前選擇：<strong class="text-slate-600">完整個人名片</strong>（支援無限縮放 SVG 或高解析 PNG）';
+        } else {
+          els.tabAvatar.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-sm transition-all';
+          els.tabCard.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+          els.previewAvatarWrapper.classList.remove('hidden');
+          els.previewCardWrapper.classList.add('hidden');
+          els.exportHint.innerHTML = '目前選擇：<strong class="text-slate-600">獨立向量頭像</strong>（適合用作社群大頭貼或網站 Logo）';
+        }
+      }
+
+      // ==========================================
+      // 7. 匯出功能 (SVG 下載 / PNG 轉換下載 / 複製程式碼)
+      // ==========================================
+      function getCurrentExportData() {
+        const cleanSlug = (state.name || 'profile')
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+          .replace(/^-|-$/g, '') || 'profile';
+
+        if (state.activeTab === 'card') {
+          return {
+            svgString: generateCardSvgString(),
+            filenameBase: `${cleanSlug}-card`,
+            width: 1600, // 2x 高解析度
+            height: 920
+          };
+        } else {
+          return {
+            svgString: generateStandaloneAvatarSvgString(),
+            filenameBase: `${cleanSlug}-avatar`,
+            width: 800, // 2x 高解析度
+            height: 800
+          };
+        }
+      }
+
+      function triggerDownload(url, filename) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      // 匯出 SVG
+      els.btnExportSvg.addEventListener('click', () => {
+        try {
+          const { svgString, filenameBase } = getCurrentExportData();
+          const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          triggerDownload(url, `${filenameBase}.svg`);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          showToast(`已成功匯出 ${filenameBase}.svg`);
+        } catch (err) {
+          console.error(err);
+          showToast('匯出 SVG 時發生錯誤', 'error');
+        }
+      });
+
+      // 匯出 PNG
+      els.btnExportPng.addEventListener('click', () => {
+        try {
+          const { svgString, filenameBase, width, height } = getCurrentExportData();
+          const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(svgBlob);
+
+          const img = new Image();
+          img.onload = () => {
+            const canvas = els.exportCanvas;
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            URL.revokeObjectURL(url);
+
+            canvas.toBlob((pngBlob) => {
+              if (!pngBlob) {
+                showToast('PNG 轉檔失敗', 'error');
+                return;
+              }
+              const pngUrl = URL.createObjectURL(pngBlob);
+              triggerDownload(pngUrl, `${filenameBase}.png`);
+              setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+              showToast(`已成功匯出高畫質 ${filenameBase}.png`);
+            }, 'image/png');
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            showToast('無法渲染 PNG 影像', 'error');
+          };
+          img.src = url;
+        } catch (err) {
+          console.error(err);
+          showToast('匯出 PNG 時發生錯誤', 'error');
+        }
+      });
+
+      // 複製 SVG 原始碼 (使用 document.execCommand 確保在 iframe 中相容)
+      els.btnCopySvg.addEventListener('click', () => {
+        try {
+          const { svgString } = getCurrentExportData();
+          els.clipboardHelper.value = svgString;
+          els.clipboardHelper.select();
+          els.clipboardHelper.setSelectionRange(0, 99999);
+          const success = document.execCommand('copy');
+          if (success) {
+            showToast('已將 SVG 原始碼複製到剪貼簿');
+          } else {
+            showToast('複製失敗，請嘗試直接下載檔案', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('複製剪貼簿失敗', 'error');
+        }
+      });
+
+      // ==========================================
+      // 8. 綁定表單與按鈕事件
+      // ==========================================
+      els.inputName.addEventListener('input', (e) => {
+        state.name = e.target.value;
+        updatePreview();
+      });
+
+      els.inputRole.addEventListener('input', (e) => {
+        state.role = e.target.value;
+        updatePreview();
+      });
+
+      els.inputBio.addEventListener('input', (e) => {
+        state.bio = e.target.value;
+        updatePreview();
+      });
+
+      els.inputTags.addEventListener('input', (e) => {
+        state.tags = e.target.value;
+        updatePreview();
+      });
+
+      els.inputContact.addEventListener('input', (e) => {
+        state.contact = e.target.value;
+        updatePreview();
+      });
+
+      els.selectAvatarStyle.addEventListener('change', (e) => {
+        state.avatarStyle = e.target.value;
+        updatePreview();
+      });
+
+      els.btnRerollAvatar.addEventListener('click', () => {
+        state.seedOffset = Math.floor(Math.random() * 100000);
+        updatePreview();
+      });
+
+      els.btnRandomFill.addEventListener('click', () => {
+        const candidates = RANDOM_PROFILES.filter((p) => p.name !== state.name);
+        const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        state.name = chosen.name;
+        state.role = chosen.role;
+        state.bio = chosen.bio;
+        state.tags = chosen.tags;
+        state.contact = chosen.contact;
+        state.themeId = chosen.themeId;
+        state.avatarStyle = chosen.avatarStyle;
+        state.seedOffset = Math.floor(Math.random() * 100000);
+
+        // 同步更新表單欄位
+        els.inputName.value = state.name;
+        els.inputRole.value = state.role;
+        els.inputBio.value = state.bio;
+        els.inputTags.value = state.tags;
+        els.inputContact.value = state.contact;
+        els.selectAvatarStyle.value = state.avatarStyle;
+
+        renderThemeButtons();
+        updatePreview();
+        showToast('已套用隨機範例靈感！');
+      });
+
+      els.tabCard.addEventListener('click', () => switchTab('card'));
+      els.tabAvatar.addEventListener('click', () => switchTab('avatar'));
+
+      // 初始渲染
+      renderThemeButtons();
+      updatePreview();
+    });
+  </script>
+</body>
+</html>
